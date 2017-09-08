@@ -468,17 +468,6 @@ void main() {
         cb(newGenerateBuffer);
       };
     };
-    /* worker.requestLightmaps = (lightmapBuffer, cb) => {
-      const id = _makeId();
-      worker.postMessage({
-        type: 'lightmaps',
-        id,
-        args: {
-          lightmapBuffer,
-        },
-      }, [lightmapBuffer.buffer]);
-      queues[id] = cb;
-    }; */
     worker.requestCull = (hmdPosition, projectionMatrix, matrixWorldInverse, cb) => {
       const id = _makeId();
       worker.postMessage({
@@ -860,155 +849,6 @@ console.log('done');
     });
 
     const objectApis = {};
-
-    /* let refreshingLightmaps = false;
-    const refreshingLightmapsQueue = [];
-    const _refreshLightmaps = refreshed => {
-      if (!refreshingLightmaps) {
-        refreshingLightmaps = true;
-
-        (() => {
-          let wordOffset = 0;
-          const uint32Array = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset);
-          const int32Array = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset);
-
-          uint32Array[wordOffset] = refreshed.length;
-          wordOffset++;
-          for (let i = 0; i < refreshed.length; i++) {
-            const trackedObjectChunkMeshes = refreshed[i];
-            const {offset: {x, y}} = trackedObjectChunkMeshes;
-
-            int32Array[wordOffset + 0] = x;
-            int32Array[wordOffset + 1] = y;
-            wordOffset += 2;
-          }
-        })();
-
-        worker.requestLightmaps(lightmapBuffer, newLightmapBuffer => {
-          const uint32Array = new Uint32Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset);
-          const int32Array = new Int32Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset);
-
-          let byteOffset = 0;
-          const numLightmaps = uint32Array[byteOffset / 4];
-          byteOffset += 4;
-
-          for (let i = 0; i < numLightmaps; i++) {
-            const x = int32Array[byteOffset / 4];
-            byteOffset += 4;
-            const z = int32Array[byteOffset / 4];
-            byteOffset += 4;
-
-            const skyLightmapsLength = uint32Array[byteOffset / 4];
-            byteOffset += 4;
-
-            const newSkyLightmaps = new Uint8Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset + byteOffset, skyLightmapsLength);
-            byteOffset += skyLightmapsLength;
-            let alignDiff = byteOffset % 4;
-            if (alignDiff > 0) {
-              byteOffset += 4 - alignDiff;
-            }
-
-            const torchLightmapsLength = uint32Array[byteOffset / 4];
-            byteOffset += 4;
-
-            const newTorchLightmaps = new Uint8Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset + byteOffset, torchLightmapsLength);
-            byteOffset += torchLightmapsLength;
-            alignDiff = byteOffset % 4;
-            if (alignDiff > 0) {
-              byteOffset += 4 - alignDiff;
-            }
-
-            const trackedObjectChunkMeshes = objectsChunkMeshes[_getChunkIndex(x, z)];
-            if (trackedObjectChunkMeshes) {
-              if (newSkyLightmaps.length > 0) {
-                const {gbuffer, skyLightmaps} = trackedObjectChunkMeshes;
-                skyLightmaps.set(newSkyLightmaps);
-                renderer.updateAttribute(objectsObject.geometry.attributes.skyLightmap, gbuffer.index * skyLightmaps.length, newSkyLightmaps.length, false);
-              }
-              if (newTorchLightmaps.length > 0) {
-                const {gbuffer, torchLightmaps} = trackedObjectChunkMeshes;
-                torchLightmaps.set(newTorchLightmaps);
-                renderer.updateAttribute(objectsObject.geometry.attributes.torchLightmap, gbuffer.index * torchLightmaps.length, newTorchLightmaps.length, false);
-              }
-            }
-          }
-
-          lightmapBuffer = newLightmapBuffer;
-
-          refreshingLightmaps = false;
-          if (refreshingLightmapsQueue.length > 0) {
-            _refreshLightmaps(refreshingLightmapsQueue.shift());
-          }
-        });
-      } else {
-        refreshingLightmapsQueue.push(refreshed);
-      }
-    }; */
-
-    // let lightmapper = null;
-    /* const _bindLightmapper = lightmapElement => {
-      // lightmapper = lightmapElement.lightmapper;
-
-      // _bindLightmaps();
-    };
-    const _unbindLightmapper = () => {
-      // _unbindLightmaps();
-
-      // lightmapper = null;
-    }; */
-    /* const _bindLightmaps = () => {
-      for (const index in objectsChunkMeshes) {
-        const objectChunkMesh = objectsChunkMeshes[index];
-        if (objectChunkMesh) {
-          _bindLightmap(objectChunkMesh);
-        }
-      }
-    };
-    const _unbindLightmaps = () => {
-      for (const index in objectsChunkMeshes) {
-        const objectChunkMesh = objectsChunkMeshes[index];
-        if (objectChunkMesh) {
-          _unbindLightmap(objectChunkMesh);
-        }
-      }
-    };
-    const _bindLightmap = objectChunkMesh => {
-      const {offset} = objectChunkMesh;
-      const {x, y} = offset;
-      const lightmap = lightmapper.getLightmapAt(x * NUM_CELLS, y * NUM_CELLS);
-      objectChunkMesh.material.uniforms.lightMap.value = lightmap.texture;
-      objectChunkMesh.material.uniforms.useLightMap.value = 1;
-      objectChunkMesh.lightmap = lightmap;
-    };
-    const _unbindLightmap = objectChunkMesh => {
-      const {lightmap} = objectChunkMesh;
-      lightmapper.releaseLightmap(lightmap);
-      objectChunkMesh.material.uniforms.lightMap.value = null;
-      objectChunkMesh.material.uniforms.useLightMap.value = 0;
-      objectChunkMesh.lightmap = null;
-    }; */
-    /* const lightmapElementListener = elements.makeListener(LIGHTMAP_PLUGIN);
-    lightmapElementListener.on('add', lightmapElement => {
-      lightmapElement.lightmapper.on('update', ([minX, minZ, maxX, maxZ]) => {
-        const refreshed = [];
-        for (const index in objectsChunkMeshes) {
-          const objectChunkMesh = objectsChunkMeshes[index];
-          if (objectChunkMesh) {
-            const {offset: {x, y: z}} = objectChunkMesh;
-
-            if (x >= minX && x < maxX && z >= minZ && z < maxZ) {
-              refreshed.push(objectChunkMesh);
-            }
-          }
-        }
-        if (refreshed.length > 0) {
-          _refreshLightmaps(refreshed);
-        }
-      });
-    }); */
-    /* lightmapElementListener.on('remove', () => {
-      _unbindLightmapper();
-    }); */
 
     let craftElement = null;
     const recipeQueue = [];
@@ -1568,85 +1408,6 @@ console.log('done');
         )
     )
       .then(() => {
-        /* const _debouncedRefreshLightmaps = _debounce(next => {
-          (() => {
-            let wordOffset = 0;
-            const uint32Array = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset);
-            const int32Array = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset);
-            wordOffset++;
-
-            let numLightmaps = 0;
-            for (const index in objectsChunkMeshes) {
-              const trackedObjectChunkMeshes = objectsChunkMeshes[index];
-
-              if (trackedObjectChunkMeshes) {
-                 const {offset: {x, y}} = trackedObjectChunkMeshes;
-
-                int32Array[wordOffset + 0] = x;
-                int32Array[wordOffset + 1] = y;
-                wordOffset += 2;
-
-                numLightmaps++;
-              }
-            }
-            uint32Array[0] = numLightmaps;
-          })();
-
-          worker.requestLightmaps(lightmapBuffer, newLightmapBuffer => {
-            const uint32Array = new Uint32Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset);
-            const int32Array = new Int32Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset);
-
-            let byteOffset = 0;
-            const numLightmaps = uint32Array[byteOffset / 4];
-            byteOffset += 4;
-
-            for (let i = 0; i < numLightmaps; i++) {
-              const x = int32Array[byteOffset / 4];
-              byteOffset += 4;
-              const z = int32Array[byteOffset / 4];
-              byteOffset += 4;
-
-              const skyLightmapsLength = uint32Array[byteOffset / 4];
-              byteOffset += 4;
-
-              const newSkyLightmaps = new Uint8Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset + byteOffset, skyLightmapsLength);
-              byteOffset += skyLightmapsLength;
-              let alignDiff = byteOffset % 4;
-              if (alignDiff > 0) {
-                byteOffset += 4 - alignDiff;
-              }
-
-              const torchLightmapsLength = uint32Array[byteOffset / 4];
-              byteOffset += 4;
-
-              const newTorchLightmaps = new Uint8Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset + byteOffset, torchLightmapsLength);
-              byteOffset += torchLightmapsLength;
-              alignDiff = byteOffset % 4;
-              if (alignDiff > 0) {
-                byteOffset += 4 - alignDiff;
-              }
-
-              const trackedObjectChunkMeshes = objectsChunkMeshes[_getChunkIndex(x, z)];
-              if (trackedObjectChunkMeshes) {
-                if (newSkyLightmaps.length > 0) {
-                  const {index, skyLightmaps} = trackedObjectChunkMeshes;
-                  skyLightmaps.set(newSkyLightmaps);
-                  renderer.updateAttribute(objectsObject.geometry.attributes.skyLightmap, index * skyLightmaps.length, newSkyLightmaps.length, false);
-                }
-                if (newTorchLightmaps.length > 0) {
-                  const {index, torchLightmaps} = trackedObjectChunkMeshes;
-                  torchLightmaps.set(newTorchLightmaps);
-                  renderer.updateAttribute(objectsObject.geometry.attributes.torchLightmap, index * torchLightmaps.length, newTorchLightmaps.length, false);
-                }
-              }
-            }
-
-            lightmapBuffer = newLightmapBuffer;
-
-            next();
-          });
-        }); */
-
         const _requestCull = (hmdPosition, projectionMatrix, matrixWorldInverse, cb) => {
           worker.requestCull(hmdPosition, projectionMatrix, matrixWorldInverse, cullBuffer => {
             cb(protocolUtils.parseCull(cullBuffer));
@@ -1681,12 +1442,6 @@ console.log('done');
           });
         });
 
-        /* let refreshLightmapsTimeout = null;
-        const _recurseRefreshLightmaps = () => {
-          _debouncedRefreshLightmaps();
-          refreshLightmapsTimeout = setTimeout(_recurseRefreshLightmaps, 2000);
-        };
-        _recurseRefreshLightmaps(); */
         let refreshCullTimeout = null;
         const _recurseRefreshCull = () => {
           _debouncedRefreshCull();
@@ -1697,7 +1452,6 @@ console.log('done');
         cleanups.push(() => {
           elements.destroyListener(heightfieldListener);
 
-          // clearTimeout(refreshLightmapsTimeout);
           clearTimeout(refreshCullTimeout);
         });
       });
