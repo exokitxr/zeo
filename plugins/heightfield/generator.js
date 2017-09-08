@@ -883,6 +883,8 @@ const _getStaticHeightfieldIndex = (x, z) => x + (z * NUM_CELLS_OVERSCAN);
   return points;
 })(); */
 
+const _getLightIndex = (x, y, z) => x + y * NUM_CELLS + z * NUM_CELLS * NUM_CELLS_HEIGHT;
+
 const generate = (x, y, buffer, byteOffset, opts) => {
   if (opts === undefined) {
     opts = {};
@@ -909,8 +911,60 @@ const generate = (x, y, buffer, byteOffset, opts) => {
   protocolUtils.stringifyData(_generateMapChunk(x, y, opts), buffer, byteOffset);
 };
 
+const light = (ox, oz, {getLightSources, isOccluded}) => {
+  const lights = new Uint8Array(NUM_CELLS * NUM_CELLS_HEIGHT * NUM_CELLS);
+
+  const dox = ox * NUM_CELLS;
+  const doz = oz * NUM_CELLS;
+
+  const _fillLight = (x, y, z, v, lol) => {
+    const queue = [];
+    const _tryQueue = (x, y, z, v, origin) => {
+
+      if (x >= 0 && x < NUM_CELLS && y >= 0 & y < NUM_CELLS_HEIGHT && z >= 0 && z < NUM_CELLS && v > 0) {
+        const index = _getLightIndex(x, y, z);
+
+        if (lights[index] < v) {
+          lights[index] = v;
+
+          if (origin || !isOccluded(x + dox, y, z + doz)) {
+            queue.push({x, y, z, v});
+          }
+        }
+      }
+    };
+
+    _tryQueue(x, y, z, v, true);
+
+    while (queue.length > 0) {
+      const {x, y, z, v} = queue.shift();
+
+      for (let dz = -1; dz <= 1; dz++) {
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            _tryQueue(x + dx, y + dy, z + dz, v - (Math.abs(dx) + Math.abs(dy) + Math.abs(dz)), false);
+          }
+        }
+      }
+    }
+  };
+
+  for (let dz = -1; dz <= 1; dz++) {
+    for (let dx = -1; dx <= 1; dx++) {
+      const lightSources = getLightSources(ox + dx, oz + dz);
+      for (let i = 0; i < lightSources.length; i++) {
+        const [x, y, z, v] = lightSources[i];
+        _fillLight(x - dox, y, z - doz, v, x === 2);
+      }
+    }
+  }
+
+  return lights;
+};
+
 return {
   generate,
+  light,
 };
 
 };

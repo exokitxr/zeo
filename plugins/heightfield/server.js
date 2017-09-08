@@ -23,7 +23,9 @@ const DIRECTIONS = [
   [1, -1],
   [1, 1],
 ];
+const OBJECTS_PLUGIN = 'plugins-objects';
 
+const lightsSymbol = Symbol();
 const decorationsSymbol = Symbol();
 
 class Heightfield {
@@ -107,79 +109,123 @@ class Heightfield {
               next();
             });
         });
+        const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
+        const _getEtherIndex = (x, y, z) => x + (z * NUM_CELLS_OVERSCAN) + (y * NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
+        const _ensureNeighboringChunks = (x, z) => {
+          const promises = [];
+          for (let dz = -1; dz <= 1; dz++) {
+            const az = z + dz;
 
-        const _decorateFakeLights = (chunk, geometry) => { // XXX
-          geometry.lights = new Uint8Array(NUM_CELLS * NUM_CELLS_HEIGHT * NUM_CELLS);
+            for (let dx = -1; dx <= 1; dx++) {
+              const ax = x + dx;
 
-          if (chunk.x === 0 && chunk.z === -1) {
-            const {lights, elevations} = geometry;
-            const _getCoordOverscanIndex = (x, z) => x + (z * NUM_CELLS_OVERSCAN);
-            const _fillLight = (x, y, z, v) => {
-              const queue = [];
-              const _tryQueue = (x, y, z, v) => {
-                if (x >= 0 && x < NUM_CELLS && y >= 0 & y < NUM_CELLS_HEIGHT && z >= 0 && z < NUM_CELLS && v > 0) {
-                  const index = _getLightIndex(x, y, z);
-
-                  if (lights[index] < v) {
-                    lights[index] = v;
-
-                    queue.push({x, y, z, v});
-                  }
-                }
-              };
-
-              _tryQueue(x, y, z, v);
-
-              while (queue.length > 0) {
-                const {x, y, z, v} = queue.shift();
-
-                for (let dz = -1; dz <= 1; dz++) {
-                  for (let dy = -1; dy <= 1; dy++) {
-                    for (let dx = -1; dx <= 1; dx++) {
-                      _tryQueue(x + dx, y + dy, z + dz, v - (Math.abs(dx) + Math.abs(dy) + Math.abs(dz)));
-                    }
-                  }
-                }
+              let chunk = tra.getChunk(ax, az);
+              if (!chunk) {
+                chunk = tra.makeChunk(ax, az);
+                chunk.generate(generator.generate);
               }
+
+              promises.push(Promise.resolve(chunk));
+            }
+          }
+          return Promise.all(promises)
+            .then(result => {
+              if (result.length > 0) {
+                _saveChunks();
+              }
+            });
+        };
+        const _decorateChunkLights = chunk => {
+          const objectsEntity = elements.getWorldElement().querySelector(OBJECTS_PLUGIN);
+
+          return Promise.all([
+            _ensureNeighboringChunks(chunk.x, chunk.z),
+            objectsEntity.ensureNeighboringChunks(chunk.x, chunk.z),
+          ])
+            .then(() => {
+              chunk[lightsSymbol] = generator.light(chunk.x, chunk.z, {
+                getLightSources: (ox, oz) => {
+                  const _getHeightfieldLightSources = () => {
+                    const chunk = tra.getChunk(ox, oz);
+                    const uint32Buffer = chunk.getBuffer();
+                    const {liquid, liquidTypes} = protocolUtils.parseData(uint32Buffer.buffer, uint32Buffer.byteOffset);
+
+                    const dox = ox * NUM_CELLS;
+                    const doz = oz * NUM_CELLS;
+
+                    const result = [];
+                    for (let z = 0; z < NUM_CELLS; z++) {
+                      for (let y = 0; y < NUM_CELLS_HEIGHT; y++) {
+                        for (let x = 0; x < NUM_CELLS; x++) {
+                          const index = _getEtherIndex(x, y, z);
+                          if (liquid[index] === 1 && liquidTypes[index] === 2) {
+                            result.push([x + dox, y, z + doz, 16]);
+                          }
+                        }
+                      }
+                    }
+                    return result;
+                  };
+                  const _getGrassLightSources = () => objectsEntity.getLightSources(chunk.x, chunk.z);
+
+                  return _getHeightfieldLightSources().concat(_getGrassLightSources());
+                },
+                isOccluded: (x, y, z) => {
+                  const _isOccludedHeightfield = () => {
+                    const ox = Math.floor(x / NUM_CELLS);
+                    const oz = Math.floor(z / NUM_CELLS);
+
+                    const chunk = tra.getChunk(ox, oz);
+                    const uint32Buffer = chunk.getBuffer();
+                    const {ether} = protocolUtils.parseData(uint32Buffer.buffer, uint32Buffer.byteOffset);
+                    return ether[_getEtherIndex(x, y, z)] <= -1;
+                  };
+                  const _isOccludedObjects = () => objectsEntity.isOccluded(x, y, z);
+
+                  return _isOccludedHeightfield() || _isOccludedObjects();
+                },
+              });
+
+              return Promise.resolve(chunk);
+            });
+        };
+        const _decorateChunkLightmaps = chunk => _decorateChunkLights(chunk)
+          .then(chunk => {
+            const uint32Buffer = chunk.getBuffer();
+            const geometry = protocolUtils.parseData(uint32Buffer.buffer, uint32Buffer.byteOffset);
+            const {positions, staticHeightfield} = geometry;
+            const {[lightsSymbol]: lights} = chunk;
+
+            const numPositions = positions.length / 3;
+            const skyLightmaps = new Uint8Array(numPositions);
+            const torchLightmaps = new Uint8Array(numPositions);
+
+            const ox = chunk.x * NUM_CELLS;
+            const oz = chunk.z * NUM_CELLS;
+
+            for (let i = 0; i < numPositions; i++) {
+              const baseIndex = i * 3;
+              skyLightmaps[i] = lightmapUtils.renderSkyVoxel(
+                positions[baseIndex + 0] - ox,
+                positions[baseIndex + 1],
+                positions[baseIndex + 2] - oz,
+                staticHeightfield
+              );
+              torchLightmaps[i] = lightmapUtils.renderTorchVoxel(
+                positions[baseIndex + 0] - ox,
+                positions[baseIndex + 1],
+                positions[baseIndex + 2] - oz,
+                lights
+              );
+            }
+
+            chunk[decorationsSymbol] = {
+              skyLightmaps,
+              torchLightmaps,
             };
 
-            _fillLight(4, Math.floor(elevations[_getCoordOverscanIndex(4, 4)]), 4, 16);
-          }
-        };
-        const _decorateChunkLightmaps = chunk => {
-          const uint32Buffer = chunk.getBuffer();
-          const geometry = protocolUtils.parseData(uint32Buffer.buffer, uint32Buffer.byteOffset);
-          _decorateFakeLights(chunk, geometry);
-          const {positions, staticHeightfield, lights} = geometry;
-
-          const numPositions = positions.length / 3;
-          const skyLightmaps = new Uint8Array(numPositions);
-          const torchLightmaps = new Uint8Array(numPositions);
-
-          const ox = chunk.x * NUM_CELLS;
-          const oz = chunk.z * NUM_CELLS;
-
-          for (let i = 0; i < numPositions; i++) {
-            const baseIndex = i * 3;
-            skyLightmaps[i] = lightmapUtils.renderSkyVoxel(
-              positions[baseIndex + 0] - ox,
-              positions[baseIndex + 1],
-              positions[baseIndex + 2] - oz,
-              staticHeightfield
-            );
-            torchLightmaps[i] = lightmapUtils.renderTorchVoxel(
-              positions[baseIndex + 0] - ox,
-              positions[baseIndex + 1],
-              positions[baseIndex + 2] - oz,
-              lights
-            );
-          }
-
-          chunk[decorationsSymbol] = {
-            skyLightmaps,
-            torchLightmaps,
-          };
-        };
+            return chunk;
+          });
 
         const heightfieldImgStatic = express.static(path.join(__dirname, 'lib', 'img'));
         function serveHeightfieldImg(req, res, next) {
@@ -193,24 +239,38 @@ class Heightfield {
           const z = parseInt(zs, 10);
 
           if (!isNaN(x) && !isNaN(z)) {
-            let chunk = tra.getChunk(x, z);
-            if (!chunk) {
-              chunk = tra.makeChunk(x, z);
-              chunk.generate(generator.generate);
-              _saveChunks();
-            }
-            if (!chunk[decorationsSymbol]) {
-              _decorateChunkLightmaps(chunk);
-            }
+            new Promise((accept, reject) => {
+              let chunk = tra.getChunk(x, z);
+              if (!chunk) {
+                chunk = tra.makeChunk(x, z);
+                chunk.generate(generator.generate);
+                _saveChunks();
+              }
+              accept(chunk);
+            })
+              .then(chunk => {
+                if (!chunk[decorationsSymbol]) {
+                  return _decorateChunkLightmaps(chunk);
+                } else {
+                  return Promise.resolve(chunk);
+                }
+              })
+              .then(chunk => {
+                res.type('application/octet-stream');
 
-            res.type('application/octet-stream');
+                const uint32Buffer = chunk.getBuffer();
+                res.write(new Buffer(uint32Buffer.buffer, uint32Buffer.byteOffset, uint32Buffer.byteLength));
 
-            const uint32Buffer = chunk.getBuffer();
-            res.write(new Buffer(uint32Buffer.buffer, uint32Buffer.byteOffset, uint32Buffer.byteLength));
-
-            const {[decorationsSymbol]: decorationsObject} = chunk;
-            const [arrayBuffer, byteOffset] = protocolUtils.stringifyDecorations(decorationsObject);
-            res.end(new Buffer(arrayBuffer, 0, byteOffset));
+                const {[decorationsSymbol]: decorationsObject} = chunk;
+                const [arrayBuffer, byteOffset] = protocolUtils.stringifyDecorations(decorationsObject);
+                res.end(new Buffer(arrayBuffer, 0, byteOffset));
+              })
+              .catch(err => {
+                res.status(500);
+                res.json({
+                  error: err.stack,
+                });
+              });
           } else {
             res.status(400);
             res.send();
@@ -227,7 +287,8 @@ class Heightfield {
           if (!isNaN(x) && !isNaN(y) && !isNaN(z)) {
             const v = req.method === 'POST' ? -1 : 1;
 
-            const regenerated = [];
+            const regeneratePromises = [];
+            const seenIndex = {};
             for (let i = 0; i < DIRECTIONS.length; i++) {
               const [dx, dz] = DIRECTIONS[i];
               const ax = x + dx * 2;
@@ -238,7 +299,8 @@ class Heightfield {
               const lz = z - (oz * NUM_CELLS);
               const newEther = Float32Array.from([lx, y, lz, v]);
 
-              if (!regenerated.some(chunk => chunk.x === ox && chunk.z === oz)) {
+              const index = _getChunkIndex(ox, oz);
+              if (!seenIndex[index]) {
                 let chunk = tra.getChunk(ox, oz);
                 if (!chunk) {
                   chunk = tra.makeChunk(ox, oz);
@@ -262,35 +324,39 @@ class Heightfield {
                     newEther,
                   });
                 }
-                _decorateChunkLightmaps(chunk);
 
-                regenerated.push(chunk);
+                regeneratePromises.push(_decorateChunkLightmaps(chunk));
+
+                seenIndex[index] = true;
               }
             }
             _saveChunks();
 
-            res.type('application/octet-stream');
+            Promise.all(regeneratePromises)
+              .then(regeneratedChunks => {
+                res.type('application/octet-stream');
 
-            const chunksHeader = Uint32Array.from([regenerated.length]);
-            res.write(new Buffer(chunksHeader.buffer, chunksHeader.byteOffset, chunksHeader.byteLength));
-            for (let i = 0; i < regenerated.length; i++) {
-              const chunk = regenerated[i];
+                const chunksHeader = Uint32Array.from([regeneratedChunks.length]);
+                res.write(new Buffer(chunksHeader.buffer, chunksHeader.byteOffset, chunksHeader.byteLength));
+                for (let i = 0; i < regeneratedChunks.length; i++) {
+                  const chunk = regeneratedChunks[i];
 
-              const chunkHeader1 = Int32Array.from([chunk.x, chunk.z]);
-              res.write(new Buffer(chunkHeader1.buffer, chunkHeader1.byteOffset, chunkHeader1.byteLength));
+                  const chunkHeader1 = Int32Array.from([chunk.x, chunk.z]);
+                  res.write(new Buffer(chunkHeader1.buffer, chunkHeader1.byteOffset, chunkHeader1.byteLength));
 
-              const uint32Buffer = chunk.getBuffer();
-              const chunkHeader2 = Uint32Array.from([uint32Buffer.byteLength]);
-              res.write(new Buffer(chunkHeader2.buffer, chunkHeader2.byteOffset, chunkHeader2.byteLength));
-              res.write(new Buffer(uint32Buffer.buffer, uint32Buffer.byteOffset, uint32Buffer.byteLength));
+                  const uint32Buffer = chunk.getBuffer();
+                  const chunkHeader2 = Uint32Array.from([uint32Buffer.byteLength]);
+                  res.write(new Buffer(chunkHeader2.buffer, chunkHeader2.byteOffset, chunkHeader2.byteLength));
+                  res.write(new Buffer(uint32Buffer.buffer, uint32Buffer.byteOffset, uint32Buffer.byteLength));
 
-              const {[decorationsSymbol]: decorationsObject} = chunk;
-              const [arrayBuffer, byteOffset] = protocolUtils.stringifyDecorations(decorationsObject);
-              const chunkHeader3 = Uint32Array.from([byteOffset]);
-              res.write(new Buffer(chunkHeader3.buffer, chunkHeader3.byteOffset, chunkHeader3.byteLength));
-              res.write(new Buffer(arrayBuffer, 0, byteOffset));
-            }
-            res.end();
+                  const {[decorationsSymbol]: decorationsObject} = chunk;
+                  const [arrayBuffer, byteOffset] = protocolUtils.stringifyDecorations(decorationsObject);
+                  const chunkHeader3 = Uint32Array.from([byteOffset]);
+                  res.write(new Buffer(chunkHeader3.buffer, chunkHeader3.byteOffset, chunkHeader3.byteLength));
+                  res.write(new Buffer(arrayBuffer, 0, byteOffset));
+                }
+                res.end();
+              });
           } else {
             res.status(400);
             res.send();
@@ -330,27 +396,28 @@ class Heightfield {
             const uint32Buffer = chunk.getBuffer();
             return Promise.resolve(protocolUtils.parseData(uint32Buffer.buffer, uint32Buffer.byteOffset).biomes);
           },
-          requestLights(x, z) {
-            let chunk = tra.getChunk(x, z);
-            if (!chunk) {
-              chunk = tra.makeChunk(x, z);
-              chunk.generate(generator.generate);
-              _saveChunks();
-            }
-            const uint32Buffer = chunk.getBuffer();
-            const geometry = protocolUtils.parseData(uint32Buffer.buffer, uint32Buffer.byteOffset);
-            _decorateFakeLights(chunk, geometry);
-            return Promise.resolve(geometry.lights);
-          },
           requestLightmaps(x, z, positions) {
-            return Promise.all([
-              this.requestStaticHeightfield(x, z),
-              this.requestLights(x, z)
-            ])
-              .then(([
-                staticHeightfield,
-                lights,
-              ]) => {
+            const _requestLightedChunk = (x, z) => {
+              let chunk = tra.getChunk(x, z);
+              if (!chunk) {
+                chunk = tra.makeChunk(x, z);
+                chunk.generate(generator.generate);
+                _saveChunks();
+              }
+              if (chunk[lightsSymbol]) {
+                return Promise.resolve(chunk);
+              } else {
+                return _decorateChunkLights(chunk);
+              }
+            };
+
+            return _requestLightedChunk(x, z)
+              .then(chunk => {
+                const uint32Buffer = chunk.getBuffer();
+                const geometry = protocolUtils.parseData(uint32Buffer.buffer, uint32Buffer.byteOffset);
+                const {staticHeightfield} = geometry;
+                const {[lightsSymbol]: lights} = chunk;
+
                 const numPositions = positions.length / 3;
                 const skyLightmaps = new Uint8Array(numPositions);
                 const torchLightmaps = new Uint8Array(numPositions);

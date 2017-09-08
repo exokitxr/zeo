@@ -67,12 +67,11 @@ class Objects {
     const localQuaternion = new THREE.Quaternion();
     const localMatrix = new THREE.Matrix4();
 
-    const _ensureChunks = (x, z) => elements.requestElement(HEIGHTFIELD_PLUGIN)
+    const _ensureNeighboringHeightfieldChunks = (x, z) => elements.requestElement(HEIGHTFIELD_PLUGIN)
       .then(heightfieldElement => {
         const promises = [];
         for (let dz = -1; dz <= 1; dz++) {
           const az = z + dz;
-
           for (let dx = -1; dx <= 1; dx++) {
             const ax = x + dx;
 
@@ -118,7 +117,7 @@ class Objects {
         protocolUtils.stringifyGeometry(geometry, geometryBuffer.buffer, geometryBuffer.byteOffset);
         chunk.dirty = true; // XXX can internalize this in zeode module
 
-        return _decorateChunkLightmaps(chunk);
+        return chunk;
       });
     const _decorateChunkLightmaps = chunk => elements.requestElement(HEIGHTFIELD_PLUGIN)
       .then(heightfieldElement => {
@@ -430,9 +429,9 @@ class Objects {
           const chunk = zde.getChunk(x, z);
 
           if (chunk) {
-            return Promise.resolve(_decorateChunkLightmaps(chunk));
+            return Promise.resolve(chunk);
           } else {
-            return _ensureChunks(x, z)
+            return _ensureNeighboringHeightfieldChunks(x, z)
               .then(() => {
                 const chunk = zde.makeChunk(x, z);
                 _generateChunk(chunk);
@@ -510,16 +509,11 @@ class Objects {
                 octaves: spec.octaves,
               });
             },
-            getNoise(name, ox, oz, x, z) { // XXX rename to 2d
+            getNoise(name, ox, oz, x, z) {
               const ax = (ox * NUM_CELLS) + x;
               const az = (oz * NUM_CELLS) + z;
               return noises[name].in2D(ax + 1000, az + 1000);
             },
-            /* getNoise3D(name, ox, oz, x, y, z) {
-              const ax = (ox * NUM_CELLS) + x;
-              const az = (oz * NUM_CELLS) + z;
-              return noises[name].in3D(ax + 1000, y, az + 1000);
-            }, */
             getHeightfield(x, z) {
               return heightfields[_getChunkIndex(x, z)];
             },
@@ -616,7 +610,10 @@ class Objects {
                 for (let i = 0; i < zde.chunks.length; i++) {
                   const chunk = zde.chunks[i];
                   if (_generateChunkWithGenerator(chunk, generator)) {
-                    promises.push(_decorateChunkGeometry(chunk));
+                    promises.push(
+                      _decorateChunkGeometry(chunk)
+                        .then(chunk => chunk[decorationsSymbol] ? _decorateChunkLightmaps(chunk) : chunk)
+                    );
                   }
                 }
                 if (promises.length > 0) {
@@ -696,10 +693,10 @@ class Objects {
 
               if (!isNaN(x) && !isNaN(z)) {
                 _requestChunk(x, z)
+                  .then(chunk => !chunk[decorationsSymbol] ? _decorateChunkLightmaps(chunk) : chunk)
                   .then(chunk => {
                     res.type('application/octet-stream');
                     res.set('Texture-Atlas-Version', textureImg.version);
-
 
                     const objectBuffer = chunk.getObjectBuffer();
                     res.write(new Buffer(objectBuffer.buffer, objectBuffer.byteOffset, objectBuffer.byteLength));
@@ -753,6 +750,7 @@ class Objects {
                       const objectIndex = chunk.addObject(n, matrix, value);
 
                       _decorateChunkGeometry(chunk)
+                        .then(chunk => chunk[decorationsSymbol] ? _decorateChunkLightmaps(chunk) : chunk)
                         .then(() => {
                           _saveChunks();
 
@@ -778,6 +776,7 @@ class Objects {
                       const n = chunk.removeObject(index);
 
                       _decorateChunkGeometry(chunk)
+                        .then(chunk => chunk[decorationsSymbol] ? _decorateChunkLightmaps(chunk) : chunk)
                         .then(() => {
                           _saveChunks();
 
@@ -829,6 +828,41 @@ class Objects {
             };
             wss.on('connection', _connection);
 
+            const objectsElement = {
+              ensureNeighboringChunks: (x, z) => {
+                return elements.requestElement(HEIGHTFIELD_PLUGIN)
+                  .then(heightfieldElement => {
+                    const promises = [];
+                    for (let dz = -1; dz <= 1; dz++) {
+                      const az = z + dz;
+                      for (let dx = -1; dx <= 1; dx++) {
+                        const ax = x + dx;
+                        promises.push(_requestChunk(ax, az).then(() => {}));
+                      }
+                    }
+                    return Promise.all(promises);
+                  });
+              },
+              getLightSources: (x, z) => {
+                const result = [];
+                const torchN = murmur('torch');
+                zde.getChunk(x, z).forEachObject((n, matrix) => {
+                  if (n === torchN) {
+                    const [x, y, z] = matrix;
+                    result.push([Math.floor(x), Math.floor(y), Math.floor(z), 16]);
+                  }
+                });
+                return result;
+              },
+              isOccluded(x, y, z) {
+                const ox = Math.floor(x / NUM_CELLS);
+                const oz = Math.floor(z / NUM_CELLS);
+
+                return zde.getChunk(ox, oz).getBlock(x - ox * NUM_CELLS, y, z - oz * NUM_CELLS) !== 0;
+              },
+            };
+            elements.registerEntity(this, objectsElement);
+
             this._cleanup = () => {
               for (let i = 0; i < objectCleanups.length; i++) {
                 const objectCleanup = objectCleanups[i];
@@ -855,6 +889,8 @@ class Objects {
                 c.close();
               }
               wss.removeListener('connection', _connection);
+
+              elements.unregisterEntity(this, objectsElement);
             };
           });
       });
