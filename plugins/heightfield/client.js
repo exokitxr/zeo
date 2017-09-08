@@ -98,10 +98,12 @@ void main() {
 	vec3 diffuseColor = vColor;
 
   // vec3 lightColor = vec3(vLightmap);
-  vec3 lightColor = vec3(floor(
-    (
-      min((vSkyLightmap * sunIntensity) + vTorchLightmap, 1.0)
-    ) * 4.0 + 0.5) / 4.0
+  vec3 lightColor = vec3(
+    floor(
+      (
+        min((vSkyLightmap * sunIntensity) + vTorchLightmap, 1.0)
+      ) * 4.0 + 0.5
+    ) / 4.0
   );
   // vec3 lightColor = vec3(floor(vLightmap * 32.0 + 0.5) / 32.0);
   /* vec3 lightColor;

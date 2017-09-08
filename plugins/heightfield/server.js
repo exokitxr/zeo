@@ -6,6 +6,8 @@ const trra = require('trra');
 
 const {
   NUM_CELLS,
+  NUM_CELLS_OVERSCAN,
+  NUM_CELLS_HEIGHT,
 
   NUM_POSITIONS_CHUNK,
 } = require('./lib/constants/constants');
@@ -106,10 +108,49 @@ class Heightfield {
             });
         });
 
+        const _decorateFakeLights = (chunk, geometry) => { // XXX
+          geometry.lights = new Uint8Array(NUM_CELLS * NUM_CELLS_HEIGHT * NUM_CELLS);
+
+          if (chunk.x === 0 && chunk.z === -1) {
+            const {lights, elevations} = geometry;
+            const _getCoordOverscanIndex = (x, z) => x + (z * NUM_CELLS_OVERSCAN);
+            const _fillLight = (x, y, z, v) => {
+              const queue = [];
+              const _tryQueue = (x, y, z, v) => {
+                if (x >= 0 && x < NUM_CELLS && y >= 0 & y < NUM_CELLS_HEIGHT && z >= 0 && z < NUM_CELLS && v > 0) {
+                  const index = _getLightIndex(x, y, z);
+
+                  if (lights[index] < v) {
+                    lights[index] = v;
+
+                    queue.push({x, y, z, v});
+                  }
+                }
+              };
+
+              _tryQueue(x, y, z, v);
+
+              while (queue.length > 0) {
+                const {x, y, z, v} = queue.shift();
+
+                for (let dz = -1; dz <= 1; dz++) {
+                  for (let dy = -1; dy <= 1; dy++) {
+                    for (let dx = -1; dx <= 1; dx++) {
+                      _tryQueue(x + dx, y + dy, z + dz, v - (Math.abs(dx) + Math.abs(dy) + Math.abs(dz)));
+                    }
+                  }
+                }
+              }
+            };
+
+            _fillLight(4, Math.floor(elevations[_getCoordOverscanIndex(4, 4)]), 4, 16);
+          }
+        };
         const _decorateChunkLightmaps = chunk => {
           const uint32Buffer = chunk.getBuffer();
           const geometry = protocolUtils.parseData(uint32Buffer.buffer, uint32Buffer.byteOffset);
-          const {positions, staticHeightfield} = geometry;
+          _decorateFakeLights(chunk, geometry);
+          const {positions, staticHeightfield, lights} = geometry;
 
           const numPositions = positions.length / 3;
           const skyLightmaps = new Uint8Array(numPositions);
@@ -120,11 +161,17 @@ class Heightfield {
 
           for (let i = 0; i < numPositions; i++) {
             const baseIndex = i * 3;
-            skyLightmaps[i] = lightmapUtils.render(
+            skyLightmaps[i] = lightmapUtils.renderSkyVoxel(
               positions[baseIndex + 0] - ox,
               positions[baseIndex + 1],
               positions[baseIndex + 2] - oz,
               staticHeightfield
+            );
+            torchLightmaps[i] = lightmapUtils.renderTorchVoxel(
+              positions[baseIndex + 0] - ox,
+              positions[baseIndex + 1],
+              positions[baseIndex + 2] - oz,
+              lights
             );
           }
 
@@ -283,9 +330,27 @@ class Heightfield {
             const uint32Buffer = chunk.getBuffer();
             return Promise.resolve(protocolUtils.parseData(uint32Buffer.buffer, uint32Buffer.byteOffset).biomes);
           },
+          requestLights(x, z) {
+            let chunk = tra.getChunk(x, z);
+            if (!chunk) {
+              chunk = tra.makeChunk(x, z);
+              chunk.generate(generator.generate);
+              _saveChunks();
+            }
+            const uint32Buffer = chunk.getBuffer();
+            const geometry = protocolUtils.parseData(uint32Buffer.buffer, uint32Buffer.byteOffset);
+            _decorateFakeLights(chunk, geometry);
+            return Promise.resolve(geometry.lights);
+          },
           requestLightmaps(x, z, positions) {
-            return this.requestStaticHeightfield(x, z)
-              .then(staticHeightfield => {
+            return Promise.all([
+              this.requestStaticHeightfield(x, z),
+              this.requestLights(x, z)
+            ])
+              .then(([
+                staticHeightfield,
+                lights,
+              ]) => {
                 const numPositions = positions.length / 3;
                 const skyLightmaps = new Uint8Array(numPositions);
                 const torchLightmaps = new Uint8Array(numPositions);
@@ -295,11 +360,17 @@ class Heightfield {
 
                 for (let i = 0; i < numPositions; i++) {
                   const baseIndex = i * 3;
-                  skyLightmaps[i] = lightmapUtils.render(
+                  skyLightmaps[i] = lightmapUtils.renderSkyVoxel(
                     positions[baseIndex + 0] - ox,
                     positions[baseIndex + 1],
                     positions[baseIndex + 2] - oz,
                     staticHeightfield
+                  );
+                  torchLightmaps[i] = lightmapUtils.renderTorchVoxel(
+                    positions[baseIndex + 0] - ox,
+                    positions[baseIndex + 1],
+                    positions[baseIndex + 2] - oz,
+                    lights
                   );
                 }
 
@@ -359,5 +430,6 @@ const _debounce = fn => {
   };
   return _go;
 };
+const _getLightIndex = (x, y, z) => x + y * NUM_CELLS + z * NUM_CELLS * NUM_CELLS_HEIGHT;
 
 module.exports = Heightfield;
