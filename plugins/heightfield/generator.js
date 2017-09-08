@@ -686,9 +686,7 @@ const _generateMapChunk = (ox, oy, opts) => {
   };
 };
 const _getCoordOverscanIndex = (x, y) => x + (y * NUM_CELLS_OVERSCAN);
-const ETHER_INDEX_FACTOR = NUM_CELLS + 1;
-const ETHER_INDEX_FACTOR2 = ETHER_INDEX_FACTOR * ETHER_INDEX_FACTOR;
-const _getEtherIndex = (x, y, z) => x + (z * ETHER_INDEX_FACTOR) + (y * ETHER_INDEX_FACTOR2);
+const _getEtherIndex = (x, y, z) => x + (z * NUM_CELLS_OVERSCAN) + (y * NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
 
 /* const _getTerrain = p => {
   if (p.coast) {
