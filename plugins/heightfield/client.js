@@ -87,13 +87,11 @@ varying float vTorchLightmap;
 void main() {
 	vec3 diffuseColor = vColor;
 
-  vec3 lightColor = vec3(
-    floor(
-      (
-        min((vSkyLightmap * sunIntensity) + vTorchLightmap, 1.0)
-      ) * 4.0 + 0.5
-    ) / 4.0
-  );
+  float lightColor = floor(
+    (
+      min((vSkyLightmap * sunIntensity) + vTorchLightmap, 1.0)
+    ) * 4.0 + 0.5
+  ) / 4.0;
 
   vec3 fdx = vec3( dFdx( vViewPosition.x ), dFdx( vViewPosition.y ), dFdx( vViewPosition.z ) );
   vec3 fdy = vec3( dFdy( vViewPosition.x ), dFdy( vViewPosition.y ), dFdy( vViewPosition.z ) );
@@ -134,52 +132,70 @@ const OCEAN_SHADER = {
       value: 0,
     },
   },
-  vertexShader: [
-    "uniform float worldTime;",
-    // "attribute vec3 wave;",
-    "attribute vec3 color;",
-    "varying vec2 vUv;",
-    "varying vec3 vColor;",
-    "varying float fogDepth;",
-    "void main() {",
-    /* "  float ang = wave[0];",
-    "  float amp = wave[1];",
-    "  float speed = wave[2];", */
-    // "  gl_Position = projectionMatrix * modelViewMatrix * vec4(position.x, position.y + ((sin(ang + (speed * worldTime))) * amp), position.z, 1.0);",
-    "  gl_Position = projectionMatrix * modelViewMatrix * vec4(position.xyz, 1.0);",
-    "  vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );",
-    "  vUv = vec2(position.x / 16.0 * 4.0, position.z / 16.0 * 4.0 / 16.0);",
-    "  vColor = color.rgb;",
-    "  fogDepth = -mvPosition.z;",
-    "}"
-  ].join("\n"),
-  fragmentShader: [
-    "#define PI 3.1415926535897932384626433832795",
-    "#define LOG2 1.442695",
-    "#define whiteCompliment(a) ( 1.0 - saturate( a ) )",
-    "uniform float worldTime;",
-    "uniform sampler2D map;",
-    "uniform sampler2D map2;",
-    "uniform vec3 fogColor;",
-    "uniform float fogDensity;",
-    "uniform float sunIntensity;",
-    "varying vec2 vUv;",
-    "varying vec3 vColor;",
-    "varying float fogDepth;",
-    "float speed = 2.0;",
-    "void main() {",
-    "  float animationFactor = (speed - abs(mod(worldTime / 1000.0, speed*2.0) - speed)) / speed;",
-    "  float frame1 = mod(floor(animationFactor / 16.0), 1.0);",
-    "  float frame2 = mod(frame1 + 1.0/16.0, 1.0);",
-    "  float mixFactor = fract(animationFactor / 16.0) * 16.0;",
-    "  vec2 uv1 = vUv * vec2(1.0, 1.0 - frame1);",
-    "  vec2 uv2 = vUv * vec2(1.0, 1.0 - frame2);",
-    "  vec4 diffuseColor = (vColor.b * 256.0) <= 1.5 ? mix(texture2D( map, uv1 ), texture2D( map, uv2 ), mixFactor) : mix(texture2D( map2, uv1 ), texture2D( map2, uv2 ), mixFactor);",
-    "  diffuseColor = vec4((0.2 + 0.8 * sunIntensity) * diffuseColor.xyz, 0.9);",
-    "  float fogFactor = whiteCompliment( exp2( - fogDensity * fogDensity * fogDepth * fogDepth * LOG2 ) );",
-    "  gl_FragColor = vec4(mix( diffuseColor.rgb, fogColor, fogFactor ), diffuseColor.a);",
-    "}"
-  ].join("\n")
+  vertexShader: `\
+    uniform float worldTime;
+    // "attribute vec3 wave;
+    attribute vec3 color;
+    attribute float skyLightmap;
+    attribute float torchLightmap;
+    varying vec2 vUv;
+    varying vec3 vColor;
+    varying float vSkyLightmap;
+    varying float vTorchLightmap;
+    varying float fogDepth;
+    void main() {
+      /* float ang = wave[0];
+      float amp = wave[1];
+      float speed = wave[2]; */
+      // gl_Position = projectionMatrix * modelViewMatrix * vec4(position.x, position.y + ((sin(ang + (speed * worldTime))) * amp), position.z, 1.0);
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position.xyz, 1.0);
+      vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+      vUv = vec2(position.x / 16.0 * 4.0, position.z / 16.0 * 4.0 / 16.0);
+      vColor = color.rgb;
+      vSkyLightmap = skyLightmap;
+      vTorchLightmap = torchLightmap;
+      fogDepth = -mvPosition.z;
+    }
+  `,
+  fragmentShader: `\
+    #define LOG2 1.442695
+    #define whiteCompliment(a) ( 1.0 - saturate( a ) )
+    uniform float worldTime;
+    uniform sampler2D map;
+    uniform sampler2D map2;
+    uniform vec3 fogColor;
+    uniform float fogDensity;
+    uniform float sunIntensity;
+    varying vec2 vUv;
+    varying vec3 vColor;
+    varying float vSkyLightmap;
+    varying float vTorchLightmap;
+    varying float fogDepth;
+    float speed = 2.0;
+    void main() {
+      float animationFactor = (speed - abs(mod(worldTime / 1000.0, speed*2.0) - speed)) / speed;
+      float frame1 = mod(floor(animationFactor / 16.0), 1.0);
+      float frame2 = mod(frame1 + 1.0/16.0, 1.0);
+      float mixFactor = fract(animationFactor / 16.0) * 16.0;
+      vec2 uv1 = vUv * vec2(1.0, 1.0 - frame1);
+      vec2 uv2 = vUv * vec2(1.0, 1.0 - frame2);
+      vec3 diffuseColor = (vColor.b * 256.0) <= 1.5 ?
+        mix(texture2D( map, uv1 ), texture2D( map, uv2 ), mixFactor).rgb
+      :
+        mix(texture2D( map2, uv1 ), texture2D( map2, uv2 ), mixFactor).rgb;
+      // diffuseColor *= (0.2 + 0.8 * sunIntensity);
+      float fogFactor = whiteCompliment( exp2( - fogDensity * fogDensity * fogDepth * fogDepth * LOG2 ) );
+      diffuseColor = mix(diffuseColor, fogColor, fogFactor);
+
+      float lightColor = floor(
+        (
+          min((vSkyLightmap * sunIntensity) + vTorchLightmap, 1.0)
+        ) * 4.0 + 0.5
+      ) / 4.0;
+      vec3 outgoingLight = diffuseColor * (0.2 + lightColor * 0.8);
+      gl_FragColor = vec4(outgoingLight, 0.9);
+    }
+  `
 };
 
 class Heightfield {
