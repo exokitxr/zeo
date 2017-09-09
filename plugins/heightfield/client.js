@@ -115,10 +115,6 @@ const OCEAN_SHADER = {
       type: 't',
       value: null,
     },
-    map2: {
-      type: 't',
-      value: null,
-    },
     /* fogColor: {
       type: '3f',
       value: new THREE.Color(),
@@ -162,7 +158,6 @@ const OCEAN_SHADER = {
     #define whiteCompliment(a) ( 1.0 - saturate( a ) )
     uniform float worldTime;
     uniform sampler2D map;
-    uniform sampler2D map2;
     uniform vec3 fogColor;
     uniform float fogDensity;
     uniform float sunIntensity;
@@ -179,10 +174,7 @@ const OCEAN_SHADER = {
       float mixFactor = fract(animationFactor / 16.0) * 16.0;
       vec2 uv1 = vColor.rg * vec2(1.0, 1.0 - frame1);
       vec2 uv2 = vColor.rg * vec2(1.0, 1.0 - frame2);
-      vec3 diffuseColor = vColor.b <= 1.5 ?
-        mix(texture2D( map, uv1 ), texture2D( map, uv2 ), mixFactor).rgb
-      :
-        mix(texture2D( map2, uv1 ), texture2D( map2, uv2 ), mixFactor).rgb;
+      vec3 diffuseColor = mix(texture2D( map, uv1 ), texture2D( map, uv2 ), mixFactor).rgb;
       // diffuseColor *= (0.2 + 0.8 * sunIntensity);
       float fogFactor = whiteCompliment( exp2( - fogDensity * fogDensity * fogDepth * fogDepth * LOG2 ) );
       diffuseColor = mix(diffuseColor, fogColor, fogFactor);
@@ -439,13 +431,11 @@ class Heightfield {
           accept();
         });
       }),
-      _requestImageBitmap('/archae/heightfield/img/water.png'),
-      _requestImageBitmap('/archae/heightfield/img/lava.png'),
+      _requestImageBitmap('/archae/heightfield/img/liquid.png'),
     ])
       .then(([
         setSpawnMatrixResult,
-        waterImg,
-        lavaImg,
+        liquidImg,
       ]) => {
         const NUM_GEOMETRIES = 4;
         const _makeGeometryBuffer = () => sbffr(
@@ -648,8 +638,8 @@ class Heightfield {
           return meshes;
         };
 
-        const waterTexture = new THREE.Texture(
-          waterImg,
+        const liquidTexture = new THREE.Texture(
+          liquidImg,
           THREE.UVMapping,
           THREE.ClampToEdgeWrapping,
           THREE.ClampToEdgeWrapping,
@@ -659,22 +649,9 @@ class Heightfield {
           THREE.UnsignedByteType,
           1
         );
-        waterTexture.needsUpdate = true;
-        const lavaTexture = new THREE.Texture(
-          lavaImg,
-          THREE.UVMapping,
-          THREE.ClampToEdgeWrapping,
-          THREE.ClampToEdgeWrapping,
-          THREE.NearestFilter,
-          THREE.LinearMipMapLinearFilter,
-          THREE.RGBAFormat,
-          THREE.UnsignedByteType,
-          1
-        );
-        lavaTexture.needsUpdate = true;
+        liquidTexture.needsUpdate = true;
         const uniforms = THREE.UniformsUtils.clone(OCEAN_SHADER.uniforms);
-        uniforms.map.value = waterTexture; // XXX can be flattened into a single texture
-        uniforms.map2.value = lavaTexture;
+        uniforms.map.value = liquidTexture;
         // uniforms.fogColor.value = scene.fog.color;
         // uniforms.fogDensity.value = scene.fog.density;
         const oceanMaterial = new THREE.ShaderMaterial({

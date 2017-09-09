@@ -603,14 +603,14 @@ const _generateMapChunk = (ox, oy, opts) => {
     _postProcessGeometry(attributeRange.landStart, attributeRange.landCount, (x, y, z) => _getBiome(Math.floor(x), Math.floor(z)).color);
     _postProcessGeometry(attributeRange.waterStart, attributeRange.waterCount, (x, y, z) => {
       return [
-        mod(Math.abs(x) / 16.0 * 4.0 * 0.99, 1),
+        mod(Math.abs(x) / 16.0 * 4.0 * 0.99, 1) * 0.5,
         mod(Math.abs(z) / 16.0 * 4.0 / 16.0 * 0.99, 1),
         1.0
       ];
     });
     _postProcessGeometry(attributeRange.lavaStart, attributeRange.lavaCount, (x, y, z) => {
       return [
-        mod(Math.abs(x) / 16.0 * 4.0 * 0.99, 1),
+        0.5 + mod(Math.abs(x) / 16.0 * 4.0 * 0.99, 1) * 0.5,
         mod(Math.abs(z) / 16.0 * 4.0 / 16.0 * 0.99, 1),
         2.0
       ];
