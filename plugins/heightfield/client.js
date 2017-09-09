@@ -651,8 +651,8 @@ class Heightfield {
         const waterTexture = new THREE.Texture(
           waterImg,
           THREE.UVMapping,
-          THREE.RepeatWrapping,
-          THREE.RepeatWrapping,
+          THREE.ClampToEdgeWrapping,
+          THREE.ClampToEdgeWrapping,
           THREE.NearestFilter,
           THREE.LinearMipMapLinearFilter,
           THREE.RGBAFormat,
@@ -663,8 +663,8 @@ class Heightfield {
         const lavaTexture = new THREE.Texture(
           lavaImg,
           THREE.UVMapping,
-          THREE.RepeatWrapping,
-          THREE.RepeatWrapping,
+          THREE.ClampToEdgeWrapping,
+          THREE.ClampToEdgeWrapping,
           THREE.NearestFilter,
           THREE.LinearMipMapLinearFilter,
           THREE.RGBAFormat,
