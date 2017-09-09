@@ -136,6 +136,7 @@ class Objects {
             return chunk;
           });
       });
+    const _redecorateChunkLightmaps = chunk => chunk[decorationsSymbol] ? _decorateChunkLightmaps(chunk) : Promise.resolve(chunk);
     const _makeGeometeriesBuffer = constructor => {
       const result = Array(NUM_CHUNKS_HEIGHT);
       for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
@@ -753,7 +754,7 @@ class Objects {
                       const objectIndex = chunk.addObject(n, matrix, value);
 
                       _decorateChunkGeometry(chunk)
-                        .then(chunk => chunk[decorationsSymbol] ? _decorateChunkLightmaps(chunk) : chunk)
+                        .then(chunk => _redecorateChunkLightmaps(chunk))
                         .then(() => {
                           _saveChunks();
 
@@ -779,7 +780,7 @@ class Objects {
                       const n = chunk.removeObject(index);
 
                       _decorateChunkGeometry(chunk)
-                        .then(chunk => chunk[decorationsSymbol] ? _decorateChunkLightmaps(chunk) : chunk)
+                        .then(chunk => _redecorateChunkLightmaps(chunk))
                         .then(() => {
                           _saveChunks();
 
@@ -829,7 +830,7 @@ class Objects {
                       chunk.setBlock(x - ox * NUM_CELLS, y, z - oz * NUM_CELLS, v);
 
                       _decorateChunkGeometry(chunk)
-                        .then(chunk => chunk[decorationsSymbol] ? _decorateChunkLightmaps(chunk) : chunk) // XXX optimize this to update only the local area, possibly including nearby chunks
+                        .then(chunk => _redecorateChunkLightmaps(chunk)) // XXX optimize this to update only the local area, possibly including nearby chunks
                         .then(() => {
                           _saveChunks();
 
@@ -857,7 +858,7 @@ class Objects {
                       chunk.clearBlock(x - ox * NUM_CELLS, y, z - oz * NUM_CELLS);
 
                       _decorateChunkGeometry(chunk)
-                        .then(chunk => chunk[decorationsSymbol] ? _decorateChunkLightmaps(chunk) : chunk) // XXX optimize this to update only the local area, possibly including nearby chunks
+                        .then(chunk => _redecorateChunkLightmaps(chunk)) // XXX optimize this to update only the local area, possibly including nearby chunks
                         .then(() => {
                           _saveChunks();
 
