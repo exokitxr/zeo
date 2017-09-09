@@ -573,7 +573,7 @@ const _generateMapChunk = (ox, oy, opts) => {
     }
   }
 
-  const _postProcessGeometry = (start, count, getColor) => {
+  const _postProcessGeometry = (start, count, getColor, offset) => {
     const geometryPositions = new Float32Array(positions.buffer, positions.byteOffset + start * 4, count);
     const geometryColors = new Float32Array(colors.buffer, colors.byteOffset + start * 4, count);
 
@@ -594,6 +594,9 @@ const _generateMapChunk = (ox, oy, opts) => {
       const az = (oy * NUM_CELLS) + z;
       geometryPositions[baseIndex + 0] = ax;
       geometryPositions[baseIndex + 2] = az;
+      if (offset) {
+        geometryPositions[baseIndex + 1] += offset;
+      }
     }
   };
 
@@ -614,7 +617,7 @@ const _generateMapChunk = (ox, oy, opts) => {
         mod(Math.abs(z) / 16.0 * 4.0 / 16.0 * 0.99, 1),
         2.0
       ];
-    });
+    }, 0.01);
 
     geometry.boundingSphere = new THREE.Sphere(
       new THREE.Vector3(ox * NUM_CELLS + NUM_CELLS_HALF, i * NUM_CELLS + NUM_CELLS_HALF, oy * NUM_CELLS + NUM_CELLS_HALF),
