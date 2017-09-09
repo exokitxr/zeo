@@ -497,6 +497,6 @@ const _debounce = fn => {
   };
   return _go;
 };
-const _getLightIndex = (x, y, z) => x + y * NUM_CELLS + z * NUM_CELLS * NUM_CELLS_HEIGHT;
+const _getLightIndex = (x, y, z) => x + y * NUM_CELLS_OVERSCAN + z * NUM_CELLS_OVERSCAN * (NUM_CELLS_HEIGHT + 1);
 
 module.exports = Heightfield;

@@ -764,7 +764,7 @@ const _colorIntToArray = n => ([
 const _getTopHeightfieldIndex = (x, z) => (x + (z * NUM_CELLS_OVERSCAN)) * HEIGHTFIELD_DEPTH;
 const _getStaticHeightfieldIndex = (x, z) => x + (z * NUM_CELLS_OVERSCAN);
 
-const _getLightsIndex = (x, y, z) => x + y * NUM_CELLS + z * NUM_CELLS * NUM_CELLS_HEIGHT;
+const _getLightsIndex = (x, y, z) => x + y * NUM_CELLS_OVERSCAN + z * NUM_CELLS_OVERSCAN * (NUM_CELLS_HEIGHT + 1);
 const _getLightsArrayIndex = (x, z) => x + z * 3;
 
 const generate = (x, y, buffer, byteOffset, opts) => {
@@ -797,7 +797,7 @@ const light = (ox, oz, {getLightSources, isOccluded}) => {
   const lightsArray = Array(9);
   for (let dz = -1; dz <= 1; dz++) {
     for (let dx = -1; dx <= 1; dx++) {
-      lightsArray[_getLightsArrayIndex(dx + 1, dz + 1)] = new Uint8Array(NUM_CELLS * NUM_CELLS_HEIGHT * NUM_CELLS);
+      lightsArray[_getLightsArrayIndex(dx + 1, dz + 1)] = new Uint8Array(NUM_CELLS_OVERSCAN * (NUM_CELLS_HEIGHT + 1) * NUM_CELLS_OVERSCAN);
     }
   }
 
@@ -809,14 +809,11 @@ const light = (ox, oz, {getLightSources, isOccluded}) => {
   const _fillLight = (x, y, z, v) => {
     const queue = [];
     const _tryQueue = (x, y, z, v, origin) => {
-      if (x >= minX && x < maxX && y >= 0 & y < NUM_CELLS_HEIGHT && z >= minZ && z < maxZ && v > 0) {
+      if (x >= minX && x < maxX && y >= 0 & y <= NUM_CELLS_HEIGHT && z >= minZ && z < maxZ && v > 0) {
         const lightsArrayIndex = _getLightsArrayIndex(Math.floor((x - minX) / NUM_CELLS), Math.floor((z - minZ) / NUM_CELLS));
         const lights = lightsArray[lightsArrayIndex];
 
-        const lox = Math.floor(x / NUM_CELLS);
-        const loz = Math.floor(z / NUM_CELLS);
-
-        const lightsIndex = _getLightsIndex(x - lox * NUM_CELLS, y, z - loz * NUM_CELLS);
+        const lightsIndex = _getLightsIndex(x - Math.floor(x / NUM_CELLS) * NUM_CELLS, y, z - Math.floor(z / NUM_CELLS) * NUM_CELLS);
         if (lights[lightsIndex] < v) {
           lights[lightsIndex] = v;
 
@@ -851,7 +848,22 @@ const light = (ox, oz, {getLightSources, isOccluded}) => {
     }
   }
 
-  return lightsArray[_getLightsArrayIndex(1, 1)];
+  // merge edges into center lights
+  const centerLights = lightsArray[_getLightsArrayIndex(1, 1)];
+  const eastLights = lightsArray[_getLightsArrayIndex(2, 1)]
+  const southLights = lightsArray[_getLightsArrayIndex(1, 2)]
+  for (let z = 0; z < NUM_CELLS_OVERSCAN; z++) {
+    for (let y = 0; y < (NUM_CELLS_HEIGHT + 1); y++) {
+      centerLights[_getLightsIndex(NUM_CELLS, y, z)] = eastLights[_getLightsIndex(0, y, z)];
+    }
+  }
+  for (let x = 0; x < NUM_CELLS_OVERSCAN; x++) {
+    for (let y = 0; y < (NUM_CELLS_HEIGHT + 1); y++) {
+      centerLights[_getLightsIndex(x, y, NUM_CELLS)] = southLights[_getLightsIndex(x, y, 0)];
+    }
+  }
+
+  return centerLights;
 };
 
 return {
