@@ -4,15 +4,15 @@ const DEFAULT_MATRIX = [
   1, 1, 1,
 ];
 
-const house = objectApi => {
+const bigHouse = objectApi => {
   const {three, pose, input, render, elements, items} = zeo;
   const {THREE, scene} = three;
 
   const localVector = new THREE.Vector3();
 
   return () => new Promise((accept, reject) => {
-    const houseWoodObjectApi = {
-      object: 'house-wood',
+    const bigHouseWoodObjectApi = {
+      object: 'big-house-wood',
       gripBlockCallback(side, x, y, z) {
         const itemId = _makeId();
         const asset = 'ITEM.WOOD';
@@ -36,10 +36,10 @@ const house = objectApi => {
         objectApi.clearBlock(x, y, z);
       },
     };
-    objectApi.registerObject(houseWoodObjectApi);
+    objectApi.registerObject(bigHouseWoodObjectApi);
 
-    const houseStoneObjectApi = {
-      object: 'house-stone',
+    const bigHouseStoneObjectApi = {
+      object: 'big-house-stone',
       gripBlockCallback(side, x, y, z) {
         const itemId = _makeId();
         const asset = 'ITEM.STONE';
@@ -63,10 +63,10 @@ const house = objectApi => {
         objectApi.clearBlock(x, y, z);
       },
     };
-    objectApi.registerObject(houseStoneObjectApi);
+    objectApi.registerObject(bigHouseStoneObjectApi);
 
-    const housePlankObjectApi = {
-      object: 'house-plank',
+    const bigHousePlankObjectApi = {
+      object: 'big-house-plank',
       gripBlockCallback(side, x, y, z) {
         const itemId = _makeId();
         const asset = 'ITEM.STICK';
@@ -90,15 +90,15 @@ const house = objectApi => {
         objectApi.clearBlock(x, y, z);
       },
     };
-    objectApi.registerObject(housePlankObjectApi);
+    objectApi.registerObject(bigHousePlankObjectApi);
 
     accept(() => {
-      objectApi.unregisterObject(houseWoodObjectApi);
-      objectApi.unregisterObject(houseStoneObjectApi);
-      objectApi.unregisterObject(housePlankObjectApi);
+      objectApi.unregisterObject(bigHouseWoodObjectApi);
+      objectApi.unregisterObject(bigHouseStoneObjectApi);
+      objectApi.unregisterObject(bigHousePlankObjectApi);
     });
   });
 };
 const _makeId = () => Math.random().toString(36).substring(7);
 
-module.exports = house;
+module.exports = bigHouse;

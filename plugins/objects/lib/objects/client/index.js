@@ -14,6 +14,7 @@ const videoCamera = require('./video-camera');
 const torch = require('./torch');
 const fire = require('./fire');
 const house = require('./house');
+const bigHouse = require('./big-house');
 
 const objectsLib = options => [
   stick,
@@ -32,6 +33,7 @@ const objectsLib = options => [
   torch,
   fire,
   house,
+  bigHouse,
 ].map(objectLib => objectLib(options));
 
 module.exports = objectsLib;
