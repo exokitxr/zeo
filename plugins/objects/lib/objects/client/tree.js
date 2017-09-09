@@ -1,4 +1,3 @@
-const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
 // const LIGHTMAP_PLUGIN = 'plugins-lightmap';
 const DEFAULT_MATRIX = [
   0, 0, 0,
@@ -6,13 +5,13 @@ const DEFAULT_MATRIX = [
   1, 1, 1,
 ];
 
-const dataSymbol = Symbol();
+// const dataSymbol = Symbol();
 
 const tree = objectApi => {
   const {three, pose, input, render, elements, items} = zeo;
   const {THREE, scene} = three;
 
-  const localVector = new THREE.Vector3();
+  // const localVector = new THREE.Vector3();
 
   return () => new Promise((accept, reject) => {
     /* const trees = {};
