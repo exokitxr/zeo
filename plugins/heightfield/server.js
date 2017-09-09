@@ -158,7 +158,7 @@ class Heightfield {
                       for (let y = 0; y < NUM_CELLS_HEIGHT; y++) {
                         for (let x = 0; x < NUM_CELLS; x++) {
                           const index = _getEtherIndex(x, y, z);
-                          if (liquid[index] === 1 && liquidTypes[index] === 2) {
+                          if (liquid[index] === 1 && liquidTypes[index] === 2) { // present && lava
                             result.push([x + dox, y, z + doz, 16]);
                           }
                         }
@@ -166,9 +166,9 @@ class Heightfield {
                     }
                     return result;
                   };
-                  const _getGrassLightSources = () => objectsEntity.getLightSources(chunk.x, chunk.z);
+                  const _getObjectsLightSources = () => objectsEntity.getLightSources(chunk.x, chunk.z);
 
-                  return _getHeightfieldLightSources().concat(_getGrassLightSources());
+                  return _getHeightfieldLightSources().concat(_getObjectsLightSources());
                 },
                 isOccluded: (x, y, z) => {
                   const _isOccludedHeightfield = () => {
@@ -178,7 +178,7 @@ class Heightfield {
                     const chunk = tra.getChunk(ox, oz);
                     const uint32Buffer = chunk.getBuffer();
                     const {ether} = protocolUtils.parseData(uint32Buffer.buffer, uint32Buffer.byteOffset);
-                    return ether[_getEtherIndex(x, y, z)] <= -1;
+                    return ether[_getEtherIndex(x - ox * NUM_CELLS, y, z - oz * NUM_CELLS)] <= -1;
                   };
                   const _isOccludedObjects = () => objectsEntity.isOccluded(x, y, z);
 

@@ -59,7 +59,8 @@ const BIOMES = {
         8
       ]
     ],
-    "color": 112,
+    // "color": 112,
+    "color": 6316128,
     "index": 0
   },
   "biPlains": {
@@ -192,7 +193,8 @@ const BIOMES = {
         0.1
       ]
     ],
-    "color": 3158191,
+    // "color": 3158191,
+    "color": 16440917,
     "index": 7
   },
   "biNether": {
@@ -249,7 +251,8 @@ const BIOMES = {
         10
       ]
     ],
-    "color": 10526943,
+    // "color": 10526943,
+    "color": 9474192,
     "index": 10
   },
   "biFrozenRiver": {
@@ -268,7 +271,8 @@ const BIOMES = {
         0.1
       ]
     ],
-    "color": 10526975,
+    // "color": 10526975,
+    "color": 16445632,
     "index": 11
   },
   "biTundra": {
@@ -515,7 +519,8 @@ const BIOMES = {
         10
       ]
     ],
-    "color": 48,
+    // "color": 48,
+    "color": 3158064,
     "index": 24
   },
   "biStoneBeach": {
@@ -1203,8 +1208,18 @@ const BIOMES = {
     "index": 60
   }
 };
+const BIOMES_TALL = (() => {
+  const result = {};
+  for (const biomeName in BIOMES) {
+    const biome = BIOMES[biomeName];
+    if (biome.baseHeight >= 80) {
+      result[biome.index] = true;
+    }
+  }
+  return result;
+})();
 
-const BIOMES_TH = [
+const BIOMES_TEMPERATURE_HUMIDITY = [
 		//       0         1         2               3               4               5               6         7         8         9         10              11              12              13              14             15
 		/*  0 */ "biTundra", "biTundra", "biTundra",       "biTundra",       "biPlains",       "biPlains",       "biPlains", "biPlains", "biPlains", "biPlains", "biDesert",       "biDesert",      "biDesert",       "biDesert",       "biDesert",      "biDesert",
 		/*  1 */ "biTundra", "biTundra", "biTundra",       "biTundra",       "biPlains",       "biPlains",       "biPlains", "biPlains", "biPlains", "biPlains", "biDesert",       "biDesert",      "biDesert",       "biDesert",       "biDesert",      "biDesert",
@@ -1246,7 +1261,8 @@ module.exports = {
   PEEK_FACE_INDICES,
 
   BIOMES,
-  BIOMES_TH,
+  BIOMES_TALL,
+  BIOMES_TEMPERATURE_HUMIDITY,
 };
 
 biomes = BIOMES;

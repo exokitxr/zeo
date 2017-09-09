@@ -135,7 +135,7 @@ const _registerChunk = (chunk, index, numIndices) => {
 
   const trackedMapChunkMeshes = {
     array: Array(NUM_CHUNKS_HEIGHT),
-    groups: new Int32Array(NUM_RENDER_GROUPS * 4),
+    groups: new Int32Array(NUM_RENDER_GROUPS * 6),
   };
   for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
     const {indexRange, boundingSphere, peeks} = chunk.chunkData.geometries[i];
@@ -146,8 +146,10 @@ const _registerChunk = (chunk, index, numIndices) => {
       indexRange: {
         landStart: indexRange.landStart + indexOffset,
         landCount: indexRange.landCount,
-        liquidStart: indexRange.liquidStart + indexOffset,
-        liquidCount: indexRange.liquidCount,
+        waterStart: indexRange.waterStart + indexOffset,
+        waterCount: indexRange.waterCount,
+        lavaStart: indexRange.lavaStart + indexOffset,
+        lavaCount: indexRange.lavaCount,
       },
       boundingSphere: new THREE.Sphere(
         new THREE.Vector3().fromArray(boundingSphere, 0),
@@ -306,11 +308,14 @@ const _getCull = (hmdPosition, projectionMatrix, matrixWorldInverse) => {
     if (trackedMapChunkMeshes) {
       trackedMapChunkMeshes.groups.fill(-1);
       let landGroupIndex = 0;
-      let liquidGroupIndex = 0;
       let landStart = -1;
       let landCount = 0;
-      let liquidStart = -1;
-      let liquidCount = 0;
+      let waterGroupIndex = 0;
+      let waterStart = -1;
+      let waterCount = 0;
+      let lavaGroupIndex = 0;
+      let lavaStart = -1;
+      let lavaCount = 0;
 
       for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) { // XXX optimize this direction
         const trackedMapChunkMesh = trackedMapChunkMeshes.array[i];
@@ -320,39 +325,56 @@ const _getCull = (hmdPosition, projectionMatrix, matrixWorldInverse) => {
           }
           landCount += trackedMapChunkMesh.indexRange.landCount;
 
-          if (liquidStart === -1 && trackedMapChunkMesh.indexRange.liquidCount > 0) {
-            liquidStart = trackedMapChunkMesh.indexRange.liquidStart;
+          if (waterStart === -1 && trackedMapChunkMesh.indexRange.waterCount > 0) {
+            waterStart = trackedMapChunkMesh.indexRange.waterStart;
           }
-          liquidCount += trackedMapChunkMesh.indexRange.liquidCount;
+          waterCount += trackedMapChunkMesh.indexRange.waterCount;
+
+          if (lavaStart === -1 && trackedMapChunkMesh.indexRange.lavaCount > 0) {
+            lavaStart = trackedMapChunkMesh.indexRange.lavaStart;
+          }
+          lavaCount += trackedMapChunkMesh.indexRange.lavaCount;
         } else {
           if (landStart !== -1) {
-            const baseIndex = landGroupIndex * 4;
+            const baseIndex = landGroupIndex * 6;
             trackedMapChunkMeshes.groups[baseIndex + 0] = landStart;
             trackedMapChunkMeshes.groups[baseIndex + 1] = landCount;
             landGroupIndex++;
             landStart = -1;
             landCount = 0;
           }
-          if (liquidStart !== -1) {
-            const baseIndex = liquidGroupIndex * 4;
-            trackedMapChunkMeshes.groups[baseIndex + 2] = liquidStart;
-            trackedMapChunkMeshes.groups[baseIndex + 3] = liquidCount;
-            liquidGroupIndex++;
-            liquidStart = -1;
-            liquidCount = 0;
+          if (waterStart !== -1) {
+            const baseIndex = waterGroupIndex * 6;
+            trackedMapChunkMeshes.groups[baseIndex + 2] = waterStart;
+            trackedMapChunkMeshes.groups[baseIndex + 3] = waterCount;
+            waterGroupIndex++;
+            waterStart = -1;
+            waterCount = 0;
           }
-
+          if (lavaStart !== -1) {
+            const baseIndex = lavaGroupIndex * 6;
+            trackedMapChunkMeshes.groups[baseIndex + 4] = lavaStart;
+            trackedMapChunkMeshes.groups[baseIndex + 5] = lavaCount;
+            lavaGroupIndex++;
+            lavaStart = -1;
+            lavaCount = 0;
+          }
         }
       }
       if (landStart !== -1) {
-        const baseIndex = landGroupIndex * 4;
+        const baseIndex = landGroupIndex * 6;
         trackedMapChunkMeshes.groups[baseIndex + 0] = landStart;
         trackedMapChunkMeshes.groups[baseIndex + 1] = landCount;
       }
-      if (liquidStart !== -1) {
-        const baseIndex = liquidGroupIndex * 4;
-        trackedMapChunkMeshes.groups[baseIndex + 2] = liquidStart;
-        trackedMapChunkMeshes.groups[baseIndex + 3] = liquidCount;
+      if (waterStart !== -1) {
+        const baseIndex = waterGroupIndex * 6;
+        trackedMapChunkMeshes.groups[baseIndex + 2] = waterStart;
+        trackedMapChunkMeshes.groups[baseIndex + 3] = waterCount;
+      }
+      if (lavaStart !== -1) {
+        const baseIndex = lavaGroupIndex * 6;
+        trackedMapChunkMeshes.groups[baseIndex + 4] = lavaStart;
+        trackedMapChunkMeshes.groups[baseIndex + 5] = lavaCount;
       }
     }
   }

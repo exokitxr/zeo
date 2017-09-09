@@ -8,6 +8,7 @@ const UINT32_SIZE = 4;
 const INT32_SIZE = 4;
 const FLOAT32_SIZE = 4;
 const UINT8_SIZE = 1;
+const INT8_SIZE = 1;
 const DATA_HEADER_ENTRIES = 5 + (1 * NUM_CHUNKS_HEIGHT) + 7;
 const DATA_HEADER_SIZE = UINT32_SIZE * DATA_HEADER_ENTRIES;
 const DECORATIONS_HEADER_ENTRIES = 2;
@@ -26,7 +27,7 @@ const _getDataChunkSizeFromMetadata = metadata => {
     // _align(UINT8_SIZE * numSkyLightmaps, UINT32_SIZE) + // sky lightmaps
     // _align(UINT8_SIZE * numTorchLightmaps, UINT32_SIZE) + // torch lightmaps
     (UINT32_SIZE * numIndices) + // indices
-    (UINT32_SIZE * 4 * NUM_CHUNKS_HEIGHT) + // index range
+    (UINT32_SIZE * 6 * NUM_CHUNKS_HEIGHT) + // index range
     (FLOAT32_SIZE * NUM_CHUNKS_HEIGHT) + // bounding sphere
     (UINT8_SIZE * _sum(numPeeks)) + // peeks
     (FLOAT32_SIZE * numHeightfield) + // heightfield
@@ -132,9 +133,16 @@ const stringifyData = (mapChunk, arrayBuffer, byteOffset) => {
     const geometry = geometries[i];
     const {indexRange, boundingSphere, peeks} = geometry;
 
-    const indexRangeBuffer = new Uint32Array(arrayBuffer, byteOffset, 4);
-    indexRangeBuffer.set(Uint32Array.from([indexRange.landStart, indexRange.landCount, indexRange.liquidStart, indexRange.liquidCount]));
-    byteOffset += UINT32_SIZE * 4;
+    const indexRangeBuffer = new Uint32Array(arrayBuffer, byteOffset, 6);
+    indexRangeBuffer.set(Uint32Array.from([
+      indexRange.landStart,
+      indexRange.landCount,
+      indexRange.waterStart,
+      indexRange.waterCount,
+      indexRange.lavaStart,
+      indexRange.lavaCount,
+    ]));
+    byteOffset += UINT32_SIZE * 6;
 
     const boundingSphereBuffer = new Float32Array(arrayBuffer, byteOffset, 4);
     boundingSphereBuffer.set(boundingSphere);
@@ -170,9 +178,9 @@ const stringifyData = (mapChunk, arrayBuffer, byteOffset) => {
   liquidBuffer.set(liquid);
   byteOffset += UINT8_SIZE * liquid.length;
 
-  const liquidTypesBuffer = new Uint8Array(arrayBuffer, byteOffset, liquidTypes.length);
+  const liquidTypesBuffer = new Int8Array(arrayBuffer, byteOffset, liquidTypes.length);
   liquidTypesBuffer.set(liquidTypes);
-  byteOffset += UINT8_SIZE * liquidTypes.length;
+  byteOffset += INT8_SIZE * liquidTypes.length;
 
   return [arrayBuffer, byteOffset];
 };
@@ -226,14 +234,16 @@ const parseData = (buffer, byteOffset) => {
 
   const geometries = Array(NUM_CHUNKS_HEIGHT);
   for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
-    const indexRangeBuffer = new Uint32Array(buffer, byteOffset, 4);
+    const indexRangeBuffer = new Uint32Array(buffer, byteOffset, 6);
     const indexRange = {
       landStart: indexRangeBuffer[0],
       landCount: indexRangeBuffer[1],
-      liquidStart: indexRangeBuffer[2],
-      liquidCount: indexRangeBuffer[3],
+      waterStart: indexRangeBuffer[2],
+      waterCount: indexRangeBuffer[3],
+      lavaStart: indexRangeBuffer[4],
+      lavaCount: indexRangeBuffer[5],
     };
-    byteOffset += UINT32_SIZE * 4;
+    byteOffset += UINT32_SIZE * 6;
 
     const boundingSphereBuffer = new Float32Array(buffer, byteOffset, 4);
     const boundingSphere = boundingSphereBuffer;
@@ -275,9 +285,9 @@ const parseData = (buffer, byteOffset) => {
   const liquid = liquidBuffer;
   byteOffset += UINT8_SIZE * numLiquid;
 
-  const liquidTypesBuffer = new Uint8Array(buffer, byteOffset, numLiquidTypes);
+  const liquidTypesBuffer = new Int8Array(buffer, byteOffset, numLiquidTypes);
   const liquidTypes = liquidTypesBuffer;
-  byteOffset += UINT8_SIZE * numLiquidTypes;
+  byteOffset += INT8_SIZE * numLiquidTypes;
 
   return {
     buffer,
@@ -306,7 +316,7 @@ const _getRenderChunkSizeFromMetadata = metadata => {
     _align(UINT8_SIZE * numSkyLightmaps, UINT32_SIZE) + // sky lightmaps
     _align(UINT8_SIZE * numTorchLightmaps, UINT32_SIZE) + // torch lightmaps
     (UINT32_SIZE * numIndices) + // indices
-    (UINT32_SIZE * 4 * NUM_CHUNKS_HEIGHT) + // index range
+    (UINT32_SIZE * 6 * NUM_CHUNKS_HEIGHT) + // index range
     (FLOAT32_SIZE * NUM_CHUNKS_HEIGHT) + // bounding sphere
     (UINT8_SIZE * _sum(numPeeks)) + // peeks
     (FLOAT32_SIZE * numHeightfield) + // heightfield
@@ -395,9 +405,16 @@ const stringifyRenderChunk = (mapChunk, decorations, arrayBuffer, byteOffset) =>
     const geometry = geometries[i];
     const {indexRange, boundingSphere, peeks} = geometry;
 
-    const indexRangeBuffer = new Uint32Array(arrayBuffer, byteOffset, 4);
-    indexRangeBuffer.set(Uint32Array.from([indexRange.landStart, indexRange.landCount, indexRange.liquidStart, indexRange.liquidCount]));
-    byteOffset += UINT32_SIZE * 4;
+    const indexRangeBuffer = new Uint32Array(arrayBuffer, byteOffset, 6);
+    indexRangeBuffer.set(Uint32Array.from([
+      indexRange.landStart,
+      indexRange.landCount,
+      indexRange.waterStart,
+      indexRange.waterCount,
+      indexRange.lavaStart,
+      indexRange.lavaCount,
+    ]));
+    byteOffset += UINT32_SIZE * 6;
 
     const boundingSphereBuffer = new Float32Array(arrayBuffer, byteOffset, 4);
     boundingSphereBuffer.set(boundingSphere);
@@ -464,14 +481,16 @@ const parseRenderChunk = (buffer, byteOffset) => {
 
   const geometries = Array(NUM_CHUNKS_HEIGHT);
   for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
-    const indexRangeBuffer = new Uint32Array(buffer, byteOffset, 4);
+    const indexRangeBuffer = new Uint32Array(buffer, byteOffset, 6);
     const indexRange = {
       landStart: indexRangeBuffer[0],
       landCount: indexRangeBuffer[1],
-      liquidStart: indexRangeBuffer[2],
-      liquidCount: indexRangeBuffer[3],
+      waterStart: indexRangeBuffer[2],
+      waterCount: indexRangeBuffer[3],
+      lavaStart: indexRangeBuffer[4],
+      lavaCount: indexRangeBuffer[5],
     };
-    byteOffset += UINT32_SIZE * 4;
+    byteOffset += UINT32_SIZE * 6;
 
     const boundingSphereBuffer = new Float32Array(buffer, byteOffset, 4);
     const boundingSphere = boundingSphereBuffer;
@@ -629,9 +648,9 @@ const stringifyCull = (mapChunks, arrayBuffer, byteOffset) => {
       indexArray[0] = parseInt(index, 10);
       byteOffset += INT32_SIZE;
 
-      const groupsArray = new Int32Array(arrayBuffer, byteOffset, NUM_RENDER_GROUPS * 4);
+      const groupsArray = new Int32Array(arrayBuffer, byteOffset, NUM_RENDER_GROUPS * 6);
       groupsArray.set(trackedMapChunkMeshes.groups);
-      byteOffset += INT32_SIZE * 4 * NUM_RENDER_GROUPS;
+      byteOffset += INT32_SIZE * 6 * NUM_RENDER_GROUPS;
     }
   }
 
@@ -655,10 +674,11 @@ const parseCull = (buffer, byteOffset) => {
     byteOffset += INT32_SIZE;
 
     const landGroups = [];
-    const liquidGroups = [];
-    const groupsArray = new Int32Array(buffer, byteOffset, NUM_RENDER_GROUPS * 4);
+    const waterGroups = [];
+    const lavaGroups = [];
+    const groupsArray = new Int32Array(buffer, byteOffset, NUM_RENDER_GROUPS * 6);
     for (let i = 0; i < NUM_RENDER_GROUPS; i++) {
-      const baseIndex = i * 4;
+      const baseIndex = i * 6;
       const landStart = groupsArray[baseIndex + 0];
       if (landStart !== -1) {
         landGroups.push({
@@ -668,21 +688,31 @@ const parseCull = (buffer, byteOffset) => {
         });
       }
 
-      const liquidStart = groupsArray[baseIndex + 2];
-      if (liquidStart !== -1) {
-        liquidGroups.push({
-          start: liquidStart,
+      const waterStart = groupsArray[baseIndex + 2];
+      if (waterStart !== -1) {
+        waterGroups.push({
+          start: waterStart,
           count: groupsArray[baseIndex + 3],
           materialIndex: 0,
         });
       }
+
+      const lavaStart = groupsArray[baseIndex + 4];
+      if (lavaStart !== -1) {
+        lavaGroups.push({
+          start: lavaStart,
+          count: groupsArray[baseIndex + 5],
+          materialIndex: 0,
+        });
+      }
     }
-    byteOffset += INT32_SIZE * 4 * NUM_RENDER_GROUPS;
+    byteOffset += INT32_SIZE * 6 * NUM_RENDER_GROUPS;
 
     mapChunks[i] = {
       index,
       landGroups,
-      liquidGroups,
+      waterGroups,
+      lavaGroups,
     };
   }
   return mapChunks;

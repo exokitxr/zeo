@@ -138,7 +138,7 @@ const OCEAN_SHADER = {
     attribute vec3 color;
     attribute float skyLightmap;
     attribute float torchLightmap;
-    varying vec2 vUv;
+    // varying vec2 vUv;
     varying vec3 vColor;
     varying float vSkyLightmap;
     varying float vTorchLightmap;
@@ -150,7 +150,7 @@ const OCEAN_SHADER = {
       // gl_Position = projectionMatrix * modelViewMatrix * vec4(position.x, position.y + ((sin(ang + (speed * worldTime))) * amp), position.z, 1.0);
       gl_Position = projectionMatrix * modelViewMatrix * vec4(position.xyz, 1.0);
       vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
-      vUv = vec2(position.x / 16.0 * 4.0, position.z / 16.0 * 4.0 / 16.0);
+      // vUv = vec2((position.x + position.y) / 16.0 * 4.0, (position.z + position.y) / 16.0 * 4.0 / 16.0);
       vColor = color.rgb;
       vSkyLightmap = skyLightmap;
       vTorchLightmap = torchLightmap;
@@ -166,7 +166,7 @@ const OCEAN_SHADER = {
     uniform vec3 fogColor;
     uniform float fogDensity;
     uniform float sunIntensity;
-    varying vec2 vUv;
+    // varying vec2 vUv;
     varying vec3 vColor;
     varying float vSkyLightmap;
     varying float vTorchLightmap;
@@ -177,9 +177,9 @@ const OCEAN_SHADER = {
       float frame1 = mod(floor(animationFactor / 16.0), 1.0);
       float frame2 = mod(frame1 + 1.0/16.0, 1.0);
       float mixFactor = fract(animationFactor / 16.0) * 16.0;
-      vec2 uv1 = vUv * vec2(1.0, 1.0 - frame1);
-      vec2 uv2 = vUv * vec2(1.0, 1.0 - frame2);
-      vec3 diffuseColor = (vColor.b * 256.0) <= 1.5 ?
+      vec2 uv1 = vColor.rg * vec2(1.0, 1.0 - frame1);
+      vec2 uv2 = vColor.rg * vec2(1.0, 1.0 - frame2);
+      vec3 diffuseColor = vColor.b <= 1.5 ?
         mix(texture2D( map, uv1 ), texture2D( map, uv2 ), mixFactor).rgb
       :
         mix(texture2D( map2, uv1 ), texture2D( map2, uv2 ), mixFactor).rgb;
@@ -558,6 +558,13 @@ class Heightfield {
               groups: [],
               visible: false,
             },
+            {
+              object: heightfieldObject,
+              geometry,
+              material: oceanMaterial,
+              groups: [],
+              visible: false,
+            },
           ];
           let version = 0;
 
@@ -605,6 +612,7 @@ class Heightfield {
                   if (version === localVersion) {
                     renderListEntries[0].visible = false;
                     renderListEntries[1].visible = false;
+                    renderListEntries[2].visible = false;
 
                     renderer.updateAttribute(geometry.attributes.position, index * positions.length, newPositionsLength, false);
                     renderer.updateAttribute(geometry.attributes.color, index * colors.length, newColorsLength, false);
@@ -616,6 +624,7 @@ class Heightfield {
                     requestAnimationFrame(() => {
                       renderListEntries[0].visible = true;
                       renderListEntries[1].visible = true;
+                      renderListEntries[2].visible = true;
 
                       next();
                     });
@@ -664,7 +673,7 @@ class Heightfield {
         );
         lavaTexture.needsUpdate = true;
         const uniforms = THREE.UniformsUtils.clone(OCEAN_SHADER.uniforms);
-        uniforms.map.value = waterTexture;
+        uniforms.map.value = waterTexture; // XXX can be flattened into a single texture
         uniforms.map2.value = lavaTexture;
         // uniforms.fogColor.value = scene.fog.color;
         // uniforms.fogDensity.value = scene.fog.density;
@@ -673,8 +682,11 @@ class Heightfield {
           vertexShader: OCEAN_SHADER.vertexShader,
           fragmentShader: OCEAN_SHADER.fragmentShader,
           transparent: true,
+          polygonOffset: true,
+          polygonOffsetFactor: -1,
+          polygonOffsetUnits: 0,
         });
-        // oceanMaterial.uniformsNeedUpdate = _uniformsNeedUpdate; // XXX separate from the hiehgtfield shader
+        // oceanMaterial.uniformsNeedUpdate = _uniformsNeedUpdate; // XXX separate from the heightfield shader
 
         const chunker = chnkr.makeChunker({
           resolution: NUM_CELLS,
@@ -743,7 +755,7 @@ class Heightfield {
               const index = _getChunkIndex(x, z);
               const oldMapChunkMeshes = mapChunkMeshes[index];
               if (oldMapChunkMeshes) {
-                heightfieldObject.renderList.splice(heightfieldObject.renderList.indexOf(oldMapChunkMeshes.renderListEntries[0]), 2);
+                heightfieldObject.renderList.splice(heightfieldObject.renderList.indexOf(oldMapChunkMeshes.renderListEntries[0]), 3);
 
                 oldMapChunkMeshes.destroy();
 
@@ -759,7 +771,7 @@ class Heightfield {
                 const newMapChunkMeshes = _makeMapChunkMeshes(chunk, gbuffer);
                 newMapChunkMeshes.update(chunkData);
 
-                heightfieldObject.renderList.push(newMapChunkMeshes.renderListEntries[0], newMapChunkMeshes.renderListEntries[1]);
+                heightfieldObject.renderList.push(newMapChunkMeshes.renderListEntries[0], newMapChunkMeshes.renderListEntries[1], newMapChunkMeshes.renderListEntries[2]);
 
                 newMapChunkMeshes.stckBody = stck.makeStaticHeightfieldBody(
                   new THREE.Vector3(x * NUM_CELLS, 0, z * NUM_CELLS),
@@ -783,7 +795,7 @@ class Heightfield {
             for (let i = 0; i < removed.length; i++) {
               const chunk = removed[i];
               const {x, z, [dataSymbol]: oldMapChunkMeshes} = chunk;
-              heightfieldObject.renderList.splice(heightfieldObject.renderList.indexOf(oldMapChunkMeshes.renderListEntries[0]), 2);
+              heightfieldObject.renderList.splice(heightfieldObject.renderList.indexOf(oldMapChunkMeshes.renderListEntries[0]), 3);
 
               oldMapChunkMeshes.destroy();
 
@@ -1107,12 +1119,13 @@ class Heightfield {
           const {projectionMatrix, matrixWorldInverse} = camera;
           _requestCull(hmdPosition, projectionMatrix, matrixWorldInverse, culls => {
             for (let i = 0; i < culls.length; i++) {
-              const {index, landGroups, liquidGroups} = culls[i];
+              const {index, landGroups, waterGroups, lavaGroups} = culls[i];
 
               const trackedMapChunkMeshes = mapChunkMeshes[index];
               if (trackedMapChunkMeshes) {
                 trackedMapChunkMeshes.renderListEntries[0].groups = landGroups;
-                trackedMapChunkMeshes.renderListEntries[1].groups = liquidGroups;
+                trackedMapChunkMeshes.renderListEntries[1].groups = waterGroups;
+                trackedMapChunkMeshes.renderListEntries[2].groups = lavaGroups;
               }
             }
 
