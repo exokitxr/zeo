@@ -99,6 +99,14 @@ class Objects {
           type: '2f',
           value: new THREE.Vector2(-1, -1),
         },
+        selectedBlockLeft: {
+          type: '3f',
+          value: new THREE.Vector3(-1, -1, -1),
+        },
+        selectedBlockRight: {
+          type: '3f',
+          value: new THREE.Vector3(-1, -1, -1),
+        },
         sunIntensity: {
           type: 'f',
           value: 0,
@@ -162,6 +170,8 @@ uniform sampler2D map;
 // uniform float useLightMap;
 // uniform vec2 d;
 uniform vec2 selectedObject;
+uniform vec3 selectedBlockLeft;
+uniform vec3 selectedBlockRight;
 uniform float sunIntensity;
 uniform float worldTime;
 
@@ -263,7 +273,19 @@ void main() {
   }
 
   vec3 lightColor;
-  if (abs(selectedObject.x - vObjectIndex) < 0.5 || abs(selectedObject.y - vObjectIndex) < 0.5) {
+  if (
+    abs(selectedObject.x - vObjectIndex) < 0.5 || abs(selectedObject.y - vObjectIndex) < 0.5 ||
+    (
+      vPosition.x > (selectedBlockLeft.x - 0.0001) && vPosition.x < (selectedBlockLeft.x + 1.0001) &&
+      vPosition.y > (selectedBlockLeft.y - 0.0001) && vPosition.y < (selectedBlockLeft.y + 1.0001) &&
+      vPosition.z > (selectedBlockLeft.z - 0.0001) && vPosition.z < (selectedBlockLeft.z + 1.0001)
+    ) ||
+    (
+      vPosition.x > (selectedBlockRight.x - 0.0001) && vPosition.x < (selectedBlockRight.x + 1.0001) &&
+      vPosition.y > (selectedBlockRight.y - 0.0001) && vPosition.y < (selectedBlockRight.y + 1.0001) &&
+      vPosition.z > (selectedBlockRight.z - 0.0001) && vPosition.z < (selectedBlockRight.z + 1.0001)
+    )
+  ) {
     diffuseColor.rgb = mix(diffuseColor.rgb, blueColor, 0.5);
     lightColor = vec3(1.0);
   } else {
@@ -357,7 +379,7 @@ void main() {
     let generateBuffer = new ArrayBuffer(NUM_POSITIONS_CHUNK);
     // let lightmapBuffer = new Uint8Array(LIGHTMAP_BUFFER_SIZE * NUM_BUFFERS);
     let cullBuffer = new ArrayBuffer(100 * 1024);
-    let hoveredObjectsBuffer = new ArrayBuffer(8 * 2 * 4);
+    let hoveredObjectsBuffer = new ArrayBuffer(11 * 2 * 4);
     const teleportObjectBuffers = {
       left: new ArrayBuffer((1 + 3 + 3 + 3 + 4 + 4) * 4),
       right: new ArrayBuffer((1 + 3 + 3 + 3 + 4 + 4) * 4),
@@ -814,6 +836,10 @@ console.log('done');
       left: new HoveredTrackedObject(),
       right: new HoveredTrackedObject(),
     };
+    const hoveredTrackedBlocks = {
+      left: new THREE.Vector3(),
+      right: new THREE.Vector3(),
+    };
 
     const _triggerdown = e => {
       const {side} = e;
@@ -1250,6 +1276,8 @@ console.log('done');
           if (timeDiff > 1000 / 30) {
             worker.getHoveredObjects(hoveredObjectsBuffer => {
               objectsMaterial.uniforms.selectedObject.value.set(-1, -1);
+              objectsMaterial.uniforms.selectedBlockLeft.value.set(-1, -1, -1);
+              objectsMaterial.uniforms.selectedBlockRight.value.set(-1, -1, -1);
 
               let byteOffset = 0;
               for (let i = 0; i < SIDES.length; i++) {
@@ -1267,7 +1295,11 @@ console.log('done');
                   hoveredTrackedObjects[side].clear();
                 }
 
-                byteOffset += 8 * 4;
+                const hoveredTrackedBlock = hoveredTrackedBlocks[side];
+                hoveredTrackedBlock.fromArray(new Float32Array(hoveredObjectsBuffer, byteOffset + 8 * 4, 3));
+                objectsMaterial.uniforms[side === 'left' ? 'selectedBlockLeft' : 'selectedBlockRight'].value.copy(hoveredTrackedBlock);
+
+                byteOffset += 11 * 4;
               }
 
               updatingHover = false;

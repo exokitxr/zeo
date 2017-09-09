@@ -11,6 +11,7 @@ self.module = {};
 const zeode = require('zeode');
 const {
   OBJECT_BUFFER_SIZE,
+  BLOCK_BUFFER_SIZE,
   GEOMETRY_BUFFER_SIZE,
 } = zeode;
 const {
@@ -69,6 +70,11 @@ const _getHoveredTrackedObject = (x, y, z, buffer, byteOffset) => {
   const ox = Math.floor(x / NUM_CELLS);
   const oz = Math.floor(z / NUM_CELLS);
 
+  const uint32Array = new Uint32Array(buffer, byteOffset, 11);
+  const int32Array = new Int32Array(buffer, byteOffset, 11);
+  const float32Array = new Float32Array(buffer, byteOffset, 11);
+  uint32Array[0] = 0;
+
   for (let i = 0; i < zde.chunks.length; i++) {
     const chunk = zde.chunks[i];
 
@@ -87,14 +93,11 @@ const _getHoveredTrackedObject = (x, y, z, buffer, byteOffset) => {
           // .add(position);
 
         if (localBox.containsPoint(localVector3)) {
-          const uint32Array = new Uint32Array(buffer, byteOffset, 8);
           uint32Array[0] = n;
-          const int32Array = new Int32Array(buffer, byteOffset, 8);
           int32Array[1] = chunk.x;
           int32Array[2] = chunk.z;
           uint32Array[3] = objectIndex;
           // uint32Array[3] = objectIndex + chunk.offsets.index * chunk.offsets.numObjectIndices;
-          const float32Array = new Float32Array(buffer, byteOffset, 8);
           float32Array[4] = position.x;
           float32Array[5] = position.y;
           float32Array[6] = position.z;
@@ -106,11 +109,31 @@ const _getHoveredTrackedObject = (x, y, z, buffer, byteOffset) => {
       });
 
       if (chunkResult === false) {
-        return;
+        break;
       }
     }
   }
-  new Uint32Array(buffer, byteOffset, 8).fill(0);
+
+  const chunk = zde.getChunk(ox, oz);
+  if (chunk) {
+    const ax = Math.floor(x);
+    const ay = Math.floor(y);
+    const az = Math.floor(z);
+    const block = chunk.getBlock(ax - ox * NUM_CELLS, ay, az - oz * NUM_CELLS);
+    if (block) {
+      float32Array[8] = ax;
+      float32Array[9] = ay;
+      float32Array[10] = az;
+    } else {
+      float32Array[8] = Infinity;
+      float32Array[9] = Infinity;
+      float32Array[10] = Infinity;
+    }
+  } else {
+    float32Array[8] = Infinity;
+    float32Array[9] = Infinity;
+    float32Array[10] = Infinity;
+  }
 };
 const _getTeleportObject = (x, y, z, buffer) => {
   localRay.origin.set(x, 1000, z);
@@ -401,14 +424,15 @@ const _requestChunk = (x, z, index, numPositions, numObjectIndices, numIndices) 
     }
 
     const objectBuffer = new Uint32Array(buffer, 0, OBJECT_BUFFER_SIZE / 4);
-    const geometryBuffer = new Uint8Array(buffer, OBJECT_BUFFER_SIZE, GEOMETRY_BUFFER_SIZE);
-    const decorationsBuffer = new Uint8Array(buffer, OBJECT_BUFFER_SIZE + GEOMETRY_BUFFER_SIZE);
+    const blockBuffer = new Uint32Array(buffer, OBJECT_BUFFER_SIZE, BLOCK_BUFFER_SIZE / 4);
+    const geometryBuffer = new Uint8Array(buffer, OBJECT_BUFFER_SIZE + BLOCK_BUFFER_SIZE, GEOMETRY_BUFFER_SIZE);
+    const decorationsBuffer = new Uint8Array(buffer, OBJECT_BUFFER_SIZE + BLOCK_BUFFER_SIZE + GEOMETRY_BUFFER_SIZE);
 
     const chunkData = protocolUtils.parseGeometry(geometryBuffer.buffer, geometryBuffer.byteOffset);
     chunkData.decorations = protocolUtils.parseDecorations(decorationsBuffer.buffer, decorationsBuffer.byteOffset);
     _offsetChunkData(chunkData, index, numPositions);
 
-    return _decorateChunk(new zeode.Chunk(x, z, objectBuffer, geometryBuffer), chunkData, index, numPositions, numObjectIndices, numIndices);
+    return _decorateChunk(new zeode.Chunk(x, z, objectBuffer, blockBuffer, geometryBuffer), chunkData, index, numPositions, numObjectIndices, numIndices);
   });
 const _offsetChunkData = (chunkData, index, numPositions) => {
   const {indices} = chunkData;
@@ -871,7 +895,7 @@ self.onmessage = e => {
       const ry = float32Array[4];
       const rz = float32Array[5];
       _getHoveredTrackedObject(lx, ly, lz, buffer, 0)
-      _getHoveredTrackedObject(rx, ry, rz, buffer, 8 * 4);
+      _getHoveredTrackedObject(rx, ry, rz, buffer, 11 * 4);
 
       postMessage({
         type: 'response',

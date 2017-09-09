@@ -701,6 +701,9 @@ class Objects {
                     const objectBuffer = chunk.getObjectBuffer();
                     res.write(new Buffer(objectBuffer.buffer, objectBuffer.byteOffset, objectBuffer.byteLength));
 
+                    const blockBuffer = chunk.getBlockBuffer();
+                    res.write(new Buffer(blockBuffer.buffer, blockBuffer.byteOffset, blockBuffer.byteLength));
+
                     const geometryBuffer = chunk.getGeometryBuffer();
                     res.write(new Buffer(geometryBuffer.buffer, geometryBuffer.byteOffset, geometryBuffer.byteLength));
 
