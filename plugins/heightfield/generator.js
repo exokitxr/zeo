@@ -848,10 +848,11 @@ const light = (ox, oz, {getLightSources, isOccluded}) => {
     }
   }
 
-  // merge edges into center lights
+  // merge edges and corner into center lights
   const centerLights = lightsArray[_getLightsArrayIndex(1, 1)];
   const eastLights = lightsArray[_getLightsArrayIndex(2, 1)]
   const southLights = lightsArray[_getLightsArrayIndex(1, 2)]
+  const southeastLights = lightsArray[_getLightsArrayIndex(2, 2)]
   for (let z = 0; z < NUM_CELLS_OVERSCAN; z++) {
     for (let y = 0; y < (NUM_CELLS_HEIGHT + 1); y++) {
       centerLights[_getLightsIndex(NUM_CELLS, y, z)] = eastLights[_getLightsIndex(0, y, z)];
@@ -861,6 +862,9 @@ const light = (ox, oz, {getLightSources, isOccluded}) => {
     for (let y = 0; y < (NUM_CELLS_HEIGHT + 1); y++) {
       centerLights[_getLightsIndex(x, y, NUM_CELLS)] = southLights[_getLightsIndex(x, y, 0)];
     }
+  }
+  for (let y = 0; y < (NUM_CELLS_HEIGHT + 1); y++) {
+    centerLights[_getLightsIndex(NUM_CELLS, y, NUM_CELLS)] = southeastLights[_getLightsIndex(0, y, 0)];
   }
 
   return centerLights;
