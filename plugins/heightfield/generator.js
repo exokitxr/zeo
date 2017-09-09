@@ -306,7 +306,7 @@ const _generateMapChunk = (ox, oy, opts) => {
         if (!biomeCount) {
           biomeCount = {
             count: 0,
-            height: _getBiomeHeight(biome, x, z),
+            height: _getBiomeHeight(biome, x + dx, z + dz),
           };
           biomeCounts[biome.index] = biomeCount;
         }
