@@ -227,7 +227,7 @@ const _generateMapChunk = (ox, oy, opts) => {
 
   const biomeCache = {};
   const _getBiome = (x, z) => {
-    const index = x + z * 256;
+    const index = mod(x, 0xFF) | (mod(z, 0xFF) << 8);
 
     let biome = biomeCache[index];
     if (!biome) {
@@ -274,7 +274,7 @@ const _generateMapChunk = (ox, oy, opts) => {
 
   const biomeHeightCache = {};
   const _getBiomeHeight = (biome, x, z) => {
-    const index = mod(biome.index, 64) + mod(x, 64) * 64 + mod(z, 64) * 64 * 64;
+    const index = mod(biome.index, 0xFF) | (mod(x, 0xFF) << 8) | (mod(z, 0xFF) << 16);
     let entry = biomeHeightCache[index];
     if (!entry) {
       entry = biome.baseHeight +
@@ -306,7 +306,7 @@ const _generateMapChunk = (ox, oy, opts) => {
         if (!biomeCount) {
           biomeCount = {
             count: 0,
-            height: _getBiomeHeight(biome, x + dx, z + dz),
+            height: _getBiomeHeight(biome, x, z),
           };
           biomeCounts[biome.index] = biomeCount;
         }
