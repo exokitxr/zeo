@@ -94,7 +94,7 @@ const tree = objectApi => {
     objectApi.registerObject(treeObjectApi);
 
     accept(() => {
-      elements.destroyListener(lightmapElementListener);
+      // elements.destroyListener(lightmapElementListener);
 
       objectApi.unregisterObject(treeObjectApi);
     });

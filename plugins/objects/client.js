@@ -379,7 +379,7 @@ void main() {
     let generateBuffer = new ArrayBuffer(NUM_POSITIONS_CHUNK);
     // let lightmapBuffer = new Uint8Array(LIGHTMAP_BUFFER_SIZE * NUM_BUFFERS);
     let cullBuffer = new ArrayBuffer(100 * 1024);
-    let hoveredObjectsBuffer = new ArrayBuffer(11 * 2 * 4);
+    let hoveredObjectsBuffer = new ArrayBuffer(12 * 2 * 4);
     const teleportObjectBuffers = {
       left: new ArrayBuffer((1 + 3 + 3 + 3 + 4 + 4) * 4),
       right: new ArrayBuffer((1 + 3 + 3 + 3 + 4 + 4) * 4),
@@ -400,22 +400,26 @@ void main() {
         numRemovedQueues = 0;
       }
     };
-    worker.requestRegisterObject = (n, added, removed, updated) => {
+    worker.requestRegisterObject = (n, added, removed, updated, set, clear) => {
       worker.postMessage({
         type: 'registerObject',
         n,
         added,
         removed,
         updated,
+        set,
+        clear,
       });
     };
-    worker.requestUnregisterObject = (n, added, removed, updated) => {
+    worker.requestUnregisterObject = (n, added, removed, updated, set, clear) => {
       worker.postMessage({
         type: 'unregisterObject',
         n,
         added,
         removed,
         updated,
+        set,
+        clear,
       });
     };
     worker.requestAddObject = (name, position, rotation, value) => {
@@ -442,6 +446,24 @@ void main() {
         z,
         index,
         value,
+      });
+    };
+    worker.requestSetBlock = (x, y, z, v) => {
+      worker.postMessage({
+        type: 'setBlock',
+        name,
+        x,
+        y,
+        z,
+        v,
+      });
+    };
+    worker.requestClearBlock = (x, y, z) => {
+      worker.postMessage({
+        type: 'clearBlock',
+        x,
+        y,
+        z,
       });
     };
     worker.requestGenerate = (x, z, index, numPositions, numObjectIndices, numIndices, cb) => {
@@ -836,9 +858,14 @@ console.log('done');
       left: new HoveredTrackedObject(),
       right: new HoveredTrackedObject(),
     };
+    const _makeHoveredTrackedBlock = () => {
+      const result = new THREE.Vector3();
+      result.v = Infinity;
+      return result;
+    };
     const hoveredTrackedBlocks = {
-      left: new THREE.Vector3(),
-      right: new THREE.Vector3(),
+      left: _makeHoveredTrackedBlock(),
+      right: _makeHoveredTrackedBlock(),
     };
 
     const _triggerdown = e => {
@@ -859,6 +886,7 @@ console.log('done');
     const _gripdown = e => {
       const {side} = e;
       const hoveredTrackedObjectSpec = hoveredTrackedObjects[side];
+      const hoveredTrackedBlock = hoveredTrackedBlocks[side];
 
       if (hoveredTrackedObjectSpec && hoveredTrackedObjectSpec.isSet()) {
         const {n} = hoveredTrackedObjectSpec;
@@ -867,6 +895,14 @@ console.log('done');
         if (objectApi && objectApi.gripCallback) {
           const {x, z, objectIndex} = hoveredTrackedObjectSpec;
           objectApi.gripCallback(_getObjectId(x, z, objectIndex), side, x, z, objectIndex);
+        }
+      } else if (isFinite(hoveredTrackedBlock.v)) {
+        const {v} = hoveredTrackedBlock;
+        const objectApi = objectApis[v];
+
+        if (objectApi && objectApi.gripBlockCallback) {
+          const {x, y, z} = hoveredTrackedBlock;
+          objectApi.gripBlockCallback(side, x, y, z); // XXX merge this into gripCallback
         }
       }
     };
@@ -997,7 +1033,14 @@ console.log('done');
         const n = murmur(object);
         objectApis[n] = objectApi;
 
-        worker.requestRegisterObject(n, Boolean(objectApi.addedCallback), Boolean(objectApi.removedCallback), Boolean(objectApi.updateCallback));
+        worker.requestRegisterObject(
+          n,
+          Boolean(objectApi.addedCallback),
+          Boolean(objectApi.removedCallback),
+          Boolean(objectApi.updateCallback),
+          Boolean(objectApi.setCallback),
+          Boolean(objectApi.clearCallback)
+        );
       }
 
       unregisterObject(objectApi) {
@@ -1005,7 +1048,23 @@ console.log('done');
         const n = murmur(object);
         objectApis[n] = null;
 
-        worker.requestUnregisterObject(n, Boolean(objectApi.addedCallback), Boolean(objectApi.removedCallback), Boolean(objectApi.updateCallback));
+        worker.requestUnregisterObject(
+          n,
+          Boolean(objectApi.addedCallback),
+          Boolean(objectApi.removedCallback),
+          Boolean(objectApi.updateCallback),
+          Boolean(objectApi.setCallback),
+          Boolean(objectApi.clearCallback)
+        );
+      }
+
+      setBlock(x, y, z, block) {
+        const v = murmur(object);
+        worker.requestSetBlock(x, y, z, v);
+      }
+
+      clearBlock(x, y, z) {
+        worker.requestClearBlock(x, y, z);
       }
 
       registerRecipe(recipe) {
@@ -1297,9 +1356,10 @@ console.log('done');
 
                 const hoveredTrackedBlock = hoveredTrackedBlocks[side];
                 hoveredTrackedBlock.fromArray(new Float32Array(hoveredObjectsBuffer, byteOffset + 8 * 4, 3));
+                hoveredTrackedBlock.v = new Uint32Array(hoveredObjectsBuffer, byteOffset + 11 * 4, 1);
                 objectsMaterial.uniforms[side === 'left' ? 'selectedBlockLeft' : 'selectedBlockRight'].value.copy(hoveredTrackedBlock);
 
-                byteOffset += 11 * 4;
+                byteOffset += 12 * 4;
               }
 
               updatingHover = false;

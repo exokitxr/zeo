@@ -70,9 +70,9 @@ const _getHoveredTrackedObject = (x, y, z, buffer, byteOffset) => {
   const ox = Math.floor(x / NUM_CELLS);
   const oz = Math.floor(z / NUM_CELLS);
 
-  const uint32Array = new Uint32Array(buffer, byteOffset, 11);
-  const int32Array = new Int32Array(buffer, byteOffset, 11);
-  const float32Array = new Float32Array(buffer, byteOffset, 11);
+  const uint32Array = new Uint32Array(buffer, byteOffset, 12);
+  const int32Array = new Int32Array(buffer, byteOffset, 12);
+  const float32Array = new Float32Array(buffer, byteOffset, 12);
   uint32Array[0] = 0;
 
   for (let i = 0; i < zde.chunks.length; i++) {
@@ -119,20 +119,17 @@ const _getHoveredTrackedObject = (x, y, z, buffer, byteOffset) => {
     const ax = Math.floor(x);
     const ay = Math.floor(y);
     const az = Math.floor(z);
-    const block = chunk.getBlock(ax - ox * NUM_CELLS, ay, az - oz * NUM_CELLS);
-    if (block) {
+    const v = chunk.getBlock(ax - ox * NUM_CELLS, ay, az - oz * NUM_CELLS);
+    if (v) {
       float32Array[8] = ax;
       float32Array[9] = ay;
       float32Array[10] = az;
+      uint32Array[11] = v;
     } else {
       float32Array[8] = Infinity;
-      float32Array[9] = Infinity;
-      float32Array[10] = Infinity;
     }
   } else {
     float32Array[8] = Infinity;
-    float32Array[9] = Infinity;
-    float32Array[10] = Infinity;
   }
 };
 const _getTeleportObject = (x, y, z, buffer) => {
@@ -315,18 +312,71 @@ connection.on('message', e => {
     }
   } else if (type === 'setObjectData') {
     const {args: {x, z, index: objectIndex, value}} = m;
+
     const chunk = zde.getChunk(x, z);
-    chunk.setObjectData(objectIndex, value);
+    if (chunk) {
+      chunk.setObjectData(objectIndex, value);
 
-    const n = chunk.getObjectN(objectIndex);
-    const objectApi = objectApis[n];
-    if (objectApi && objectApi.updated) {
-      const matrix = chunk.getObjectMatrix(objectIndex);
+      const n = chunk.getObjectN(objectIndex);
+      const objectApi = objectApis[n];
+      if (objectApi && objectApi.updated) {
+        const matrix = chunk.getObjectMatrix(objectIndex);
 
-      postMessage({
-        type: 'objectUpdated',
-        args: [n, x, z, objectIndex, matrix.slice(0, 3), matrix.slice(3, 7), value],
-      });
+        postMessage({
+          type: 'objectUpdated',
+          args: [n, x, z, objectIndex, matrix.slice(0, 3), matrix.slice(3, 7), value],
+        });
+      }
+    }
+  } else if (type === 'setBlock') {
+    const {args: {x, y, z, v}} = m;
+
+    const oldChunk = zde.getChunk(x, z);
+    if (oldChunk) {
+      const {offsets: {index, numPositions, numObjectIndices, numIndices}} = oldChunk;
+      _requestChunk(x, z, index, numPositions, numObjectIndices, numIndices)
+        .then(newChunk => {
+          zde.removeChunk(x, z);
+          zde.pushChunk(newChunk);
+
+          postMessage({
+            type: 'chunkUpdate',
+            args: [x, z],
+          });
+
+          const objectApi = objectApis[n];
+          if (objectApi && objectApi.set) {
+            postMessage({
+              type: 'blockSet',
+              args: [x, y, z, v],
+            });
+          }
+        });
+    }
+  } else if (type === 'removeObject') {
+     const {args: {x, y, z}} = m;
+
+    const oldChunk = zde.getChunk(x, z);
+    if (oldChunk) {
+      const {offsets: {index, numPositions, numObjectIndices, numIndices}} = oldChunk;
+      _requestChunk(x, z, index, numPositions, numObjectIndices, numIndices)
+        .then(newChunk => {
+          zde.removeChunk(x, z);
+          zde.pushChunk(newChunk);
+
+          postMessage({
+            type: 'chunkUpdate',
+            args: [x, z],
+          });
+
+          const objectApi = objectApis[n];
+          if (objectApi && objectApi.clear) {
+            postMessage({
+              type: 'blockCleared',
+              args: [x, y, z],
+            });
+          }
+        });
     }
   } else if (type === 'response') {
     const {id, result} = m;
@@ -377,6 +427,33 @@ connection.setObjectData = (x, z, index, value, cb) => {
       z,
       index,
       value,
+    },
+  }));
+  queues[id] = cb;
+};
+connection.setBlock = (x, y, z, v, cb) => {
+  const id = _makeId();
+  connection.send(JSON.stringify({
+    method: 'setBlock',
+    id,
+    args: {
+      x,
+      y,
+      z,
+      v,
+    },
+  }));
+  queues[id] = cb;
+};
+connection.clearBlock = (x, y, z, cb) => {
+  const id = _makeId();
+  connection.send(JSON.stringify({
+    method: 'clearBlock',
+    id,
+    args: {
+      x,
+      y,
+      z,
     },
   }));
   queues[id] = cb;
@@ -597,13 +674,15 @@ self.onmessage = e => {
 
   switch (type) {
     case 'registerObject': {
-      const {n, added, removed, updated} = data;
+      const {n, added, removed, updated, set, clear} = data;
       let entry = objectApis[n];
       if (!entry) {
         entry = {
           added: 0,
           removed: 0,
           updated: 0,
+          set: 0,
+          clear: 0,
         };
         objectApis[n] = entry;
       }
@@ -631,10 +710,24 @@ self.onmessage = e => {
       if (updated) {
         entry.updated++;
       }
+      if (set) {
+        entry.set++;
+
+        /* if (entry.set === 1) { // XXX figure out an efficient way to index blocks by value
+          for (let i = 0; i < zde.chunks.length; i++) {
+            const chunk = zde.chunks[i];
+
+            // XXX iterate over all chunks
+          }
+        } */
+      }
+      if (clear) {
+        entry.clear++;
+      }
       break;
     }
     case 'unregisterObject': {
-      const {n, added, removed, updated} = data;
+      const {n, added, removed, updated, set, clear} = data;
       const entry = objectApis[n];
       if (added) {
         entry.added--;
@@ -662,7 +755,30 @@ self.onmessage = e => {
       if (updated) {
         entry.updated--;
       }
-      if (entry.added === 0 && entry.removed === 0 && entry.updated === 0) {
+      if (set) {
+        entry.set--;
+      }
+      if (clear) {
+        entry.clear--;
+
+        /* if (entry.removed === 0) { // XXX figure out how to call this, since the callbacks will be removed in the client by the time this fires
+          for (let i = 0; i < zde.chunks.length; i++) {
+            const chunk = zde.chunks[i];
+
+            for (const k in chunk.trackedObjects) {
+              const trackedObject = chunk.trackedObjects[k];
+
+              if (trackedObject.n === n) {
+                postMessage({
+                  type: 'objectRemoved',
+                  args: [trackedObject.n, chunk.x, chunk.z, parseInt(k, 10), trackedObject.position, trackedObject.rotation, trackedObject.value],
+                });
+              }
+            }
+          }
+        } */
+      }
+      if (entry.added === 0 && entry.removed === 0 && entry.updated === 0 && entry.set === 0 && entry.clear === 0) {
         objectApis[n] = null;
       }
       break;
@@ -741,15 +857,71 @@ self.onmessage = e => {
           chunk.setObjectData(index, value);
 
           const n = chunk.getObjectN(index);
-            const objectApi = objectApis[n];
-            if (objectApi && objectApi.updated) {
-              const matrix = chunk.getObjectMatrix(index);
+          const objectApi = objectApis[n];
+          if (objectApi && objectApi.updated) {
+            const matrix = chunk.getObjectMatrix(index);
+
+            postMessage({
+              type: 'objectUpdated',
+              args: [n, x, z, index, matrix.slice(0, 3), matrix.slice(3, 7), value],
+            });
+          }
+        });
+      }
+      break;
+    }
+    case 'setBlock': {
+      const {x, y, z, v} = data;
+
+      const ox = Math.floor(x / NUM_CELLS);
+      const oz = Math.floor(z / NUM_CELLS);
+      const oldChunk = zde.getChunk(ox, oz);
+      if (oldChunk) {
+        connection.setBlock(x, y, z, v, () => {
+          const {offsets: {index, numPositions, numObjectIndices, numIndices}} = oldChunk;
+          _requestChunk(ox, oz, index, numPositions, numObjectIndices, numIndices)
+            .then(newChunk => {
+              zde.removeChunk(ox, oz);
+              zde.pushChunk(newChunk);
 
               postMessage({
-                type: 'objectUpdated',
-                args: [n, x, z, index, matrix.slice(0, 3), matrix.slice(3, 7), value],
+                type: 'chunkUpdate',
+                args: [ox, oz],
               });
-            }
+
+              /* postMessage({ // XXX enable this for registered listeners
+                type: 'blockSet',
+                args: [x, y, z, v],
+              }); */
+            });
+        });
+      }
+      break;
+    }
+    case 'clearBlock': {
+      const {x, y, z} = data;
+
+      const ox = Math.floor(x / NUM_CELLS);
+      const oz = Math.floor(z / NUM_CELLS);
+      const oldChunk = zde.getChunk(ox, oz);
+      if (oldChunk) {
+        connection.clearBlock(x, y, z, () => {
+          const {offsets: {index, numPositions, numObjectIndices, numIndices}} = oldChunk;
+          _requestChunk(ox, oz, index, numPositions, numObjectIndices, numIndices)
+            .then(newChunk => {
+              zde.removeChunk(ox, oz);
+              zde.pushChunk(newChunk);
+
+              postMessage({
+                type: 'chunkUpdate',
+                args: [ox, oz],
+              });
+
+              /* postMessage({ // XXX enable this for registered listeners
+                type: 'clearBlock',
+                args: [x, y, z],
+              }); */
+            });
         });
       }
       break;
@@ -810,7 +982,7 @@ self.onmessage = e => {
       let {buffer} = args;
 
       const chunk = zde.getChunk(x, z);
-      protocolUtils.stringifyData(chunk.chunkData, buffer, 0);
+      protocolUtils.stringifyWorker(chunk.chunkData, chunk.chunkData.decorations, buffer, 0);
       postMessage({
         type: 'response',
         args: [id],
@@ -895,7 +1067,7 @@ self.onmessage = e => {
       const ry = float32Array[4];
       const rz = float32Array[5];
       _getHoveredTrackedObject(lx, ly, lz, buffer, 0)
-      _getHoveredTrackedObject(rx, ry, rz, buffer, 11 * 4);
+      _getHoveredTrackedObject(rx, ry, rz, buffer, 12 * 4);
 
       postMessage({
         type: 'response',

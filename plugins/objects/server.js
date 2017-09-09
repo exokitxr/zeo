@@ -557,7 +557,7 @@ class Objects {
               const ox = Math.floor(x / NUM_CELLS);
               const oz = Math.floor(z / NUM_CELLS);
               if (ox === chunk.x && oz === chunk.z && y > 0 && y < NUM_CELLS_HEIGHT) {
-                chunk.setBlock(x - ox * NUM_CELLS, y, z - oz * NUM_CELLS);
+                chunk.clearBlock(x - ox * NUM_CELLS, y, z - oz * NUM_CELLS);
               }
             },
             getUv(name) {
@@ -817,6 +817,62 @@ class Objects {
                         args,
                         result: null,
                       });
+                    }
+                  } else if (method === 'setBlock') {
+                    const {id, args} = m;
+                    const {x, y, z, v} = args;
+
+                    const ox = Math.floor(x / NUM_CELLS);
+                    const oz = Math.floor(z / NUM_CELLS);
+                    const chunk = zde.getChunk(ox, oz);
+                    if (chunk) {
+                      chunk.setBlock(x - ox * NUM_CELLS, y, z - oz * NUM_CELLS, v);
+
+                      _decorateChunkGeometry(chunk)
+                        .then(chunk => chunk[decorationsSymbol] ? _decorateChunkLightmaps(chunk) : chunk)
+                        .then(() => {
+                          _saveChunks();
+
+                          c.send(JSON.stringify({
+                            type: 'response',
+                            id,
+                            result: null,
+                          }));
+
+                          _broadcast({
+                            type: 'setBlock',
+                            args,
+                            result: null,
+                          });
+                        });
+                    }
+                  } else if (method === 'clearBlock') {
+                    const {id, args} = m;
+                    const {x, y, z} = args;
+
+                    const ox = Math.floor(x / NUM_CELLS);
+                    const oz = Math.floor(z / NUM_CELLS);
+                    const chunk = zde.getChunk(ox, oz);
+                    if (chunk) {
+                      chunk.clearBlock(x - ox * NUM_CELLS, y, z - oz * NUM_CELLS);
+
+                      _decorateChunkGeometry(chunk)
+                        .then(chunk => chunk[decorationsSymbol] ? _decorateChunkLightmaps(chunk) : chunk)
+                        .then(() => {
+                          _saveChunks();
+
+                          c.send(JSON.stringify({
+                            type: 'response',
+                            id,
+                            result: null,
+                          }));
+
+                          _broadcast({
+                            type: 'clearBlock',
+                            args,
+                            result: null,
+                          });
+                        });
                     }
                   } else {
                     console.warn('objects server got unknown method:', JSON.stringify(method));
