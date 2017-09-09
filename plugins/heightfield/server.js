@@ -325,7 +325,7 @@ class Heightfield {
                   });
                 }
 
-                regeneratePromises.push(_decorateChunkLightmaps(chunk));
+                regeneratePromises.push(_decorateChunkLightmaps(chunk)); // XXX optimize this to update only the local area, possibly including nearby chunks
 
                 seenIndex[index] = true;
               }

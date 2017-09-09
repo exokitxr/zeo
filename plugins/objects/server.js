@@ -829,7 +829,7 @@ class Objects {
                       chunk.setBlock(x - ox * NUM_CELLS, y, z - oz * NUM_CELLS, v);
 
                       _decorateChunkGeometry(chunk)
-                        .then(chunk => chunk[decorationsSymbol] ? _decorateChunkLightmaps(chunk) : chunk)
+                        .then(chunk => chunk[decorationsSymbol] ? _decorateChunkLightmaps(chunk) : chunk) // XXX optimize this to update only the local area, possibly including nearby chunks
                         .then(() => {
                           _saveChunks();
 
@@ -857,7 +857,7 @@ class Objects {
                       chunk.clearBlock(x - ox * NUM_CELLS, y, z - oz * NUM_CELLS);
 
                       _decorateChunkGeometry(chunk)
-                        .then(chunk => chunk[decorationsSymbol] ? _decorateChunkLightmaps(chunk) : chunk)
+                        .then(chunk => chunk[decorationsSymbol] ? _decorateChunkLightmaps(chunk) : chunk) // XXX optimize this to update only the local area, possibly including nearby chunks
                         .then(() => {
                           _saveChunks();
 
