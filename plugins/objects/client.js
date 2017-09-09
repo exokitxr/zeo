@@ -896,7 +896,7 @@ console.log('done');
           const {x, z, objectIndex} = hoveredTrackedObjectSpec;
           objectApi.gripCallback(_getObjectId(x, z, objectIndex), side, x, z, objectIndex);
         }
-      } else if (isFinite(hoveredTrackedBlock.v)) {
+      } else if (isFinite(hoveredTrackedBlock.x)) {
         const {v} = hoveredTrackedBlock;
         const objectApi = objectApis[v];
 
