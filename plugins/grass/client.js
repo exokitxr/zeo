@@ -730,6 +730,10 @@ class Grass {
               };
               heightfieldElement.on('remove', _remove);
 
+              heightfieldElement.forEachChunk(chunk => {
+                _add(chunk);
+              });
+
               const _update = () => {
                 const _updateMaterial = () => {
                   const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);

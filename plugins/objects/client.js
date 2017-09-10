@@ -1469,6 +1469,10 @@ void main() {
             };
             heightfieldElement.on('remove', _remove);
 
+            heightfieldElement.forEachChunk(chunk => {
+              _add(chunk);
+            });
+
             let refreshCullTimeout = null;
             const _recurseRefreshCull = () => {
               _debouncedRefreshCull();
