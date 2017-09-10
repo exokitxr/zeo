@@ -13,7 +13,7 @@ const RANGE = 11;
 
 const DEFAULT_SEED = 'a';
 
-const NUM_POSITIONS_CHUNK = 800 * 1024;
+const NUM_POSITIONS_CHUNK = 1.2 * 1024 * 1024;
 
 const PEEK_FACES = (() => {
   let faceIndex = 0;
