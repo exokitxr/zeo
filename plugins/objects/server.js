@@ -136,7 +136,9 @@ class Objects {
             return chunk;
           });
       });
-    const _redecorateChunkLightmaps = chunk => chunk[decorationsSymbol] ? _decorateChunkLightmaps(chunk) : Promise.resolve(chunk);
+    const _redecorateChunkLightmaps = (chunk, x, y, z) => elements.requestElement(HEIGHTFIELD_PLUGIN)
+      .then(heightfieldElement => heightfieldElement.requestRelight(x, y, z))
+      .then(() => chunk[decorationsSymbol] ? _decorateChunkLightmaps(chunk) : Promise.resolve(chunk));
     const _makeGeometeriesBuffer = constructor => {
       const result = Array(NUM_CHUNKS_HEIGHT);
       for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
@@ -754,7 +756,7 @@ class Objects {
                       const objectIndex = chunk.addObject(n, matrix, value);
 
                       _decorateChunkGeometry(chunk)
-                        .then(chunk => _redecorateChunkLightmaps(chunk))
+                        .then(chunk => _redecorateChunkLightmaps(chunk, Math.floor(matrix[0]), Math.floor(matrix[1]), Math.floor(matrix[2])))
                         .then(() => {
                           _saveChunks();
 
@@ -777,10 +779,11 @@ class Objects {
 
                     const chunk = zde.getChunk(x, z);
                     if (chunk) {
+                      const matrix = getObjectMatrix(index);
                       const n = chunk.removeObject(index);
 
                       _decorateChunkGeometry(chunk)
-                        .then(chunk => _redecorateChunkLightmaps(chunk))
+                        .then(chunk => _redecorateChunkLightmaps(chunk, Math.floor(matrix[0]), Math.floor(matrix[1]), Math.floor(matrix[2])))
                         .then(() => {
                           _saveChunks();
 
@@ -830,7 +833,7 @@ class Objects {
                       chunk.setBlock(x - ox * NUM_CELLS, y, z - oz * NUM_CELLS, v);
 
                       _decorateChunkGeometry(chunk)
-                        .then(chunk => _redecorateChunkLightmaps(chunk)) // XXX optimize this to update only the local area, possibly including nearby chunks
+                        .then(chunk => _redecorateChunkLightmaps(chunk, x, y, z))
                         .then(() => {
                           _saveChunks();
 
@@ -858,7 +861,7 @@ class Objects {
                       chunk.clearBlock(x - ox * NUM_CELLS, y, z - oz * NUM_CELLS);
 
                       _decorateChunkGeometry(chunk)
-                        .then(chunk => _redecorateChunkLightmaps(chunk)) // XXX optimize this to update only the local area, possibly including nearby chunks
+                        .then(chunk => _redecorateChunkLightmaps(chunk, x, y, z))
                         .then(() => {
                           _saveChunks();
 

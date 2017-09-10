@@ -796,27 +796,51 @@ const generate = (x, y, buffer, byteOffset, opts) => {
   protocolUtils.stringifyData(_generateMapChunk(x, y, opts), buffer, byteOffset);
 };
 
-const light = (ox, oz, {getLightSources, isOccluded}) => {
-  const lightsArray = Array(9);
-  for (let dz = -1; dz <= 1; dz++) {
-    for (let dx = -1; dx <= 1; dx++) {
-      lightsArray[_getLightsArrayIndex(dx + 1, dz + 1)] = new Uint8Array(NUM_CELLS_OVERSCAN * (NUM_CELLS_HEIGHT + 1) * NUM_CELLS_OVERSCAN);
+const _makeLights = () => new Uint8Array(NUM_CELLS_OVERSCAN * (NUM_CELLS_HEIGHT + 1) * NUM_CELLS_OVERSCAN);
+const light = (ox, oz, oldLightsArray, minX, maxX, minY, maxY, minZ, maxZ, {getLightSources, isOccluded}) => {
+  let lightsArray;
+  if (oldLightsArray) {
+    lightsArray = oldLightsArray;
+
+    for (let z = minZ; z < maxZ; z++) {
+      for (let x = minX; x < maxX; x++) {
+        for (let y = minY; y <= maxY; y++) {
+          const lax = Math.floor((x - (ox - 1) * NUM_CELLS) / NUM_CELLS);
+          const laz = Math.floor((z - (oz - 1) * NUM_CELLS) / NUM_CELLS);
+          const lightsArrayIndex = _getLightsArrayIndex(lax, laz);
+          const lights = lightsArray[lightsArrayIndex];
+
+          const ax = x - Math.floor(x / NUM_CELLS) * NUM_CELLS;
+          const ay = y;
+          const az = z - Math.floor(z / NUM_CELLS) * NUM_CELLS;
+          const lightsIndex = _getLightsIndex(ax, ay, az);
+          lightsArray[lightsIndex] = 0;
+        }
+      }
+    }
+  } else {
+    lightsArray = Array(9);
+
+    for (let dz = -1; dz <= 1; dz++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        lightsArray[_getLightsArrayIndex(dx + 1, dz + 1)] = _makeLights();
+      }
     }
   }
-
-  const minX = (ox - 1) * NUM_CELLS;
-  const maxX = (ox + 2) * NUM_CELLS;
-  const minZ = (oz - 1) * NUM_CELLS;
-  const maxZ = (oz + 2) * NUM_CELLS;
 
   const _fillLight = (x, y, z, v) => {
     const queue = [];
     const _tryQueue = (x, y, z, v, origin) => {
-      if (x >= minX && x < maxX && y >= 0 & y <= NUM_CELLS_HEIGHT && z >= minZ && z < maxZ && v > 0) {
-        const lightsArrayIndex = _getLightsArrayIndex(Math.floor((x - minX) / NUM_CELLS), Math.floor((z - minZ) / NUM_CELLS));
+      if (x >= minX && x < maxX && y >= minY & y <= maxY && z >= minZ && z < maxZ && v > 0) {
+        const lax = Math.floor((x - (ox - 1) * NUM_CELLS) / NUM_CELLS);
+        const laz = Math.floor((z - (oz - 1) * NUM_CELLS) / NUM_CELLS);
+        const lightsArrayIndex = _getLightsArrayIndex(lax, laz);
         const lights = lightsArray[lightsArrayIndex];
 
-        const lightsIndex = _getLightsIndex(x - Math.floor(x / NUM_CELLS) * NUM_CELLS, y, z - Math.floor(z / NUM_CELLS) * NUM_CELLS);
+        const ax = x - Math.floor(x / NUM_CELLS) * NUM_CELLS;
+        const ay = y;
+        const az = z - Math.floor(z / NUM_CELLS) * NUM_CELLS;
+        const lightsIndex = _getLightsIndex(ax, ay, az);
         if (lights[lightsIndex] < v) {
           lights[lightsIndex] = v;
 
@@ -853,9 +877,9 @@ const light = (ox, oz, {getLightSources, isOccluded}) => {
 
   // merge edges and corner into center lights
   const centerLights = lightsArray[_getLightsArrayIndex(1, 1)];
-  const eastLights = lightsArray[_getLightsArrayIndex(2, 1)]
-  const southLights = lightsArray[_getLightsArrayIndex(1, 2)]
-  const southeastLights = lightsArray[_getLightsArrayIndex(2, 2)]
+  const eastLights = lightsArray[_getLightsArrayIndex(2, 1)];
+  const southLights = lightsArray[_getLightsArrayIndex(1, 2)];
+  const southeastLights = lightsArray[_getLightsArrayIndex(2, 2)];
   for (let z = 0; z < NUM_CELLS_OVERSCAN; z++) {
     for (let y = 0; y < (NUM_CELLS_HEIGHT + 1); y++) {
       centerLights[_getLightsIndex(NUM_CELLS, y, z)] = eastLights[_getLightsIndex(0, y, z)];

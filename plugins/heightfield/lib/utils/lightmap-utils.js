@@ -12,7 +12,7 @@ const lightmapUtils = {
     (y - (staticHeightfield[_getStaticHeightfieldIndex(Math.min(Math.floor(x), NUM_CELLS), Math.min(Math.floor(z), NUM_CELLS))] - 8)) / 8
   , 0), 1) * 255,
   renderTorchVoxel: (x, y, z, lights) => Math.min(Math.max(
-    lights[_getLightIndex(Math.min(Math.floor(x), NUM_CELLS), Math.min(Math.floor(y), NUM_CELLS_HEIGHT), Math.min(Math.floor(z), NUM_CELLS))] / 16
+    lights[_getLightIndex(Math.min(Math.floor(x), NUM_CELLS), Math.min(Math.floor(y), NUM_CELLS_HEIGHT), Math.min(Math.floor(z), NUM_CELLS))] / 15
   , 0), 1) * 255,
 };
 
