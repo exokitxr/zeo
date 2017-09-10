@@ -537,11 +537,17 @@ const _generateMapChunk = (ox, oy, opts) => {
   staticHeightfield.fill(-1024);
 
   const numIndices = indices.length / 3;
+  let localIndexIndex = 0;
   for (let i = 0; i < numIndices; i++) {
-    const indexIndex = i * 3;
-    localTriangle.a.fromArray(positions, indices[indexIndex + 0] * 3);
-    localTriangle.b.fromArray(positions, indices[indexIndex + 1] * 3);
-    localTriangle.c.fromArray(positions, indices[indexIndex + 2] * 3);
+    localTriangle.a.x = positions[localIndexIndex++];
+    localTriangle.a.y = positions[localIndexIndex++];
+    localTriangle.a.z = positions[localIndexIndex++];
+    localTriangle.b.x = positions[localIndexIndex++];
+    localTriangle.b.y = positions[localIndexIndex++];
+    localTriangle.b.z = positions[localIndexIndex++];
+    localTriangle.c.x = positions[localIndexIndex++];
+    localTriangle.c.y = positions[localIndexIndex++];
+    localTriangle.c.z = positions[localIndexIndex++];
     if (localTriangle.normal(localVector).y > 0) {
       for (let j = 0; j < 3; j++) {
         const point = localTriangle.points[j];
