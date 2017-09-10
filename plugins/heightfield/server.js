@@ -444,8 +444,7 @@ class Heightfield {
                   });
                 }
 
-                // XXX figure out how to refresh the local lightmaps
-                // XXX also figure out how to broadcast the light update to dependent plugins
+                // XXX figure out how to broadcast the light update to dependent plugins
                 regeneratePromises.push(
                   _decorateChunkLightsSub(chunk, x, y, z)
                     .then(chunk => _decorateChunkLightmaps(chunk))
