@@ -136,8 +136,6 @@ class Objects {
               return chunk;
             });
         };
-        const _redecorateChunkLightmaps = (chunk, x, y, z) => heightfieldElement.requestRelight(x, y, z)
-          .then(() => chunk[decorationsSymbol] ? _decorateChunkLightmaps(chunk) : Promise.resolve(chunk));
         const _makeGeometeriesBuffer = constructor => {
           const result = Array(NUM_CHUNKS_HEIGHT);
           for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
@@ -755,10 +753,12 @@ class Objects {
                           const objectIndex = chunk.addObject(n, matrix, value);
 
                           _decorateChunkGeometry(chunk)
-                            .then(chunk => _redecorateChunkLightmaps(chunk, Math.floor(matrix[0]), Math.floor(matrix[1]), Math.floor(matrix[2])))
                             .then(() => {
                               _saveChunks();
 
+                              return heightfieldElement.requestRelight(Math.floor(matrix[0]), Math.floor(matrix[1]), Math.floor(matrix[2]));
+                            })
+                            .then(() => {
                               c.send(JSON.stringify({
                                 type: 'response',
                                 id,
@@ -770,6 +770,9 @@ class Objects {
                                 args,
                                 result: objectIndex,
                               });
+                            })
+                            .catch(err => {
+                              console.warn(err);
                             });
                         }
                       } else if (method === 'removeObject') {
@@ -782,10 +785,12 @@ class Objects {
                           const n = chunk.removeObject(index);
 
                           _decorateChunkGeometry(chunk)
-                            .then(chunk => _redecorateChunkLightmaps(chunk, Math.floor(matrix[0]), Math.floor(matrix[1]), Math.floor(matrix[2])))
                             .then(() => {
                               _saveChunks();
 
+                              return heightfieldElement.requestRelight(Math.floor(matrix[0]), Math.floor(matrix[1]), Math.floor(matrix[2]));
+                            })
+                            .then(() => {
                               c.send(JSON.stringify({
                                 type: 'response',
                                 id,
@@ -797,6 +802,9 @@ class Objects {
                                 args,
                                 result: n,
                               });
+                            })
+                            .catch(err => {
+                              console.warn(err);
                             });
                         }
                       } else if (method === 'setObjectData') {
@@ -832,10 +840,12 @@ class Objects {
                           chunk.setBlock(x - ox * NUM_CELLS, y, z - oz * NUM_CELLS, v);
 
                           _decorateChunkGeometry(chunk)
-                            .then(chunk => _redecorateChunkLightmaps(chunk, x, y, z))
                             .then(() => {
                               _saveChunks();
 
+                              return heightfieldElement.requestRelight(x, y, z);
+                            })
+                            .then(() => {
                               c.send(JSON.stringify({
                                 type: 'response',
                                 id,
@@ -847,6 +857,9 @@ class Objects {
                                 args,
                                 result: null,
                               });
+                            })
+                            .catch(err => {
+                              console.warn(err);
                             });
                         }
                       } else if (method === 'clearBlock') {
@@ -860,10 +873,12 @@ class Objects {
                           chunk.clearBlock(x - ox * NUM_CELLS, y, z - oz * NUM_CELLS);
 
                           _decorateChunkGeometry(chunk)
-                            .then(chunk => _redecorateChunkLightmaps(chunk, x, y, z))
                             .then(() => {
                               _saveChunks();
 
+                              return heightfieldElement.requestRelight(x, y, z);
+                            })
+                            .then(() => {
                               c.send(JSON.stringify({
                                 type: 'response',
                                 id,
@@ -875,6 +890,9 @@ class Objects {
                                 args,
                                 result: null,
                               });
+                            })
+                            .catch(err => {
+                              console.warn(err);
                             });
                         }
                       } else {
@@ -889,6 +907,13 @@ class Objects {
                   }
                 };
                 wss.on('connection', _connection);
+
+                const _lights = chunk => {
+                  if (chunk[decorationsSymbol]) {
+                    chunk[decorationsSymbol] = null;
+                  }
+                };
+                heightfieldElement.on('lights', _lights);
 
                 const objectsElement = {
                   ensureNeighboringChunks: (x, z) => {
@@ -948,6 +973,8 @@ class Objects {
                     c.close();
                   }
                   wss.removeListener('connection', _connection);
+
+                  heightfieldElement.removeListener('lights', _lights);
 
                   elements.unregisterEntity(this, objectsElement);
                 };

@@ -1,3 +1,5 @@
+const events = require('events');
+const {EventEmitter} = events;
 const path = require('path');
 const fs = require('fs');
 
@@ -268,6 +270,8 @@ class Heightfield {
             objectsEntity.ensureNeighboringChunks(chunk.x, chunk.z),
           ])
             .then(() => {
+              const hadOldLights = Boolean(chunk[lightsSymbol]);
+
               chunk[lightsSymbol] = generator.light(chunk.x, chunk.z, oldLightsArray, minX, maxX, minY, maxY, minZ, maxZ, {
                 getLightSources: (ox, oz) => {
                   const _getHeightfieldLightSources = () => {
@@ -310,6 +314,11 @@ class Heightfield {
                   return _isOccludedHeightfield() || _isOccludedObjects();
                 },
               });
+              chunk[decorationsSymbol] = null;
+
+              if (hadOldLights) {
+                heightfieldElement.emit('lights', chunk);
+              }
 
               return Promise.resolve(chunk);
             });
@@ -444,7 +453,6 @@ class Heightfield {
                   });
                 }
 
-                // XXX figure out how to broadcast the light update to dependent plugins
                 regeneratePromises.push(
                   _decorateChunkLightsSub(chunk, x, y, z)
                     .then(chunk => _decorateChunkLightmaps(chunk))
@@ -488,7 +496,7 @@ class Heightfield {
         app.post('/archae/heightfield/voxels', serveHeightfieldVoxels);
         app.delete('/archae/heightfield/voxels', serveHeightfieldVoxels);
 
-        const heightfieldElement = {
+        class Heightfield extends EventEmitter {
           requestHeightfield(x, z) {
             let chunk = tra.getChunk(x, z);
             if (!chunk) {
@@ -498,7 +506,7 @@ class Heightfield {
             }
             const uint32Buffer = chunk.getBuffer();
             return Promise.resolve(protocolUtils.parseData(uint32Buffer.buffer, uint32Buffer.byteOffset).heightfield);
-          },
+          }
           requestStaticHeightfield(x, z) {
             let chunk = tra.getChunk(x, z);
             if (!chunk) {
@@ -508,7 +516,7 @@ class Heightfield {
             }
             const uint32Buffer = chunk.getBuffer();
             return Promise.resolve(protocolUtils.parseData(uint32Buffer.buffer, uint32Buffer.byteOffset).staticHeightfield);
-          },
+          }
           requestBiomes(x, z) {
             let chunk = tra.getChunk(x, z);
             if (!chunk) {
@@ -518,16 +526,33 @@ class Heightfield {
             }
             const uint32Buffer = chunk.getBuffer();
             return Promise.resolve(protocolUtils.parseData(uint32Buffer.buffer, uint32Buffer.byteOffset).biomes);
-          },
+          }
           requestRelight(x, y, z) {
-            const chunk = tra.getChunk(x, z);
-            if (chunk) {
-              return _decorateChunkLightsSub(chunk, x, y, z) // XXX figure out how to refresh the local lightmaps
-                .then(() => {});
-            } else {
-              return Promise.resolve();
+            const promises = [];
+
+            const seenIndex = {};
+            for (let i = 0; i < DIRECTIONS.length; i++) {
+              const [dx, dz] = DIRECTIONS[i];
+              const ax = x + dx * 15;
+              const az = z + dz * 15;
+              const ox = Math.floor(ax / NUM_CELLS);
+              const oz = Math.floor(az / NUM_CELLS);
+
+              const index = _getChunkIndex(ox, oz);
+              if (!seenIndex[index]) {
+                const chunk = tra.getChunk(ox, oz);
+                if (chunk) {
+                  promises.push(
+                    _decorateChunkLightsSub(chunk, x, y, z)
+                      .then(() => {})
+                  );
+                }
+                seenIndex[index] = true;
+              }
             }
-          },
+
+            return Promise.all(promises);
+          }
           requestLightmaps(x, z, positions) {
             const _requestLightedChunk = (x, z) => {
               let chunk = tra.getChunk(x, z);
@@ -578,8 +603,9 @@ class Heightfield {
                   torchLightmaps,
                 };
               });
-          },
+          }
         };
+        const heightfieldElement = new Heightfield();
         elements.registerEntity(this, heightfieldElement);
 
         this._cleanup = () => {
