@@ -56,7 +56,7 @@ class Objects {
     const texturesJsonDataPath = path.join(dirname, dataDirectory, 'textures.json');
 
     const rng = new alea(DEFAULT_SEED);
-    const heightfields = {}; // XXX these should be LRU aches
+    const heightfields = {}; // XXX these should be LRU caches
     const biomes = {};
     const geometries = {};
     const noises = {};
