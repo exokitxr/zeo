@@ -15,6 +15,8 @@ const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
 // const LIGHTMAP_PLUGIN = 'plugins-lightmap';
 const DAY_NIGHT_SKYBOX_PLUGIN = 'plugins-day-night-skybox';
 
+const dataSymbol = Symbol();
+
 const GRASS_SHADER = {
   uniforms: {
     map: {
@@ -570,7 +572,7 @@ class Grass {
 
                     grassChunkMeshes[_getChunkIndex(x, z)] = grassChunkMesh;
 
-                    chunk.data = grassChunkMesh;
+                    chunk[dataSymbol] = grassChunkMesh;
 
                     _next();
                   });
@@ -582,8 +584,7 @@ class Grass {
                 if (!running) {
                   running = true;
 
-                  const {x, z, data: grassChunkMesh} = chunk;
-
+                  const {x, z, [dataSymbol]: grassChunkMesh} = chunk;
                   worker.requestUngenerate(x, z);
 
                   // stage.remove('main', grassChunkMesh);
