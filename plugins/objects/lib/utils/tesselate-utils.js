@@ -401,96 +401,37 @@ function getSsaos(verticesData, voxels) {
       const faceVertexOffset = localVector4.copy(faceVertex).sub(minPoint);
       const faceVertexUv = localCoord.set(faceVertexOffset[directions.u], faceVertexOffset[directions.v]);
 
-      if (faceVertexUv.x === 0 && faceVertexUv.y === 0) {
-        let numOcclusions = 0;
+      let numOcclusions = 0;
 
-        localVector5.copy(minPoint);
-        localVector5[directions.normal] += directions.normalSign ? 0 : -1;
-        localVector5[directions.u]--;
-        numOcclusions += _isOccluded(localVector5);
+      localVector5.copy(minPoint);
+      localVector5[directions.normal] += directions.normalSign ? 0 : -1;
+      localVector5[directions.u] += faceVertexUv.x === 0 ? -1 : faceVertexUv.x;
+      numOcclusions += _isOccluded(localVector5);
 
-        localVector5.copy(minPoint);
-        localVector5[directions.normal] += directions.normalSign ? 0 : -1;
-        localVector5[directions.v]--;
-        numOcclusions += _isOccluded(localVector5);
+      localVector5.copy(minPoint);
+      localVector5[directions.normal] += directions.normalSign ? 0 : -1;
+      localVector5[directions.v] += faceVertexUv.y === 0 ? -1 : faceVertexUv.y;
+      numOcclusions += _isOccluded(localVector5);
 
-        localVector5.copy(minPoint);
-        localVector5[directions.normal] += directions.normalSign ? 0 : -1;
-        localVector5[directions.u]--;
-        localVector5[directions.v]--;
-        numOcclusions += _isOccluded(localVector5);
+      localVector5.copy(minPoint);
+      localVector5[directions.normal] += directions.normalSign ? 0 : -1;
+      localVector5[directions.u] += faceVertexUv.x === 0 ? -1 : faceVertexUv.x;
+      localVector5[directions.v] += faceVertexUv.y === 0 ? -1 : faceVertexUv.y;
+      numOcclusions += _isOccluded(localVector5);
 
 // minPoint.equals(testVector) && directions.normal === 'x' && directions.normalSign && console.log('got', directions, '00', numOcclusions);
 
-        occlusions[occlusionsMap[0]] = numOcclusions;
+      let occlusionIndex = -1;
+      if (faceVertexUv.x === 0 && faceVertexUv.y === 0) {
+        occlusionIndex = 0;
       } else if (faceVertexUv.x > 0 && faceVertexUv.y === 0) {
-        let numOcclusions = 0;
-
-        localVector5.copy(minPoint);
-        localVector5[directions.normal] += directions.normalSign ? 0 : -1;
-        localVector5[directions.u] += faceVertexUv.x;
-        numOcclusions += _isOccluded(localVector5);
-// minPoint.equals(testVector) && directions.normal === 'x' && directions.normalSign && console.log('check 1', directions, '10', localVector5, _isOccluded(localVector5));
-
-        localVector5.copy(minPoint);
-        localVector5[directions.normal] += directions.normalSign ? 0 : -1;
-        localVector5[directions.v]--;
-        numOcclusions += _isOccluded(localVector5);
-
-        localVector5.copy(minPoint);
-        localVector5[directions.normal] += directions.normalSign ? 0 : -1;
-        localVector5[directions.u] += faceVertexUv.x;
-        localVector5[directions.v]--;
-        numOcclusions += _isOccluded(localVector5);
-
-// minPoint.equals(testVector) && directions.normal === 'x' && directions.normalSign && console.log('got', directions, '10', numOcclusions);
-
-        occlusions[occlusionsMap[1]] = numOcclusions;
+        occlusionIndex = 1;
       } else if (faceVertexUv.x > 0 && faceVertexUv.y > 0) {
-        let numOcclusions = 0;
-
-        localVector5.copy(minPoint);
-        localVector5[directions.normal] += directions.normalSign ? 0 : -1;
-        localVector5[directions.u] += faceVertexUv.x;
-        numOcclusions += _isOccluded(localVector5);
-
-        localVector5.copy(minPoint);
-        localVector5[directions.normal] += directions.normalSign ? 0 : -1;
-        localVector5[directions.v] += faceVertexUv.y;
-        numOcclusions += _isOccluded(localVector5);
-
-        localVector5.copy(minPoint);
-        localVector5[directions.normal] += directions.normalSign ? 0 : -1;
-        localVector5[directions.u] += faceVertexUv.x;
-        localVector5[directions.v] += faceVertexUv.y;
-        numOcclusions += _isOccluded(localVector5);
-
-// minPoint.equals(testVector) && directions.normal === 'x' && directions.normalSign && console.log('got', directions, '11', numOcclusions);
-
-        occlusions[occlusionsMap[2]] = numOcclusions;
+        occlusionIndex = 2;
       } else if (faceVertexUv.x === 0 && faceVertexUv.y > 0) {
-        let numOcclusions = 0;
-
-        localVector5.copy(minPoint);
-        localVector5[directions.normal] += directions.normalSign ? 0 : -1;
-        localVector5[directions.u]--;
-        numOcclusions += _isOccluded(localVector5);
-
-        localVector5.copy(minPoint);
-        localVector5[directions.normal] += directions.normalSign ? 0 : -1;
-        localVector5[directions.v] += faceVertexUv.y;
-        numOcclusions += _isOccluded(localVector5);
-
-        localVector5.copy(minPoint);
-        localVector5[directions.normal] += directions.normalSign ? 0 : -1;
-        localVector5[directions.u]--;
-        localVector5[directions.v] += faceVertexUv.y;
-        numOcclusions += _isOccluded(localVector5);
-
-// minPoint.equals(testVector) && directions.normal === 'x' && directions.normalSign && console.log('got', directions, '01', numOcclusions);
-
-        occlusions[occlusionsMap[3]] = numOcclusions;
+        occlusionIndex = 3;
       }
+      occlusions[occlusionsMap[occlusionIndex]] = numOcclusions;
     }
 /* occlusions[0] = 4;
 occlusions[1] = 0;
