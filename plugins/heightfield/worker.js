@@ -24,9 +24,6 @@ const {
   PEEK_FACE_INDICES,
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
-_PEEK_FACES = PEEK_FACES;
-
-const LIGHTMAP_BUFFER_SIZE = 100 * 1024 * 4;
 
 const DIRECTIONS = [
   [-1, -1],
@@ -161,7 +158,7 @@ const _registerChunk = (chunk, index, numIndices) => {
   }
   mapChunkMeshes[_getChunkIndex(x, z)] = trackedMapChunkMeshes;
 };
-const _requestLightmaps = (lightmapBuffer, cb) => {
+/* const _requestLightmaps = (lightmapBuffer, cb) => {
   const id = _makeId();
   postMessage({
     type: 'request',
@@ -170,37 +167,9 @@ const _requestLightmaps = (lightmapBuffer, cb) => {
     lightmapBuffer,
   }, [lightmapBuffer.buffer]);
   queues[id] = cb;
-};
-const _requestAddLightmap = (x, y, heightfield, cb) => {
-  const id = _makeId();
-  postMessage({
-    type: 'request',
-    method: 'addLightmap',
-    args: [id],
-    x,
-    y,
-    heightfield,
-  }, [heightfield.buffer]);
-  queues[id] = cb;
-};
-const _requestUpdateLightmaps = (updatedLightmaps, freedHslots, hslots, cb) => {
-  const id = _makeId();
-  postMessage({
-    type: 'request',
-    method: 'updateLightmaps',
-    args: [id],
-    updatedLightmaps,
-    freedHslots,
-  }, [hslots[0].buffer, hslots[1].buffer, hslots[2].buffer, hslots[3].buffer]);
-  queues[id] = cb;
-};
+}; */
 const _unrequestChunk = (x, z) => {
   const chunk = tra.removeChunk(x, z);
-
-  /* postMessage({
-    type: 'removeLightmap',
-    shapeId: chunk.shapeId,
-  }); */
 
   mapChunkMeshes[_getChunkIndex(x, z)] = null;
 };
@@ -545,7 +514,7 @@ self.onmessage = e => {
     }
     case 'subVoxel': {
       const {id, args} = data;
-      const {position: [x, y, z], gslots, hslots} = args;
+      const {position: [x, y, z], gslots} = args;
       let {buffer} = args;
 
       fetch(`/archae/heightfield/voxels?x=${x}&y=${y}&z=${z}`, {
@@ -596,7 +565,6 @@ self.onmessage = e => {
                   x,
                   z,
                   chunkData,
-                  // shapeId: chunk.shapeId,
                 });
               }
             }

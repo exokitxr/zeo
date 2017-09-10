@@ -355,31 +355,21 @@ class Heightfield {
       queues[id] = accept;
     }); */
     worker.requestSubVoxel = (x, y, z, gslots, cb) => {
-      /* elements.requestElement(LIGHTMAP_PLUGIN)
-        .then(lightmapElement => { */
-          const id = _makeId();
-          /* const hslots = [
-            _allocHslot(lightmapElement),
-            _allocHslot(lightmapElement),
-            _allocHslot(lightmapElement),
-            _allocHslot(lightmapElement),
-          ]; */
-          worker.postMessage({
-            method: 'subVoxel',
-            id,
-            args: {
-              position: [x, y, z],
-              gslots,
-              // hslots,
-              buffer: terrainBuffer,
-            },
-          }, [/*hslots[0].buffer, hslots[1].buffer, hslots[2].buffer, hslots[3].buffer, */terrainBuffer]);
-          queues[id] = newTerrainBuffer => {
-            terrainBuffer = newTerrainBuffer;
+      const id = _makeId();
+      worker.postMessage({
+        method: 'subVoxel',
+        id,
+        args: {
+          position: [x, y, z],
+          gslots,
+          buffer: terrainBuffer,
+        },
+      }, [terrainBuffer]);
+      queues[id] = newTerrainBuffer => {
+        terrainBuffer = newTerrainBuffer;
 
-            cb(newTerrainBuffer);
-          };
-        // });
+        cb(newTerrainBuffer);
+      };
     };
     worker.requestHeightfield = (x, y, buffer, cb) => {
       const id = _makeId();
