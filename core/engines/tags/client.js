@@ -1561,19 +1561,19 @@ class Tags {
             requestElement(selector, {timeout = 30 * 1000} = {}) {
               return new Promise((accept, reject) => {
                 const element = rootEntitiesElement.querySelector(selector);
-                if (element) {
+                if (element && element._numComponents > 0) {
                   accept(element);
                 } else {
-                   const _elementAdded = entityElement => {
+                  const _elementAdded = entityElement => {
                     if (entityElement.matches(selector)) {
-                      clearTimeout(timeout);
+                      clearTimeout(localTimeout);
 
                       accept(entityElement);
                     }
                   };
                   this.on('elementAdded', _elementAdded);
 
-                  const timeout = setTimeout(() => {
+                  const localTimeout = setTimeout(() => {
                     this.removeListener('elementAdded', _elementAdded);
 
                     const err = new Error('timeout out');

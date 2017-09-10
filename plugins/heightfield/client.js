@@ -694,10 +694,13 @@ class Heightfield {
         });
         heightfieldMaterial.uniformsNeedUpdate = _uniformsNeedUpdate;
 
-        const listeners = [];
-        const _emit = (e, d) => {
-          for (let i = 0; i < listeners.length; i++) {
-            listeners[i](e, d);
+        const listeners = {};
+        const _emit = (event, data) => {
+          const entry = listeners[event];
+          if (entry) {
+            for (let i = 0; i < entry.length; i++) {
+              entry[i](data);
+            }
           }
         };
 
@@ -1023,18 +1026,22 @@ class Heightfield {
             entityElement.requestHeightfield = (x, z, buffer, cb) => {
               worker.requestHeightfield(x, z, buffer, cb);
             };
-            entityElement.registerListener = listener => {
-              listeners.push(listener);
-
+            entityElement.forEachChunk = fn => {
               for (const index in chunker.chunks) {
-                const chunk = chunker.chunks[index];
-                if (chunk) {
-                  listener('add', chunk);
-                }
+                fn(chunker.chunks[index]);
               }
             };
-            entityElement.unregisterListener = listener => {
-              listeners.splice(listeners.indexOf(listener), 1);
+            entityElement.on = (event, listener) => {
+              let entry = listeners[event];
+              if (!entry) {
+                entry = [];
+                listeners[event] = entry;
+              }
+              entry.push(listener);
+            };
+            entityElement.removeListener = (event, listener) => {
+              const entry = listeners[event];
+              entry.splice(entry.indexOf(listener), 1);
             };
             entityElement.requestFrame = _requestFrame;
 
@@ -1152,8 +1159,6 @@ class Heightfield {
 
           clearTimeout(refreshChunksTimeout);
           clearTimeout(refreshCullTimeout);
-
-          // elements.destroyListener(elementListener);
 
           elements.unregisterEntity(this, heightfieldEntity);
 
