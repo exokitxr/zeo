@@ -793,7 +793,7 @@ class Heightfield {
             doneAddChunks();
           }
         });
-        const _requestSubVoxel = (() => {
+        const _requestSubVoxel = (() => { // XXX after these mutations, we need to refresh the nearby objects and grass lightmaps
           let running = false;
           const queue = [];
           const nextSubVoxel = () => {
