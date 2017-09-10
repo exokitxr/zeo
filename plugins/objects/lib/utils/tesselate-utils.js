@@ -378,7 +378,7 @@ function getSsaos(verticesData, voxels) {
 
     const normal = localTriangle.normal(localVector2);
 
-    const directions = (() => { // normal, sign, u, v
+    const directions = (() => {
       if (normal.x !== 0) {
         return {normal: 'x', normalSign: normal.x > 0, u: 'z', v: 'y'};
       } else if (normal.y !== 0) {
@@ -391,6 +391,8 @@ function getSsaos(verticesData, voxels) {
     })();
 
 // const testVector = new THREE.Vector3(5, 5, 4);
+
+    // XXX occlusion tests need to be merged across multiple adjacent meshes
 
     const occlusions = Array(4);
     const occlusionsMap = OCCLUSIONS_MAP[directions.normal][directions.normalSign];
