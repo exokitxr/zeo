@@ -75,10 +75,10 @@ const _getHoveredTrackedObject = (x, y, z, buffer, byteOffset) => {
   const float32Array = new Float32Array(buffer, byteOffset, 12);
   uint32Array[0] = 0;
 
-  for (let i = 0; i < zde.chunks.length; i++) {
-    const chunk = zde.chunks[i];
+  for (const index in zde.chunks) {
+    const chunk = zde.chunks[index];
 
-    if (localCoord.set(chunk.x - ox, chunk.z - oz).lengthSq() <= 2) {
+    if (chunk && localCoord.set(chunk.x - ox, chunk.z - oz).lengthSq() <= 2) {
       const chunkResult = chunk.forEachObject((n, matrix, value, objectIndex) => {
         const position = localVector2.fromArray(matrix, 0);
         const rotation = localQuaternion.fromArray(matrix, 3);
@@ -145,10 +145,10 @@ const _getTeleportObject = (x, y, z, buffer) => {
   let topRotationInverse = null;
   let topBox = null;
 
-  for (let i = 0; i < zde.chunks.length; i++) {
-    const chunk = zde.chunks[i];
+  for (const index in zde.chunks) {
+    const chunk = zde.chunks[index];
 
-    if (localCoord.set(chunk.x - ox, chunk.z - oz).lengthSq() <= 2) {
+    if (chunk && localCoord.set(chunk.x - ox, chunk.z - oz).lengthSq() <= 2) {
       const chunkResult = chunk.forEachObject((n, matrix, value, objectIndex) => {
         const position = localVector.fromArray(matrix, 0);
         const rotation = localQuaternion.fromArray(matrix, 3);
@@ -206,10 +206,10 @@ const _getBodyObject = (x, y, z, buffer) => {
   let topChunkZ = -1;
   let topObjectIndex = -1;
 
-  for (let i = 0; i < zde.chunks.length; i++) {
-    const chunk = zde.chunks[i];
+  for (const index in zde.chunks) {
+    const chunk = zde.chunks[index];
 
-    if (localCoord.set(chunk.x - ox, chunk.z - oz).lengthSq() <= 2) {
+    if (chunk && localCoord.set(chunk.x - ox, chunk.z - oz).lengthSq() <= 2) {
       const chunkResult = chunk.forEachObject((n, matrix, value, objectIndex) => {
         const position = localVector2.fromArray(matrix, 0);
         const rotation = localQuaternion.fromArray(matrix, 3);
@@ -602,35 +602,39 @@ const _requestLightmaps = (lightmapBuffer, cb) => {
 const _getCull = (hmdPosition, projectionMatrix, matrixWorldInverse) => {
   localFrustum.setFromMatrix(localMatrix.fromArray(projectionMatrix).multiply(localMatrix2.fromArray(matrixWorldInverse)));
 
-  for (let i = 0; i < zde.chunks.length; i++) {
-    const {renderSpec} = zde.chunks[i];
+  for (const index in zde.chunks) {
+    const chunk = zde.chunks[index];
 
-    renderSpec.groups.fill(-1);
-    let groupIndex = 0;
-    let start = -1;
-    let count = 0;
-    for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) { // XXX optimize this direction
-      const trackedObjectChunkMesh = renderSpec.array[i];
-      if (localFrustum.intersectsSphere(trackedObjectChunkMesh.boundingSphere)) {
-        if (start === -1) {
-          start = trackedObjectChunkMesh.indexRange.start;
-        }
-        count += trackedObjectChunkMesh.indexRange.count;
-      } else {
-        if (start !== -1) {
-          const baseIndex = groupIndex * 2;
-          renderSpec.groups[baseIndex + 0] = start;
-          renderSpec.groups[baseIndex + 1] = count;
-          groupIndex++;
-          start = -1;
-          count = 0;
+    if (chunk) {
+      const {renderSpec} = chunk;
+
+      renderSpec.groups.fill(-1);
+      let groupIndex = 0;
+      let start = -1;
+      let count = 0;
+      for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) { // XXX optimize this direction
+        const trackedObjectChunkMesh = renderSpec.array[i];
+        if (localFrustum.intersectsSphere(trackedObjectChunkMesh.boundingSphere)) {
+          if (start === -1) {
+            start = trackedObjectChunkMesh.indexRange.start;
+          }
+          count += trackedObjectChunkMesh.indexRange.count;
+        } else {
+          if (start !== -1) {
+            const baseIndex = groupIndex * 2;
+            renderSpec.groups[baseIndex + 0] = start;
+            renderSpec.groups[baseIndex + 1] = count;
+            groupIndex++;
+            start = -1;
+            count = 0;
+          }
         }
       }
-    }
-    if (start !== -1) {
-      const baseIndex = groupIndex * 2;
-      renderSpec.groups[baseIndex + 0] = start;
-      renderSpec.groups[baseIndex + 1] = count;
+      if (start !== -1) {
+        const baseIndex = groupIndex * 2;
+        renderSpec.groups[baseIndex + 0] = start;
+        renderSpec.groups[baseIndex + 1] = count;
+      }
     }
   }
 

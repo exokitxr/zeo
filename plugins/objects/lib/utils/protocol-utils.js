@@ -508,22 +508,30 @@ const stringifyCull = (objectChunks, arrayBuffer, byteOffset) => {
 
   const headerBuffer = new Uint32Array(arrayBuffer, byteOffset, CULL_HEADER_ENTRIES);
   let index = 0;
-  headerBuffer[index++] = objectChunks.length;
+  const headerIndex = index;
   byteOffset += CULL_HEADER_SIZE;
 
-  for (let i = 0; i < objectChunks.length; i++) {
-    const {renderSpec} = objectChunks[i];
+  let numChunks = 0;
+  for (const index in objectChunks) {
+    const chunk = objectChunks[index];
 
-    if (renderSpec) {
-      const indexArray = new Int32Array(arrayBuffer, byteOffset, 1);
-      indexArray[0] = renderSpec.index;
-      byteOffset += INT32_SIZE;
+    if (chunk) {
+      const {renderSpec} = chunk;
 
-      const groupsArray = new Int32Array(arrayBuffer, byteOffset, NUM_RENDER_GROUPS * 2);
-      groupsArray.set(renderSpec.groups);
-      byteOffset += INT32_SIZE * 2 * NUM_RENDER_GROUPS;
+      if (renderSpec) {
+        const indexArray = new Int32Array(arrayBuffer, byteOffset, 1);
+        indexArray[0] = renderSpec.index;
+        byteOffset += INT32_SIZE;
+
+        const groupsArray = new Int32Array(arrayBuffer, byteOffset, NUM_RENDER_GROUPS * 2);
+        groupsArray.set(renderSpec.groups);
+        byteOffset += INT32_SIZE * 2 * NUM_RENDER_GROUPS;
+      }
+
+      numChunks++;
     }
   }
+  headerBuffer[headerIndex] = numChunks;
 
   return arrayBuffer;
 };
