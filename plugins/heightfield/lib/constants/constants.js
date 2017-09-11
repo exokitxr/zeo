@@ -1208,6 +1208,14 @@ const BIOMES = {
     "index": 60
   }
 };
+const BIOMES_INDEX = (() => {
+  const result = Array(Object.keys(BIOMES).length);
+  for (const biomeName in BIOMES) {
+    const biome = BIOMES[biomeName];
+    result[biome.index] = biome;
+  }
+  return result;
+})();
 const BIOMES_TALL = (() => {
   const result = {};
   for (const biomeName in BIOMES) {
@@ -1218,7 +1226,6 @@ const BIOMES_TALL = (() => {
   }
   return result;
 })();
-
 const BIOMES_TEMPERATURE_HUMIDITY = [
 		//       0         1         2               3               4               5               6         7         8         9         10              11              12              13              14             15
 		/*  0 */ "biTundra", "biTundra", "biTundra",       "biTundra",       "biPlains",       "biPlains",       "biPlains", "biPlains", "biPlains", "biPlains", "biDesert",       "biDesert",      "biDesert",       "biDesert",       "biDesert",      "biDesert",
@@ -1261,6 +1268,7 @@ module.exports = {
   PEEK_FACE_INDICES,
 
   BIOMES,
+  BIOMES_INDEX,
   BIOMES_TALL,
   BIOMES_TEMPERATURE_HUMIDITY,
 };

@@ -23,6 +23,7 @@ const {
   PEEK_FACE_INDICES,
 
   BIOMES,
+  BIOMES_INDEX,
   BIOMES_TALL,
   BIOMES_TEMPERATURE_HUMIDITY,
 } = require('./lib/constants/constants');
@@ -170,6 +171,53 @@ const DIRECTIONS = [
   [-1, 1],
   [1, 1],
 ];
+
+const _getCachesIndex2D = (x, z) => mod(x, 256) | mod(z, 256) << 8; // XXX make sure this does not overflow cache size
+const _getCacheIndex2D = (x, z) => x + z * NUM_CELLS;
+const _makeCacher2D = (gen, {type = Float32Array} = {}) => {
+  const caches = {};
+  return (x, z) => {
+    const ox = Math.floor(x / NUM_CELLS);
+    const oz = Math.floor(z / NUM_CELLS);
+    const cachesIndex = _getCachesIndex2D(ox, oz);
+    let entry = caches[cachesIndex];
+    if (entry === undefined) {
+      entry = new type(NUM_CELLS * NUM_CELLS);
+      let index = 0;
+      for (let dz = 0; dz < NUM_CELLS; dz++) {
+        for (let dx = 0; dx < NUM_CELLS; dx++) {
+          entry[index++] = gen(ox * NUM_CELLS + dx, oz * NUM_CELLS + dz);
+        }
+      }
+      caches[cachesIndex] = entry;
+    }
+    return entry[_getCacheIndex2D(x - ox * NUM_CELLS, z - oz * NUM_CELLS)];
+  };
+};
+
+const _getCachesIndex3D = (b, x, z) => mod(b, 256) | mod(x, 256) << 8 | mod(z, 256) << 16; // XXX make sure this does not overflow cache size
+const _getCacheIndex3D = (x, z) => x + z * NUM_CELLS;
+const _makeCacher3D = (gen, {type = Float32Array} = {}) => {
+  const caches = {};
+  return (b, x, z) => {
+    const ox = Math.floor(x / NUM_CELLS);
+    const oz = Math.floor(z / NUM_CELLS);
+    const cachesIndex = _getCachesIndex3D(b, ox, oz);
+    let entry = caches[cachesIndex];
+    if (entry === undefined) {
+      entry = new type(NUM_CELLS * NUM_CELLS);
+      let index = 0;
+      for (let dz = 0; dz < NUM_CELLS; dz++) {
+        for (let dx = 0; dx < NUM_CELLS; dx++) {
+          entry[index++] = gen(b, ox * NUM_CELLS + dx, oz * NUM_CELLS + dz);
+        }
+      }
+      caches[cachesIndex] = entry;
+    }
+    return entry[_getCacheIndex3D(x - ox * NUM_CELLS, z - oz * NUM_CELLS)];
+  };
+};
+
 const _random = (() => {
   const generator = indev({
     seed: DEFAULT_SEED,
@@ -186,26 +234,32 @@ const _random = (() => {
     frequency: 2,
     octaves: 1,
   });
-  const wormNoise = generator.uniform({
+
+  let noise = generator.uniform({
     frequency: 0.001,
     octaves: 2,
   });
-  const oceanNoise = generator.uniform({
+  const wormNoise = _makeCacher2D(noise.in2D.bind(noise));
+  noise = generator.uniform({
     frequency: 0.001,
     octaves: 4,
   });
-  const riverNoise = generator.uniform({
+  const oceanNoise = _makeCacher2D(noise.in2D.bind(noise));
+  noise = generator.uniform({
     frequency: 0.001,
     octaves: 4,
   });
-  const temperatureNoise = generator.uniform({
+  const riverNoise = _makeCacher2D(noise.in2D.bind(noise));
+  noise = generator.uniform({
     frequency: 0.001,
     octaves: 4,
   });
-  const humidityNoise = generator.uniform({
+  const temperatureNoise = _makeCacher2D(noise.in2D.bind(noise));
+  noise = generator.uniform({
     frequency: 0.001,
     octaves: 4,
   });
+  const humidityNoise = _makeCacher2D(noise.in2D.bind(noise));
 
   return {
     elevationNoise1,
@@ -219,116 +273,105 @@ const _random = (() => {
   };
 })();
 
+const _getBiome = _makeCacher2D((x, z) => {
+  let biome;
+  const _genOcean = () => {
+    if (_random.oceanNoise(x + 1000, z + 1000) < (90 / 255)) {
+      biome = BIOMES.biOcean.index;
+    }
+  };
+  const _genRivers = () => {
+    if (biome === undefined) {
+      const n = _random.riverNoise(x + 1000, z + 1000);
+      const range = 0.04;
+      if (n > 0.5 - range && n < 0.5 + range) {
+        biome = BIOMES.biRiver.index;
+      }
+    }
+  };
+  const _genFreezeWater = () => {
+    if (_random.temperatureNoise(x + 1000, z + 1000) < ((4 * 16) / 255)) {
+      if (biome === BIOMES.biOcean.index) {
+        biome = BIOMES.biFrozenOcean.index;
+      } else if (biome === BIOMES.biRiver.index) {
+        biome = BIOMES.biFrozenRiver.index;
+      }
+    }
+  };
+  const _genLand = () => {
+    if (biome === undefined) {
+      const t = Math.floor(_random.temperatureNoise(x + 1000, z + 1000) * 16);
+      const h = Math.floor(_random.humidityNoise(x + 1000, z + 1000) * 16);
+      biome = BIOMES_TEMPERATURE_HUMIDITY[t + 16 * h].index;
+    }
+  };
+  _genOcean();
+  _genRivers();
+  _genFreezeWater();
+  _genLand();
+
+  return biome;
+}, {type: Uint8Array});
+
+const _getBiomeHeight = _makeCacher3D((b, x, z) => {
+  const biome = BIOMES_INDEX[b];
+  return biome.baseHeight +
+    _random.elevationNoise1.in2D(x * biome.amps[0][0], z * biome.amps[0][0]) * biome.amps[0][1] +
+    _random.elevationNoise2.in2D(x * biome.amps[1][0], z * biome.amps[1][0]) * biome.amps[1][1] +
+    _random.elevationNoise3.in2D(x * biome.amps[2][0], z * biome.amps[2][0]) * biome.amps[2][1];
+});
+
+const _getElevation = _makeCacher2D((x, z) => {
+  const biomeCounts = {};
+  let totalBiomeCounts = 0;
+  for (let dz = -8; dz <= 8; dz++) {
+    for (let dx = -8; dx <= 8; dx++) {
+      const biome = _getBiome(x + dx, z + dz);
+      let biomeCount = biomeCounts[biome];
+      if (!biomeCount) {
+        biomeCount = {
+          count: 0,
+          height: _getBiomeHeight(biome, x, z),
+        };
+        biomeCounts[biome] = biomeCount;
+      }
+      biomeCount.count++;
+      totalBiomeCounts++;
+    }
+  }
+
+  let elevationSum = 0;
+  for (const index in biomeCounts) {
+    const biomeCount = biomeCounts[index];
+    elevationSum += biomeCount.count * biomeCount.height;
+  }
+  return elevationSum / totalBiomeCounts;
+});
+
 const localVector = new THREE.Vector3();
 const localTriangle = new THREE.Triangle();
 localTriangle.points = [localTriangle.a, localTriangle.b, localTriangle.c];
 const _generateMapChunk = (ox, oy, opts) => {
   // generate
 
-  const biomeCache = {};
-  const _getBiome = (x, z) => {
-    const index = mod(x, 0xFF) | (mod(z, 0xFF) << 8);
-
-    let biome = biomeCache[index];
-    if (!biome) {
-      const _genOcean = () => {
-        if (_random.oceanNoise.in2D(x + 1000, z + 1000) < (90 / 255)) {
-          biome = BIOMES.biOcean;
-        }
-      };
-      const _genRivers = () => {
-        if (biome === undefined) {
-          const n = _random.riverNoise.in2D(x + 1000, z + 1000);
-          const range = 0.04;
-          if (n > 0.5 - range && n < 0.5 + range) {
-            biome = BIOMES.biRiver;
-          }
-        }
-      };
-      const _genFreezeWater = () => {
-        if (_random.temperatureNoise.in2D(x + 1000, z + 1000) < ((4 * 16) / 255)) {
-          if (biome === BIOMES.biOcean) {
-            biome = BIOMES.biFrozenOcean;
-          } else if (biome === BIOMES.biRiver) {
-            biome = BIOMES.biFrozenRiver;
-          }
-        }
-      };
-      const _genLand = () => {
-        if (biome === undefined) {
-          const t = Math.floor(_random.temperatureNoise.in2D(x + 1000, z + 1000) * 16);
-          const h = Math.floor(_random.humidityNoise.in2D(x + 1000, z + 1000) * 16);
-          biome = BIOMES_TEMPERATURE_HUMIDITY[t + 16 * h];
-        }
-      };
-      _genOcean();
-      _genRivers();
-      _genFreezeWater();
-      _genLand();
-
-      biomeCache[index] = biome;
-    }
-
-    return biome;
-  };
-
-  const biomeHeightCache = {};
-  const _getBiomeHeight = (biome, x, z) => {
-    const index = mod(biome.index, 0xFF) | (mod(x, 0xFF) << 8) | (mod(z, 0xFF) << 16);
-    let entry = biomeHeightCache[index];
-    if (!entry) {
-      entry = biome.baseHeight +
-        _random.elevationNoise1.in2D(x * biome.amps[0][0], z * biome.amps[0][0]) * biome.amps[0][1] +
-        _random.elevationNoise2.in2D(x * biome.amps[1][0], z * biome.amps[1][0]) * biome.amps[1][1] +
-        _random.elevationNoise3.in2D(x * biome.amps[2][0], z * biome.amps[2][0]) * biome.amps[2][1];
-      biomeHeightCache[index] = entry;
-    }
-    return entry;
-  }
-
   let biomes = opts.oldBiomes;
   if (!biomes) {
     biomes = new Uint8Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
+    let index = 0;
     for (let z = 0; z < NUM_CELLS_OVERSCAN; z++) {
       for (let x = 0; x < NUM_CELLS_OVERSCAN; x++) {
-        biomes[_getCoordOverscanIndex(x, z)] = _getBiome((ox * NUM_CELLS) + x, (oy * NUM_CELLS) + z).index;
+        biomes[index++] = _getBiome((ox * NUM_CELLS) + x, (oy * NUM_CELLS) + z);
       }
     }
   }
-
-  const _getElevation = (x, z) => {
-    const biomeCounts = {};
-    let totalBiomeCounts = 0;
-    for (let dz = -8; dz <= 8; dz++) {
-      for (let dx = -8; dx <= 8; dx++) {
-        const biome = _getBiome(x + dx, z + dz);
-        let biomeCount = biomeCounts[biome.index];
-        if (!biomeCount) {
-          biomeCount = {
-            count: 0,
-            height: _getBiomeHeight(biome, x, z),
-          };
-          biomeCounts[biome.index] = biomeCount;
-        }
-        biomeCount.count++;
-        totalBiomeCounts++;
-      }
-    }
-
-    let elevationSum = 0;
-    for (const index in biomeCounts) {
-      const biomeCount = biomeCounts[index];
-      elevationSum += biomeCount.count * biomeCount.height;
-    }
-    return elevationSum / totalBiomeCounts;
-  };
 
   let elevations = opts.oldElevations;
   if (!elevations) {
     elevations = new Float32Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
+    let index = 0;
     for (let z = 0; z < NUM_CELLS_OVERSCAN; z++) {
       for (let x = 0; x < NUM_CELLS_OVERSCAN; x++) {
-        elevations[_getCoordOverscanIndex(x, z)] = _getElevation((ox * NUM_CELLS) + x, (oy * NUM_CELLS) + z);
+        elevations[index++] = _getElevation((ox * NUM_CELLS) + x, (oy * NUM_CELLS) + z);
       }
     }
   }
@@ -336,9 +379,10 @@ const _generateMapChunk = (ox, oy, opts) => {
   let ether = opts.oldEther;
   if (!ether) {
     ether = new Float32Array((NUM_CELLS + 1) * (NUM_CELLS_HEIGHT + 1) * (NUM_CELLS + 1));
+    let index = 0;
     for (let z = 0; z < NUM_CELLS_OVERSCAN; z++) {
       for (let x = 0; x < NUM_CELLS_OVERSCAN; x++) {
-        const elevation = elevations[_getCoordOverscanIndex(x, z)];
+        const elevation = elevations[index++];
         for (let y = 0; y < NUM_CELLS_OVERSCAN_Y; y++) {
           ether[_getEtherIndex(x, y, z)] = Math.min(Math.max(y - elevation, -1), 1);
         }
@@ -373,48 +417,57 @@ const _generateMapChunk = (ox, oy, opts) => {
       for (let dox = -2; dox <= 2; dox++) {
         const aox = ox + dox;
         const aoy = oy + doy;
-        const n = _random.wormNoise.in2D(aox * NUM_CELLS + 1000, aoy * NUM_CELLS + 1000);
-        const numWorms = Math.floor(n * 4);
+        const n = _random.wormNoise(aox * NUM_CELLS + 1000, aoy * NUM_CELLS + 1000);
+        const numNests = Math.floor(n * 4);
 
-        for (let i = 0; i < numWorms; i++) {
+        for (let i = 0; i < numNests; i++) {
           const s = [n, i].join(':');
-          let cavePosX = (aox * NUM_CELLS) + (murmur(s + ':x') / 0xFFFFFFFF) * NUM_CELLS;
-          let cavePosY = (murmur(s + ':y') / 0xFFFFFFFF) * NUM_CELLS_HEIGHT;
-          let cavePosZ = (aoy * NUM_CELLS) + (murmur(s + ':z') / 0xFFFFFFFF) * NUM_CELLS;
-          // const caveLength = (murmur(s + ':caveLength1') / 0xFFFFFFFF) * (murmur(s + ':caveLength2') / 0xFFFFFFFF) * 200;
-          const caveLength = (murmur(s + ':caveLength1') / 0xFFFFFFFF) * (murmur(s + ':caveLength2') / 0xFFFFFFFF) * 100;
 
-          let theta = (murmur(s + ':theta') / 0xFFFFFFFF) * Math.PI * 2;
-          let deltaTheta = 0;
-          let phi = (murmur(s + ':phi') / 0xFFFFFFFF) * Math.PI * 2;
-          let deltaPhi = 0;
+          const nestX = (aox * NUM_CELLS) + (murmur(s + ':x') / 0xFFFFFFFF) * NUM_CELLS;
+          const nestY = (murmur(s + ':y') / 0xFFFFFFFF) * NUM_CELLS_HEIGHT;
+          const nestZ = (aoy * NUM_CELLS) + (murmur(s + ':z') / 0xFFFFFFFF) * NUM_CELLS;
 
-          const caveRadius = (murmur(s + ':caveRadius1') / 0xFFFFFFFF) * (murmur(s + ':caveRadius2') / 0xFFFFFFFF);
+          const numWorms = 1 + Math.floor((murmur(s + ':worms') / 0xFFFFFFFF) * (2 + 1));
+          for (let j = 0; j < numWorms; j++) {
+            const s = [n, i, j].join(':');
 
-          for (let len = 0; len < caveLength; len++) {
-            const s2 = [s, len].join(':');
+            let cavePosX = nestX;
+            let cavePosY = nestY;
+            let cavePosZ = nestZ;
+            // const caveLength = (murmur(s + ':caveLength1') / 0xFFFFFFFF) * (murmur(s + ':caveLength2') / 0xFFFFFFFF) * 200;
+            const caveLength = (murmur(s + ':caveLength1') / 0xFFFFFFFF) * (murmur(s + ':caveLength2') / 0xFFFFFFFF) * 100;
 
-            cavePosX += Math.sin(theta) * Math.cos(phi);
-            cavePosY += Math.cos(theta) * Math.cos(phi);
-            cavePosZ += Math.sin(phi);
+            let theta = (murmur(s + ':theta') / 0xFFFFFFFF) * Math.PI * 2;
+            let deltaTheta = 0;
+            let phi = (murmur(s + ':phi') / 0xFFFFFFFF) * Math.PI * 2;
+            let deltaPhi = 0;
 
-            theta += deltaTheta * 0.2;
-            deltaTheta = (deltaTheta * 0.9) + (murmur(s2 + ':deltaTheta1') / 0xFFFFFFFF) - (murmur(s2 + ':deltaTheta2') / 0xFFFFFFFF);
-            phi = phi/2 + deltaPhi/4;
-            deltaPhi = (deltaPhi * 0.75) + (murmur(s2 + ':deltaPhi1') / 0xFFFFFFFF) - (murmur(s2 + ':deltaPhi2') / 0xFFFFFFFF);
+            const caveRadius = (murmur(s + ':caveRadius1') / 0xFFFFFFFF) * (murmur(s + ':caveRadius2') / 0xFFFFFFFF);
 
-            if ((murmur(s2 + ':fill') / 0xFFFFFFFF) >= 0.25) {
-              const centerPosX = cavePosX + (murmur(s2 + ':centerPosX') / 0xFFFFFFFF * 4 - 2) * 0.2;
-              const centerPosY = cavePosY + (murmur(s2 + ':centerPosY') / 0xFFFFFFFF * 4 - 2) * 0.2;
-              const centerPosZ = cavePosZ + (murmur(s2 + ':centerPosZ') / 0xFFFFFFFF * 4 - 2) * 0.2;
+            for (let len = 0; len < caveLength; len++) {
+              const s2 = [s, len].join(':');
 
-              const height = (1 - 0.3 + Math.pow(_random.elevationNoise.in2D(centerPosX + 1000, centerPosZ + 1000), 0.5)) * 64;
-              let radius = (height - centerPosY) / height;
-              // radius = 1.3 + (radius * 3.5 + 1) * caveRadius;
-              radius = 3 + (radius * 3.5 + 1) * caveRadius;
-              radius = radius * Math.sin(len * Math.PI / caveLength);
+              cavePosX += Math.sin(theta) * Math.cos(phi);
+              cavePosY += Math.cos(theta) * Math.cos(phi);
+              cavePosZ += Math.sin(phi);
 
-              _fillOblateSpheroid(centerPosX, centerPosY, centerPosZ, ox * NUM_CELLS, oy * NUM_CELLS, (ox + 1) * NUM_CELLS, (oy + 1) * NUM_CELLS, radius);
+              theta += deltaTheta * 0.2;
+              deltaTheta = (deltaTheta * 0.9) + (murmur(s2 + ':deltaTheta1') / 0xFFFFFFFF) - (murmur(s2 + ':deltaTheta2') / 0xFFFFFFFF);
+              phi = phi/2 + deltaPhi/4;
+              deltaPhi = (deltaPhi * 0.75) + (murmur(s2 + ':deltaPhi1') / 0xFFFFFFFF) - (murmur(s2 + ':deltaPhi2') / 0xFFFFFFFF);
+
+              if ((murmur(s2 + ':fill') / 0xFFFFFFFF) >= 0.25) {
+                const centerPosX = cavePosX + (murmur(s2 + ':centerPosX') / 0xFFFFFFFF * 4 - 2) * 0.2;
+                const centerPosY = cavePosY + (murmur(s2 + ':centerPosY') / 0xFFFFFFFF * 4 - 2) * 0.2;
+                const centerPosZ = cavePosZ + (murmur(s2 + ':centerPosZ') / 0xFFFFFFFF * 4 - 2) * 0.2;
+
+                // const height = (1 - 0.3 + Math.pow(_random.elevationNoise.in2D(centerPosX + 1000, centerPosZ + 1000), 0.5)) * 64;
+                // let radius = (height - centerPosY) / height;
+                // radius = 1.3 + (radius * 3.5 + 1) * caveRadius;
+                const radius = 3 + 3.5 * caveRadius * Math.sin(len * Math.PI / caveLength);
+
+                _fillOblateSpheroid(centerPosX, centerPosY, centerPosZ, ox * NUM_CELLS, oy * NUM_CELLS, (ox + 1) * NUM_CELLS, (oy + 1) * NUM_CELLS, radius);
+              }
             }
           }
         }
@@ -460,9 +513,10 @@ const _generateMapChunk = (ox, oy, opts) => {
     };
 
     // water
+    let index = 0;
     for (let z = 0; z <= NUM_CELLS; z++) {
       for (let x = 0; x <= NUM_CELLS; x++) {
-        const elevation = elevations[_getCoordOverscanIndex(x, z)];
+        const elevation = elevations[index++];
         for (let y = 0; y <= NUM_CELLS_HEIGHT; y++) {
           if (y < 64 && y >= elevation) {
             const index = _getEtherIndex(x, y, z);
@@ -483,8 +537,8 @@ const _generateMapChunk = (ox, oy, opts) => {
 
             const elevation = _getElevation(ax, az);
             const biome = _getBiome(x, z);
-            if (BIOMES_TALL[biome.index] && elevation >= 90) {
-              if (_random.temperatureNoise.in2D(ax + 1000, az + 1000) < 0.15) {
+            if (BIOMES_TALL[biome] && elevation >= 90) {
+              if (_random.temperatureNoise(ax + 1000, az + 1000) < 0.15) {
                 _setLiquid(ax, Math.floor(elevation + 1), az, 2);
               }
             }
@@ -584,8 +638,8 @@ const _generateMapChunk = (ox, oy, opts) => {
     const geometryColors = new Float32Array(colors.buffer, colors.byteOffset + start * 4, count);
 
     const numPositions = geometryPositions.length / 3;
+    let baseIndex = 0;
     for (let j = 0; j < numPositions; j++) {
-      const baseIndex = j * 3;
       const x = geometryPositions[baseIndex + 0];
       const y = geometryPositions[baseIndex + 1];
       const z = geometryPositions[baseIndex + 2];
@@ -603,13 +657,15 @@ const _generateMapChunk = (ox, oy, opts) => {
       if (offset) {
         geometryPositions[baseIndex + 1] += offset;
       }
+
+      baseIndex += 3;
     }
   };
 
   for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
     const geometry = geometries[i];
     const {attributeRange} = geometry;
-    _postProcessGeometry(attributeRange.landStart, attributeRange.landCount, (x, y, z) => _getBiome(Math.floor(x), Math.floor(z)).color);
+    _postProcessGeometry(attributeRange.landStart, attributeRange.landCount, (x, y, z) => BIOMES_INDEX[_getBiome(Math.floor(x), Math.floor(z))].color);
     _postProcessGeometry(attributeRange.waterStart, attributeRange.waterCount, (x, y, z) => {
       return [
         mod(Math.abs(x) / 16.0 * 4.0 * 0.99, 1) * 0.5,
@@ -763,7 +819,8 @@ const _generateMapChunk = (ox, oy, opts) => {
     liquidTypes,
   };
 };
-const _getCoordOverscanIndex = (x, y) => x + (y * NUM_CELLS_OVERSCAN);
+// const _getCoordIndex = (x, z) => x + z * NUM_CELLS;
+const _getCoordOverscanIndex = (x, z) => x + z * NUM_CELLS_OVERSCAN;
 const _getEtherIndex = (x, y, z) => x + (z * NUM_CELLS_OVERSCAN) + (y * NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
 const _colorIntToArray = n => ([
   ((n >> (8 * 2)) & 0xFF) / 0xFF,
