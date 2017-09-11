@@ -27,6 +27,7 @@ const DIRECTIONS = [
 ];
 const OBJECTS_PLUGIN = 'plugins-objects';
 
+const etherSymbol = Symbol();
 const lightsSymbol = Symbol();
 const decorationsSymbol = Symbol();
 const _getLightsIndex = (x, y, z) => x + y * NUM_CELLS_OVERSCAN + z * NUM_CELLS_OVERSCAN * (NUM_CELLS_HEIGHT + 1);
@@ -115,6 +116,17 @@ class Heightfield {
         });
         const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
         const _getEtherIndex = (x, y, z) => x + (z * NUM_CELLS_OVERSCAN) + (y * NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
+        const _generateChunk = (chunk, opts) => {
+          const chunkData = generator.generate(chunk.x, chunk.z, opts);
+
+          const uint32Buffer = chunk.getBuffer();
+          protocolUtils.stringifyData(chunkData, uint32Buffer.buffer, uint32Buffer.byteOffset);
+          chunk.dirty = true;
+
+          chunk[etherSymbol] = chunkData.ether;
+
+          return chunk;
+        };
         const _ensureNeighboringChunks = (x, z) => {
           const promises = [];
           for (let dz = -1; dz <= 1; dz++) {
@@ -125,8 +137,7 @@ class Heightfield {
 
               let chunk = tra.getChunk(ax, az);
               if (!chunk) {
-                chunk = tra.makeChunk(ax, az);
-                chunk.generate(generator.generate);
+                chunk = _generateChunk(tra.makeChunk(ax, az));
               }
 
               promises.push(Promise.resolve(chunk));
@@ -303,11 +314,7 @@ class Heightfield {
                   const _isOccludedHeightfield = () => {
                     const ox = Math.floor(x / NUM_CELLS);
                     const oz = Math.floor(z / NUM_CELLS);
-
-                    const chunk = tra.getChunk(ox, oz);
-                    const uint32Buffer = chunk.getBuffer();
-                    const {ether} = protocolUtils.parseData(uint32Buffer.buffer, uint32Buffer.byteOffset);
-                    return ether[_getEtherIndex(x - ox * NUM_CELLS, y, z - oz * NUM_CELLS)] <= -1;
+                    return tra.getChunk(ox, oz)[etherSymbol][_getEtherIndex(x - ox * NUM_CELLS, y, z - oz * NUM_CELLS)] <= -1;
                   };
                   const _isOccludedObjects = () => objectsEntity.isOccluded(x, y, z);
 
@@ -375,8 +382,7 @@ class Heightfield {
             new Promise((accept, reject) => {
               let chunk = tra.getChunk(x, z);
               if (!chunk) {
-                chunk = tra.makeChunk(x, z);
-                chunk.generate(generator.generate);
+                chunk = _generateChunk(tra.makeChunk(x, z));
                 _saveChunks();
               }
               accept(chunk);
@@ -431,19 +437,19 @@ class Heightfield {
               if (!seenIndex[index]) {
                 let chunk = tra.getChunk(ox, oz);
                 if (!chunk) {
-                  chunk = tra.makeChunk(ox, oz);
-                  chunk.generate(generator.generate, {
+                  chunk = _generateChunk(tra.makeChunk(ox, oz), {
                     newEther,
                   });
                 } else {
-                  const uint32Buffer = chunk.getBuffer();
-                  const chunkData = protocolUtils.parseData(uint32Buffer.buffer, uint32Buffer.byteOffset);
-                  const oldBiomes = chunkData.biomes.slice();
-                  const oldElevations = chunkData.elevations.slice();
-                  const oldEther = chunkData.ether.slice();
-                  const oldLiquid = chunkData.liquid.slice();
-                  const oldLiquidTypes = chunkData.liquidTypes.slice();
-                  chunk.generate(generator.generate, {
+                  const oldUint32Buffer = chunk.getBuffer();
+                  const oldChunkData = protocolUtils.parseData(oldUint32Buffer.buffer, oldUint32Buffer.byteOffset);
+                  const oldBiomes = oldChunkData.biomes.slice();
+                  const oldElevations = oldChunkData.elevations.slice();
+                  const oldEther = oldChunkData.ether.slice();
+                  const oldLiquid = oldChunkData.liquid.slice();
+                  const oldLiquidTypes = oldChunkData.liquidTypes.slice();
+
+                  chunk = _generateChunk(chunk, {
                     oldBiomes,
                     oldElevations,
                     oldEther,
@@ -500,8 +506,7 @@ class Heightfield {
           requestHeightfield(x, z) {
             let chunk = tra.getChunk(x, z);
             if (!chunk) {
-              chunk = tra.makeChunk(x, z);
-              chunk.generate(generator.generate);
+              chunk = _generateChunk(tra.makeChunk(x, z));
               _saveChunks();
             }
             const uint32Buffer = chunk.getBuffer();
@@ -510,8 +515,7 @@ class Heightfield {
           requestStaticHeightfield(x, z) {
             let chunk = tra.getChunk(x, z);
             if (!chunk) {
-              chunk = tra.makeChunk(x, z);
-              chunk.generate(generator.generate);
+              chunk = _generateChunk(tra.makeChunk(x, z));
               _saveChunks();
             }
             const uint32Buffer = chunk.getBuffer();
@@ -520,8 +524,7 @@ class Heightfield {
           requestBiomes(x, z) {
             let chunk = tra.getChunk(x, z);
             if (!chunk) {
-              chunk = tra.makeChunk(x, z);
-              chunk.generate(generator.generate);
+              chunk = _generateChunk(tra.makeChunk(x, z));
               _saveChunks();
             }
             const uint32Buffer = chunk.getBuffer();
@@ -557,8 +560,7 @@ class Heightfield {
             const _requestLightedChunk = (x, z) => {
               let chunk = tra.getChunk(x, z);
               if (!chunk) {
-                chunk = tra.makeChunk(x, z);
-                chunk.generate(generator.generate);
+                chunk = _generateChunk(tra.makeChunk(x, z));
                 _saveChunks();
               }
               if (chunk[lightsSymbol]) {

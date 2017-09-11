@@ -833,7 +833,7 @@ const _getStaticHeightfieldIndex = (x, z) => x + (z * NUM_CELLS_OVERSCAN);
 const _getLightsIndex = (x, y, z) => x + y * NUM_CELLS_OVERSCAN + z * NUM_CELLS_OVERSCAN * (NUM_CELLS_HEIGHT + 1);
 const _getLightsArrayIndex = (x, z) => x + z * 3;
 
-const generate = (x, y, buffer, byteOffset, opts) => {
+const generate = (x, y, opts) => {
   if (opts === undefined) {
     opts = {};
   }
@@ -856,7 +856,7 @@ const generate = (x, y, buffer, byteOffset, opts) => {
     opts.regenerate = false;
   }
 
-  protocolUtils.stringifyData(_generateMapChunk(x, y, opts), buffer, byteOffset);
+  return _generateMapChunk(x, y, opts);
 };
 
 const _makeLights = () => new Uint8Array(NUM_CELLS_OVERSCAN * (NUM_CELLS_HEIGHT + 1) * NUM_CELLS_OVERSCAN);
