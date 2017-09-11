@@ -6,7 +6,6 @@ importScripts('/archae/assets/indev.js');
 const {exports: indev} = self.module;
 self.module = {};
 
-const generatorLib = require('./generator');
 const trra = require('trra');
 const {
   CHUNK_BUFFER_SIZE,
@@ -32,11 +31,6 @@ const DIRECTIONS = [
   [1, 1],
 ];
 
-const generator = generatorLib({
-  THREE,
-  murmur,
-  indev,
-});
 const tra = trra({
   seed: DEFAULT_SEED,
 });
