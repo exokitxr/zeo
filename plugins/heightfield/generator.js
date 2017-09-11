@@ -105,8 +105,6 @@ const _makeGeometries = (ox, oy, ether, liquid, liquidTypes) => {
         [NUM_CELLS + 1, (NUM_CELLS * (i + 1)) + 1, NUM_CELLS + 1],
       ]
     );
-    // const newWaterPositions = [];
-    // const newWaterIndices = [];
     positions.set(newWaterPositions, attributeIndex);
     _copyIndices(newWaterIndices, indices, indexIndex, attributeIndex / 3);
 
