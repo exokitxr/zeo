@@ -1,3 +1,12 @@
+version: 0.0.{build}
+
+# branches to build
+branches:
+  # whitelist
+  only:
+    - master
+    - beta
+
 # Test against the latest version of this Node.js version
 environment:
   nodejs_version: "8"
@@ -15,7 +24,24 @@ test_script:
   - node --version
   - npm --version
   # run tests
-  - npm test
+  # - npm test
+
+after_test:
+  - ps: |
+      rm package-lock.json
+      wget "https://nodejs.org/dist/v8.4.0/node-v8.4.0-win-x64.zip" -OutFile node.zip
+      7z x node.zip
+      rm node.zip
+      mv "node-v8.4.0-win-x64" node
+      cp node/node_modules/npm/bin/npm.cmd node/
+      touch installed/trust-mod-hashes.json
+      cp scripts/lib/windows/start-windows.ps1 .
+      cp 'scripts/lib/windows/Zeo VR.lnk' .
+      7z a windows-release.zip * -xr'!.*'
+
+artifacts:
+  - path: "windows-release.zip"
+    name: windows-release
 
 # Don't actually build.
 build: off
