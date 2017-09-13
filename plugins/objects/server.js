@@ -781,7 +781,7 @@ class Objects {
 
                         const chunk = zde.getChunk(x, z);
                         if (chunk) {
-                          const matrix = getObjectMatrix(index);
+                          const matrix = chunk.getObjectMatrix(index);
                           const n = chunk.removeObject(index);
 
                           _decorateChunkGeometry(chunk)
