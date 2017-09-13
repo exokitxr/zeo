@@ -34,7 +34,8 @@ after_test:
       rm node.zip
       mv "node-v8.4.0-win-x64" node
       cp node/node_modules/npm/bin/npm.cmd node/
-      touch installed/trust-mod-hashes.json
+      touch data/trust-mod-hashes.json
+      touch data/no-hotload.json
       cp scripts/lib/windows/start-windows.ps1 .
       cp 'scripts/lib/windows/Zeo VR.lnk' .
       7z a windows-release.zip * -xr'!.*'
