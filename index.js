@@ -92,6 +92,14 @@ const password = (() => {
 if (password !== null) {
   console.log(`Reminder: server password is ${JSON.stringify(password)}`);
 }
+const hotload = (() => {
+  try {
+    const noHotloadJsonPath = path.join(__dirname, dataDirectory, 'no-hotload.json');
+    return !fs.existsSync(noHotloadJsonPath, 'utf8');
+  } catch (err) {
+    return false;
+  }
+})();
 const protocolString = !secure ? 'http' : 'https';
 const siteUrl = flags.siteUrl || (protocolString + '://' + hostname + ':' + port);
 const vridUrl = flags.vridUrl || (protocolString + '://' + hostname + ':' + port);
@@ -100,20 +108,21 @@ const fullUrl = protocolString + '://127.0.0.1:' + port;
 const maxUsers = (flags.maxUsers && parseInt(flags.maxUsers, 10)) || 4;
 const config = {
   dirname: __dirname,
-  hostname: hostname,
-  port: port,
-  secure: secure,
+  hostname,
+  port,
+  secure,
+  hotload,
   publicDirectory: 'public',
-  dataDirectory: dataDirectory,
-  cryptoDirectory: cryptoDirectory,
-  installDirectory: installDirectory,
-  password: password,
+  dataDirectory,
+  cryptoDirectory,
+  installDirectory,
+  password,
   cors: true,
   staticSite: false,
   metadata: {
     config: {
-      dataDirectorySrc: dataDirectorySrc,
-      cryptoDirectorySrc: cryptoDirectorySrc,
+      dataDirectorySrc,
+      cryptoDirectorySrc,
     },
     site: {
       url: siteUrl,
@@ -128,7 +137,7 @@ const config = {
       url: fullUrl,
       enabled: flags.server,
     },
-    maxUsers: maxUsers,
+    maxUsers,
     transient: {},
   },
 };
