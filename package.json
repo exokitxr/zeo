@@ -9,7 +9,6 @@
   "scripts": {
     "start": "scripts/standalone.sh",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "scripts/build-windows.sh",
     "postinstall": "node index.js install"
   },
   "repository": {
