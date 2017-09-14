@@ -21,7 +21,6 @@ const {
 
   NUM_POSITIONS_CHUNK,
 } = require('./lib/constants/constants');
-const tesselateUtilsLib = require('./lib/utils/tesselate-utils');
 const protocolUtils = require('./lib/utils/protocol-utils');
 const objectsLib = require('./lib/objects/server/index');
 
@@ -45,10 +44,8 @@ class Objects {
     const {THREE} = three;
     const {mod} = jsUtils;
     const {murmur} = hashUtils;
-    const {alea, indev} = randomUtils;
+    const {alea, vxl} = randomUtils;
     const {jimp} = imageUtils;
-
-    const tesselateUtils = tesselateUtilsLib({THREE, BLOCK_BUFFER_SIZE});
 
     return elements.requestElement(HEIGHTFIELD_PLUGIN)
       .then(heightfieldElement => {
@@ -61,10 +58,16 @@ class Objects {
         const rng = new alea(DEFAULT_SEED);
         const heightfields = {}; // XXX these should be LRU caches
         const biomes = {};
-        const geometries = {};
+        const geometryTypes = {};
+        const geometriesBuffer = new Uint8Array(NUM_POSITIONS_CHUNK);
+        let geommetriesIndex = 0;
         const noises = {};
         const generators = [];
+        let numBlockTypes = 0;
         const blockTypes = {};
+        const transparentVoxels = new Uint8Array(256);
+        const translucentVoxels = new Uint8Array(256);
+        const faceUvs = new Float32Array(256 * 6 * 4);
 
         const zeroUint8Array = new Uint8Array(0);
         const localQuaternion = new THREE.Quaternion();
@@ -155,90 +158,47 @@ class Objects {
           const geometriesIndices = _makeGeometeriesBuffer(Uint32Array);
           const geometriesObjects = _makeGeometeriesBuffer(Uint32Array);
 
-          chunk.forEachObject((n, matrix, value, objectIndex) => {
-            const geometryEntries = geometries[n];
-
-            if (geometryEntries) {
-              for (let j = 0; j < geometryEntries.length; j++) {
-                const geometryEntry = geometryEntries[j];
-                const newGeometry = geometryEntry.clone()
-                  .applyMatrix(localMatrix.makeRotationFromQuaternion(localQuaternion.set(matrix[3], matrix[4], matrix[5], matrix[6])))
-                  .applyMatrix(localMatrix.makeTranslation(matrix[0], matrix[1], matrix[2]));
-                  // .applyMatrix(localMatrix.makeScale(matrix[7], matrix[8], matrix[9]));
-
-                const i = Math.min(Math.max(Math.floor(matrix[1] / NUM_CELLS), 0), NUM_CHUNKS_HEIGHT - 1);
-
-                const newPositions = newGeometry.getAttribute('position').array;
-                geometriesPositions[i].array.set(newPositions, geometriesPositions[i].index);
-
-                const newUvs = newGeometry.getAttribute('uv').array;
-                const numNewUvs = newUvs.length / 2;
-                for (let k = 0; k < numNewUvs; k++) {
-                  const baseIndex = k * 2;
-                  geometriesUvs[i].array[geometriesUvs[i].index + baseIndex + 0] = newUvs[baseIndex + 0];
-                  geometriesUvs[i].array[geometriesUvs[i].index + baseIndex + 1] = 1 - newUvs[baseIndex + 1];
-                }
-
-                const newFrames = newGeometry.getAttribute('frame').array;
-                geometriesFrames[i].array.set(newFrames, geometriesFrames[i].index);
-
-                const newSsaos = newGeometry.getAttribute('ssao').array;
-                geometriesSsaos[i].array.set(newSsaos, geometriesSsaos[i].index);
-
-                const numNewPositions = newPositions.length / 3;
-                const newObjectIndices = new Float32Array(numNewPositions);
-                for (let k = 0; k < numNewPositions; k++) {
-                  newObjectIndices[k] = objectIndex;
-                }
-                geometriesObjectIndices[i].array.set(newObjectIndices, geometriesObjectIndices[i].index);
-
-                const newIndices = newGeometry.index.array;
-                _copyIndices(newIndices, geometriesIndices[i].array, geometriesIndices[i].index, geometriesPositions[i].index / 3);
-
-                const newObjects = new Uint32Array(7);
-                newObjects[0] = objectIndex;
-                const newObjectsFloat = new Float32Array(newObjects.buffer, newObjects.byteOffset + 4, 6);
-                newObjectsFloat[0] = geometryEntry.boundingBox.min.x;
-                newObjectsFloat[1] = geometryEntry.boundingBox.min.y;
-                newObjectsFloat[2] = geometryEntry.boundingBox.min.z;
-                newObjectsFloat[3] = geometryEntry.boundingBox.max.x;
-                newObjectsFloat[4] = geometryEntry.boundingBox.max.y;
-                newObjectsFloat[5] = geometryEntry.boundingBox.max.z;
-                geometriesObjects[i].array.set(newObjects, geometriesObjects[i].index);
-
-                geometriesPositions[i].index += newPositions.length;
-                geometriesUvs[i].index += newUvs.length;
-                geometriesSsaos[i].index += newSsaos.length;
-                geometriesFrames[i].index += newFrames.length;
-                geometriesObjectIndices[i].index += newObjectIndices.length;
-                geometriesIndices[i].index += newIndices.length;
-                geometriesObjects[i].index += newObjects.length;
-              }
-            }
+          const {
+            positions: numNewPositions,
+            uvs: numNewUvs,
+            ssaos: numNewSsaos,
+            frames: numNewFrames,
+            objectIndices: numNewObjectIndices,
+            indices: numNewIndices,
+            objects: numNewObjects,
+          } = vxl.compose({
+            src: chunk.getObjectBuffer(),
+            geometries: geometriesBuffer,
+            geometryIndex: geometryTypes,
+            positions: geometriesPositions.map(({array}) => array),
+            uvs: geometriesUvs.map(({array}) => array),
+            ssaos: geometriesSsaos.map(({array}) => array),
+            frames: geometriesFrames.map(({array}) => array),
+            objectIndices: geometriesObjectIndices.map(({array}) => array),
+            indices: geometriesIndices.map(({array}) => array),
+            objects: geometriesObjects.map(({array}) => array),
           });
+          for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
+            geometriesPositions[i].index += numNewPositions[i];
+            geometriesUvs[i].index += numNewUvs[i];
+            geometriesSsaos[i].index += numNewSsaos[i];
+            geometriesFrames[i].index += numNewFrames[i];
+            geometriesObjectIndices[i].index += numNewObjectIndices[i];
+            geometriesIndices[i].index += numNewIndices[i];
+            geometriesObjects[i].index += numNewObjects[i];
+          }
 
           const blockBuffer = chunk.getBlockBuffer();
           for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
             const voxels = blockBuffer.subarray(i * NUM_VOXELS_CHUNK_HEIGHT, (i + 1) * NUM_VOXELS_CHUNK_HEIGHT);
-            const {positions: newPositions, uvs: newUvs, ssaos: newSsaos} = tesselateUtils.tesselate(voxels, [NUM_CELLS, NUM_CELLS, NUM_CELLS], {
-              isTransparent: n => n ? blockTypes[n].transparent : false,
-              isTranslucent: n => n ? blockTypes[n].translucent : false,
-              getFaceUvs: (n, direction) => blockTypes[n].uvs[direction],
-            });
+            const {positions: newPositions, uvs: newUvs, ssaos: newSsaos} =
+              vxl.tesselate(voxels, blockTypes, [NUM_CELLS, NUM_CELLS, NUM_CELLS], transparentVoxels, translucentVoxels, faceUvs, [chunk.x * NUM_CELLS, i * NUM_CELLS, chunk.z * NUM_CELLS],
+                new Float32Array(geometriesPositions[i].array.buffer, geometriesPositions[i].array.byteOffset + geometriesPositions[i].index * 4),
+                new Float32Array(geometriesUvs[i].array.buffer, geometriesUvs[i].array.byteOffset + geometriesUvs[i].index * 4),
+                new Uint8Array(geometriesSsaos[i].array.buffer, geometriesSsaos[i].array.byteOffset + geometriesSsaos[i].index)
+              );
 
             if (newPositions.length > 0) {
-              for (let j = 0; j < newPositions.length / 3; j++) {
-                const baseIndex = j * 3;
-                newPositions[baseIndex + 0] += chunk.x * NUM_CELLS;
-                newPositions[baseIndex + 1] += i * NUM_CELLS;
-                newPositions[baseIndex + 2] += chunk.z * NUM_CELLS;
-              }
-              geometriesPositions[i].array.set(newPositions, geometriesPositions[i].index);
-
-              geometriesUvs[i].array.set(newUvs, geometriesUvs[i].index);
-
-              geometriesSsaos[i].array.set(newSsaos, geometriesSsaos[i].index);
-
               const newFrames = new Float32Array(newPositions.length);
               geometriesFrames[i].array.set(newFrames, geometriesFrames[i].index);
 
@@ -502,9 +462,8 @@ class Objects {
                   return murmur(s);
                 },
                 registerNoise(name, spec) {
-                  noises[name] = indev({
-                    seed: spec.seed,
-                  }).uniform({
+                  noises[name] = new vxl.fastNoise({
+                    seed: murmur(spec.seed),
                     frequency: spec.frequency,
                     octaves: spec.octaves,
                   });
@@ -525,26 +484,43 @@ class Objects {
                     const ssaos = new Uint8Array(geometry.getAttribute('position').array.length / 3);
                     geometry.addAttribute('ssao', new THREE.BufferAttribute(ssaos, 1));
                   }
-
                   if (!geometry.getAttribute('frame')) {
                     const frames = new Float32Array(geometry.getAttribute('position').array.length);
                     geometry.addAttribute('frame', new THREE.BufferAttribute(frames, 3));
                   }
-
                   if (!geometry.boundingBox) {
                     geometry.computeBoundingBox();
                   }
 
-                  const n = murmur(name);
-                  let entry = geometries[n];
-                  if (!entry) {
-                    entry = [];
-                    geometries[n] = entry;
-                  }
-                  entry.push(geometry);
+                  const index = geommetriesIndex;
+                  geommetriesIndex = protocolUtils.stringifyTemplate({
+                    positions: geometry.getAttribute('position').array,
+                    uvs: geometry.getAttribute('uv').array,
+                    ssaos: geometry.getAttribute('ssao').array,
+                    frames: geometry.getAttribute('frame').array,
+                    indices: geometry.index.array,
+                    boundingBox: Float32Array.from([
+                      geometry.boundingBox.min.x,
+                      geometry.boundingBox.min.y,
+                      geometry.boundingBox.min.z,
+                      geometry.boundingBox.max.x,
+                      geometry.boundingBox.max.y,
+                      geometry.boundingBox.max.z,
+                    ]),
+                  }, geometriesBuffer.buffer, geometriesBuffer.byteOffset + geommetriesIndex)[1];
+
+                  geometryTypes[murmur(name)] = index;
                 },
                 registerBlock(name, blockSpec) {
+                  const index = ++numBlockTypes;
+                  blockSpec.index = index;
                   blockTypes[murmur(name)] = blockSpec;
+
+                  transparentVoxels[index] = +blockSpec.transparent;
+                  translucentVoxels[index] = +blockSpec.translucent;
+                  for (let d = 0; d < 6; d++) {
+                    faceUvs.set(Float32Array.from(blockSpec.uvs[d]), index * 6 * 4 + d * 4);
+                  }
                 },
                 setBlock(chunk, x, y, z, name) {
                   const ox = Math.floor(x / NUM_CELLS);
@@ -633,24 +609,19 @@ class Objects {
                   chunk.addObject(n, matrix, value);
                 },
               };
-              objectApi.registerNoise('elevation', { // XXX move these into the objects lib
-                seed: DEFAULT_SEED,
-                frequency: 0.002,
-                octaves: 8,
-              });
-              objectApi.registerNoise('grass', {
+              objectApi.registerNoise('grass', { // XXX move these into the objects lib
                 seed: DEFAULT_SEED + ':grass',
-                frequency: 0.1,
+                frequency: 0.2,
                 octaves: 4,
               });
               objectApi.registerNoise('tree', {
                 seed: DEFAULT_SEED + ':tree',
-                frequency: 0.1,
+                frequency: 0.2,
                 octaves: 4,
               });
               objectApi.registerNoise('items', {
                 seed: DEFAULT_SEED + ':items',
-                frequency: 0.1,
+                frequency: 0.2,
                 octaves: 4,
               });
 

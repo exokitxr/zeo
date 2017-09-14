@@ -43,7 +43,7 @@ const stick = objectApi => {
         const localQuaternion = new THREE.Quaternion();
         const localEuler = new THREE.Euler();
 
-        const itemProbability = 0.05;
+        const itemProbability = 0.25;
 
         for (let dz = 0; dz < NUM_CELLS; dz++) {
           for (let dx = 0; dx < NUM_CELLS; dx++) {
