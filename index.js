@@ -43,8 +43,7 @@ const flags = {
   dataDirectory: _findArg('dataDirectory'),
   cryptoDirectory: _findArg('cryptoDirectory'),
   installDirectory: _findArg('installDirectory'),
-  dataDirectorySrc: _findArg('dataDirectorySrc'),
-  cryptoDirectorySrc: _findArg('cryptoDirectorySrc'),
+  defaultsDirectory: _findArg('defaultsDirectory'),
   siteUrl: _findArg('siteUrl'),
   vridUrl: _findArg('vridUrl'),
   crdsUrl: _findArg('crdsUrl'),
@@ -68,8 +67,7 @@ const secure = (typeof flags.secure === 'boolean') ? flags.secure : false;
 const dataDirectory = flags.dataDirectory || 'data';
 const cryptoDirectory = flags.cryptoDirectory || 'crypto';
 const installDirectory = flags.installDirectory || 'installed';
-const dataDirectorySrc = flags.dataDirectorySrc || 'defaults/data';
-const cryptoDirectorySrc = flags.cryptoDirectorySrc || 'defaults/crypto';
+const defaultsDirectory = flags.defaultsDirectory || 'defaults';
 const password = (() => {
   try {
     const worldConfigJsonPath = path.join(__dirname, dataDirectory, 'world', 'config.json');
@@ -121,8 +119,7 @@ const config = {
   staticSite: false,
   metadata: {
     config: {
-      dataDirectorySrc,
-      cryptoDirectorySrc,
+      defaultsDirectory,
     },
     site: {
       url: siteUrl,
