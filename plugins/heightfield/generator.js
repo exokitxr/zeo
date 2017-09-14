@@ -681,7 +681,7 @@ const _generateMapChunk = (ox, oy, opts) => {
 
     geometry.boundingSphere = new THREE.Sphere(
       new THREE.Vector3(ox * NUM_CELLS + NUM_CELLS_HALF, i * NUM_CELLS + NUM_CELLS_HALF, oy * NUM_CELLS + NUM_CELLS_HALF),
-      NUM_CELLS_CUBE,
+      NUM_CELLS_CUBE
     );
   }
 
