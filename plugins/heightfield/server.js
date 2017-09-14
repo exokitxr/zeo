@@ -48,7 +48,7 @@ class Heightfield {
       utils: {
         js: {mod},
         hash: {murmur},
-        random: {indev},
+        random: {alea, vxl},
       },
     } = zeo;
 
@@ -56,7 +56,8 @@ class Heightfield {
       THREE,
       mod,
       murmur,
-      indev,
+      alea,
+      vxl,
     });
     const trraDataPath = path.join(dirname, dataDirectory, 'trra.dat');
 
@@ -288,14 +289,14 @@ class Heightfield {
                   const _getHeightfieldLightSources = () => {
                     const chunk = tra.getChunk(ox, oz);
                     const uint32Buffer = chunk.getBuffer();
-                    const {liquid, liquidTypes} = protocolUtils.parseData(uint32Buffer.buffer, uint32Buffer.byteOffset);
+                    const {lava} = protocolUtils.parseData(uint32Buffer.buffer, uint32Buffer.byteOffset);
 
                     const result = [];
                     for (let z = 0; z < NUM_CELLS; z++) { // XXX this can be optimized to scan only the passed-in ranges
                       for (let y = 0; y < NUM_CELLS_HEIGHT; y++) {
                         for (let x = 0; x < NUM_CELLS; x++) {
                           const index = _getEtherIndex(x, y, z);
-                          if (liquid[index] === 1 && liquidTypes[index] === 2) { // present && lava
+                          if (lava[index] === 1) {
                             result.push([x + ox * NUM_CELLS, y, z + oz * NUM_CELLS, 15]);
                           }
                         }
@@ -337,8 +338,9 @@ class Heightfield {
           const {[lightsSymbol]: lights} = chunk;
 
           const numPositions = positions.length / 3;
-          const skyLightmaps = new Uint8Array(numPositions);
-          const torchLightmaps = new Uint8Array(numPositions);
+          const lightmapsBuffer = new ArrayBuffer(numPositions * 2);
+          const skyLightmaps = new Uint8Array(lightmapsBuffer, 0, numPositions);
+          const torchLightmaps = new Uint8Array(lightmapsBuffer, numPositions, numPositions);
 
           const ox = chunk.x * NUM_CELLS;
           const oz = chunk.z * NUM_CELLS;
@@ -446,15 +448,15 @@ class Heightfield {
                   const oldBiomes = oldChunkData.biomes.slice();
                   const oldElevations = oldChunkData.elevations.slice();
                   const oldEther = oldChunkData.ether.slice();
-                  const oldLiquid = oldChunkData.liquid.slice();
-                  const oldLiquidTypes = oldChunkData.liquidTypes.slice();
+                  const oldWater = oldChunkData.water.slice();
+                  const oldLava = oldChunkData.lava.slice();
 
                   chunk = _generateChunk(chunk, {
                     oldBiomes,
                     oldElevations,
                     oldEther,
-                    oldLiquid,
-                    oldLiquidTypes,
+                    oldWater,
+                    oldLava,
                     newEther,
                   });
                 }

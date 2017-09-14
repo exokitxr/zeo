@@ -8,7 +8,6 @@
     "worker": "worker.js"
   },
   "dependencies": {
-    "mrch": "0.0.2",
     "touch": "^3.1.0",
     "trra": "0.0.7"
   }

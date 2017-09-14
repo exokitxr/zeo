@@ -19,7 +19,7 @@ const CULL_HEADER_ENTRIES = 1;
 const CULL_HEADER_SIZE = UINT32_SIZE * CULL_HEADER_ENTRIES;
 
 const _getDataChunkSizeFromMetadata = metadata => {
-  const {numPositions, numColors, /*numSkyLightmaps, numTorchLightmaps, */numIndices, numPeeks, numHeightfield, numStaticHeightfield, numBiomes, numElevations, numEther, numLiquid} = metadata;
+  const {numPositions, numColors, /*numSkyLightmaps, numTorchLightmaps, */numIndices, numPeeks, numHeightfield, numStaticHeightfield, numBiomes, numElevations, numWater, numLava} = metadata;
 
   return DATA_HEADER_SIZE + // header
     (FLOAT32_SIZE * numPositions) + // positions
@@ -35,12 +35,12 @@ const _getDataChunkSizeFromMetadata = metadata => {
     _align(UINT8_SIZE * numBiomes, FLOAT32_SIZE) + // biomes
     (FLOAT32_SIZE * numElevations) + // elevations
     (FLOAT32_SIZE * numEther) + // ethers
-    (UINT8_SIZE * numLiquid) + // liquids
-    (UINT8_SIZE * numLiquidTypes); // liquid types
+    (UINT8_SIZE * numWater) + // water
+    (UINT8_SIZE * numLava); // lava
 };
 
 const _getDataChunkSize = mapChunk => {
-  const {positions, colors, /*skyLightmaps, torchLightmaps, */indices, geometries, heightfield, staticHeightfield, biomes, elevations, ether, liquid, liquidTypes} = mapChunk;
+  const {positions, colors, /*skyLightmaps, torchLightmaps, */indices, geometries, heightfield, staticHeightfield, biomes, elevations, ether, water, lava} = mapChunk;
 
   const numPositions = positions.length;
   const numColors = colors.length;
@@ -58,8 +58,8 @@ const _getDataChunkSize = mapChunk => {
   const numBiomes = biomes.length;
   const numElevations = elevations.length;
   const numEther = ether.length;
-  const numLiquid = liquid.length;
-  const numLiquidTypes = liquidTypes.length;
+  const numWater = water.length;
+  const numLava = lava.length;
 
   return _getDataChunkSizeFromMetadata({
     numPositions,
@@ -72,13 +72,13 @@ const _getDataChunkSize = mapChunk => {
     numBiomes,
     numElevations,
     numEther,
-    numLiquid,
-    numLiquidTypes,
+    numWater,
+    numLava,
   });
 };
 
 const stringifyData = (mapChunk, arrayBuffer, byteOffset) => {
-  const {positions, colors, /*skyLightmaps, torchLightmaps, */indices, geometries, heightfield, staticHeightfield, biomes, elevations, ether, liquid, liquidTypes} = mapChunk;
+  const {positions, colors, /*skyLightmaps, torchLightmaps, */indices, geometries, heightfield, staticHeightfield, biomes, elevations, ether, water, lava} = mapChunk;
 
   if (arrayBuffer === undefined || byteOffset === undefined) {
     const bufferSize = _getDataChunkSize(mapChunk);
@@ -103,8 +103,8 @@ const stringifyData = (mapChunk, arrayBuffer, byteOffset) => {
   headerBuffer[index++] = biomes.length;
   headerBuffer[index++] = elevations.length;
   headerBuffer[index++] = ether.length;
-  headerBuffer[index++] = liquid.length;
-  headerBuffer[index++] = liquidTypes.length;
+  headerBuffer[index++] = water.length;
+  headerBuffer[index++] = lava.length;
   byteOffset += DATA_HEADER_SIZE;
 
   const positionsBuffer = new Float32Array(arrayBuffer, byteOffset, positions.length);
@@ -174,13 +174,13 @@ const stringifyData = (mapChunk, arrayBuffer, byteOffset) => {
   etherBuffer.set(ether);
   byteOffset += FLOAT32_SIZE * ether.length;
 
-  const liquidBuffer = new Uint8Array(arrayBuffer, byteOffset, liquid.length);
-  liquidBuffer.set(liquid);
-  byteOffset += UINT8_SIZE * liquid.length;
+  const waterBuffer = new Uint8Array(arrayBuffer, byteOffset, water.length);
+  waterBuffer.set(water);
+  byteOffset += UINT8_SIZE * water.length;
 
-  const liquidTypesBuffer = new Int8Array(arrayBuffer, byteOffset, liquidTypes.length);
-  liquidTypesBuffer.set(liquidTypes);
-  byteOffset += INT8_SIZE * liquidTypes.length;
+  const lavaBuffer = new Uint8Array(arrayBuffer, byteOffset, lava.length);
+  lavaBuffer.set(lava);
+  byteOffset += UINT8_SIZE * lava.length;
 
   return [arrayBuffer, byteOffset];
 };
@@ -206,8 +206,8 @@ const parseData = (buffer, byteOffset) => {
   const numBiomes = headerBuffer[index++];
   const numElevations = headerBuffer[index++];
   const numEther = headerBuffer[index++];
-  const numLiquid = headerBuffer[index++];
-  const numLiquidTypes = headerBuffer[index++];
+  const numWater = headerBuffer[index++];
+  const numLava = headerBuffer[index++];
   byteOffset += DATA_HEADER_SIZE;
 
   const positionsBuffer = new Float32Array(buffer, byteOffset, numPositions);
@@ -281,13 +281,13 @@ const parseData = (buffer, byteOffset) => {
   const ether = etherBuffer;
   byteOffset += FLOAT32_SIZE * numEther;
 
-  const liquidBuffer = new Uint8Array(buffer, byteOffset, numLiquid);
-  const liquid = liquidBuffer;
-  byteOffset += UINT8_SIZE * numLiquid;
+  const waterBuffer = new Uint8Array(buffer, byteOffset, numWater);
+  const water = waterBuffer;
+  byteOffset += UINT8_SIZE * numWater;
 
-  const liquidTypesBuffer = new Int8Array(buffer, byteOffset, numLiquidTypes);
-  const liquidTypes = liquidTypesBuffer;
-  byteOffset += INT8_SIZE * numLiquidTypes;
+  const lavaBuffer = new Uint8Array(buffer, byteOffset, numLava);
+  const lava = lavaBuffer;
+  byteOffset += UINT8_SIZE * numLava;
 
   return {
     buffer,
@@ -302,8 +302,8 @@ const parseData = (buffer, byteOffset) => {
     biomes,
     elevations,
     ether,
-    liquid,
-    liquidTypes,
+    water,
+    lava,
   };
 };
 
