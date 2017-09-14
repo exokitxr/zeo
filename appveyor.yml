@@ -37,7 +37,7 @@ after_test:
       touch data/no-hotload.json
       cp scripts/lib/windows/start-windows.ps1 .
       cp 'scripts/lib/windows/Zeo VR.lnk' .
-      7z a windows-release.zip * -xr'!.*'
+      7z a windows-release.zip * -xr'!.git'
 
 artifacts:
   - path: "windows-release.zip"
