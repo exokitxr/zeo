@@ -1293,7 +1293,7 @@ void main() {
 
                     const hoveredTrackedBlock = hoveredTrackedBlocks[side];
                     hoveredTrackedBlock.fromArray(new Float32Array(hoveredObjectsBuffer, byteOffset + 8 * 4, 3));
-                    hoveredTrackedBlock.v = new Uint32Array(hoveredObjectsBuffer, byteOffset + 11 * 4, 1);
+                    hoveredTrackedBlock.v = new Uint32Array(hoveredObjectsBuffer, byteOffset + 11 * 4, 1)[0];
                     objectsMaterial.uniforms[side === 'left' ? 'selectedBlockLeft' : 'selectedBlockRight'].value.copy(hoveredTrackedBlock);
 
                     byteOffset += 12 * 4;
