@@ -996,8 +996,7 @@ void main() {
           }
 
           setBlock(x, y, z, block) {
-            const v = murmur(object);
-            worker.requestSetBlock(x, y, z, v);
+            worker.requestSetBlock(x, y, z, murmur(block));
           }
 
           clearBlock(x, y, z) {
