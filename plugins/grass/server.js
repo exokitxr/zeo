@@ -26,7 +26,7 @@ class Grass {
     const {three, elements, utils: {hash: hashUtils, random: randomUtils, image: imageUtils}} = zeo;
     const {THREE} = three;
     const {murmur} = hashUtils;
-    const {alea, indev} = randomUtils;
+    const {alea, vxl} = randomUtils;
     const {jimp} = imageUtils;
 
     return elements.requestElement(HEIGHTFIELD_PLUGIN)
@@ -36,10 +36,16 @@ class Grass {
         const generateBuffer = new Buffer(NUM_POSITIONS_CHUNK);
 
         const rng = new alea(DEFAULT_SEED);
-        const generator = indev({
-          seed: DEFAULT_SEED,
-        });
-        const grassNoise = generator.uniform({
+        const _randInt = (() => {
+          const float32Array = new Float32Array(1);
+          const int32Array = new Int32Array(float32Array.buffer, float32Array.byteOffset, 1);
+          return () => {
+            float32Array[0] = rng();
+            return int32Array[0];
+          };
+        })();
+        const grassNoise = new vxl.fastNoise({
+          seed: _randInt(),
           frequency: 0.1,
           octaves: 4,
         });
@@ -226,7 +232,7 @@ class Grass {
               const scale = new THREE.Vector3();
               const matrix = new THREE.Matrix4();
 
-              const grassProbability = 0.2;
+              const grassProbability = 0.35;
 
               for (let dz = 0; dz < NUM_CELLS_OVERSCAN; dz++) {
                 for (let dx = 0; dx < NUM_CELLS_OVERSCAN; dx++) {
