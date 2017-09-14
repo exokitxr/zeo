@@ -24,7 +24,7 @@ Plugin API is plain [hotloaded](https://github.com/modulesio/archae/) [THREE.js]
 ```
 npm i modulesio/zeo
 cd node_modules/zeo
-./scripts/standalone.sh
+node index.js
 ```
 
 #### Docker
