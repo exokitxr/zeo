@@ -9,13 +9,15 @@
 
 ## Overview
 
-Plugins run on both frontend and backend, so they can do pretty much anything. Voxel-based world builder loaded by default.
+Mods are plain [hotloaded](https://github.com/modulesio/archae/) Javascript. Frontend API is plain [THREE.js](https://github.com/mrdoob/three.js/). Mods run on both frontend and backend, so they can do pretty much anything. Voxel-based world builder mods loaded by default.
 
 Mouse + keyboard emulation; only requirement is a modern browser -- but it's more awesome with a headset.
 
-Avatars and items persist across servers on a globally distributed blockchain. Buy, sell, trade, and _own_ your items, skins and plugins.
+Avatars and items persist across servers on a globally distributed blockchain. Buy, sell, trade, and _own_ your items, skins and plugins using worthless virtual credits.
 
-Plugin API is plain [hotloaded](https://github.com/modulesio/archae/) [THREE.js](https://github.com/mrdoob/three.js/). Supports the usual position tracking, controller events, multiplayer avatars tracking, configurator menu rendering, positional audio, asset loader, and more. Normalized to work the same regardless of headset (or lack thereof).
+Mod API supports the usual suspects: position tracking, controller events, multiplayer avatars tracking, configurator menu rendering, positional audio, asset loader, and more. Normalized to work the same regardless of headset (or lack thereof).
+
+The server also handles firewall routing, module hotloading, and world storage, so you don't have to worry about that nonsense.
 
 ## Getting started
 
