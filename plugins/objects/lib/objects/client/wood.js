@@ -24,7 +24,7 @@ const wood = objectApi => {
           const {side} = e;
 
           if (grabbable.getGrabberSide() === side) {
-            const hoveredObject = objectApi.getHoveredObject(side);
+            /* const hoveredObject = objectApi.getHoveredObject(side);
 
             if (hoveredObject && (hoveredObject.is('wood-wall') || hoveredObject.is('wood-wall-2'))) {
               localVector.copy(hoveredObject.position).add(upVector);
@@ -51,7 +51,10 @@ const wood = objectApi => {
               objectApi.addObject('wood-wall', localVector, localQuaternion);
 
               items.destroyItem(grabbable);
-            }
+            } */
+
+            objectApi.setBlock(Math.floor(grabbable.position.x), Math.floor(grabbable.position.y), Math.floor(grabbable.position.z), 'tree');
+            items.destroyItem(grabbable);
 
             e.stopImmediatePropagation();
           }
@@ -73,7 +76,7 @@ const wood = objectApi => {
     };
     items.registerItem(this, woodItemApi);
 
-    const woodWallObjectApi = {
+    /* const woodWallObjectApi = {
       object: 'wood-wall',
       gripCallback(id, side, x, z, objectIndex) {
         const itemId = _makeId();
@@ -124,7 +127,7 @@ const wood = objectApi => {
         objectApi.removeObject(x, z, objectIndex);
       },
     };
-    objectApi.registerObject(woodWall2ObjectApi);
+    objectApi.registerObject(woodWall2ObjectApi); */
 
     accept(() => {
       items.unregisterItem(this, woodItemApi);
