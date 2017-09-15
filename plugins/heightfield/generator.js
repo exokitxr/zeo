@@ -339,21 +339,21 @@ localTriangle.points = [localTriangle.a, localTriangle.b, localTriangle.c];
 const _generateMapChunk = (ox, oy, opts) => {
   // generate
 
-  const biomes = (() => {
-    let biomes = opts.oldBiomes;
-    if (!biomes) {
-      biomes = new Uint8Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
-      let index = 0;
-      for (let z = 0; z < NUM_CELLS_OVERSCAN; z++) {
-        for (let x = 0; x < NUM_CELLS_OVERSCAN; x++) {
-          biomes[index++] = _getBiome((ox * NUM_CELLS) + x, (oy * NUM_CELLS) + z);
+  function genNoise() {
+    const biomes = (() => {
+      let biomes = opts.oldBiomes;
+      if (!biomes) {
+        biomes = new Uint8Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
+        let index = 0;
+        for (let z = 0; z < NUM_CELLS_OVERSCAN; z++) {
+          for (let x = 0; x < NUM_CELLS_OVERSCAN; x++) {
+            biomes[index++] = _getBiome((ox * NUM_CELLS) + x, (oy * NUM_CELLS) + z);
+          }
         }
       }
-    }
-    return biomes;
-  })();
+      return biomes;
+    })();
 
-  // const elevations = (() => {
     let elevations = opts.oldElevations;
     if (!elevations) {
       elevations = new Float32Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
@@ -364,10 +364,7 @@ const _generateMapChunk = (ox, oy, opts) => {
         }
       }
     }
-    // return elevations;
-  // })();
 
-  // const ether = (() => {
     let ether = opts.oldEther;
     if (!ether) {
       ether = new Float32Array((NUM_CELLS + 1) * (NUM_CELLS_HEIGHT + 1) * (NUM_CELLS + 1));
@@ -466,10 +463,7 @@ const _generateMapChunk = (ox, oy, opts) => {
         }
       } */
     }
-    // return ether;
-  // })();
 
-  // const {water, lava} = (() => {
     let water = opts.oldWater;
     let lava = opts.oldLava;
     if (!water || !lava) {
@@ -547,10 +541,7 @@ const _generateMapChunk = (ox, oy, opts) => {
 
       _setLiquid(15, Math.floor(_getElevation(15, 2) + 1), 0, lava);
     }
-    // return {water, lava};
-  // })();
 
-  // const _applyNewEthers = () => {
     const numNewEthers = opts.newEther.length / 4;
     for (let i = 0; i < numNewEthers; i++) {
       const baseIndex = i * 4;
@@ -575,8 +566,9 @@ const _generateMapChunk = (ox, oy, opts) => {
         }
       }
     }
-  // };
-  // _applyNewEthers();
+    return {biomes, elevations, ether, water, lava};
+  }
+  const {biomes, elevations, ether, water, lava} = genNoise();
 
   // compile
 
@@ -589,13 +581,12 @@ const _generateMapChunk = (ox, oy, opts) => {
   } = _makeGeometries(ox, oy, ether, water, lava);
   const colors = new Float32Array(NUM_POSITIONS_CHUNK);
 
-  // const {heightfield, staticHeightfield} = (() => { // XXX can be optimized
+  // function genHeightfield() { // XXX can be optimized to native
     const heightfield = new Float32Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN * HEIGHTFIELD_DEPTH);
-    heightfield.fill(-1024);
     const staticHeightfield = new Float32Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
-    staticHeightfield.fill(-1024);
 
-    const numIndices = indices.length / 3;
+    vxl.genHeightfield(positions, positions.length, /* [ox * NUM_CELLS, 0, oy * NUM_CELLS], */ heightfield, staticHeightfield);
+    /* const numIndices = indices.length / 3;
     let localIndexIndex = 0;
     for (let i = 0; i < numIndices; i++) {
       localTriangle.a.x = positions[localIndexIndex++];
@@ -636,12 +627,13 @@ const _generateMapChunk = (ox, oy, opts) => {
           }
         }
       }
-    }
+    } */
 
     // return {heightfield, staticHeightfield};
-  // })();
+  // }
+  // const {heightfield, staticHeightfield} = genHeightfield();
 
-  const _postProcessGeometry = (start, count, getColor, offset) => {
+  function _postProcessGeometry(start, count, getColor, offset) {
     const geometryPositions = new Float32Array(positions.buffer, positions.byteOffset + start * 4, count);
     const geometryColors = new Float32Array(colors.buffer, colors.byteOffset + start * 4, count);
 
@@ -670,7 +662,7 @@ const _generateMapChunk = (ox, oy, opts) => {
     }
   };
 
-  // const _postProcessGeometries = () => {
+  function postProcessGeometries() {
     for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
       const geometry = geometries[i];
       const {attributeRange} = geometry;
@@ -695,19 +687,16 @@ const _generateMapChunk = (ox, oy, opts) => {
         NUM_CELLS_CUBE
       );
     }
-  // };
-  // _postProcessGeometries();
+  }
+  postProcessGeometries();
 
-  // const _floodPeeks = () => {
-    for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
-      const geometry = geometries[i];
-      const peeks = new Uint8Array(16);
-      vxl.flood(ether, [0, i * NUM_CELLS, 0], peeks);
+  for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
+    const geometry = geometries[i];
+    const peeks = new Uint8Array(16);
+    vxl.flood(ether, [0, i * NUM_CELLS, 0], peeks);
 
-      geometry.peeks = peeks;
-    }
-  // };
-  // _floodPeeks();
+    geometry.peeks = peeks;
+  }
 
   return {
     positions: new Float32Array(positions.buffer, positions.byteOffset, attributeIndex),
