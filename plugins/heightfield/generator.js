@@ -178,7 +178,7 @@ const _makeCacher3D = (gen, {type = Float32Array} = {}) => {
   };
 };
 
-const _random = (() => {
+/* const _random = (() => {
   const rng = new alea(DEFAULT_SEED);
   const _randInt = (() => {
     const float32Array = new Float32Array(1);
@@ -314,35 +314,38 @@ const _getElevation = _makeCacher2D((x, z) => {
     elevationSum += biomeCount.count * biomeCount.height;
   }
   return elevationSum / totalBiomeCounts;
+}); */
+
+const noiser = vxl.noiser({
+  seed: murmur(DEFAULT_SEED),
 });
 
 const _generateMapChunk = (ox, oy, opts) => {
   // generate
 
   function genNoise() {
-    const biomes = (() => {
-      let biomes = opts.oldBiomes;
-      if (!biomes) {
-        biomes = new Uint8Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
-        let index = 0;
-        for (let z = 0; z < NUM_CELLS_OVERSCAN; z++) {
-          for (let x = 0; x < NUM_CELLS_OVERSCAN; x++) {
-            biomes[index++] = _getBiome((ox * NUM_CELLS) + x, (oy * NUM_CELLS) + z);
-          }
+    let biomes = opts.oldBiomes;
+    if (!biomes) {
+      biomes = new Uint8Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
+      noiser.fillBiomes(ox, oy, biomes);
+      /* let index = 0;
+      for (let z = 0; z < NUM_CELLS_OVERSCAN; z++) {
+        for (let x = 0; x < NUM_CELLS_OVERSCAN; x++) {
+          biomes[index++] = _getBiome((ox * NUM_CELLS) + x, (oy * NUM_CELLS) + z);
         }
-      }
-      return biomes;
-    })();
+      } */
+    }
 
     let elevations = opts.oldElevations;
     if (!elevations) {
       elevations = new Float32Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
-      let index = 0;
+      noiser.fillElevations(ox, oy, elevations);
+      /* let index = 0;
       for (let z = 0; z < NUM_CELLS_OVERSCAN; z++) {
         for (let x = 0; x < NUM_CELLS_OVERSCAN; x++) {
           elevations[index++] = _getElevation((ox * NUM_CELLS) + x, (oy * NUM_CELLS) + z);
         }
-      }
+      } */
     }
 
     let ether = opts.oldEther;
@@ -506,9 +509,9 @@ const _generateMapChunk = (ox, oy, opts) => {
               const ax = ((ox + dx) * NUM_CELLS) + x;
               const az = ((oy + dz) * NUM_CELLS) + z;
 
-              const elevation = _getElevation(ax, az);
+              const elevation = noiser.getElevation(ax, az);
               if (elevation >= 80) {
-                if (_random.temperatureNoise.in2D(ax + 1000, az + 1000) < 0.2) {
+                if (noiser.getTemperature(ax + 1000, az + 1000) < 0.235) {
                   _setLiquid(ax, Math.floor(elevation + 1), az, lava);
                 }
               }
@@ -517,7 +520,7 @@ const _generateMapChunk = (ox, oy, opts) => {
         }
       }
 
-      _setLiquid(15, Math.floor(_getElevation(15, 2) + 1), 0, lava);
+      _setLiquid(15, Math.floor(noiser.getElevation(15, 2) + 1), 0, lava);
     }
 
     const numNewEthers = opts.newEther.length / 4;
