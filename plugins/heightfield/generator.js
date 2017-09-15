@@ -203,37 +203,31 @@ const _random = (() => {
     frequency: 2,
     octaves: 1,
   });
-
-  let noise = new vxl.fastNoise({
+  const wormNoise = new vxl.cachedFastNoise({
     seed: _randInt(),
     frequency: 0.002,
     octaves: 2,
   });
-  const wormNoise = _makeCacher2D(noise.in2D.bind(noise));
-  noise = new vxl.fastNoise({
+  const oceanNoise = new vxl.cachedFastNoise({
+    seed: _randInt(),
+    frequency: 0.002,
+    octaves: 4,
+  })
+  const riverNoise = new vxl.cachedFastNoise({
     seed: _randInt(),
     frequency: 0.002,
     octaves: 4,
   });
-  const oceanNoise = _makeCacher2D(noise.in2D.bind(noise));
-  noise = new vxl.fastNoise({
+  const temperatureNoise = new vxl.cachedFastNoise({
     seed: _randInt(),
     frequency: 0.002,
     octaves: 4,
   });
-  const riverNoise = _makeCacher2D(noise.in2D.bind(noise));
-  noise = new vxl.fastNoise({
+  const humidityNoise = new vxl.cachedFastNoise({
     seed: _randInt(),
     frequency: 0.002,
     octaves: 4,
   });
-  const temperatureNoise = _makeCacher2D(noise.in2D.bind(noise));
-  noise = new vxl.fastNoise({
-    seed: _randInt(),
-    frequency: 0.002,
-    octaves: 4,
-  });
-  const humidityNoise = _makeCacher2D(noise.in2D.bind(noise));
 
   return {
     elevationNoise1,
@@ -250,13 +244,13 @@ const _random = (() => {
 const _getBiome = _makeCacher2D((x, z) => {
   let biome;
   const _genOcean = () => {
-    if (_random.oceanNoise(x + 1000, z + 1000) < (90 / 255)) {
+    if (_random.oceanNoise.in2D(x + 1000, z + 1000) < (90 / 255)) {
       biome = BIOMES.biOcean.index;
     }
   };
   const _genRivers = () => {
     if (biome === undefined) {
-      const n = _random.riverNoise(x + 1000, z + 1000);
+      const n = _random.riverNoise.in2D(x + 1000, z + 1000);
       const range = 0.04;
       if (n > 0.5 - range && n < 0.5 + range) {
         biome = BIOMES.biRiver.index;
@@ -264,7 +258,7 @@ const _getBiome = _makeCacher2D((x, z) => {
     }
   };
   const _genFreezeWater = () => {
-    if (_random.temperatureNoise(x + 1000, z + 1000) < ((4 * 16) / 255)) {
+    if (_random.temperatureNoise.in2D(x + 1000, z + 1000) < ((4 * 16) / 255)) {
       if (biome === BIOMES.biOcean.index) {
         biome = BIOMES.biFrozenOcean.index;
       } else if (biome === BIOMES.biRiver.index) {
@@ -274,8 +268,8 @@ const _getBiome = _makeCacher2D((x, z) => {
   };
   const _genLand = () => {
     if (biome === undefined) {
-      const t = Math.floor(_random.temperatureNoise(x + 1000, z + 1000) * 16);
-      const h = Math.floor(_random.humidityNoise(x + 1000, z + 1000) * 16);
+      const t = Math.floor(_random.temperatureNoise.in2D(x + 1000, z + 1000) * 16);
+      const h = Math.floor(_random.humidityNoise.in2D(x + 1000, z + 1000) * 16);
       biome = BIOMES_TEMPERATURE_HUMIDITY[t + 16 * h].index;
     }
   };
@@ -392,7 +386,7 @@ const _generateMapChunk = (ox, oy, opts) => {
         for (let dox = -2; dox <= 2; dox++) {
           const aox = ox + dox;
           const aoy = oy + doy;
-          const n = _random.wormNoise(aox * NUM_CELLS + 1000, aoy * NUM_CELLS + 1000);
+          const n = _random.wormNoise.in2D(aox * NUM_CELLS + 1000, aoy * NUM_CELLS + 1000);
           const numNests = Math.floor(n * 4);
 
           for (let i = 0; i < numNests; i++) {
@@ -514,7 +508,7 @@ const _generateMapChunk = (ox, oy, opts) => {
 
               const elevation = _getElevation(ax, az);
               if (elevation >= 80) {
-                if (_random.temperatureNoise(ax + 1000, az + 1000) < 0.2) {
+                if (_random.temperatureNoise.in2D(ax + 1000, az + 1000) < 0.2) {
                   _setLiquid(ax, Math.floor(elevation + 1), az, lava);
                 }
               }
