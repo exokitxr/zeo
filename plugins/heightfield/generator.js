@@ -453,11 +453,13 @@ const _generateMapChunk = (ox, oy, opts) => {
     let lava = opts.oldLava;
     if (!water || !lava) {
       water = new Float32Array((NUM_CELLS + 1) * (NUM_CELLS_HEIGHT + 1) * (NUM_CELLS + 1));
-      water.fill(1);
+      // water.fill(1);
       lava = new Float32Array((NUM_CELLS + 1) * (NUM_CELLS_HEIGHT + 1) * (NUM_CELLS + 1));
-      lava.fill(1);
+      // lava.fill(1);
 
-      const _setLiquid = (x, y, z, liquid) => {
+      noiser.fillLiquid(ox, oy, ether, elevations, water, lava);
+
+      /* const _setLiquid = (x, y, z, liquid) => {
         x -= ox * NUM_CELLS;
         z -= oy * NUM_CELLS;
 
@@ -470,18 +472,10 @@ const _generateMapChunk = (ox, oy, opts) => {
                 for (let dy = -1; dy <= 1; dy++) {
                   const ay = y + dy;
                   const index = _getEtherIndex(ax, ay, az);
-                  // const oldLiquidValue = liquid[index];
 
-                  // if (oldLiquidValue === 0 || oldLiquidValue === 0xFF || oldLiquidValue === 0xFE) {
-                    if (ay >= 0 && ay < (NUM_CELLS_HEIGHT + 1)) {
-                      liquid[index] = Math.min(-1 * (1 - (Math.sqrt(dx*dx + dy*dy + dz*dz) / (Math.sqrt(3)*0.8))), liquid[index]);
-                      /* if (dx === 0 && dy === 0 && dz === 0) {
-                        liquid[index] = -1;
-                      } else if (liquid[index] === 0) {
-                        liquid[index] = (dy >= 0) ? 0xFF : (dx === 0 && dz === 0 ? 0xFE : 0);
-                      } */
-                    }
-                  // }
+                  if (ay >= 0 && ay < (NUM_CELLS_HEIGHT + 1)) {
+                    liquid[index] = Math.min(-1 * (1 - (Math.sqrt(dx*dx + dy*dy + dz*dz) / (Math.sqrt(3)*0.8))), liquid[index]);
+                  }
                 }
               }
             }
@@ -522,7 +516,7 @@ const _generateMapChunk = (ox, oy, opts) => {
         }
       }
 
-      _setLiquid(15, Math.floor(noiser.getElevation(15, 2) + 1), 0, lava);
+      _setLiquid(15, Math.floor(noiser.getElevation(15, 2) + 1), 0, lava); */
     }
 
     const numNewEthers = opts.newEther.length / 4;
