@@ -132,7 +132,7 @@ const _makeGeometries = (ox, oy, ether, water, lava) => {
   }
 };
 
-const _getCachesIndex2D = (x, z) => mod(x, 256) | mod(z, 256) << 8; // XXX make sure this does not overflow cache size
+/* const _getCachesIndex2D = (x, z) => mod(x, 256) | mod(z, 256) << 8; // XXX make sure this does not overflow cache size
 const _getCacheIndex2D = (x, z) => x + z * NUM_CELLS;
 const _makeCacher2D = (gen, {type = Float32Array} = {}) => {
   const caches = {};
@@ -178,7 +178,7 @@ const _makeCacher3D = (gen, {type = Float32Array} = {}) => {
   };
 };
 
-/* const _random = (() => {
+const _random = (() => {
   const rng = new alea(DEFAULT_SEED);
   const _randInt = (() => {
     const float32Array = new Float32Array(1);
@@ -351,7 +351,9 @@ const _generateMapChunk = (ox, oy, opts) => {
     let ether = opts.oldEther;
     if (!ether) {
       ether = new Float32Array((NUM_CELLS + 1) * (NUM_CELLS_HEIGHT + 1) * (NUM_CELLS + 1));
-      let index = 0;
+      noiser.fillEther(elevations, ether);
+
+      /* let index = 0;
       for (let z = 0; z < NUM_CELLS_OVERSCAN; z++) {
         for (let x = 0; x < NUM_CELLS_OVERSCAN; x++) {
           const elevation = elevations[index++];
@@ -359,7 +361,7 @@ const _generateMapChunk = (ox, oy, opts) => {
             ether[_getEtherIndex(x, y, z)] = Math.min(Math.max(y - elevation, -1), 1);
           }
         }
-      }
+      } */
 
       /* const _fillOblateSpheroid = (centerX, centerY, centerZ, minX, minZ, maxX, maxZ, radius) => {
         for (let z = -radius; z <= radius; z++) {
