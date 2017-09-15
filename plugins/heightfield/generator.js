@@ -333,9 +333,6 @@ const _getElevation = _makeCacher2D((x, z) => {
   return elevationSum / totalBiomeCounts;
 });
 
-const localVector = new THREE.Vector3();
-const localTriangle = new THREE.Triangle();
-localTriangle.points = [localTriangle.a, localTriangle.b, localTriangle.c];
 const _generateMapChunk = (ox, oy, opts) => {
   // generate
 
@@ -579,57 +576,9 @@ const _generateMapChunk = (ox, oy, opts) => {
   } = _makeGeometries(ox, oy, ether, water, lava);
   const colors = new Float32Array(NUM_POSITIONS_CHUNK);
 
-  // function genHeightfield() { // XXX can be optimized to native
-    const heightfield = new Float32Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN * HEIGHTFIELD_DEPTH);
-    const staticHeightfield = new Float32Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
-
-    vxl.genHeightfield(positions, positions.length, /* [ox * NUM_CELLS, 0, oy * NUM_CELLS], */ heightfield, staticHeightfield);
-    /* const numIndices = indices.length / 3;
-    let localIndexIndex = 0;
-    for (let i = 0; i < numIndices; i++) {
-      localTriangle.a.x = positions[localIndexIndex++];
-      localTriangle.a.y = positions[localIndexIndex++];
-      localTriangle.a.z = positions[localIndexIndex++];
-      localTriangle.b.x = positions[localIndexIndex++];
-      localTriangle.b.y = positions[localIndexIndex++];
-      localTriangle.b.z = positions[localIndexIndex++];
-      localTriangle.c.x = positions[localIndexIndex++];
-      localTriangle.c.y = positions[localIndexIndex++];
-      localTriangle.c.z = positions[localIndexIndex++];
-      if (localTriangle.normal(localVector).y > 0) {
-        for (let j = 0; j < 3; j++) {
-          const point = localTriangle.points[j];
-          const x = Math.floor(point.x);
-          const y = point.y;
-          const z = Math.floor(point.z);
-
-          for (let layer = 0; layer < HEIGHTFIELD_DEPTH; layer++) {
-            const heightfieldXYBaseIndex = _getTopHeightfieldIndex(x, z);
-            const oldY = heightfield[heightfieldXYBaseIndex + layer];
-            if (y > oldY) {
-              if (j === 0 || (y - oldY) >= 5) { // ignore non-surface heights with small height difference
-                for (let k = HEIGHTFIELD_DEPTH - 1; k > layer; k--) {
-                  heightfield[heightfieldXYBaseIndex + k] = heightfield[heightfieldXYBaseIndex + k - 1];
-                }
-                heightfield[heightfieldXYBaseIndex + layer] = y;
-              }
-              break;
-            } else if (y === oldY) {
-              break;
-            }
-          }
-
-          const staticheightfieldIndex = _getStaticHeightfieldIndex(x, z);
-          if (y > staticHeightfield[staticheightfieldIndex]) {
-            staticHeightfield[staticheightfieldIndex] = y;
-          }
-        }
-      }
-    } */
-
-    // return {heightfield, staticHeightfield};
-  // }
-  // const {heightfield, staticHeightfield} = genHeightfield();
+  const heightfield = new Float32Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN * HEIGHTFIELD_DEPTH);
+  const staticHeightfield = new Float32Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
+  vxl.genHeightfield(positions, positions.length, heightfield, staticHeightfield);
 
   function _postProcessGeometry(start, count, getColor, offset) {
     const geometryPositions = new Float32Array(positions.buffer, positions.byteOffset + start * 4, count);
