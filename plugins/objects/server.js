@@ -139,17 +139,28 @@ class Objects {
               return chunk;
             });
         };
-        const _makeGeometeriesBuffer = constructor => {
-          const result = Array(NUM_CHUNKS_HEIGHT);
-          for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
-            result[i] = {
-              array: new constructor(GEOMETRY_BUFFER_SIZE / NUM_CHUNKS_HEIGHT),
-              index: 0,
-            };
-          }
+        const _makeGeometeriesBuffer = (() => {
+          const slab = new ArrayBuffer(GEOMETRY_BUFFER_SIZE * NUM_CHUNKS_HEIGHT * 7);
+          let index = 0;
+          const sliceSize = GEOMETRY_BUFFER_SIZE / NUM_CHUNKS_HEIGHT;
+          const result = constructor => {
+            const result = Array(NUM_CHUNKS_HEIGHT);
+            for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
+              result[i] = {
+                array: new constructor(slab, index, sliceSize / constructor.BYTES_PER_ELEMENT),
+                index: 0,
+              };
+              index += sliceSize;
+            }
+            return result;
+          };
+          result.reset = () => {
+            index = 0;
+          };
           return result;
-        };
+        })();
         const _makeChunkGeometry = chunk => {
+          _makeGeometeriesBuffer.reset();
           const geometriesPositions = _makeGeometeriesBuffer(Float32Array);
           const geometriesUvs = _makeGeometeriesBuffer(Float32Array);
           const geometriesSsaos = _makeGeometeriesBuffer(Uint8Array);
