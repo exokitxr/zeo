@@ -132,17 +132,6 @@ const _makeGeometries = (ox, oy, ether, water, lava) => {
   }
 };
 
-const DIRECTIONS = [
-  [0, -1],
-  [-1, 0],
-  [1, 0],
-  [0, 1],
-  [-1, -1],
-  [1, -1],
-  [-1, 1],
-  [1, 1],
-];
-
 const _getCachesIndex2D = (x, z) => mod(x, 256) | mod(z, 256) << 8; // XXX make sure this does not overflow cache size
 const _getCacheIndex2D = (x, z) => x + z * NUM_CELLS;
 const _makeCacher2D = (gen, {type = Float32Array} = {}) => {
