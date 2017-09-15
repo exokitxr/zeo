@@ -666,7 +666,8 @@ const _generateMapChunk = (ox, oy, opts) => {
     for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
       const geometry = geometries[i];
       const {attributeRange} = geometry;
-      _postProcessGeometry(attributeRange.landStart, attributeRange.landCount, (x, y, z) => BIOMES_INDEX[_getBiome(Math.floor(x), Math.floor(z))].color);
+      _postProcessGeometry(attributeRange.landStart, attributeRange.landCount, (x, y, z) =>
+        BIOMES_INDEX[biomes[_getCoordOverscanIndex(Math.floor(x - ox * NUM_CELLS), Math.floor(z - oy * NUM_CELLS))]].color);
       _postProcessGeometry(attributeRange.waterStart, attributeRange.waterCount, (x, y, z) => {
         return [
           mod(Math.abs(x) / 16.0 * 4.0 * 0.99, 1) * 0.5,
