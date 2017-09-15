@@ -124,8 +124,8 @@ const _makeGeometries = (ox, oy, ether, water, lava) => {
   }
 
   return {
-    positions,
-    indices,
+    positions: new Float32Array(positions.buffer, positions.byteOffset, attributeIndex),
+    indices: new Uint32Array(indices.buffer, indices.byteOffset, indexIndex),
     attributeIndex,
     indexIndex,
     geometries,
