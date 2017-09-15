@@ -33,17 +33,6 @@ const NUM_CELLS_CUBE = Math.sqrt(NUM_CELLS_HALF * NUM_CELLS_HALF * 3);
 const NUM_CELLS_OVERSCAN_Y = NUM_CELLS_HEIGHT + OVERSCAN;
 const HOLE_SIZE = 2;
 
-/* const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
-  for (let i = 0; i < src.length; i++) {
-    dst[startIndexIndex + i] = src[i] + startAttributeIndex;
-  }
-};
-const _offsetIndices = (indices, startAttributeIndex) => {
-  for (let i = 0; i < indices.length; i++) {
-    indices[i] += startAttributeIndex;
-  }
-}; */
-
 const _makeGeometries = (ox, oy, ether, water, lava) => {
   const positions = new Float32Array(NUM_POSITIONS_CHUNK);
   const indices = new Uint32Array(NUM_POSITIONS_CHUNK);
