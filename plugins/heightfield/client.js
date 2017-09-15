@@ -649,9 +649,9 @@ class Heightfield {
           vertexShader: OCEAN_SHADER.vertexShader,
           fragmentShader: OCEAN_SHADER.fragmentShader,
           transparent: true,
-          polygonOffset: true,
-          polygonOffsetFactor: -1,
-          polygonOffsetUnits: 0,
+          // polygonOffset: true,
+          // polygonOffsetFactor: -1,
+          // polygonOffsetUnits: 0,
         });
         // oceanMaterial.uniformsNeedUpdate = _uniformsNeedUpdate; // XXX separate from the heightfield shader
 
