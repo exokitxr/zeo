@@ -295,8 +295,7 @@ class Heightfield {
                     for (let z = 0; z < NUM_CELLS; z++) { // XXX this can be optimized to scan only the passed-in ranges
                       for (let y = 0; y < NUM_CELLS_HEIGHT; y++) {
                         for (let x = 0; x < NUM_CELLS; x++) {
-                          const index = _getEtherIndex(x, y, z);
-                          if (lava[index] === 1) {
+                          if (lava[_getEtherIndex(x, y, z)] < 0) {
                             result.push([x + ox * NUM_CELLS, y, z + oz * NUM_CELLS, 15]);
                           }
                         }

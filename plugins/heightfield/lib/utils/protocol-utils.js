@@ -35,8 +35,8 @@ const _getDataChunkSizeFromMetadata = metadata => {
     _align(UINT8_SIZE * numBiomes, FLOAT32_SIZE) + // biomes
     (FLOAT32_SIZE * numElevations) + // elevations
     (FLOAT32_SIZE * numEther) + // ethers
-    (UINT8_SIZE * numWater) + // water
-    (UINT8_SIZE * numLava); // lava
+    (FLOAT32_SIZE * numWater) + // water
+    (FLOAT32_SIZE * numLava); // lava
 };
 
 const _getDataChunkSize = mapChunk => {
@@ -174,13 +174,13 @@ const stringifyData = (mapChunk, arrayBuffer, byteOffset) => {
   etherBuffer.set(ether);
   byteOffset += FLOAT32_SIZE * ether.length;
 
-  const waterBuffer = new Uint8Array(arrayBuffer, byteOffset, water.length);
+  const waterBuffer = new Float32Array(arrayBuffer, byteOffset, water.length);
   waterBuffer.set(water);
-  byteOffset += UINT8_SIZE * water.length;
+  byteOffset += FLOAT32_SIZE * water.length;
 
-  const lavaBuffer = new Uint8Array(arrayBuffer, byteOffset, lava.length);
+  const lavaBuffer = new Float32Array(arrayBuffer, byteOffset, lava.length);
   lavaBuffer.set(lava);
-  byteOffset += UINT8_SIZE * lava.length;
+  byteOffset += FLOAT32_SIZE * lava.length;
 
   return [arrayBuffer, byteOffset];
 };
@@ -281,13 +281,13 @@ const parseData = (buffer, byteOffset) => {
   const ether = etherBuffer;
   byteOffset += FLOAT32_SIZE * numEther;
 
-  const waterBuffer = new Uint8Array(buffer, byteOffset, numWater);
+  const waterBuffer = new Float32Array(buffer, byteOffset, numWater);
   const water = waterBuffer;
-  byteOffset += UINT8_SIZE * numWater;
+  byteOffset += FLOAT32_SIZE * numWater;
 
-  const lavaBuffer = new Uint8Array(buffer, byteOffset, numLava);
+  const lavaBuffer = new Float32Array(buffer, byteOffset, numLava);
   const lava = lavaBuffer;
-  byteOffset += UINT8_SIZE * numLava;
+  byteOffset += FLOAT32_SIZE * numLava;
 
   return {
     buffer,

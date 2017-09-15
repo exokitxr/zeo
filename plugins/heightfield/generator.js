@@ -82,23 +82,7 @@ const _makeGeometries = (ox, oy, ether, water, lava) => {
     // water
     const {positions: newWaterPositions, indices: newWaterIndices} = vxl.marchingCubes(
       [NUM_CELLS + 1, NUM_CELLS + 1, NUM_CELLS + 1],
-      (() => { // XXX can be folded into native
-        const result = new Float32Array(water.length);
-        for (let z = 0; z < NUM_CELLS_OVERSCAN; z++) {
-          for (let y = 0; y < (NUM_CELLS_HEIGHT + 1); y++) {
-            for (let x = 0; x < NUM_CELLS_OVERSCAN; x++) {
-              const index = _getEtherIndex(x, y, z);
-              const liquidValue = water[index];
-              if (liquidValue > 0) {
-                result[index] = ether[index] * (liquidValue === 0xFF ? 1 : -1);
-              } else {
-                result[index] = 1;
-              }
-            }
-          }
-        }
-        return result;
-      })(),
+      water,
       [
         [0, NUM_CELLS * i, 0],
         [NUM_CELLS + 1, (NUM_CELLS * (i + 1)) + 1, NUM_CELLS + 1],
@@ -120,23 +104,7 @@ const _makeGeometries = (ox, oy, ether, water, lava) => {
     // lava
     const {positions: newLavaPositions, indices: newLavaIndices} = vxl.marchingCubes(
       [NUM_CELLS + 1, NUM_CELLS + 1, NUM_CELLS + 1],
-      (() => { // XXX can be folded into native
-        const result = new Float32Array(lava.length);
-        for (let z = 0; z < NUM_CELLS_OVERSCAN; z++) {
-          for (let y = 0; y < (NUM_CELLS_HEIGHT + 1); y++) {
-            for (let x = 0; x < NUM_CELLS_OVERSCAN; x++) {
-              const index = _getEtherIndex(x, y, z);
-              const lavaValue = lava[index];
-              if (lavaValue > 0) {
-                result[index] = ether[index] * (lavaValue === 0xFF ? 1 : -1);
-              } else {
-                result[index] = 1;
-              }
-            }
-          }
-        }
-        return result;
-      })(),
+      lava,
       [
         [0, NUM_CELLS * i, 0],
         [NUM_CELLS + 1, (NUM_CELLS * (i + 1)) + 1, NUM_CELLS + 1],
@@ -505,33 +473,36 @@ const _generateMapChunk = (ox, oy, opts) => {
     let water = opts.oldWater;
     let lava = opts.oldLava;
     if (!water || !lava) {
-      water = new Uint8Array((NUM_CELLS + 1) * (NUM_CELLS_HEIGHT + 1) * (NUM_CELLS + 1));
-      lava = new Uint8Array((NUM_CELLS + 1) * (NUM_CELLS_HEIGHT + 1) * (NUM_CELLS + 1));
+      water = new Float32Array((NUM_CELLS + 1) * (NUM_CELLS_HEIGHT + 1) * (NUM_CELLS + 1));
+      water.fill(1);
+      lava = new Float32Array((NUM_CELLS + 1) * (NUM_CELLS_HEIGHT + 1) * (NUM_CELLS + 1));
+      lava.fill(1);
 
       const _setLiquid = (x, y, z, liquid) => {
         x -= ox * NUM_CELLS;
         z -= oy * NUM_CELLS;
 
-        for (let dz = -2; dz <= 2; dz++) {
+        for (let dz = -1; dz <= 1; dz++) {
           const az = z + dz;
           if (az >= 0 && az < (NUM_CELLS + 1)) {
-            for (let dx = -2; dx <= 2; dx++) {
+            for (let dx = -1; dx <= 1; dx++) {
               const ax = x + dx;
               if (ax >= 0 && ax < (NUM_CELLS + 1)) {
-                for (let dy = -2; dy <= 2; dy++) {
+                for (let dy = -1; dy <= 1; dy++) {
                   const ay = y + dy;
                   const index = _getEtherIndex(ax, ay, az);
-                  const oldLiquidValue = liquid[index];
+                  // const oldLiquidValue = liquid[index];
 
-                  if (oldLiquidValue === 0 || oldLiquidValue === 0xFF || oldLiquidValue === 0xFE) {
-                    if (dx > -2 && dx < 2 && dz > -2 && dz < 2 && ay >= 0 && ay < (NUM_CELLS_HEIGHT + 1)) {
-                      if (dx === 0 && dy === 0 && dz === 0) {
-                        liquid[index] = 1;
+                  // if (oldLiquidValue === 0 || oldLiquidValue === 0xFF || oldLiquidValue === 0xFE) {
+                    if (ay >= 0 && ay < (NUM_CELLS_HEIGHT + 1)) {
+                      liquid[index] = Math.min(-1 * (1 - (Math.sqrt(dx*dx + dy*dy + dz*dz) / (Math.sqrt(3)*0.8))), liquid[index]);
+                      /* if (dx === 0 && dy === 0 && dz === 0) {
+                        liquid[index] = -1;
                       } else if (liquid[index] === 0) {
                         liquid[index] = (dy >= 0) ? 0xFF : (dx === 0 && dz === 0 ? 0xFE : 0);
-                      }
+                      } */
                     }
-                  }
+                  // }
                 }
               }
             }
@@ -546,7 +517,8 @@ const _generateMapChunk = (ox, oy, opts) => {
           const elevation = elevations[index++];
           for (let y = 0; y <= NUM_CELLS_HEIGHT; y++) {
             if (y < 64 && y >= elevation) {
-              water[_getEtherIndex(x, y, z)] = 1;
+              const index = _getEtherIndex(x, y, z);
+              water[index] = ether[index] * -1;
             }
           }
         }
@@ -561,9 +533,10 @@ const _generateMapChunk = (ox, oy, opts) => {
               const az = ((oy + dz) * NUM_CELLS) + z;
 
               const elevation = _getElevation(ax, az);
-              const biome = _getBiome(x, z);
-              if (BIOMES_TALL[biome] && elevation >= 90) {
-                if (_random.temperatureNoise(ax + 1000, az + 1000) < 0.15) {
+              // const biome = _getBiome(x, z);
+              // if (BIOMES_TALL[biome] && elevation >= 90) {
+              if (elevation >= 80) {
+                if (_random.temperatureNoise(ax + 1000, az + 1000) < 0.2) {
                   _setLiquid(ax, Math.floor(elevation + 1), az, lava);
                 }
               }
