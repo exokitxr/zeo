@@ -527,8 +527,6 @@ const _generateMapChunk = (ox, oy, opts) => {
               const az = ((oy + dz) * NUM_CELLS) + z;
 
               const elevation = _getElevation(ax, az);
-              // const biome = _getBiome(x, z);
-              // if (BIOMES_TALL[biome] && elevation >= 90) {
               if (elevation >= 80) {
                 if (_random.temperatureNoise(ax + 1000, az + 1000) < 0.2) {
                   _setLiquid(ax, Math.floor(elevation + 1), az, lava);
