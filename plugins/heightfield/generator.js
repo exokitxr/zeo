@@ -37,12 +37,12 @@ const HOLE_SIZE = 2;
   for (let i = 0; i < src.length; i++) {
     dst[startIndexIndex + i] = src[i] + startAttributeIndex;
   }
-}; */
+};
 const _offsetIndices = (indices, startAttributeIndex) => {
   for (let i = 0; i < indices.length; i++) {
     indices[i] += startAttributeIndex;
   }
-};
+}; */
 
 const _makeGeometries = (ox, oy, ether, water, lava) => {
   const positions = new Float32Array(NUM_POSITIONS_CHUNK);
@@ -60,10 +60,10 @@ const _makeGeometries = (ox, oy, ether, water, lava) => {
         [0, NUM_CELLS * i, 0],
         [NUM_CELLS + 1, (NUM_CELLS * (i + 1)) + 1, NUM_CELLS + 1],
       ],
+      attributeIndex / 3,
       new Float32Array(positions.buffer, positions.byteOffset + attributeIndex * 4),
       new Uint32Array(indices.buffer, indices.byteOffset + indexIndex * 4)
     );
-    _offsetIndices(newIndices, attributeIndex / 3); // XXX can be moved to native
 
     geometries[i] = {
       attributeRange: {
@@ -114,10 +114,10 @@ const _makeGeometries = (ox, oy, ether, water, lava) => {
         [0, NUM_CELLS * i, 0],
         [NUM_CELLS + 1, (NUM_CELLS * (i + 1)) + 1, NUM_CELLS + 1],
       ],
+      attributeIndex / 3,
       new Float32Array(positions.buffer, positions.byteOffset + attributeIndex * 4),
       new Uint32Array(indices.buffer, indices.byteOffset + indexIndex * 4)
     );
-    _offsetIndices(newWaterIndices, attributeIndex / 3);
 
     const {attributeRange, indexRange} = geometries[i];
     attributeRange.waterStart = attributeIndex;
@@ -152,10 +152,10 @@ const _makeGeometries = (ox, oy, ether, water, lava) => {
         [0, NUM_CELLS * i, 0],
         [NUM_CELLS + 1, (NUM_CELLS * (i + 1)) + 1, NUM_CELLS + 1],
       ],
+      attributeIndex / 3,
       new Float32Array(positions.buffer, positions.byteOffset + attributeIndex * 4),
       new Uint32Array(indices.buffer, indices.byteOffset + indexIndex * 4)
     );
-    _offsetIndices(newLavaIndices, attributeIndex / 3);
 
     attributeRange.lavaStart = attributeIndex;
     attributeRange.lavaCount = newLavaPositions.length;
