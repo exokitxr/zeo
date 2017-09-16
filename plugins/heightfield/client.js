@@ -135,6 +135,7 @@ const OCEAN_SHADER = {
     attribute float skyLightmap;
     attribute float torchLightmap;
     // varying vec2 vUv;
+    varying vec3 vPosition;
     varying vec3 vColor;
     varying float vSkyLightmap;
     varying float vTorchLightmap;
@@ -147,6 +148,7 @@ const OCEAN_SHADER = {
       gl_Position = projectionMatrix * modelViewMatrix * vec4(position.xyz, 1.0);
       vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
       // vUv = vec2((position.x + position.y) / 16.0 * 4.0, (position.z + position.y) / 16.0 * 4.0 / 16.0);
+      vPosition = position;
       vColor = color.rgb;
       vSkyLightmap = skyLightmap;
       vTorchLightmap = torchLightmap;
@@ -162,6 +164,7 @@ const OCEAN_SHADER = {
     uniform float fogDensity;
     uniform float sunIntensity;
     // varying vec2 vUv;
+    varying vec3 vPosition;
     varying vec3 vColor;
     varying float vSkyLightmap;
     varying float vTorchLightmap;
@@ -172,8 +175,12 @@ const OCEAN_SHADER = {
       float frame1 = mod(floor(animationFactor / 16.0), 1.0);
       float frame2 = mod(frame1 + 1.0/16.0, 1.0);
       float mixFactor = fract(animationFactor / 16.0) * 16.0;
-      vec2 uv1 = vColor.rg * vec2(1.0, 1.0 - frame1);
-      vec2 uv2 = vColor.rg * vec2(1.0, 1.0 - frame2);
+      vec2 baseUv = vColor.rg + vec2(
+        mod(abs(vPosition.x) / 4.0, 1.0),
+        mod(abs(vPosition.z) / 4.0, 1.0) / 16.0
+      ) / 2.0;
+      vec2 uv1 = baseUv * vec2(1.0, 1.0 - frame1);
+      vec2 uv2 = baseUv * vec2(1.0, 1.0 - frame2);
       vec3 diffuseColor = mix(texture2D( map, uv1 ), texture2D( map, uv2 ), mixFactor).rgb;
       // diffuseColor *= (0.2 + 0.8 * sunIntensity);
       float fogFactor = whiteCompliment( exp2( - fogDensity * fogDensity * fogDepth * fogDepth * LOG2 ) );
