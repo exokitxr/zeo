@@ -312,7 +312,7 @@ class Heightfield {
                     }
                     return result;
                   };
-                  const _getObjectsLightSources = () => objectsEntity.getLightSources(chunk.x, chunk.z);
+                  const _getObjectsLightSources = () => objectsEntity.getLightSources(ox, oz);
                   const _getExtraLightSources = () => extraLightSources || [];
 
                   return _getHeightfieldLightSources()
