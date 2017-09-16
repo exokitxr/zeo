@@ -177,7 +177,7 @@ const OCEAN_SHADER = {
       float mixFactor = fract(animationFactor / 16.0) * 16.0;
       vec2 baseUv = vColor.rg + vec2(
         mod(abs(vPosition.x) / 4.0, 1.0),
-        mod(abs(vPosition.z) / 4.0, 1.0) / 16.0
+        mod(abs(vPosition.z) / 4.0 / 16.0, 1.0)
       ) / 2.0;
       vec2 uv1 = baseUv * vec2(1.0, 1.0 - frame1);
       vec2 uv2 = baseUv * vec2(1.0, 1.0 - frame2);
