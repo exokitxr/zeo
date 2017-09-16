@@ -12,6 +12,7 @@ const zeode = require('zeode');
 const {
   OBJECT_BUFFER_SIZE,
   BLOCK_BUFFER_SIZE,
+  LIGHT_BUFFER_SIZE,
   GEOMETRY_BUFFER_SIZE,
 } = zeode;
 const {
@@ -502,14 +503,15 @@ const _requestChunk = (x, z, index, numPositions, numObjectIndices, numIndices) 
 
     const objectBuffer = new Uint32Array(buffer, 0, OBJECT_BUFFER_SIZE / 4);
     const blockBuffer = new Uint32Array(buffer, OBJECT_BUFFER_SIZE, BLOCK_BUFFER_SIZE / 4);
-    const geometryBuffer = new Uint8Array(buffer, OBJECT_BUFFER_SIZE + BLOCK_BUFFER_SIZE, GEOMETRY_BUFFER_SIZE);
-    const decorationsBuffer = new Uint8Array(buffer, OBJECT_BUFFER_SIZE + BLOCK_BUFFER_SIZE + GEOMETRY_BUFFER_SIZE);
+    const lightBuffer = new Float32Array(buffer, OBJECT_BUFFER_SIZE + BLOCK_BUFFER_SIZE, LIGHT_BUFFER_SIZE / 4);
+    const geometryBuffer = new Uint8Array(buffer, OBJECT_BUFFER_SIZE + BLOCK_BUFFER_SIZE + LIGHT_BUFFER_SIZE, GEOMETRY_BUFFER_SIZE);
+    const decorationsBuffer = new Uint8Array(buffer, OBJECT_BUFFER_SIZE + BLOCK_BUFFER_SIZE + LIGHT_BUFFER_SIZE + GEOMETRY_BUFFER_SIZE);
 
     const chunkData = protocolUtils.parseGeometry(geometryBuffer.buffer, geometryBuffer.byteOffset);
     chunkData.decorations = protocolUtils.parseDecorations(decorationsBuffer.buffer, decorationsBuffer.byteOffset);
     _offsetChunkData(chunkData, index, numPositions);
 
-    return _decorateChunk(new zeode.Chunk(x, z, objectBuffer, blockBuffer, geometryBuffer), chunkData, index, numPositions, numObjectIndices, numIndices);
+    return _decorateChunk(new zeode.Chunk(x, z, objectBuffer, blockBuffer, lightBuffer, geometryBuffer), chunkData, index, numPositions, numObjectIndices, numIndices);
   });
 const _offsetChunkData = (chunkData, index, numPositions) => {
   const {indices} = chunkData;

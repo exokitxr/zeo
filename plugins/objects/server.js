@@ -619,6 +619,9 @@ class Objects {
                   const matrix = position.toArray().concat(rotation.toArray());
                   chunk.addObject(n, matrix, value);
                 },
+                addLight(chunk, position, v) {
+                  chunk.addLight(position.x, position.y, position.z, v);
+                },
               };
               objectApi.registerNoise('grass', { // XXX move these into the objects lib
                 seed: DEFAULT_SEED + ':grass',
@@ -685,6 +688,9 @@ class Objects {
 
                         const blockBuffer = chunk.getBlockBuffer();
                         res.write(new Buffer(blockBuffer.buffer, blockBuffer.byteOffset, blockBuffer.byteLength));
+
+                        const lightBuffer = chunk.getLightBuffer();
+                        res.write(new Buffer(lightBuffer.buffer, lightBuffer.byteOffset, lightBuffer.byteLength));
 
                         const geometryBuffer = chunk.getGeometryBuffer();
                         res.write(new Buffer(geometryBuffer.buffer, geometryBuffer.byteOffset, geometryBuffer.byteLength));
@@ -911,19 +917,14 @@ class Objects {
                   },
                   getLightSources: (x, z) => {
                     const result = [];
-                    const torchN = murmur('torch');
-                    zde.getChunk(x, z).forEachObject((n, matrix) => {
-                      if (n === torchN) {
-                        const [x, y, z] = matrix;
-                        result.push([Math.floor(x), Math.floor(y), Math.floor(z), 16]);
-                      }
+                    zde.getChunk(x, z).forEachLight((x, y, z, v) => {
+                      result.push([Math.floor(x), Math.floor(y), Math.floor(z), Math.floor(v)]);
                     });
                     return result;
                   },
                   isOccluded(x, y, z) {
                     const ox = Math.floor(x / NUM_CELLS);
                     const oz = Math.floor(z / NUM_CELLS);
-
                     return zde.getChunk(ox, oz).getBlock(x - ox * NUM_CELLS, y, z - oz * NUM_CELLS) !== 0;
                   },
                 };

@@ -333,6 +333,7 @@ const bigHouse = objectApi => {
                     }
                   })();
                   if (objectType) {
+                    localVector.set(chunk.x * NUM_CELLS + x + 0.5, elevation + y + 0.5, chunk.z * NUM_CELLS + z + 0.5);
                     if (col === 'Glass West' || col === 'Oak Wood Stairs East') {
                       localQuaternion.setFromUnitVectors(
                         new THREE.Vector3(0, 0, -1),
@@ -351,7 +352,10 @@ const bigHouse = objectApi => {
                     } else {
                       localQuaternion.set(0, 0, 0, 1);
                     }
-                    objectApi.addObject(chunk, objectType, localVector.set(chunk.x * NUM_CELLS + x + 0.5, elevation + y + 0.5, chunk.z * NUM_CELLS + z + 0.5), localQuaternion, 0);
+                    objectApi.addObject(chunk, objectType, localVector, localQuaternion, 0);
+                    if (objectType === 'torch') {
+                      objectApi.addLight(chunk, localVector, 16);
+                    }
                   } else {
                     const blockType = (() => {
                       if (col === 'Cobblestone') {
