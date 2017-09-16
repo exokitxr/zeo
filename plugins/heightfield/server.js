@@ -68,6 +68,15 @@ class Heightfield {
             seed: DEFAULT_SEED,
           });
           tra.load(b);
+
+          for (const index in tra.chunks) {
+            const chunk = tra.chunks[index];
+            if (chunk) {
+              const uint32Buffer = chunk.getBuffer();
+              chunk[etherSymbol] = protocolUtils.parseData(uint32Buffer.buffer, uint32Buffer.byteOffset).ether;
+            }
+          }
+
           accept(tra);
         } else if (err.code === 'ENOENT') {
           touch(trraDataPath, err => {
