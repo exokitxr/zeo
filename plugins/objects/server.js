@@ -915,7 +915,13 @@ class Objects {
                     }
                     return Promise.all(promises);
                   },
-                  getLightSources: (x, z) => {
+                  getLights(x, z) {
+                    return zde.getChunk(x, z).getLightBuffer();
+                  },
+                  getBlocks(x, z) {
+                    return zde.getChunk(x, z).getBlockBuffer();
+                  },
+                  /* getLightSources: (x, z) => {
                     const result = [];
                     zde.getChunk(x, z).forEachLight((x, y, z, v) => {
                       result.push([Math.floor(x), Math.floor(y), Math.floor(z), Math.floor(v)]);
@@ -926,7 +932,7 @@ class Objects {
                     const ox = Math.floor(x / NUM_CELLS);
                     const oz = Math.floor(z / NUM_CELLS);
                     return zde.getChunk(ox, oz).getBlock(x - ox * NUM_CELLS, y, z - oz * NUM_CELLS) !== 0;
-                  },
+                  }, */
                 };
                 elements.registerEntity(this, objectsElement);
 

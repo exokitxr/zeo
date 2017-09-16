@@ -29,6 +29,7 @@ const OBJECTS_PLUGIN = 'plugins-objects';
 
 const etherSymbol = Symbol();
 const lightsSymbol = Symbol();
+const lightsRenderedSymbol = Symbol();
 const decorationsSymbol = Symbol();
 const _getLightsIndex = (x, y, z) => x + y * NUM_CELLS_OVERSCAN + z * NUM_CELLS_OVERSCAN * (NUM_CELLS_HEIGHT + 1);
 const _getLightsArrayIndex = (x, z) => x + z * 3;
@@ -134,6 +135,8 @@ class Heightfield {
           chunk.dirty = true;
 
           chunk[etherSymbol] = chunkData.ether;
+          chunk[lightsSymbol] = new Uint8Array(NUM_CELLS_OVERSCAN * (NUM_CELLS_HEIGHT + 1) * NUM_CELLS_OVERSCAN);
+          chunk[lightsRenderedSymbol] = false;
 
           return chunk;
         };
@@ -162,138 +165,75 @@ class Heightfield {
         };
         const _decorateChunkLights = chunk => _decorateChunkLightsRange(
           chunk,
-          null,
           (chunk.x - 1) * NUM_CELLS,
           (chunk.x + 2) * NUM_CELLS,
           0,
           NUM_CELLS_HEIGHT + 1,
           (chunk.z - 1) * NUM_CELLS,
           (chunk.z + 2) * NUM_CELLS,
-          null
+          false
         );
-        const _decorateChunkLightsSub = (chunk, x, y, z) => {
-          const minX = Math.max(x - 15, (chunk.x - 1) * NUM_CELLS);
-          const maxX = Math.min(x + 15, (chunk.x + 2) * NUM_CELLS);
-          const minY = Math.max(y - 15, 0);
-          const maxY = Math.min(y + 15, NUM_CELLS_HEIGHT);
-          const minZ = Math.max(z - 15, (chunk.z - 1) * NUM_CELLS);
-          const maxZ = Math.min(z + 15, (chunk.z + 2) * NUM_CELLS);
-
-          const oldLightsArray = Array(9);
-          let hadAllOldLights = true;
-          for (let dz = -1; dz <= 1 && hadAllOldLights; dz++) {
-            for (let dx = -1; dx <= 1 && hadAllOldLights; dx++) {
-              const oldChunk = tra.getChunk(chunk.x + dx, chunk.z + dz);
-              if (oldChunk) {
-                const {[lightsSymbol]: oldLights} = oldChunk;
-                if (oldLights) {
-                  oldLightsArray[_getLightsArrayIndex(dx + 1, dz + 1)] = oldLights;
-                } else {
-                  hadAllOldLights = false;
-                }
-              } else {
-                hadAllOldLights = false;
-              }
-            }
-          }
-
-          if (hadAllOldLights) {
-            const _getOldLights = (x, y, z) => {
-              const lax = Math.floor((x - (chunk.x - 1) * NUM_CELLS) / NUM_CELLS);
-              const laz = Math.floor((z - (chunk.z - 1) * NUM_CELLS) / NUM_CELLS);
-              const lightsArrayIndex = _getLightsArrayIndex(lax, laz);
-              const oldLights = oldLightsArray[lightsArrayIndex];
-
-              const ax = x - Math.floor(x / NUM_CELLS) * NUM_CELLS;
-              const ay = y;
-              const az = z - Math.floor(z / NUM_CELLS) * NUM_CELLS;
-              const lightsIndex = _getLightsIndex(ax, ay, az);
-              return oldLights[lightsIndex];
-            };
-
-            const extraLightSources = [];
-            let x, y, z;
-            // top
-            y = maxY + 1;
-            if (y <= NUM_CELLS_HEIGHT) {
-              for (let z = minZ; z < maxZ; z++) {
-                for (let x = minX; x < maxX; x++) {
-                  extraLightSources.push([x, y, z, _getOldLights(x, y, z)]);
-                }
-              }
-            }
-            // bottom
-            y = minY - 1;
-            if (y >= 0) {
-              for (let z = minZ; z < maxZ; z++) {
-                for (let x = minX; x < maxX; x++) {
-                  extraLightSources.push([x, y, z, _getOldLights(x, y, z)]);
-                }
-              }
-            }
-            // left
-            x = minX - 1;
-            if (x >= (chunk.x - 1) * NUM_CELLS) {
-              for (let z = minZ; z < maxZ; z++) {
-                for (let y = minY; y <= maxY; y++) {
-                  extraLightSources.push([x, y, z, _getOldLights(x, y, z)]);
-                }
-              }
-            }
-            // right
-            x = maxX;
-            if (x < (chunk.x + 2) * NUM_CELLS) {
-              for (let z = minZ; z < maxZ; z++) {
-                for (let y = minY; y <= maxY; y++) {
-                  extraLightSources.push([x, y, z, _getOldLights(x, y, z)]);
-                }
-              }
-            }
-            // back
-            z = minZ - 1;
-            if (z >= (chunk.z - 1) * NUM_CELLS) {
-              for (let x = minX; x < maxX; x++) {
-                for (let y = minY; y <= maxY; y++) {
-                  extraLightSources.push([x, y, z, _getOldLights(x, y, z)]);
-                }
-              }
-            }
-            // front
-            z = maxZ;
-            if (z < (chunk.z + 2) * NUM_CELLS) {
-              for (let x = minX; x < maxX; x++) {
-                for (let y = minY; y <= maxY; y++) {
-                  extraLightSources.push([x, y, z, _getOldLights(x, y, z)]);
-                }
-              }
-            }
-
-            return _decorateChunkLightsRange(
-              chunk,
-              oldLightsArray,
-              minX,
-              maxX,
-              minY,
-              maxY,
-              minZ,
-              maxZ,
-              extraLightSources
-            );
-          } else {
-            return _decorateChunkLights(chunk);
-          }
-        };
-        const _decorateChunkLightsRange = (chunk, oldLightsArray, minX, maxX, minY, maxY, minZ, maxZ, extraLightSources) => {
+        const _decorateChunkLightsSub = (chunk, x, y, z) => _decorateChunkLightsRange(
+          chunk,
+          Math.max(x - 15, (chunk.x - 1) * NUM_CELLS),
+          Math.min(x + 15, (chunk.x + 2) * NUM_CELLS),
+          Math.max(y - 15, 0),
+          Math.min(y + 15, NUM_CELLS_HEIGHT),
+          Math.max(z - 15, (chunk.z - 1) * NUM_CELLS),
+          Math.min(z + 15, (chunk.z + 2) * NUM_CELLS),
+          true
+        );
+        const _decorateChunkLightsRange = (chunk, minX, maxX, minY, maxY, minZ, maxZ, relight) => {
+          const {x: ox, z: oz} = chunk;
           const objectsEntity = elements.getWorldElement().querySelector(OBJECTS_PLUGIN);
 
           return Promise.all([
-            _ensureNeighboringChunks(chunk.x, chunk.z),
-            objectsEntity.ensureNeighboringChunks(chunk.x, chunk.z),
+            _ensureNeighboringChunks(ox, oz),
+            objectsEntity.ensureNeighboringChunks(ox, oz),
           ])
             .then(() => {
-              const hadOldLights = Boolean(chunk[lightsSymbol]);
+              const updatingLights = chunk[lightsRenderedSymbol];
 
-              chunk[lightsSymbol] = generator.light(chunk.x, chunk.z, oldLightsArray, minX, maxX, minY, maxY, minZ, maxZ, {
+              const lavaArray = Array(9);
+              const objectLightsArray = Array(9);
+              const etherArray = Array(9);
+              const blocksArray = Array(9);
+              const lightsArray = Array(9);
+              for (let doz = -1; doz <= 1; doz++) {
+                for (let dox = -1; dox <= 1; dox++) {
+                  const arrayIndex = _getLightsArrayIndex(dox + 1, doz + 1);
+
+                  const aox = ox + dox;
+                  const aoz = oz + doz;
+                  const chunk = tra.getChunk(aox, aoz);
+                  const uint32Buffer = chunk.getBuffer();
+                  const {ether, lava} = protocolUtils.parseData(uint32Buffer.buffer, uint32Buffer.byteOffset); // XXX can be reduced to only parse the needed fields
+                  lavaArray[arrayIndex] = lava;
+
+                  const objectLights = objectsEntity.getLights(aox, aoz);
+                  objectLightsArray[arrayIndex] = objectLights;
+
+                  etherArray[arrayIndex] = ether;
+
+                  const blocks = objectsEntity.getBlocks(aox, aoz);
+                  blocksArray[arrayIndex] = blocks;
+
+                  const {[lightsSymbol]: lights} = chunk;
+                  lightsArray[arrayIndex] = lights;
+                }
+              }
+
+              vxl.light(
+                ox, oz,
+                minX, maxX, minY, maxY, minZ, maxZ,
+                relight,
+                lavaArray,
+                objectLightsArray,
+                etherArray,
+                blocksArray,
+                lightsArray,
+              );
+              /* chunk[lightsSymbol] = generator.light(chunk.x, chunk.z, oldLightsArray, minX, maxX, minY, maxY, minZ, maxZ, {
                 getLightSources: (ox, oz) => {
                   const _getHeightfieldLightSources = () => {
                     const chunk = tra.getChunk(ox, oz);
@@ -329,10 +269,11 @@ class Heightfield {
 
                   return _isOccludedHeightfield() || _isOccludedObjects();
                 },
-              });
+              }); */
+              chunk[lightsRenderedSymbol] = true;
               chunk[decorationsSymbol] = null;
 
-              if (hadOldLights) {
+              if (updatingLights) {
                 heightfieldElement.emit('lights', chunk);
               }
 
@@ -397,7 +338,7 @@ class Heightfield {
               }
               accept(chunk);
             })
-              .then(chunk => !chunk[lightsSymbol] ? _decorateChunkLights(chunk) : Promise.resolve(chunk))
+              .then(chunk => !chunk[lightsRenderedSymbol] ? _decorateChunkLights(chunk) : Promise.resolve(chunk))
               .then(chunk => !chunk[decorationsSymbol] ? _decorateChunkLightmaps(chunk) : Promise.resolve(chunk))
               .then(chunk => {
                 res.type('application/octet-stream');
@@ -573,7 +514,7 @@ class Heightfield {
                 chunk = _generateChunk(tra.makeChunk(x, z));
                 _saveChunks();
               }
-              if (chunk[lightsSymbol]) {
+              if (chunk[lightsRenderedSymbol]) {
                 return Promise.resolve(chunk);
               } else {
                 return _decorateChunkLights(chunk);
