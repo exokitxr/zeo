@@ -562,67 +562,18 @@ const _generateMapChunk = (ox, oy, opts) => {
   const staticHeightfield = new Float32Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
   vxl.genHeightfield(positions, positions.length, heightfield, staticHeightfield);
 
-  function _postProcessGeometry(start, count, getColor) {
-    const geometryPositions = new Float32Array(positions.buffer, positions.byteOffset + start * 4, count);
-    const geometryColors = new Float32Array(colors.buffer, colors.byteOffset + start * 4, count);
-
-    const numPositions = geometryPositions.length / 3;
-    let baseIndex = 0;
-    for (let j = 0; j < numPositions; j++) {
-      const x = geometryPositions[baseIndex + 0];
-      const y = geometryPositions[baseIndex + 1];
-      const z = geometryPositions[baseIndex + 2];
-
-      const color = getColor((ox * NUM_CELLS) + x, y, (oy * NUM_CELLS) + z);
-      const colorArray = Array.isArray(color) ? color : _colorIntToArray(color);
-      geometryColors[baseIndex + 0] = colorArray[0];
-      geometryColors[baseIndex + 1] = colorArray[1];
-      geometryColors[baseIndex + 2] = colorArray[2];
-
-      const ax = (ox * NUM_CELLS) + x;
-      const az = (oy * NUM_CELLS) + z;
-      geometryPositions[baseIndex + 0] = ax;
-      geometryPositions[baseIndex + 2] = az;
-
-      baseIndex += 3;
-    }
-  };
-
-  function postProcessGeometries() {
-    for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
-      const geometry = geometries[i];
-      const {attributeRange} = geometry;
-      _postProcessGeometry(attributeRange.landStart, attributeRange.landCount, (x, y, z) =>
-        BIOMES_INDEX[biomes[_getCoordOverscanIndex(Math.floor(x - ox * NUM_CELLS), Math.floor(z - oy * NUM_CELLS))]].color);
-      _postProcessGeometry(attributeRange.waterStart, attributeRange.waterCount, (x, y, z) => {
-        return [
-          mod(Math.abs(x) / 16.0 * 4.0 * 0.99, 1) * 0.5,
-          mod(Math.abs(z) / 16.0 * 4.0 / 16.0 * 0.99, 1),
-          1.0
-        ];
-      });
-      _postProcessGeometry(attributeRange.lavaStart, attributeRange.lavaCount, (x, y, z) => {
-        return [
-          0.5 + mod(Math.abs(x) / 16.0 * 4.0 * 0.99, 1) * 0.5,
-          mod(Math.abs(z) / 16.0 * 4.0 / 16.0 * 0.99, 1),
-          2.0
-        ];
-      });
-
-      geometry.boundingSphere = new THREE.Sphere(
-        new THREE.Vector3(ox * NUM_CELLS + NUM_CELLS_HALF, i * NUM_CELLS + NUM_CELLS_HALF, oy * NUM_CELLS + NUM_CELLS_HALF),
-        NUM_CELLS_CUBE
-      );
-    }
-  }
-  postProcessGeometries();
-
-  for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
+   for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
     const geometry = geometries[i];
+    noiser.postProcessGeometry(ox, oy, geometry.attributeRange, positions, colors, biomes);
+
     const peeks = new Uint8Array(16);
     vxl.flood(ether, [0, i * NUM_CELLS, 0], peeks);
-
     geometry.peeks = peeks;
+
+    geometry.boundingSphere = new THREE.Sphere(
+      new THREE.Vector3(ox * NUM_CELLS + NUM_CELLS_HALF, i * NUM_CELLS + NUM_CELLS_HALF, oy * NUM_CELLS + NUM_CELLS_HALF),
+      NUM_CELLS_CUBE
+    );
   }
 
   return {
