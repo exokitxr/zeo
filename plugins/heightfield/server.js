@@ -27,7 +27,7 @@ const DIRECTIONS = [
 ];
 const OBJECTS_PLUGIN = 'plugins-objects';
 
-const etherSymbol = Symbol();
+// const etherSymbol = Symbol();
 const lightsSymbol = Symbol();
 const lightsRenderedSymbol = Symbol();
 const decorationsSymbol = Symbol();
@@ -70,13 +70,13 @@ class Heightfield {
           });
           tra.load(b);
 
-          for (const index in tra.chunks) {
+          /* for (const index in tra.chunks) {
             const chunk = tra.chunks[index];
             if (chunk) {
               const uint32Buffer = chunk.getBuffer();
               chunk[etherSymbol] = protocolUtils.parseData(uint32Buffer.buffer, uint32Buffer.byteOffset).ether;
             }
-          }
+          } */
 
           accept(tra);
         } else if (err.code === 'ENOENT') {
@@ -134,7 +134,7 @@ class Heightfield {
           protocolUtils.stringifyData(chunkData, uint32Buffer.buffer, uint32Buffer.byteOffset);
           chunk.dirty = true;
 
-          chunk[etherSymbol] = chunkData.ether;
+          // chunk[etherSymbol] = chunkData.ether;
           chunk[lightsSymbol] = new Uint8Array(NUM_CELLS_OVERSCAN * (NUM_CELLS_HEIGHT + 1) * NUM_CELLS_OVERSCAN);
           chunk[lightsRenderedSymbol] = false;
 
