@@ -116,7 +116,6 @@ class Objects {
         };
         const _decorateChunkGeometry = chunk => {
           const geometry = _makeChunkGeometry(chunk);
-
           const geometryBuffer = chunk.getGeometryBuffer();
           protocolUtils.stringifyGeometry(geometry, geometryBuffer.buffer, geometryBuffer.byteOffset);
           chunk.dirty = true; // XXX can internalize this in zeode module
@@ -142,21 +141,22 @@ class Objects {
         const _makeGeometeriesBuffer = (() => {
           const slab = new ArrayBuffer(GEOMETRY_BUFFER_SIZE * NUM_CHUNKS_HEIGHT * 7);
           let index = 0;
-          const sliceSize = GEOMETRY_BUFFER_SIZE / NUM_CHUNKS_HEIGHT;
           const result = constructor => {
-            const result = Array(NUM_CHUNKS_HEIGHT);
-            for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
-              result[i] = {
-                array: new constructor(slab, index, sliceSize / constructor.BYTES_PER_ELEMENT),
-                index: 0,
-              };
-              index += sliceSize;
-            }
+            const result = new constructor(slab, index, (GEOMETRY_BUFFER_SIZE * NUM_CHUNKS_HEIGHT) / constructor.BYTES_PER_ELEMENT);
+            index += GEOMETRY_BUFFER_SIZE * NUM_CHUNKS_HEIGHT;
             return result;
           };
           result.reset = () => {
             index = 0;
           };
+          return result;
+        })();
+        const boundingSpheres = (() => {
+          const slab = new ArrayBuffer(NUM_CHUNKS_HEIGHT * 4 * Float32Array.BYTES_PER_ELEMENT);
+          const result = Array(NUM_CHUNKS_HEIGHT);
+          for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
+            result[i] = new Float32Array(slab, i * 4 * Float32Array.BYTES_PER_ELEMENT, 4);
+          }
           return result;
         })();
         const _makeChunkGeometry = chunk => {
@@ -177,145 +177,63 @@ class Objects {
             objectIndices: numNewObjectIndices,
             indices: numNewIndices,
             objects: numNewObjects,
-          } = vxl.compose({
+          } = vxl.objectize({
             src: chunk.getObjectBuffer(),
             geometries: geometriesBuffer,
             geometryIndex: geometryTypes,
-            positions: geometriesPositions.map(({array}) => array),
-            uvs: geometriesUvs.map(({array}) => array),
-            ssaos: geometriesSsaos.map(({array}) => array),
-            frames: geometriesFrames.map(({array}) => array),
-            objectIndices: geometriesObjectIndices.map(({array}) => array),
-            indices: geometriesIndices.map(({array}) => array),
-            objects: geometriesObjects.map(({array}) => array),
+            blocks: chunk.getBlockBuffer(),
+            blockTypes,
+            dims: [NUM_CELLS, NUM_CELLS, NUM_CELLS],
+            transparentVoxels,
+            translucentVoxels,
+            faceUvs,
+            // shift: [chunk.x * NUM_CELLS, i * NUM_CELLS, chunk.z * NUM_CELLS],
+            shift: [chunk.x * NUM_CELLS, 0, chunk.z * NUM_CELLS],
+            positions: geometriesPositions,
+            uvs: geometriesUvs,
+            ssaos: geometriesSsaos,
+            frames: geometriesFrames,
+            objectIndices: geometriesObjectIndices,
+            indices: geometriesIndices,
+            objects: geometriesObjects,
           });
-          for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
-            geometriesPositions[i].index += numNewPositions[i];
-            geometriesUvs[i].index += numNewUvs[i];
-            geometriesSsaos[i].index += numNewSsaos[i];
-            geometriesFrames[i].index += numNewFrames[i];
-            geometriesObjectIndices[i].index += numNewObjectIndices[i];
-            geometriesIndices[i].index += numNewIndices[i];
-            geometriesObjects[i].index += numNewObjects[i];
-          }
-
-          const blockBuffer = chunk.getBlockBuffer();
-          for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
-            const voxels = blockBuffer.subarray(i * NUM_VOXELS_CHUNK_HEIGHT, (i + 1) * NUM_VOXELS_CHUNK_HEIGHT);
-            const {positions: newPositions, uvs: newUvs, ssaos: newSsaos} =
-              vxl.tesselate(voxels, blockTypes, [NUM_CELLS, NUM_CELLS, NUM_CELLS], transparentVoxels, translucentVoxels, faceUvs, [chunk.x * NUM_CELLS, i * NUM_CELLS, chunk.z * NUM_CELLS],
-                new Float32Array(geometriesPositions[i].array.buffer, geometriesPositions[i].array.byteOffset + geometriesPositions[i].index * 4),
-                new Float32Array(geometriesUvs[i].array.buffer, geometriesUvs[i].array.byteOffset + geometriesUvs[i].index * 4),
-                new Uint8Array(geometriesSsaos[i].array.buffer, geometriesSsaos[i].array.byteOffset + geometriesSsaos[i].index)
-              );
-
-            if (newPositions.length > 0) {
-              const newFrames = new Float32Array(newPositions.length);
-              geometriesFrames[i].array.set(newFrames, geometriesFrames[i].index);
-
-              const numNewPositions = newPositions.length / 3;
-              const newObjectIndices = new Float32Array(numNewPositions);
-              geometriesObjectIndices[i].array.set(newObjectIndices, geometriesObjectIndices[i].index);
-
-              const newIndices = new Uint32Array(newPositions.length / 3);
-              for (let j = 0; j < newIndices.length; j++) {
-                newIndices[j] = j;
-              }
-              _copyIndices(newIndices, geometriesIndices[i].array, geometriesIndices[i].index, geometriesPositions[i].index / 3);
-
-              const newObjects = new Uint32Array(0);
-              geometriesObjects[i].array.set(newObjects, geometriesObjects[i].index);
-
-              geometriesPositions[i].index += newPositions.length;
-              geometriesUvs[i].index += newUvs.length;
-              geometriesSsaos[i].index += newSsaos.length;
-              geometriesFrames[i].index += newFrames.length;
-              geometriesObjectIndices[i].index += newObjectIndices.length;
-              geometriesIndices[i].index += newIndices.length;
-              geometriesObjects[i].index += newObjects.length;
-            }
-          }
-
-          const geometry = new THREE.BufferGeometry();
-          const positions = new Float32Array(GEOMETRY_BUFFER_SIZE / 4);
-          const uvs = new Float32Array(GEOMETRY_BUFFER_SIZE / 4);
-          const ssaos = new Uint8Array(GEOMETRY_BUFFER_SIZE / 4);
-          const frames = new Float32Array(GEOMETRY_BUFFER_SIZE / 4);
-          const objectIndices = new Float32Array(GEOMETRY_BUFFER_SIZE / 4);
-          const indices = new Uint32Array(GEOMETRY_BUFFER_SIZE / 4);
-          const objects = new Uint32Array(GEOMETRY_BUFFER_SIZE / 4);
-          let attributeIndex = 0;
-          let uvIndex = 0;
-          let ssaoIndex = 0;
-          let frameIndex = 0;
-          let objectIndexIndex = 0;
-          let indexIndex = 0;
-          let objectIndex = 0;
 
           const localGeometries = Array(NUM_CHUNKS_HEIGHT);
           for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
-            const newPositions = geometriesPositions[i].array.subarray(0, geometriesPositions[i].index);
-            positions.set(newPositions, attributeIndex);
+            const attributeRangeStart = i === 0 ? 0 : numNewPositions[i - 1];
+            const attributeRangeCount = numNewPositions[i] - attributeRangeStart;
+            const indexRangeStart = i === 0 ? 0 : numNewIndices[i - 1];
+            const indexRangeCount = numNewIndices[i] - indexRangeStart;
 
-            const newUvs = geometriesUvs[i].array.subarray(0, geometriesUvs[i].index);
-            uvs.set(newUvs, uvIndex);
-
-            const newSsaos = geometriesSsaos[i].array.subarray(0, geometriesSsaos[i].index);
-            ssaos.set(newSsaos, ssaoIndex);
-
-            const newFrames = geometriesFrames[i].array.subarray(0, geometriesFrames[i].index);
-            frames.set(newFrames, frameIndex);
-
-            const newObjectIndices = geometriesObjectIndices[i].array.subarray(0, geometriesObjectIndices[i].index);
-            objectIndices.set(newObjectIndices, objectIndexIndex);
-
-            const newIndices = geometriesIndices[i].array.subarray(0, geometriesIndices[i].index);
-            _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
-
-            const newObjects = geometriesObjects[i].array.subarray(0, geometriesObjects[i].index);
-            objects.set(newObjects, objectIndex);
+            const boundingSphere = boundingSpheres[i];
+            boundingSphere[0] = chunk.x * NUM_CELLS + NUM_CELLS_HALF;
+            boundingSphere[1] = i * NUM_CELLS + NUM_CELLS_HALF;
+            boundingSphere[2] = chunk.z * NUM_CELLS + NUM_CELLS_HALF;
+            boundingSphere[3] = NUM_CELLS_CUBE;
 
             localGeometries[i] = {
               attributeRange: {
-                start: attributeIndex,
-                count: newPositions.length,
+                start: attributeRangeStart,
+                count: attributeRangeCount,
               },
               indexRange: {
-                start: indexIndex,
-                count: newIndices.length,
+                start: indexRangeStart,
+                count: indexRangeCount,
               },
-              boundingSphere: Float32Array.from([
-                chunk.x * NUM_CELLS + NUM_CELLS_HALF,
-                i * NUM_CELLS + NUM_CELLS_HALF,
-                chunk.z * NUM_CELLS + NUM_CELLS_HALF,
-                NUM_CELLS_CUBE
-              ]),
+              boundingSphere,
             };
-
-            attributeIndex += newPositions.length;
-            uvIndex += newUvs.length;
-            ssaoIndex += newSsaos.length;
-            frameIndex += newFrames.length;
-            objectIndexIndex += newObjectIndices.length;
-            indexIndex += newIndices.length;
-            objectIndex += newObjects.length;
           };
 
           return {
-            positions: new Float32Array(positions.buffer, positions.byteOffset, attributeIndex),
-            uvs: new Float32Array(uvs.buffer, uvs.byteOffset, uvIndex),
-            ssaos: new Uint8Array(ssaos.buffer, ssaos.byteOffset, ssaoIndex),
-            frames: new Float32Array(frames.buffer, frames.byteOffset, frameIndex),
-            objectIndices: new Float32Array(objectIndices.buffer, objectIndices.byteOffset, objectIndexIndex),
-            indices: new Uint32Array(indices.buffer, indices.byteOffset, indexIndex),
-            objects: new Uint32Array(objects.buffer, objects.byteOffset, objectIndex),
+            positions: new Float32Array(geometriesPositions.buffer, geometriesPositions.byteOffset, numNewPositions[NUM_CHUNKS_HEIGHT - 1]),
+            uvs: new Float32Array(geometriesUvs.buffer, geometriesUvs.byteOffset, numNewUvs[NUM_CHUNKS_HEIGHT - 1]),
+            ssaos: new Uint8Array(geometriesSsaos.buffer, geometriesSsaos.byteOffset, numNewSsaos[NUM_CHUNKS_HEIGHT - 1]),
+            frames: new Float32Array(geometriesFrames.buffer, geometriesFrames.byteOffset, numNewFrames[NUM_CHUNKS_HEIGHT - 1]),
+            objectIndices: new Float32Array(geometriesObjectIndices.buffer, geometriesObjectIndices.byteOffset, numNewObjectIndices[NUM_CHUNKS_HEIGHT - 1]),
+            indices: new Uint32Array(geometriesIndices.buffer, geometriesIndices.byteOffset, numNewIndices[NUM_CHUNKS_HEIGHT - 1]),
+            objects: new Uint32Array(geometriesObjects.buffer, geometriesObjects.byteOffset, numNewObjects[NUM_CHUNKS_HEIGHT - 1]),
             geometries: localGeometries,
           };
-        };
-        const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
-          for (let i = 0; i < src.length; i++) {
-            dst[startIndexIndex + i] = src[i] + startAttributeIndex;
-          }
         };
 
         const _readEnsureFile = (p, opts) => new Promise((accept, reject) => {
