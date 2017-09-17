@@ -720,7 +720,7 @@ void main() {
                 const localVersion = version;
                 heightfieldElement.requestFrame(next => {
                   if (version === localVersion) {
-                    renderListEntry.visible = false;
+                    // renderListEntry.visible = false;
 
                     renderer.updateAttribute(geometry.attributes.position, index * positions.length, newPositionsLength, false);
                     renderer.updateAttribute(geometry.attributes.uv, index * uvs.length, newUvsLength, false);

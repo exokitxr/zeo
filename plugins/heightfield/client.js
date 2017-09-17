@@ -597,9 +597,9 @@ class Heightfield {
                 const localVersion = version;
                 _requestFrame(next => {
                   if (version === localVersion) {
-                    renderListEntries[0].visible = false;
+                    /* renderListEntries[0].visible = false;
                     renderListEntries[1].visible = false;
-                    renderListEntries[2].visible = false;
+                    renderListEntries[2].visible = false; */
 
                     renderer.updateAttribute(geometry.attributes.position, index * positions.length, newPositionsLength, false);
                     renderer.updateAttribute(geometry.attributes.color, index * colors.length, newColorsLength, false);
