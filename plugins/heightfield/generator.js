@@ -33,9 +33,17 @@ const NUM_CELLS_CUBE = Math.sqrt(NUM_CELLS_HALF * NUM_CELLS_HALF * 3);
 const NUM_CELLS_OVERSCAN_Y = NUM_CELLS_HEIGHT + OVERSCAN;
 const HOLE_SIZE = 2;
 
-const _makeGeometries = (ox, oy, ether, water, lava) => {
-  const positions = new Float32Array(NUM_POSITIONS_CHUNK);
-  const indices = new Uint32Array(NUM_POSITIONS_CHUNK);
+const _align = (n, alignment) => {
+  let alignDiff = n % alignment;
+  if (alignDiff > 0) {
+    n += alignment - alignDiff;
+  }
+  return n;
+};
+
+const _makeGeometries = (ox, oy, ether, water, lava, positions, indices) => {
+  // const positions = new Float32Array(NUM_POSITIONS_CHUNK);
+  // const indices = new Uint32Array(NUM_POSITIONS_CHUNK);
   let attributeIndex = 0;
   let indexIndex = 0;
 
@@ -122,6 +130,9 @@ const _makeGeometries = (ox, oy, ether, water, lava) => {
     attributeIndex += newLavaPositions.length;
     indexIndex += newLavaIndices.length;
   }
+
+  // new Float32Array(positions.buffer, positions.byteOffset + attributeIndex * 4, positions.length - attributeIndex).fill(0);
+  // new Uint32Array(indices.buffer, indices.byteOffset + indexIndex * 4, indices.length - indexIndex).fill(0);
 
   return {
     positions: new Float32Array(positions.buffer, positions.byteOffset, attributeIndex),
@@ -320,24 +331,94 @@ const noiser = vxl.noiser({
   seed: murmur(DEFAULT_SEED),
 });
 
+const slab = (() => {
+  const BIOMES_SIZE = _align(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN * Uint8Array.BYTES_PER_ELEMENT, Float32Array.BYTES_PER_ELEMENT);
+  const ELEVATIONS_SIZE = NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN * Float32Array.BYTES_PER_ELEMENT;
+  const ETHER_SIZE = ((NUM_CELLS + 1) * (NUM_CELLS_HEIGHT + 1) * (NUM_CELLS + 1)) * Float32Array.BYTES_PER_ELEMENT;
+  const WATER_SIZE  = ((NUM_CELLS + 1) * (NUM_CELLS_HEIGHT + 1) * (NUM_CELLS + 1)) * Float32Array.BYTES_PER_ELEMENT;
+  const LAVA_SIZE = ((NUM_CELLS + 1) * (NUM_CELLS_HEIGHT + 1) * (NUM_CELLS + 1)) * Float32Array.BYTES_PER_ELEMENT;
+  const POSITIONS_SIZE = NUM_POSITIONS_CHUNK * Float32Array.BYTES_PER_ELEMENT;
+  const INDICES_SIZE = NUM_POSITIONS_CHUNK * Uint32Array.BYTES_PER_ELEMENT;
+  const COLORS_SIZE = NUM_POSITIONS_CHUNK * Float32Array.BYTES_PER_ELEMENT;
+  const HEIGHTFIELD_SIZE = NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN * HEIGHTFIELD_DEPTH * Float32Array.BYTES_PER_ELEMENT;
+  const STATIC_HEIGHTFIELD_SIZE = NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN * Float32Array.BYTES_PER_ELEMENT;
+  const PEEK_SIZE = 16 * Uint8Array.BYTES_PER_ELEMENT;
+  const PEEKS_ARRAY_SIZE = PEEK_SIZE * NUM_CHUNKS_HEIGHT;
+
+  const buffer = new ArrayBuffer(
+    BIOMES_SIZE +
+    ELEVATIONS_SIZE +
+    ETHER_SIZE +
+    WATER_SIZE +
+    LAVA_SIZE +
+    POSITIONS_SIZE +
+    INDICES_SIZE +
+    COLORS_SIZE +
+    HEIGHTFIELD_SIZE +
+    STATIC_HEIGHTFIELD_SIZE +
+    PEEKS_ARRAY_SIZE
+  );
+  let index = 0;
+
+  const biomes = new Uint8Array(buffer, index, BIOMES_SIZE / Uint8Array.BYTES_PER_ELEMENT);
+  index += BIOMES_SIZE;
+  const elevations = new Float32Array(buffer, index, ELEVATIONS_SIZE / Float32Array.BYTES_PER_ELEMENT);
+  index += ELEVATIONS_SIZE;
+  const ether = new Float32Array(buffer, index, ETHER_SIZE / Float32Array.BYTES_PER_ELEMENT);
+  index += ETHER_SIZE;
+  const water = new Float32Array(buffer, index, WATER_SIZE / Float32Array.BYTES_PER_ELEMENT);
+  index += WATER_SIZE;
+  const lava = new Float32Array(buffer, index, LAVA_SIZE / Float32Array.BYTES_PER_ELEMENT);
+  index += LAVA_SIZE;
+  const positions = new Float32Array(buffer, index, POSITIONS_SIZE / Float32Array.BYTES_PER_ELEMENT);
+  index += POSITIONS_SIZE;
+  const indices = new Uint32Array(buffer, index, INDICES_SIZE / Uint32Array.BYTES_PER_ELEMENT);
+  index += INDICES_SIZE;
+  const colors = new Float32Array(buffer, index, COLORS_SIZE / Float32Array.BYTES_PER_ELEMENT);
+  index += COLORS_SIZE;
+  const heightfield = new Float32Array(buffer, index, HEIGHTFIELD_SIZE / Float32Array.BYTES_PER_ELEMENT);
+  index += HEIGHTFIELD_SIZE;
+  const staticHeightfield = new Float32Array(buffer, index, STATIC_HEIGHTFIELD_SIZE / Float32Array.BYTES_PER_ELEMENT);
+  index += STATIC_HEIGHTFIELD_SIZE;
+  const peeksArray = Array(NUM_CHUNKS_HEIGHT);
+  for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
+    peeksArray[i] = new Uint8Array(buffer, index, PEEK_SIZE / Uint8Array.BYTES_PER_ELEMENT);
+    index += PEEK_SIZE;
+  }
+
+  return {
+    biomes,
+    elevations,
+    ether,
+    water,
+    lava,
+    positions,
+    indices,
+    colors,
+    heightfield,
+    staticHeightfield,
+    peeksArray,
+  };
+})();
+
 const _generateMapChunk = (ox, oy, opts) => {
   // generate
 
   let biomes = opts.oldBiomes;
   if (!biomes) {
-    biomes = new Uint8Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
+    biomes = slab.biomes;
     noiser.fillBiomes(ox, oy, biomes);
   }
 
   let elevations = opts.oldElevations;
   if (!elevations) {
-    elevations = new Float32Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
+    elevations = slab.elevations;
     noiser.fillElevations(ox, oy, elevations);
   }
 
   let ether = opts.oldEther;
   if (!ether) {
-    ether = new Float32Array((NUM_CELLS + 1) * (NUM_CELLS_HEIGHT + 1) * (NUM_CELLS + 1));
+    ether = slab.ether;
     noiser.fillEther(elevations, ether);
 
     /* let index = 0;
@@ -439,8 +520,8 @@ const _generateMapChunk = (ox, oy, opts) => {
   let water = opts.oldWater;
   let lava = opts.oldLava;
   if (!water || !lava) {
-    water = new Float32Array((NUM_CELLS + 1) * (NUM_CELLS_HEIGHT + 1) * (NUM_CELLS + 1));
-    lava = new Float32Array((NUM_CELLS + 1) * (NUM_CELLS_HEIGHT + 1) * (NUM_CELLS + 1));
+    water = slab.water;
+    lava = slab.lava;
 
     noiser.fillLiquid(ox, oy, ether, elevations, water, lava);
   }
@@ -478,18 +559,17 @@ const _generateMapChunk = (ox, oy, opts) => {
     attributeIndex,
     indexIndex,
     geometries,
-  } = _makeGeometries(ox, oy, ether, water, lava);
-  const colors = new Float32Array(NUM_POSITIONS_CHUNK);
+  } = _makeGeometries(ox, oy, ether, water, lava, slab.positions, slab.indices);
 
-  const heightfield = new Float32Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN * HEIGHTFIELD_DEPTH);
-  const staticHeightfield = new Float32Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
-  vxl.genHeightfield(positions, positions.length, heightfield, staticHeightfield);
+  const {heightfield, staticHeightfield} = slab;
+  vxl.genHeightfield(positions, indices, indices.length, heightfield, staticHeightfield);
 
-   for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
+  const {colors} = slab;
+  for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
     const geometry = geometries[i];
     noiser.postProcessGeometry(ox, oy, geometry.attributeRange, positions, colors, biomes);
 
-    const peeks = new Uint8Array(16);
+    const peeks = slab.peeksArray[i];
     vxl.flood(ether, [0, i * NUM_CELLS, 0], peeks);
     geometry.peeks = peeks;
 
@@ -500,9 +580,9 @@ const _generateMapChunk = (ox, oy, opts) => {
   }
 
   return {
-    positions: new Float32Array(positions.buffer, positions.byteOffset, attributeIndex),
+    positions,
     colors: new Float32Array(colors.buffer, colors.byteOffset, attributeIndex),
-    indices: new Uint32Array(indices.buffer, indices.byteOffset, indexIndex),
+    indices,
     geometries: geometries.map(geometry => ({
       indexRange: geometry.indexRange,
       boundingSphere: Float32Array.from(geometry.boundingSphere.center.toArray().concat([geometry.boundingSphere.radius])),
