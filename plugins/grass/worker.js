@@ -137,7 +137,7 @@ const _getCull = (hmdPosition, projectionMatrix, matrixWorldInverse) => {
       for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) { // XXX optimize this direction
         const trackedGrassChunkMesh = trackedGrassChunkMeshes.array[i];
         if (localFrustum.intersectsSphere(trackedGrassChunkMesh.boundingSphere)) {
-          if (start === -1) {
+          if (start === -1 && trackedGrassChunkMesh.indexRange.count > 0) {
             start = trackedGrassChunkMesh.indexRange.start;
           }
           count += trackedGrassChunkMesh.indexRange.count;

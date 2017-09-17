@@ -617,7 +617,7 @@ const _getCull = (hmdPosition, projectionMatrix, matrixWorldInverse) => {
       for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) { // XXX optimize this direction
         const trackedObjectChunkMesh = renderSpec.array[i];
         if (localFrustum.intersectsSphere(trackedObjectChunkMesh.boundingSphere)) {
-          if (start === -1) {
+          if (start === -1 && trackedObjectChunkMesh.indexRange.count > 0) {
             start = trackedObjectChunkMesh.indexRange.start;
           }
           count += trackedObjectChunkMesh.indexRange.count;
