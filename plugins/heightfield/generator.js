@@ -526,29 +526,8 @@ const _generateMapChunk = (ox, oy, opts) => {
     noiser.fillLiquid(ox, oy, ether, elevations, water, lava);
   }
 
-  const numNewEthers = opts.newEther.length / 4;
-  for (let i = 0; i < numNewEthers; i++) {
-    const baseIndex = i * 4;
-    const x = opts.newEther[baseIndex + 0];
-    const y = opts.newEther[baseIndex + 1];
-    const z = opts.newEther[baseIndex + 2];
-    const v = opts.newEther[baseIndex + 3];
-    for (let dz = -HOLE_SIZE; dz <= HOLE_SIZE; dz++) {
-      const az = z + dz;
-      if (az >= 0 && az < (NUM_CELLS + 1)) {
-        for (let dx = -HOLE_SIZE; dx <= HOLE_SIZE; dx++) {
-          const ax = x + dx;
-          if (ax >= 0 && ax < (NUM_CELLS + 1)) {
-            for (let dy = -HOLE_SIZE; dy <= HOLE_SIZE; dy++) {
-              const ay = y + dy;
-              if (ay >= 0 && ay < (NUM_CELLS_HEIGHT + 1)) {
-                ether[_getEtherIndex(ax, ay, az)] += v * Math.max(HOLE_SIZE - Math.sqrt(dx * dx + dy * dy + dz * dz), 0) / Math.sqrt(HOLE_SIZE * HOLE_SIZE * 3);
-              }
-            }
-          }
-        }
-      }
-    }
+  if (opts.newEther.length > 0) {
+    noiser.applyEther(opts.newEther, opts.newEther.length, ether);
   }
 
   // compile
