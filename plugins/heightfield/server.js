@@ -62,6 +62,24 @@ class Heightfield {
     });
     const trraDataPath = path.join(dirname, dataDirectory, 'trra.dat');
 
+    const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
+    const _getEtherIndex = (x, y, z) => x + (z * NUM_CELLS_OVERSCAN) + (y * NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
+    const _generateChunkGeometry = (chunk, opts) => {
+      const uint32Buffer = chunk.getBuffer();
+      protocolUtils.stringifyData(generator.generate(chunk.x, chunk.z, opts), uint32Buffer.buffer, uint32Buffer.byteOffset);
+      chunk.dirty = true;
+      return chunk;
+    };
+    const _generateChunkLights = chunk => {
+      chunk[lightsSymbol] = new Uint8Array(NUM_CELLS_OVERSCAN * (NUM_CELLS_HEIGHT + 1) * NUM_CELLS_OVERSCAN);
+      chunk[lightsRenderedSymbol] = false;
+      return chunk;
+    };
+    const _generateChunk = (chunk, opts) => {
+      chunk = _generateChunkGeometry(chunk, opts);
+      chunk = _generateChunkLights(chunk);
+      return chunk;
+    };
     const _getTrra = () => new Promise((accept, reject) => {
       fs.readFile(trraDataPath, (err, b) => {
         if (!err) {
@@ -70,13 +88,12 @@ class Heightfield {
           });
           tra.load(b);
 
-          /* for (const index in tra.chunks) {
+          for (const index in tra.chunks) {
             const chunk = tra.chunks[index];
             if (chunk) {
-              const uint32Buffer = chunk.getBuffer();
-              chunk[etherSymbol] = protocolUtils.parseData(uint32Buffer.buffer, uint32Buffer.byteOffset).ether;
+              _generateChunkLights(chunk);
             }
-          } */
+          }
 
           accept(tra);
         } else if (err.code === 'ENOENT') {
@@ -125,24 +142,6 @@ class Heightfield {
               next();
             });
         });
-        const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
-        const _getEtherIndex = (x, y, z) => x + (z * NUM_CELLS_OVERSCAN) + (y * NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
-        const _generateChunkGeometry = (chunk, opts) => {
-          const uint32Buffer = chunk.getBuffer();
-          protocolUtils.stringifyData(generator.generate(chunk.x, chunk.z, opts), uint32Buffer.buffer, uint32Buffer.byteOffset);
-          chunk.dirty = true;
-          return chunk;
-        };
-        const _generateChunkLights = chunk => {
-          chunk[lightsSymbol] = new Uint8Array(NUM_CELLS_OVERSCAN * (NUM_CELLS_HEIGHT + 1) * NUM_CELLS_OVERSCAN);
-          chunk[lightsRenderedSymbol] = false;
-          return chunk;
-        };
-        const _generateChunk = (chunk, opts) => {
-          chunk = _generateChunkGeometry(chunk, opts);
-          chunk = _generateChunkLights(chunk);
-          return chunk;
-        };
         const _ensureNeighboringChunks = (x, z) => {
           const promises = [];
           for (let dz = -1; dz <= 1; dz++) {
