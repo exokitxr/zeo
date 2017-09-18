@@ -64,8 +64,8 @@ class Objects {
         let geometriesOffset = 0;
         const noises = {};
         const generators = [];
-        let numBlockTypes = 0;
-        const blockTypes = {};
+        const blockTypes = new Uint32Array(4096);
+        let blockTypesIndex = 0;
         const transparentVoxels = new Uint8Array(256);
         const translucentVoxels = new Uint8Array(256);
         const faceUvs = new Float32Array(256 * 6 * 4);
@@ -444,9 +444,10 @@ class Objects {
                   geometryTypes[index * 2 + 1] = offset;
                 },
                 registerBlock(name, blockSpec) {
-                  const index = ++numBlockTypes;
+                  const index = ++blockTypesIndex;
                   blockSpec.index = index;
-                  blockTypes[murmur(name)] = blockSpec;
+
+                  blockTypes[index] = murmur(name);
 
                   transparentVoxels[index] = +blockSpec.transparent;
                   translucentVoxels[index] = +blockSpec.translucent;
