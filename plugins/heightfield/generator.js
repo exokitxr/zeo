@@ -18,14 +18,6 @@ const {
   HEIGHTFIELD_DEPTH,
 
   DEFAULT_SEED,
-
-  PEEK_FACES,
-  PEEK_FACE_INDICES,
-
-  BIOMES,
-  BIOMES_INDEX,
-  BIOMES_TALL,
-  BIOMES_TEMPERATURE_HUMIDITY,
 } = require('./lib/constants/constants');
 const NUM_POSITIONS_CHUNK = 800 * 1024;
 const NUM_CELLS_HALF = NUM_CELLS / 2;
@@ -387,7 +379,7 @@ const _generateMapChunk = (ox, oy, opts) => {
     lava,
   };
 };
-const _getEtherIndex = (x, y, z) => x + (z * NUM_CELLS_OVERSCAN) + (y * NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
+/// const _getEtherIndex = (x, y, z) => x + (z * NUM_CELLS_OVERSCAN) + (y * NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
 
 const generate = (x, y, opts) => {
   if (opts === undefined) {

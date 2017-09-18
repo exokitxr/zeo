@@ -10,8 +10,6 @@ const {
   RANGE,
 
   NUM_POSITIONS_CHUNK,
-
-  BIOMES,
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
