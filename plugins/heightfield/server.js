@@ -127,17 +127,20 @@ class Heightfield {
         });
         const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
         const _getEtherIndex = (x, y, z) => x + (z * NUM_CELLS_OVERSCAN) + (y * NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
-        const _generateChunk = (chunk, opts) => {
-          const chunkData = generator.generate(chunk.x, chunk.z, opts);
-
+        const _generateChunkGeometry = (chunk, opts) => {
           const uint32Buffer = chunk.getBuffer();
-          protocolUtils.stringifyData(chunkData, uint32Buffer.buffer, uint32Buffer.byteOffset);
+          protocolUtils.stringifyData(generator.generate(chunk.x, chunk.z, opts), uint32Buffer.buffer, uint32Buffer.byteOffset);
           chunk.dirty = true;
-
-          // chunk[etherSymbol] = chunkData.ether;
+          return chunk;
+        };
+        const _generateChunkLights = chunk => {
           chunk[lightsSymbol] = new Uint8Array(NUM_CELLS_OVERSCAN * (NUM_CELLS_HEIGHT + 1) * NUM_CELLS_OVERSCAN);
           chunk[lightsRenderedSymbol] = false;
-
+          return chunk;
+        };
+        const _generateChunk = (chunk, opts) => {
+          chunk = _generateChunkGeometry(chunk, opts);
+          chunk = _generateChunkLights(chunk);
           return chunk;
         };
         const _ensureNeighboringChunks = (x, z) => {
@@ -400,7 +403,7 @@ class Heightfield {
                   const oldWater = oldChunkData.water.slice();
                   const oldLava = oldChunkData.lava.slice();
 
-                  chunk = _generateChunk(chunk, {
+                  chunk = _generateChunkGeometry(chunk, {
                     oldBiomes,
                     oldElevations,
                     oldEther,
@@ -487,8 +490,8 @@ class Heightfield {
             const seenIndex = {};
             for (let i = 0; i < DIRECTIONS.length; i++) {
               const [dx, dz] = DIRECTIONS[i];
-              const ax = x + dx * 15;
-              const az = z + dz * 15;
+              const ax = x + dx * (NUM_CELLS / 2);
+              const az = z + dz * (NUM_CELLS / 2);
               const ox = Math.floor(ax / NUM_CELLS);
               const oz = Math.floor(az / NUM_CELLS);
 

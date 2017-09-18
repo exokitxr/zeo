@@ -818,7 +818,8 @@ class Objects {
                 };
                 wss.on('connection', _connection);
 
-                const _lights = chunk => {
+                const _lights = heightfieldChunk => {
+                  const chunk = zde.getChunk(heightfieldChunk.x, heightfieldChunk.z);
                   if (chunk[decorationsSymbol]) {
                     chunk[decorationsSymbol] = null;
                   }
