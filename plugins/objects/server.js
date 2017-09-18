@@ -58,9 +58,10 @@ class Objects {
         const rng = new alea(DEFAULT_SEED);
         const heightfields = {}; // XXX these should be LRU caches
         const biomes = {};
-        const geometryTypes = {};
+        const geometryTypes = new Uint32Array(4096);
         const geometriesBuffer = new Uint8Array(NUM_POSITIONS_CHUNK);
         let geometriesIndex = 0;
+        let geometriesOffset = 0;
         const noises = {};
         const generators = [];
         let numBlockTypes = 0;
@@ -421,8 +422,8 @@ class Objects {
                     geometry.computeBoundingBox();
                   }
 
-                  const index = geometriesIndex;
-                  geometriesIndex = protocolUtils.stringifyTemplate({
+                  const offset = geometriesOffset;
+                  geometriesOffset = protocolUtils.stringifyTemplate({
                     positions: geometry.getAttribute('position').array,
                     uvs: geometry.getAttribute('uv').array,
                     ssaos: geometry.getAttribute('ssao').array,
@@ -436,9 +437,11 @@ class Objects {
                       geometry.boundingBox.max.y,
                       geometry.boundingBox.max.z,
                     ]),
-                  }, geometriesBuffer.buffer, geometriesBuffer.byteOffset + geometriesIndex)[1];
+                  }, geometriesBuffer.buffer, geometriesBuffer.byteOffset + geometriesOffset)[1];
 
-                  geometryTypes[murmur(name)] = index;
+                  const index = geometriesIndex++;
+                  geometryTypes[index * 2 + 0] = murmur(name);
+                  geometryTypes[index * 2 + 1] = offset;
                 },
                 registerBlock(name, blockSpec) {
                   const index = ++numBlockTypes;
