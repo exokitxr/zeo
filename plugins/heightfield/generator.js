@@ -329,7 +329,7 @@ const _generateMapChunk = (ox, oy, opts) => {
     noiser.fillLiquid(ox, oy, ether, elevations, water, lava);
   }
 
-  if (opts.newEther.length > 0) {
+  if (opts.newEther && opts.newEther.length > 0) {
     noiser.applyEther(opts.newEther, opts.newEther.length, ether);
   }
 
