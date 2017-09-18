@@ -381,31 +381,7 @@ const _generateMapChunk = (ox, oy, opts) => {
 };
 /// const _getEtherIndex = (x, y, z) => x + (z * NUM_CELLS_OVERSCAN) + (y * NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
 
-const generate = (x, y, opts) => {
-  if (opts === undefined) {
-    opts = {};
-  }
-  if (opts.oldElevations === undefined) {
-    opts.oldElevations = null;
-  }
-  if (opts.oldEther === undefined) {
-    opts.oldEther = null;
-  }
-  if (opts.newEther === undefined) {
-    opts.newEther = new Float32Array(0);
-  }
-  if (opts.oldLiquid === undefined) {
-    opts.oldLiquid = null;
-  }
-  if (opts.oldLiquidTypes === undefined) {
-    opts.oldLiquidTypes = null;
-  }
-  if (opts.regenerate === undefined) {
-    opts.regenerate = false;
-  }
-
-  return _generateMapChunk(x, y, opts);
-};
+const generate = (x, y, opts = {}) => _generateMapChunk(x, y, opts);
 
 return {
   generate,
