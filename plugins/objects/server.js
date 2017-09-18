@@ -60,7 +60,7 @@ class Objects {
         const biomes = {};
         const geometryTypes = {};
         const geometriesBuffer = new Uint8Array(NUM_POSITIONS_CHUNK);
-        let geommetriesIndex = 0;
+        let geometriesIndex = 0;
         const noises = {};
         const generators = [];
         let numBlockTypes = 0;
@@ -421,8 +421,8 @@ class Objects {
                     geometry.computeBoundingBox();
                   }
 
-                  const index = geommetriesIndex;
-                  geommetriesIndex = protocolUtils.stringifyTemplate({
+                  const index = geometriesIndex;
+                  geometriesIndex = protocolUtils.stringifyTemplate({
                     positions: geometry.getAttribute('position').array,
                     uvs: geometry.getAttribute('uv').array,
                     ssaos: geometry.getAttribute('ssao').array,
@@ -436,7 +436,7 @@ class Objects {
                       geometry.boundingBox.max.y,
                       geometry.boundingBox.max.z,
                     ]),
-                  }, geometriesBuffer.buffer, geometriesBuffer.byteOffset + geommetriesIndex)[1];
+                  }, geometriesBuffer.buffer, geometriesBuffer.byteOffset + geometriesIndex)[1];
 
                   geometryTypes[murmur(name)] = index;
                 },
