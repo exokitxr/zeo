@@ -42,8 +42,6 @@ const _align = (n, alignment) => {
 };
 
 const _makeGeometries = (ox, oy, ether, water, lava, positions, indices) => {
-  // const positions = new Float32Array(NUM_POSITIONS_CHUNK);
-  // const indices = new Uint32Array(NUM_POSITIONS_CHUNK);
   let attributeIndex = 0;
   let indexIndex = 0;
 
@@ -131,9 +129,6 @@ const _makeGeometries = (ox, oy, ether, water, lava, positions, indices) => {
     indexIndex += newLavaIndices.length;
   }
 
-  // new Float32Array(positions.buffer, positions.byteOffset + attributeIndex * 4, positions.length - attributeIndex).fill(0);
-  // new Uint32Array(indices.buffer, indices.byteOffset + indexIndex * 4, indices.length - indexIndex).fill(0);
-
   return {
     positions: new Float32Array(positions.buffer, positions.byteOffset, attributeIndex),
     indices: new Uint32Array(indices.buffer, indices.byteOffset, indexIndex),
@@ -142,190 +137,6 @@ const _makeGeometries = (ox, oy, ether, water, lava, positions, indices) => {
     geometries,
   }
 };
-
-/* const _getCachesIndex2D = (x, z) => mod(x, 256) | mod(z, 256) << 8; // XXX make sure this does not overflow cache size
-const _getCacheIndex2D = (x, z) => x + z * NUM_CELLS;
-const _makeCacher2D = (gen, {type = Float32Array} = {}) => {
-  const caches = {};
-  return (x, z) => {
-    const ox = Math.floor(x / NUM_CELLS);
-    const oz = Math.floor(z / NUM_CELLS);
-    const cachesIndex = _getCachesIndex2D(ox, oz);
-    let entry = caches[cachesIndex];
-    if (entry === undefined) {
-      entry = new type(NUM_CELLS * NUM_CELLS);
-      let index = 0;
-      for (let dz = 0; dz < NUM_CELLS; dz++) {
-        for (let dx = 0; dx < NUM_CELLS; dx++) {
-          entry[index++] = gen(ox * NUM_CELLS + dx, oz * NUM_CELLS + dz);
-        }
-      }
-      caches[cachesIndex] = entry;
-    }
-    return entry[_getCacheIndex2D(x - ox * NUM_CELLS, z - oz * NUM_CELLS)];
-  };
-};
-
-const _getCachesIndex3D = (b, x, z) => mod(b, 256) | mod(x, 256) << 8 | mod(z, 256) << 16; // XXX make sure this does not overflow cache size
-const _getCacheIndex3D = (x, z) => x + z * NUM_CELLS;
-const _makeCacher3D = (gen, {type = Float32Array} = {}) => {
-  const caches = {};
-  return (b, x, z) => {
-    const ox = Math.floor(x / NUM_CELLS);
-    const oz = Math.floor(z / NUM_CELLS);
-    const cachesIndex = _getCachesIndex3D(b, ox, oz);
-    let entry = caches[cachesIndex];
-    if (entry === undefined) {
-      entry = new type(NUM_CELLS * NUM_CELLS);
-      let index = 0;
-      for (let dz = 0; dz < NUM_CELLS; dz++) {
-        for (let dx = 0; dx < NUM_CELLS; dx++) {
-          entry[index++] = gen(b, ox * NUM_CELLS + dx, oz * NUM_CELLS + dz);
-        }
-      }
-      caches[cachesIndex] = entry;
-    }
-    return entry[_getCacheIndex3D(x - ox * NUM_CELLS, z - oz * NUM_CELLS)];
-  };
-};
-
-const _random = (() => {
-  const rng = new alea(DEFAULT_SEED);
-  const _randInt = (() => {
-    const float32Array = new Float32Array(1);
-    const int32Array = new Int32Array(float32Array.buffer, float32Array.byteOffset, 1);
-    return () => {
-      float32Array[0] = rng();
-      return int32Array[0];
-    };
-  })();
-  const elevationNoise1 = new vxl.fastNoise({
-    seed: _randInt(),
-    frequency: 2,
-    octaves: 1,
-  });
-  const elevationNoise2 = new vxl.fastNoise({
-    seed: _randInt(),
-    frequency: 2,
-    octaves: 1,
-  });
-  const elevationNoise3 = new vxl.fastNoise({
-    seed: _randInt(),
-    frequency: 2,
-    octaves: 1,
-  });
-  const wormNoise = new vxl.cachedFastNoise({
-    seed: _randInt(),
-    frequency: 0.002,
-    octaves: 2,
-  });
-  const oceanNoise = new vxl.cachedFastNoise({
-    seed: _randInt(),
-    frequency: 0.002,
-    octaves: 4,
-  })
-  const riverNoise = new vxl.cachedFastNoise({
-    seed: _randInt(),
-    frequency: 0.002,
-    octaves: 4,
-  });
-  const temperatureNoise = new vxl.cachedFastNoise({
-    seed: _randInt(),
-    frequency: 0.002,
-    octaves: 4,
-  });
-  const humidityNoise = new vxl.cachedFastNoise({
-    seed: _randInt(),
-    frequency: 0.002,
-    octaves: 4,
-  });
-
-  return {
-    elevationNoise1,
-    elevationNoise2,
-    elevationNoise3,
-    wormNoise,
-    oceanNoise,
-    riverNoise,
-    temperatureNoise,
-    humidityNoise,
-  };
-})();
-
-const _getBiome = _makeCacher2D((x, z) => {
-  let biome;
-  const _genOcean = () => {
-    if (_random.oceanNoise.in2D(x + 1000, z + 1000) < (90 / 255)) {
-      biome = BIOMES.biOcean.index;
-    }
-  };
-  const _genRivers = () => {
-    if (biome === undefined) {
-      const n = _random.riverNoise.in2D(x + 1000, z + 1000);
-      const range = 0.04;
-      if (n > 0.5 - range && n < 0.5 + range) {
-        biome = BIOMES.biRiver.index;
-      }
-    }
-  };
-  const _genFreezeWater = () => {
-    if (_random.temperatureNoise.in2D(x + 1000, z + 1000) < ((4 * 16) / 255)) {
-      if (biome === BIOMES.biOcean.index) {
-        biome = BIOMES.biFrozenOcean.index;
-      } else if (biome === BIOMES.biRiver.index) {
-        biome = BIOMES.biFrozenRiver.index;
-      }
-    }
-  };
-  const _genLand = () => {
-    if (biome === undefined) {
-      const t = Math.floor(_random.temperatureNoise.in2D(x + 1000, z + 1000) * 16);
-      const h = Math.floor(_random.humidityNoise.in2D(x + 1000, z + 1000) * 16);
-      biome = BIOMES_TEMPERATURE_HUMIDITY[t + 16 * h].index;
-    }
-  };
-  _genOcean();
-  _genRivers();
-  _genFreezeWater();
-  _genLand();
-
-  return biome;
-}, {type: Uint8Array});
-
-const _getBiomeHeight = _makeCacher3D((b, x, z) => {
-  const biome = BIOMES_INDEX[b];
-  return biome.baseHeight +
-    _random.elevationNoise1.in2D(x * biome.amps[0][0], z * biome.amps[0][0]) * biome.amps[0][1] +
-    _random.elevationNoise2.in2D(x * biome.amps[1][0], z * biome.amps[1][0]) * biome.amps[1][1] +
-    _random.elevationNoise3.in2D(x * biome.amps[2][0], z * biome.amps[2][0]) * biome.amps[2][1];
-});
-
-const _getElevation = _makeCacher2D((x, z) => {
-  const biomeCounts = {};
-  let totalBiomeCounts = 0;
-  for (let dz = -8; dz <= 8; dz++) {
-    for (let dx = -8; dx <= 8; dx++) {
-      const biome = _getBiome(x + dx, z + dz);
-      let biomeCount = biomeCounts[biome];
-      if (!biomeCount) {
-        biomeCount = {
-          count: 0,
-          height: _getBiomeHeight(biome, x, z),
-        };
-        biomeCounts[biome] = biomeCount;
-      }
-      biomeCount.count++;
-      totalBiomeCounts++;
-    }
-  }
-
-  let elevationSum = 0;
-  for (const index in biomeCounts) {
-    const biomeCount = biomeCounts[index];
-    elevationSum += biomeCount.count * biomeCount.height;
-  }
-  return elevationSum / totalBiomeCounts;
-}); */
 
 const noiser = vxl.noiser({
   seed: murmur(DEFAULT_SEED),
@@ -576,18 +387,7 @@ const _generateMapChunk = (ox, oy, opts) => {
     lava,
   };
 };
-// const _getCoordOverscanIndex = (x, z) => x + z * NUM_CELLS_OVERSCAN;
 const _getEtherIndex = (x, y, z) => x + (z * NUM_CELLS_OVERSCAN) + (y * NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
-/* const _colorIntToArray = n => ([
-  ((n >> (8 * 2)) & 0xFF) / 0xFF,
-  ((n >> (8 * 1)) & 0xFF) / 0xFF,
-  ((n >> (8 * 0)) & 0xFF) / 0xFF,
-]); */
-// const _getTopHeightfieldIndex = (x, z) => (x + (z * NUM_CELLS_OVERSCAN)) * HEIGHTFIELD_DEPTH;
-// const _getStaticHeightfieldIndex = (x, z) => x + (z * NUM_CELLS_OVERSCAN);
-
-// const _getLightsIndex = (x, y, z) => x + y * NUM_CELLS_OVERSCAN + z * NUM_CELLS_OVERSCAN * (NUM_CELLS_HEIGHT + 1);
-// const _getLightsArrayIndex = (x, z) => x + z * 3;
 
 const generate = (x, y, opts) => {
   if (opts === undefined) {
@@ -615,110 +415,8 @@ const generate = (x, y, opts) => {
   return _generateMapChunk(x, y, opts);
 };
 
-/* const _makeLights = () => new Uint8Array(NUM_CELLS_OVERSCAN * (NUM_CELLS_HEIGHT + 1) * NUM_CELLS_OVERSCAN);
-const light = (ox, oz, oldLightsArray, minX, maxX, minY, maxY, minZ, maxZ, {getLightSources, isOccluded}) => {
-  let lightsArray;
-  if (oldLightsArray) {
-    lightsArray = oldLightsArray;
-
-    for (let z = minZ; z < maxZ; z++) {
-      for (let x = minX; x < maxX; x++) {
-        for (let y = minY; y <= maxY; y++) {
-          const lax = Math.floor((x - (ox - 1) * NUM_CELLS) / NUM_CELLS);
-          const laz = Math.floor((z - (oz - 1) * NUM_CELLS) / NUM_CELLS);
-          const lightsArrayIndex = _getLightsArrayIndex(lax, laz);
-          const lights = lightsArray[lightsArrayIndex];
-
-          const ax = x - Math.floor(x / NUM_CELLS) * NUM_CELLS;
-          const ay = y;
-          const az = z - Math.floor(z / NUM_CELLS) * NUM_CELLS;
-          const lightsIndex = _getLightsIndex(ax, ay, az);
-          lightsArray[lightsIndex] = 0;
-        }
-      }
-    }
-  } else {
-    lightsArray = Array(9);
-
-    for (let dz = -1; dz <= 1; dz++) {
-      for (let dx = -1; dx <= 1; dx++) {
-        lightsArray[_getLightsArrayIndex(dx + 1, dz + 1)] = _makeLights();
-      }
-    }
-  }
-
-  const _fillLight = (x, y, z, v) => {
-    const queue = [];
-    const _tryQueue = (x, y, z, v, origin) => {
-      if (x >= minX && x < maxX && y >= minY & y <= maxY && z >= minZ && z < maxZ && v > 0) {
-        const lax = Math.floor((x - (ox - 1) * NUM_CELLS) / NUM_CELLS);
-        const laz = Math.floor((z - (oz - 1) * NUM_CELLS) / NUM_CELLS);
-        const lightsArrayIndex = _getLightsArrayIndex(lax, laz);
-        const lights = lightsArray[lightsArrayIndex];
-
-        const ax = x - Math.floor(x / NUM_CELLS) * NUM_CELLS;
-        const ay = y;
-        const az = z - Math.floor(z / NUM_CELLS) * NUM_CELLS;
-        const lightsIndex = _getLightsIndex(ax, ay, az);
-        if (lights[lightsIndex] < v) {
-          lights[lightsIndex] = v;
-
-          if (origin || !isOccluded(x, y, z)) {
-            queue.push({x, y, z, v});
-          }
-        }
-      }
-    };
-
-    _tryQueue(x, y, z, v, true);
-
-    while (queue.length > 0) {
-      const {x, y, z, v} = queue.shift();
-      for (let dz = -1; dz <= 1; dz++) {
-        for (let dy = -1; dy <= 1; dy++) {
-          for (let dx = -1; dx <= 1; dx++) {
-            _tryQueue(x + dx, y + dy, z + dz, v - (Math.abs(dx) + Math.abs(dy) + Math.abs(dz)), false);
-          }
-        }
-      }
-    }
-  };
-
-  for (let dz = -1; dz <= 1; dz++) {
-    for (let dx = -1; dx <= 1; dx++) {
-      const lightSources = getLightSources(ox + dx, oz + dz);
-      for (let i = 0; i < lightSources.length; i++) {
-        const [x, y, z, v] = lightSources[i];
-        _fillLight(x, y, z, v);
-      }
-    }
-  }
-
-  // merge edges and corner into center lights
-  const centerLights = lightsArray[_getLightsArrayIndex(1, 1)];
-  const eastLights = lightsArray[_getLightsArrayIndex(2, 1)];
-  const southLights = lightsArray[_getLightsArrayIndex(1, 2)];
-  const southeastLights = lightsArray[_getLightsArrayIndex(2, 2)];
-  for (let z = 0; z < NUM_CELLS_OVERSCAN; z++) {
-    for (let y = 0; y < (NUM_CELLS_HEIGHT + 1); y++) {
-      centerLights[_getLightsIndex(NUM_CELLS, y, z)] = eastLights[_getLightsIndex(0, y, z)];
-    }
-  }
-  for (let x = 0; x < NUM_CELLS_OVERSCAN; x++) {
-    for (let y = 0; y < (NUM_CELLS_HEIGHT + 1); y++) {
-      centerLights[_getLightsIndex(x, y, NUM_CELLS)] = southLights[_getLightsIndex(x, y, 0)];
-    }
-  }
-  for (let y = 0; y < (NUM_CELLS_HEIGHT + 1); y++) {
-    centerLights[_getLightsIndex(NUM_CELLS, y, NUM_CELLS)] = southeastLights[_getLightsIndex(0, y, 0)];
-  }
-
-  return centerLights;
-}; */
-
 return {
   generate,
-  // light,
 };
 
 };
