@@ -116,9 +116,8 @@ class Objects {
           }
         };
         const _decorateChunkGeometry = chunk => {
-          const geometry = _makeChunkGeometry(chunk);
           const geometryBuffer = chunk.getGeometryBuffer();
-          protocolUtils.stringifyGeometry(geometry, geometryBuffer.buffer, geometryBuffer.byteOffset);
+          protocolUtils.stringifyGeometry(_makeChunkGeometry(chunk), geometryBuffer.buffer, geometryBuffer.byteOffset);
           chunk.dirty = true; // XXX can internalize this in zeode module
 
           return Promise.resolve(chunk);

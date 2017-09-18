@@ -379,7 +379,7 @@ const _generateMapChunk = (ox, oy, opts) => {
     lava,
   };
 };
-/// const _getEtherIndex = (x, y, z) => x + (z * NUM_CELLS_OVERSCAN) + (y * NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
+// const _getEtherIndex = (x, y, z) => x + (z * NUM_CELLS_OVERSCAN) + (y * NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
 
 const generate = (x, y, opts = {}) => _generateMapChunk(x, y, opts);
 
