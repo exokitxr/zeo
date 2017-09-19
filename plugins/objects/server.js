@@ -70,10 +70,6 @@ class Objects {
         const translucentVoxels = new Uint8Array(256);
         const faceUvs = new Float32Array(256 * 6 * 4);
 
-        const zeroUint8Array = new Uint8Array(0);
-        const localQuaternion = new THREE.Quaternion();
-        const localMatrix = new THREE.Matrix4();
-
         const _ensureNeighboringHeightfieldChunks = (x, z) => {
           const promises = [];
           for (let dz = -1; dz <= 1; dz++) {
