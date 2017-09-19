@@ -284,33 +284,16 @@ class Heightfield {
         };
         const _decorateChunkLightmaps = chunk => {
           const uint32Buffer = chunk.getBuffer();
-          const geometry = protocolUtils.parseData(uint32Buffer.buffer, uint32Buffer.byteOffset);
-          const {positions, staticHeightfield} = geometry;
+          const {positions, staticHeightfield} = protocolUtils.parseData(uint32Buffer.buffer, uint32Buffer.byteOffset);
           const {[lightsSymbol]: lights} = chunk;
 
-          const numPositions = positions.length / 3;
-          const lightmapsBuffer = new ArrayBuffer(numPositions * 2);
-          const skyLightmaps = new Uint8Array(lightmapsBuffer, 0, numPositions);
-          const torchLightmaps = new Uint8Array(lightmapsBuffer, numPositions, numPositions);
+          const numPositions = positions.length;
+          const numLightmaps = numPositions / 3;
+          const lightmapsBuffer = new ArrayBuffer(numLightmaps * 2);
+          const skyLightmaps = new Uint8Array(lightmapsBuffer, 0, numLightmaps);
+          const torchLightmaps = new Uint8Array(lightmapsBuffer, numLightmaps, numLightmaps);
 
-          const ox = chunk.x * NUM_CELLS;
-          const oz = chunk.z * NUM_CELLS;
-
-          for (let i = 0; i < numPositions; i++) {
-            const baseIndex = i * 3;
-            skyLightmaps[i] = lightmapUtils.renderSkyVoxel(
-              positions[baseIndex + 0] - ox,
-              positions[baseIndex + 1],
-              positions[baseIndex + 2] - oz,
-              staticHeightfield
-            );
-            torchLightmaps[i] = lightmapUtils.renderTorchVoxel(
-              positions[baseIndex + 0] - ox,
-              positions[baseIndex + 1],
-              positions[baseIndex + 2] - oz,
-              lights
-            );
-          }
+          vxl.lightmap(chunk.x, chunk.z, positions, numPositions, staticHeightfield, lights, skyLightmaps, torchLightmaps);
 
           chunk[decorationsSymbol] = {
             skyLightmaps,
@@ -526,32 +509,16 @@ class Heightfield {
             return _requestLightedChunk(x, z)
               .then(chunk => {
                 const uint32Buffer = chunk.getBuffer();
-                const geometry = protocolUtils.parseData(uint32Buffer.buffer, uint32Buffer.byteOffset);
-                const {staticHeightfield} = geometry;
+                const {staticHeightfield} = protocolUtils.parseData(uint32Buffer.buffer, uint32Buffer.byteOffset);
                 const {[lightsSymbol]: lights} = chunk;
 
-                const numPositions = positions.length / 3;
-                const skyLightmaps = new Uint8Array(numPositions);
-                const torchLightmaps = new Uint8Array(numPositions);
+                const numPositions = positions.length;
+                const numLightmaps = numPositions / 3;
+                const lightmapsBuffer = new ArrayBuffer(numLightmaps * 2);
+                const skyLightmaps = new Uint8Array(lightmapsBuffer, 0, numLightmaps);
+                const torchLightmaps = new Uint8Array(lightmapsBuffer, numLightmaps, numLightmaps);
 
-                const ox = x * NUM_CELLS;
-                const oz = z * NUM_CELLS;
-
-                for (let i = 0; i < numPositions; i++) {
-                  const baseIndex = i * 3;
-                  skyLightmaps[i] = lightmapUtils.renderSkyVoxel(
-                    positions[baseIndex + 0] - ox,
-                    positions[baseIndex + 1],
-                    positions[baseIndex + 2] - oz,
-                    staticHeightfield
-                  );
-                  torchLightmaps[i] = lightmapUtils.renderTorchVoxel(
-                    positions[baseIndex + 0] - ox,
-                    positions[baseIndex + 1],
-                    positions[baseIndex + 2] - oz,
-                    lights
-                  );
-                }
+                vxl.lightmap(chunk.x, chunk.z, positions, numPositions, staticHeightfield, lights, skyLightmaps, torchLightmaps);
 
                 return {
                   skyLightmaps,
