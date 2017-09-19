@@ -183,6 +183,7 @@ const slab = (() => {
   index += HEIGHTFIELD_SIZE;
   const staticHeightfield = new Float32Array(buffer, index, STATIC_HEIGHTFIELD_SIZE / Float32Array.BYTES_PER_ELEMENT);
   index += STATIC_HEIGHTFIELD_SIZE;
+  const peeks = new Uint8Array(buffer, index, PEEK_SIZE * NUM_CHUNKS_HEIGHT);
   const peeksArray = Array(NUM_CHUNKS_HEIGHT);
   for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
     peeksArray[i] = new Uint8Array(buffer, index, PEEK_SIZE / Uint8Array.BYTES_PER_ELEMENT);
@@ -200,6 +201,7 @@ const slab = (() => {
     colors,
     heightfield,
     staticHeightfield,
+    peeks,
     peeksArray,
   };
 })();
@@ -208,21 +210,24 @@ const _generateMapChunk = (ox, oy, opts) => {
   // generate
 
   let biomes = opts.oldBiomes;
+  let fillBiomes = false;
   if (!biomes) {
     biomes = slab.biomes;
-    noiser.fillBiomes(ox, oy, biomes);
+    fillBiomes = true;
   }
 
   let elevations = opts.oldElevations;
+  let fillElevations = false;
   if (!elevations) {
     elevations = slab.elevations;
-    noiser.fillElevations(ox, oy, elevations);
+    fillElevations = true;
   }
 
   let ether = opts.oldEther;
+  let fillEther = false;
   if (!ether) {
     ether = slab.ether;
-    noiser.fillEther(elevations, ether);
+    fillEther = true;
 
     /* let index = 0;
     for (let z = 0; z < NUM_CELLS_OVERSCAN; z++) {
@@ -322,54 +327,66 @@ const _generateMapChunk = (ox, oy, opts) => {
 
   let water = opts.oldWater;
   let lava = opts.oldLava;
+  let fillLiquid = false;
   if (!water || !lava) {
     water = slab.water;
     lava = slab.lava;
-
-    noiser.fillLiquid(ox, oy, ether, elevations, water, lava);
+    fillLiquid = true;
   }
 
+  let newEther;
+  let numNewEthers = 0;
   if (opts.newEther && opts.newEther.length > 0) {
-    noiser.applyEther(opts.newEther, opts.newEther.length, ether);
+    newEther = opts.newEther;
+    numNewEthers = opts.newEther.length;
+  } else {
+    newEther = new Float32Array(0);
   }
 
-  // compile
+  const attributeRanges = new Uint32Array(NUM_CHUNKS_HEIGHT * 6);
+  const indexRanges = new Uint32Array(NUM_CHUNKS_HEIGHT * 6);
+  const {heightfield, staticHeightfield, colors, peeks} = slab;
+  noiser.fill(ox, oy, biomes, fillBiomes, elevations, fillElevations, ether, fillEther, water, lava, fillLiquid, newEther, numNewEthers, slab.positions, slab.indices, attributeRanges, indexRanges, heightfield, staticHeightfield, colors, peeks);
 
-  const {
-    positions,
-    indices,
-    attributeIndex,
-    indexIndex,
-    geometries,
-  } = _makeGeometries(ox, oy, ether, water, lava, slab.positions, slab.indices);
+  const attributeIndex = attributeRanges[attributeRanges.length - 2] + attributeRanges[attributeRanges.length - 1];
+  const indexIndex = indexRanges[indexRanges.length - 2] + indexRanges[indexRanges.length - 1];
+  const positions = slab.positions.subarray(0, attributeIndex);
+  const indices = slab.indices.subarray(0, indexIndex);
 
-  const {heightfield, staticHeightfield} = slab;
-  vxl.genHeightfield(positions, indices, indices.length, heightfield, staticHeightfield);
-
-  const {colors} = slab;
+  const geometries = Array(NUM_CHUNKS_HEIGHT);
   for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
-    const geometry = geometries[i];
-    noiser.postProcessGeometry(ox, oy, geometry.attributeRange, positions, colors, biomes);
-
-    const peeks = slab.peeksArray[i];
-    vxl.flood(ether, [0, i * NUM_CELLS, 0], peeks);
-    geometry.peeks = peeks;
-
-    geometry.boundingSphere = new THREE.Sphere(
-      new THREE.Vector3(ox * NUM_CELLS + NUM_CELLS_HALF, i * NUM_CELLS + NUM_CELLS_HALF, oy * NUM_CELLS + NUM_CELLS_HALF),
-      NUM_CELLS_CUBE
-    );
+    geometries[i] = {
+      /* attributeRange: {
+        landStart: attributeRanges[i * 6 + 0],
+        landCount: attributeRanges[i * 6 + 1],
+        waterStart: attributeRanges[i * 6 + 2],
+        waterCount: attributeRanges[i * 6 + 3],
+        lavaStart: attributeRanges[i * 6 + 4],
+        lavaCount: attributeRanges[i * 6 + 5],
+      }, */
+      indexRange: {
+        landStart: indexRanges[i * 6 + 0],
+        landCount: indexRanges[i * 6 + 1],
+        waterStart: indexRanges[i * 6 + 2],
+        waterCount: indexRanges[i * 6 + 3],
+        lavaStart: indexRanges[i * 6 + 4],
+        lavaCount: indexRanges[i * 6 + 5],
+      },
+      boundingSphere: Float32Array.from([
+        ox * NUM_CELLS + NUM_CELLS_HALF,
+        i * NUM_CELLS + NUM_CELLS_HALF,
+        oy * NUM_CELLS + NUM_CELLS_HALF,
+        NUM_CELLS_CUBE,
+      ]),
+      peeks: slab.peeksArray[i],
+    };
   }
 
   return {
     positions,
     colors: new Float32Array(colors.buffer, colors.byteOffset, attributeIndex),
     indices,
-    geometries: geometries.map(geometry => ({
-      indexRange: geometry.indexRange,
-      boundingSphere: Float32Array.from(geometry.boundingSphere.center.toArray().concat([geometry.boundingSphere.radius])),
-      peeks: geometry.peeks,
-    })),
+    geometries,
     heightfield,
     staticHeightfield,
     biomes,
@@ -379,7 +396,6 @@ const _generateMapChunk = (ox, oy, opts) => {
     lava,
   };
 };
-// const _getEtherIndex = (x, y, z) => x + (z * NUM_CELLS_OVERSCAN) + (y * NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
 
 const generate = (x, y, opts = {}) => _generateMapChunk(x, y, opts);
 
