@@ -6,7 +6,6 @@ module.exports = ({
   vxl,
 }) => {
 
-const protocolUtils = require('./lib/utils/protocol-utils');
 const {
   NUM_CELLS,
   OVERSCAN,
@@ -31,103 +30,6 @@ const _align = (n, alignment) => {
     n += alignment - alignDiff;
   }
   return n;
-};
-
-const _makeGeometries = (ox, oy, ether, water, lava, positions, indices) => {
-  let attributeIndex = 0;
-  let indexIndex = 0;
-
-  // land
-  const geometries = Array(NUM_CHUNKS_HEIGHT);
-  for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
-    const {positions: newPositions, indices: newIndices} = vxl.marchingCubes(
-      [NUM_CELLS + 1, NUM_CELLS + 1, NUM_CELLS + 1],
-      ether,
-      [
-        [0, NUM_CELLS * i, 0],
-        [NUM_CELLS + 1, (NUM_CELLS * (i + 1)) + 1, NUM_CELLS + 1],
-      ],
-      attributeIndex / 3,
-      new Float32Array(positions.buffer, positions.byteOffset + attributeIndex * 4),
-      new Uint32Array(indices.buffer, indices.byteOffset + indexIndex * 4)
-    );
-
-    geometries[i] = {
-      attributeRange: {
-        landStart: attributeIndex,
-        landCount: newPositions.length,
-        waterStart: 0,
-        waterCount: 0,
-        lavaStart: 0,
-        lavaCount: 0,
-      },
-      indexRange: {
-        landStart: indexIndex,
-        landCount: newIndices.length,
-        waterStart: 0,
-        waterCount: 0,
-        lavaStart: 0,
-        lavaCount: 0,
-      },
-      boundingSphere: null,
-      peeks: null,
-    };
-
-    attributeIndex += newPositions.length;
-    indexIndex += newIndices.length;
-  }
-  for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
-    // water
-    const {positions: newWaterPositions, indices: newWaterIndices} = vxl.marchingCubes(
-      [NUM_CELLS + 1, NUM_CELLS + 1, NUM_CELLS + 1],
-      water,
-      [
-        [0, NUM_CELLS * i, 0],
-        [NUM_CELLS + 1, (NUM_CELLS * (i + 1)) + 1, NUM_CELLS + 1],
-      ],
-      attributeIndex / 3,
-      new Float32Array(positions.buffer, positions.byteOffset + attributeIndex * 4),
-      new Uint32Array(indices.buffer, indices.byteOffset + indexIndex * 4)
-    );
-
-    const {attributeRange, indexRange} = geometries[i];
-    attributeRange.waterStart = attributeIndex;
-    attributeRange.waterCount = newWaterPositions.length;
-    indexRange.waterStart = indexIndex;
-    indexRange.waterCount = newWaterIndices.length;
-
-    attributeIndex += newWaterPositions.length;
-    indexIndex += newWaterIndices.length;
-
-    // lava
-    const {positions: newLavaPositions, indices: newLavaIndices} = vxl.marchingCubes(
-      [NUM_CELLS + 1, NUM_CELLS + 1, NUM_CELLS + 1],
-      lava,
-      [
-        [0, NUM_CELLS * i, 0],
-        [NUM_CELLS + 1, (NUM_CELLS * (i + 1)) + 1, NUM_CELLS + 1],
-      ],
-      attributeIndex / 3,
-      new Float32Array(positions.buffer, positions.byteOffset + attributeIndex * 4),
-      new Uint32Array(indices.buffer, indices.byteOffset + indexIndex * 4)
-    );
-
-    attributeRange.lavaStart = attributeIndex;
-    attributeRange.lavaCount = newLavaPositions.length;
-    indexRange.lavaStart = indexIndex;
-    indexRange.lavaCount = newLavaIndices.length;
-
-    attributeIndex += newLavaPositions.length;
-    indexIndex += newLavaIndices.length;
-  }
-
-  return {
-    positions: new Float32Array(positions.buffer, positions.byteOffset, attributeIndex),
-    indices: new Uint32Array(indices.buffer, indices.byteOffset, indexIndex),
-    attributeIndex,
-    indexIndex,
-    geometries,
-  }
 };
 
 const noiser = vxl.noiser({
