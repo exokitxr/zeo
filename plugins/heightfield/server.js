@@ -63,7 +63,6 @@ class Heightfield {
     const trraDataPath = path.join(dirname, dataDirectory, 'trra.dat');
 
     const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
-    const _getEtherIndex = (x, y, z) => x + (z * NUM_CELLS_OVERSCAN) + (y * NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
     const _generateChunkGeometry = (chunk, opts) => {
       const uint32Buffer = chunk.getBuffer();
       protocolUtils.stringifyData(generator.generate(chunk.x, chunk.z, opts), uint32Buffer.buffer, uint32Buffer.byteOffset);
@@ -235,43 +234,6 @@ class Heightfield {
                 blocksArray,
                 lightsArray,
               );
-              /* chunk[lightsSymbol] = generator.light(chunk.x, chunk.z, oldLightsArray, minX, maxX, minY, maxY, minZ, maxZ, {
-                getLightSources: (ox, oz) => {
-                  const _getHeightfieldLightSources = () => {
-                    const chunk = tra.getChunk(ox, oz);
-                    const uint32Buffer = chunk.getBuffer();
-                    const {lava} = protocolUtils.parseData(uint32Buffer.buffer, uint32Buffer.byteOffset);
-
-                    const result = [];
-                    for (let z = 0; z < NUM_CELLS; z++) { // XXX this can be optimized to scan only the passed-in ranges
-                      for (let y = 0; y < NUM_CELLS_HEIGHT; y++) {
-                        for (let x = 0; x < NUM_CELLS; x++) {
-                          if (lava[_getEtherIndex(x, y, z)] < 0) {
-                            result.push([x + ox * NUM_CELLS, y, z + oz * NUM_CELLS, 15]);
-                          }
-                        }
-                      }
-                    }
-                    return result;
-                  };
-                  const _getObjectsLightSources = () => objectsEntity.getLightSources(ox, oz);
-                  const _getExtraLightSources = () => extraLightSources || [];
-
-                  return _getHeightfieldLightSources()
-                    .concat(_getObjectsLightSources()) // XXX this can be optimized to scan only the passed-in ranges
-                    .concat(_getExtraLightSources());
-                },
-                isOccluded: (x, y, z) => {
-                  const _isOccludedHeightfield = () => {
-                    const ox = Math.floor(x / NUM_CELLS);
-                    const oz = Math.floor(z / NUM_CELLS);
-                    return tra.getChunk(ox, oz)[etherSymbol][_getEtherIndex(x - ox * NUM_CELLS, y, z - oz * NUM_CELLS)] <= -1;
-                  };
-                  const _isOccludedObjects = () => objectsEntity.isOccluded(x, y, z);
-
-                  return _isOccludedHeightfield() || _isOccludedObjects();
-                },
-              }); */
               chunk[lightsRenderedSymbol] = true;
               chunk[decorationsSymbol] = null;
 
