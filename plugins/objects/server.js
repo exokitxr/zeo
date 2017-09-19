@@ -58,8 +58,8 @@ class Objects {
         const rng = new alea(DEFAULT_SEED);
         const heightfields = {}; // XXX these should be LRU caches
         const biomes = {};
-        const geometryTypes = new Uint32Array(4096);
         const geometriesBuffer = new Uint8Array(NUM_POSITIONS_CHUNK);
+        const geometryTypes = new Uint32Array(4096);
         let geometriesIndex = 0;
         let geometriesOffset = 0;
         const noises = {};
