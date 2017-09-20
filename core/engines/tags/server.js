@@ -102,7 +102,7 @@ class Tags {
           timeoutInstance = setTimeout(() => {
             timeoutInstance = null;
 
-            const err = new Error('element request timed out');
+            const err = new Error(`element request for ${JSON.stringify(selector)} timed out`);
             err.code = 'ETIMEOUT';
             reject(err);
           }, timeout);
