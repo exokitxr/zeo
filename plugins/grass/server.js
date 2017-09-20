@@ -12,7 +12,7 @@ const TEXTURE_SIZE = 1024;
 const TEXTURE_CHUNK_SIZE = 512;
 const NUM_TEXTURE_CHUNKS_WIDTH = TEXTURE_SIZE / TEXTURE_CHUNK_SIZE;
 const HEIGHTFIELD_DEPTH = 8;
-const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
+const GENERATOR_PLUGIN = 'plugins-generator';
 
 class Grass {
   constructor(archae) {
@@ -29,8 +29,8 @@ class Grass {
     const {alea, vxl} = randomUtils;
     const {jimp} = imageUtils;
 
-    return elements.requestElement(HEIGHTFIELD_PLUGIN)
-      .then(heightfieldElement => {
+    return elements.requestElement(GENERATOR_PLUGIN)
+      .then(generatorElement => {
         const upVector = new THREE.Vector3(0, 1, 0);
 
         const generateBuffer = new Buffer(NUM_POSITIONS_CHUNK);
@@ -219,7 +219,7 @@ class Grass {
               return result;
             })();
 
-            const _makeGrassChunkMesh = (ox, oz, grassTemplates, heightfield) => {
+            const _makeGrassChunkMesh = (ox, oz, grassTemplates) => {
               const positions = new Float32Array(NUM_POSITIONS_CHUNK);
               const uvs = new Float32Array(NUM_POSITIONS_CHUNK);
               const indices = new Uint16Array(NUM_POSITIONS_CHUNK);
@@ -241,7 +241,8 @@ class Grass {
                   const v = grassNoise.in2D(ax + 1000, az + 1000);
 
                   if (v < grassProbability) {
-                    const elevation = heightfield[(dx + (dz * NUM_CELLS_OVERSCAN)) * HEIGHTFIELD_DEPTH];
+                    // const elevation = heightfield[(dx + (dz * NUM_CELLS_OVERSCAN)) * HEIGHTFIELD_DEPTH];
+                    const elevation = generatorElement.getElevation(ax, az);
 
                     if (elevation > 64) {
                       position.set(
@@ -295,19 +296,16 @@ class Grass {
               const z = parseInt(zs, 10);
 
               if (!isNaN(x) && !isNaN(z)) {
-                return heightfieldElement.requestHeightfield(x, z)
-                  .then(heightfield => {
-                    const geometry = _makeGrassChunkMesh(x, z, grassTemplates, heightfield);
+                const geometry = _makeGrassChunkMesh(x, z, grassTemplates);
 
-                    return heightfieldElement.requestLightmaps(x, z, geometry.positions)
-                      .then(({
-                        skyLightmaps,
-                        torchLightmaps,
-                      }) => {
-                        geometry.skyLightmaps = skyLightmaps;
-                        geometry.torchLightmaps = torchLightmaps;
-                        return geometry;
-                      });
+                return generatorElement.requestLightmaps(x, z, geometry.positions)
+                  .then(({
+                    skyLightmaps,
+                    torchLightmaps,
+                  }) => {
+                    geometry.skyLightmaps = skyLightmaps;
+                    geometry.torchLightmaps = torchLightmaps;
+                    return geometry;
                   })
                   .then(geometry => {
                     const [_, byteOffset] = protocolUtils.stringifyDataGeometry(geometry, generateBuffer.buffer, generateBuffer.byteOffset);

@@ -11,6 +11,8 @@ const HEIGHTFIELD_DEPTH = 8;
 
 const RANGE = 11;
 
+const TEXTURE_SIZE = 512;
+
 const DEFAULT_SEED = 'a';
 
 const NUM_POSITIONS_CHUNK = 1 * 1024 * 1024;
@@ -55,6 +57,8 @@ module.exports = {
   HEIGHTFIELD_DEPTH,
 
   RANGE,
+
+  TEXTURE_SIZE,
 
   DEFAULT_SEED,
 

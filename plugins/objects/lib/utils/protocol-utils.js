@@ -2,6 +2,8 @@ const {
   NUM_CHUNKS_HEIGHT,
 
   NUM_RENDER_GROUPS,
+
+  NUM_POSITIONS_CHUNK,
 } = require('../constants/constants');
 
 const UINT32_SIZE = 4;
@@ -612,6 +614,91 @@ const parseTemplate = (buffer, byteOffset) => {
   };
 };
 
+const _getTemplatesSize = () => {
+  return (NUM_POSITIONS_CHUNK * UINT8_SIZE) + // geometries buffer
+    (4096 * UINT32_SIZE) + // geometry types
+    (4096 * UINT32_SIZE) + // block types
+    (256 * UINT8_SIZE) + // transparent voxels
+    (256 * UINT8_SIZE) + // translucent voxels
+    (256 * 6 * 4 * FLOAT32_SIZE); // face uvs
+};
+
+const stringifyTemplates = (geometry, arrayBuffer, byteOffset) => {
+  const {geometriesBuffer, geometryTypes, blockTypes, transparentVoxels, translucentVoxels, faceUvs} = geometry;
+
+  if (arrayBuffer === undefined || byteOffset === undefined) {
+    const bufferSize = _getTemplatesSize();
+    arrayBuffer = new ArrayBuffer(bufferSize);
+    byteOffset = 0;
+  }
+
+  const geometriesBufferBuffer = new Uint8Array(arrayBuffer, byteOffset, NUM_POSITIONS_CHUNK);
+  geometriesBufferBuffer.set(geometriesBuffer);
+  byteOffset += UINT8_SIZE * NUM_POSITIONS_CHUNK;
+
+  const geometryTypesBuffer = new Uint32Array(arrayBuffer, byteOffset, 4096);
+  geometryTypesBuffer.set(geometryTypes);
+  byteOffset += 4096 * UINT32_SIZE;
+
+  const blockTypesBuffer = new Uint32Array(arrayBuffer, byteOffset, 4096);
+  blockTypesBuffer.set(blockTypes);
+  byteOffset += 4096 * UINT32_SIZE;
+
+  const transparentVoxelsBuffer = new Uint8Array(arrayBuffer, byteOffset, 256);
+  transparentVoxelsBuffer.set(transparentVoxels);
+  byteOffset += 256 * UINT8_SIZE;
+
+  const translucentVoxelsBuffer = new Uint8Array(arrayBuffer, byteOffset, 256);
+  translucentVoxelsBuffer.set(translucentVoxels);
+  byteOffset += 256 * UINT8_SIZE;
+
+  const faceUvsBuffer = new Float32Array(arrayBuffer, byteOffset, 256 * 6 * 4);
+  faceUvsBuffer.set(faceUvs);
+  byteOffset += 256 * 6 * 4 * FLOAT32_SIZE;
+
+  return [arrayBuffer, byteOffset];
+};
+
+const parseTemplates = (buffer, byteOffset) => {
+  if (byteOffset === undefined) {
+    byteOffset = 0;
+  }
+
+  const geometriesBufferBuffer = new Uint8Array(buffer, byteOffset, NUM_POSITIONS_CHUNK);
+  const geometriesBuffer = geometriesBufferBuffer;
+  byteOffset += UINT8_SIZE * NUM_POSITIONS_CHUNK;
+
+  const geometryTypesBuffer = new Uint32Array(buffer, byteOffset, 4096);
+  const geometryTypes = geometryTypesBuffer;
+  byteOffset += 4096 * UINT32_SIZE;
+
+  const blockTypesBuffer = new Uint32Array(buffer, byteOffset, 4096);
+  const blockTypes = blockTypesBuffer;
+  byteOffset += 4096 * UINT32_SIZE;
+
+  const transparentVoxelsBuffer = new Uint8Array(buffer, byteOffset, 256);
+  const transparentVoxels = transparentVoxelsBuffer;
+  byteOffset += 256 * UINT8_SIZE;
+
+  const translucentVoxelsBuffer = new Uint8Array(buffer, byteOffset, 256);
+  const translucentVoxels = translucentVoxelsBuffer;
+  byteOffset += 256 * UINT8_SIZE;
+
+  const faceUvsBuffer = new Float32Array(buffer, byteOffset, 256 * 6 * 4);
+  const faceUvs = faceUvsBuffer;
+  byteOffset += 256 * 6 * 4 * FLOAT32_SIZE;
+
+  return {
+    geometriesBuffer,
+    geometryTypes,
+    blockTypes,
+    transparentVoxels,
+    translucentVoxels,
+    faceUvs,
+    faceUvs,
+  };
+};
+
 const _getCullSizeFromMetadata = metadata => {
   const {numObjectChunks} = metadata;
 
@@ -723,6 +810,9 @@ module.exports = {
 
   stringifyTemplate,
   parseTemplate,
+
+  stringifyTemplates,
+  parseTemplates,
 
   stringifyCull,
   parseCull,

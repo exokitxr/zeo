@@ -308,7 +308,7 @@ const tree = objectApi => {
       objectApi.registerGenerator('tree', chunk => {
         for (let dz = 0; dz < NUM_CELLS; dz++) {
           for (let dx = 0; dx < NUM_CELLS; dx++) {
-            const elevation = objectApi.getHeightfield(chunk.x, chunk.z)[(dx + (dz * NUM_CELLS_OVERSCAN)) * 8];
+            const elevation = Math.floor(objectApi.getElevation(chunk.x * NUM_CELLS + dx, chunk.z * NUM_CELLS + dz));
 
             if (elevation > 64) {
               const v = objectApi.getNoise('tree', chunk.x, chunk.z, dx, dz);

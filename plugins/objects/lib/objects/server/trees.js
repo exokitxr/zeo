@@ -824,24 +824,26 @@ const tree = objectApi => {
 
         for (let doz = -1; doz <= 1; doz++) {
           const oz = chunk.z + doz;
+          const aoz = oz * NUM_CELLS;
 
           for (let dox = -1; dox <= 1; dox++) {
             const ox = chunk.x + dox;
+            const aox = ox * NUM_CELLS;
 
             for (let dz = 0; dz < NUM_CELLS; dz++) {
               for (let dx = 0; dx < NUM_CELLS; dx++) {
-                const elevation = objectApi.getHeightfield(ox, oz)[(dx + (dz * NUM_CELLS_OVERSCAN)) * 8];
+                const elevation = Math.floor(objectApi.getElevation(aox + dx, aoz + dz));
 
                 if (elevation > 64) {
                   const v = objectApi.getNoise('tree', ox, oz, dx, dz);
 
                   if (v < treeProbability) {
                     GetTreeImageByBiome(
-                      (ox * NUM_CELLS) + dx,
+                      aox + dx,
                       Math.floor(elevation),
-                      (oz * NUM_CELLS) + dz,
+                      aoz + dz,
                       String(v),
-                      objectApi.getBiomes(ox, oz)[dx + (dz * NUM_CELLS_OVERSCAN)]
+                      objectApi.getBiome(aox + dx, aoz + dz)
                     );
                   }
                 }

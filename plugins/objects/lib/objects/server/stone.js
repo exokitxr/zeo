@@ -86,7 +86,7 @@ const stone = objectApi => {
             const v = objectApi.getNoise('items', chunk.x, chunk.z, dx, dz);
 
             if (v < itemProbability && (objectApi.getHash(String(v)) % 2) === 0) {
-              const elevation = objectApi.getHeightfield(chunk.x, chunk.z)[(dx + (dz * NUM_CELLS_OVERSCAN)) * 8];
+              const elevation = Math.floor(objectApi.getElevation(chunk.x * NUM_CELLS + dx, chunk.z * NUM_CELLS + dz));
 
               if (elevation > 64) {
                 const ax = (chunk.x * NUM_CELLS) + dx;

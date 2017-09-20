@@ -1,11 +1,3 @@
-module.exports = ({
-  THREE,
-  mod,
-  murmur,
-  alea,
-  vxl,
-}) => {
-
 const {
   NUM_CELLS,
   OVERSCAN,
@@ -20,11 +12,21 @@ const {
 
   DEFAULT_SEED,
 } = require('./lib/constants/constants');
+
 // const NUM_POSITIONS_CHUNK = 800 * 1024;
 const NUM_CELLS_HALF = NUM_CELLS / 2;
 const NUM_CELLS_CUBE = Math.sqrt(NUM_CELLS_HALF * NUM_CELLS_HALF * 3);
 const NUM_CELLS_OVERSCAN_Y = NUM_CELLS_HEIGHT + OVERSCAN;
 const HOLE_SIZE = 2;
+
+module.exports = ({
+  THREE,
+  mod,
+  murmur,
+  alea,
+  vxl,
+  noiser,
+}) => {
 
 const _align = (n, alignment) => {
   let alignDiff = n % alignment;
@@ -33,10 +35,6 @@ const _align = (n, alignment) => {
   }
   return n;
 };
-
-const noiser = vxl.noiser({
-  seed: murmur(DEFAULT_SEED),
-});
 
 const slab = (() => {
   const BIOMES_SIZE = _align(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN * Uint8Array.BYTES_PER_ELEMENT, Float32Array.BYTES_PER_ELEMENT);

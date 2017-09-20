@@ -454,7 +454,7 @@ const house = objectApi => {
 
       objectApi.registerGenerator('house', chunk => {
         if (chunk.x === 0 && chunk.z === -1) {
-          const elevation = Math.floor(objectApi.getHeightfield(chunk.x, chunk.z)[(0 + (0 * NUM_CELLS_OVERSCAN)) * 8]);
+          const elevation = Math.floor(objectApi.getElevation(chunk.x * NUM_CELLS, chunk.z * NUM_CELLS));
 
           const localVector = new THREE.Vector3();
           const localQuaternion = new THREE.Quaternion();

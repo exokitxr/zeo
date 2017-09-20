@@ -85,6 +85,17 @@
       "attributes": [],
       "metadata": {}
     },
+    "7w07": {
+      "type": "entity",
+      "id": "7w07",
+      "name": "/plugins/generator",
+      "displayName": "generator",
+      "version": "0.0.1",
+      "module": "/plugins/generator",
+      "tagName": "plugins-generator",
+      "attributes": [],
+      "metadata": {}
+    },
     "m6ize3": {
       "type": "entity",
       "id": "m6ize3",

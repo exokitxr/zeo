@@ -8,11 +8,8 @@ const {
 const protocolUtils = require('./lib/utils/protocol-utils');
 
 const NUM_POSITIONS_CHUNK = 200 * 1024;
-// const LIGHTMAP_BUFFER_SIZE = 100 * 1024 * 4;
-// const NUM_BUFFERS = RANGE * RANGE + RANGE;
-const TEXTURE_SIZE = 1024;
+const GENERATOR_PLUGIN = 'plugins-generator';
 const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
-// const LIGHTMAP_PLUGIN = 'plugins-lightmap';
 const DAY_NIGHT_SKYBOX_PLUGIN = 'plugins-day-night-skybox';
 
 const dataSymbol = Symbol();
@@ -131,8 +128,14 @@ class Grass {
     const {three, render, pose, elements, /*stage, */utils: {js: {mod, sbffr}, random: {chnkr}}} = zeo;
     const {THREE, scene, camera, renderer} = three;
 
-    return elements.requestElement(HEIGHTFIELD_PLUGIN)
-      .then(heightfieldElement => {
+    return Promise.all([
+      elements.requestElement(GENERATOR_PLUGIN),
+      elements.requestElement(HEIGHTFIELD_PLUGIN),
+    ])
+      .then(([
+        generatorElement,
+        heightfieldElement,
+      ]) => {
         const modelViewMatrices = {
           left: new THREE.Matrix4(),
           right: new THREE.Matrix4(),
@@ -305,7 +308,6 @@ class Grass {
         const grassChunkMeshes = {};
 
         let generateBuffer = new ArrayBuffer(NUM_POSITIONS_CHUNK);
-        // let lightmapBuffer = new Uint8Array(LIGHTMAP_BUFFER_SIZE * NUM_BUFFERS);
         let cullBuffer = new ArrayBuffer(100 * 1024);
         const worker = new Worker('archae/plugins/_plugins_grass/build/worker.js');
         let queues = {};
@@ -348,17 +350,6 @@ class Grass {
             y,
           });
         };
-        /* worker.requestLightmaps = (lightmapBuffer, cb) => {
-          const id = _makeId();
-          worker.postMessage({
-            type: 'lightmaps',
-            id,
-            args: {
-              lightmapBuffer,
-            },
-          }, [lightmapBuffer.buffer]);
-          queues[id] = cb;
-        }; */
         worker.requestCull = (hmdPosition, projectionMatrix, matrixWorldInverse, cb) => { // XXX hmdPosition is unused
           const id = _makeId();
           worker.postMessage({
@@ -397,31 +388,6 @@ class Grass {
             queues[id] = null;
 
             _cleanupQueues();
-          } else if (type === 'request') {
-            const [id] = args;
-            const {method} = data;
-
-            if (method === 'render') {
-              throw new Error('not implemented');
-
-              /* const {lightmapBuffer} = data;
-
-              elements.requestElement(LIGHTMAP_PLUGIN)
-                .then(lightmapElement => {
-                  lightmapElement.lightmapper.requestRender(lightmapBuffer, lightmapBuffer => {
-                    worker.requestResponse(id, lightmapBuffer, [lightmapBuffer.buffer]);
-                  });
-                }); */
-            } else if (method === 'heightfield') {
-              const [id, x, y] = args;
-              const {buffer} = data;
-
-              heightfieldElement.requestHeightfield(x, y, buffer, heightfield => {
-                worker.requestResponse(id, heightfield, [heightfield.buffer]);
-              });
-            } else {
-              console.warn('grass got unknown worker response method type:', JSON.stringify(method));
-            }
           } else {
             console.warn('grass got unknown worker message type:', JSON.stringify(type));
           }
@@ -600,85 +566,6 @@ class Grass {
                 }
               };
 
-              /* const _debouncedRefreshLightmaps = _debounce(next => {
-                (() => {
-                  let wordOffset = 0;
-                  const uint32Array = new Uint32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset);
-                  const int32Array = new Int32Array(lightmapBuffer.buffer, lightmapBuffer.byteOffset);
-                  wordOffset++;
-
-                  let numLightmaps = 0;
-                  for (const index in grassChunkMeshes) {
-                    const trackedGrassChunkMeshes = grassChunkMeshes[index];
-
-                    if (trackedGrassChunkMeshes) {
-                       const {offset: {x, y}} = trackedGrassChunkMeshes;
-
-                      int32Array[wordOffset + 0] = x;
-                      int32Array[wordOffset + 1] = y;
-                      wordOffset += 2;
-
-                      numLightmaps++;
-                    }
-                  }
-                  uint32Array[0] = numLightmaps;
-                })();
-
-                worker.requestLightmaps(lightmapBuffer, newLightmapBuffer => {
-                  const uint32Array = new Uint32Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset);
-                  const int32Array = new Int32Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset);
-
-                  let byteOffset = 0;
-                  const numLightmaps = uint32Array[byteOffset / 4];
-                  byteOffset += 4;
-
-                  for (let i = 0; i < numLightmaps; i++) {
-                    const x = int32Array[byteOffset / 4];
-                    byteOffset += 4;
-                    const z = int32Array[byteOffset / 4];
-                    byteOffset += 4;
-
-                    const skyLightmapsLength = uint32Array[byteOffset / 4];
-                    byteOffset += 4;
-
-                    const newSkyLightmaps = new Uint8Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset + byteOffset, skyLightmapsLength);
-                    byteOffset += skyLightmapsLength;
-                    let alignDiff = byteOffset % 4;
-                    if (alignDiff > 0) {
-                      byteOffset += 4 - alignDiff;
-                    }
-
-                    const torchLightmapsLength = uint32Array[byteOffset / 4];
-                    byteOffset += 4;
-
-                    const newTorchLightmaps = new Uint8Array(newLightmapBuffer.buffer, newLightmapBuffer.byteOffset + byteOffset, torchLightmapsLength);
-                    byteOffset += torchLightmapsLength;
-                    alignDiff = byteOffset % 4;
-                    if (alignDiff > 0) {
-                      byteOffset += 4 - alignDiff;
-                    }
-
-                    const trackedGrassChunkMeshes = grassChunkMeshes[_getChunkIndex(x, z)];
-                    if (trackedGrassChunkMeshes) {
-                      if (newSkyLightmaps.length > 0) {
-                        const {index, skyLightmaps} = trackedGrassChunkMeshes;
-                        skyLightmaps.set(newSkyLightmaps);
-                        renderer.updateAttribute(grassMesh.geometry.attributes.skyLightmap, index * skyLightmaps.length, newSkyLightmaps.length, false);
-                      }
-                      if (newTorchLightmaps.length > 0) {
-                        const {index, torchLightmaps} = trackedGrassChunkMeshes;
-                        torchLightmaps.set(newTorchLightmaps);
-                        renderer.updateAttribute(grassMesh.geometry.attributes.torchLightmap, index * torchLightmaps.length, newTorchLightmaps.length, false);
-                      }
-                    }
-                  }
-
-                  lightmapBuffer = newLightmapBuffer;
-
-                  next();
-                });
-              }); */
-
               const _requestCull = (hmdPosition, projectionMatrix, matrixWorldInverse, cb) => {
                 worker.requestCull(hmdPosition, projectionMatrix, matrixWorldInverse, cullBuffer => {
                   cb(protocolUtils.parseCull(cullBuffer));
@@ -702,18 +589,6 @@ class Grass {
                 });
               });
 
-              /* let refreshChunksTimeout = null;
-              const _recurseRefreshChunks = () => {
-                _debouncedRequestRefreshGrassChunks();
-                refreshChunksTimeout = setTimeout(_recurseRefreshChunks, 1000);
-              };
-              _recurseRefreshChunks(); */
-              /* let refreshLightmapsTimeout = null;
-              const _recurseRefreshLightmaps = () => {
-                _debouncedRefreshLightmaps();
-                refreshLightmapsTimeout = setTimeout(_recurseRefreshLightmaps, 2000);
-              };
-              _recurseRefreshLightmaps(); */
               let refreshCullTimeout = null;
               const _recurseRefreshCull = () => {
                 _debouncedRefreshCull();
@@ -724,13 +599,12 @@ class Grass {
               const _add = chunk => {
                 _addChunk(chunk);
               };
-              heightfieldElement.on('add', _add);
+              generatorElement.on('add', _add);
               const _remove = chunk => {
                 _removeChunk(chunk);
               };
-              heightfieldElement.on('remove', _remove);
-
-              heightfieldElement.forEachChunk(chunk => {
+              generatorElement.on('remove', _remove);
+              generatorElement.forEachChunk(chunk => {
                 _add(chunk);
               });
 
@@ -757,12 +631,10 @@ class Grass {
               this._cleanup = () => {
                 scene.remove(grassMesh);
 
-                // clearTimeout(refreshChunksTimeout);
-                // clearTimeout(refreshLightmapsTimeout);
                 clearTimeout(refreshCullTimeout);
 
-                heightfieldElement.removeListener('add', _add);
-                heightfieldElement.removeListener('remove', _remove);
+                generatorElement.removeListener('add', _add);
+                generatorElement.removeListener('remove', _remove);
 
                 render.removeListener('update', _update);
               };

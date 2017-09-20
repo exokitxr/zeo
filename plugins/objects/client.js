@@ -1,5 +1,5 @@
+const GENERATOR_PLUGIN = 'plugins-generator';
 const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
-// const LIGHTMAP_PLUGIN = 'plugins-lightmap';
 const DAY_NIGHT_SKYBOX_PLUGIN = 'plugins-day-night-skybox';
 const CRAFT_PLUGIN = 'plugins-craft';
 
@@ -10,13 +10,11 @@ const {
   RANGE,
 
   TEXTURE_SIZE,
+
+  NUM_POSITIONS_CHUNK,
 } = require('./lib/constants/constants');
-const protocolUtils = require('./lib/utils/protocol-utils');
 const objectsLib = require('./lib/objects/client/index');
 
-const NUM_POSITIONS_CHUNK = 1.25 * 1024 * 1024;
-// const LIGHTMAP_BUFFER_SIZE = 100 * 1024 * 4;
-// const NUM_BUFFERS = RANGE * RANGE + RANGE;
 const SIDES = ['left', 'right'];
 
 const dataSymbol = Symbol();
@@ -26,8 +24,14 @@ class Objects {
     const {three, pose, input, elements, render, world, teleport, utils: {js: {mod, bffr, sbffr}, hash: {murmur}}} = zeo;
     const {THREE, scene, camera, renderer} = three;
 
-    return elements.requestElement(HEIGHTFIELD_PLUGIN)
-      .then(heightfieldElement => {
+    return Promise.all([
+      elements.requestElement(GENERATOR_PLUGIN),
+      elements.requestElement(HEIGHTFIELD_PLUGIN),
+    ])
+      .then(([
+        generatorElement,
+        heightfieldElement,
+      ]) => {
         const modelViewMatrices = {
           left: new THREE.Matrix4(),
           right: new THREE.Matrix4(),
@@ -352,20 +356,8 @@ void main() {
           }
         };
 
-        const textureAtlas = new THREE.Texture(
-          null,
-          THREE.UVMapping,
-          THREE.ClampToEdgeWrapping,
-          THREE.ClampToEdgeWrapping,
-          THREE.NearestFilter,
-          THREE.LinearMipMapLinearFilter,
-          THREE.RGBAFormat,
-          THREE.UnsignedByteType,
-          1
-        );
-
         const uniforms = THREE.UniformsUtils.clone(OBJECTS_SHADER.uniforms);
-        uniforms.map.value = textureAtlas;
+        uniforms.map.value = generatorElement.getTextureAtlas();
         const objectsMaterial = new THREE.ShaderMaterial({
           uniforms,
           vertexShader: OBJECTS_SHADER.vertexShader,
@@ -377,299 +369,8 @@ void main() {
         });
         objectsMaterial.uniformsNeedUpdate = _uniformsNeedUpdate;
 
-        const worker = new Worker('archae/plugins/_plugins_objects/build/worker.js');
-        let generateBuffer = new ArrayBuffer(NUM_POSITIONS_CHUNK);
-        // let lightmapBuffer = new Uint8Array(LIGHTMAP_BUFFER_SIZE * NUM_BUFFERS);
-        let cullBuffer = new ArrayBuffer(100 * 1024);
-        let hoveredObjectsBuffer = new ArrayBuffer(12 * 2 * 4);
-        const teleportObjectBuffers = {
-          left: new ArrayBuffer((1 + 3 + 3 + 3 + 4 + 4) * 4),
-          right: new ArrayBuffer((1 + 3 + 3 + 3 + 4 + 4) * 4),
-        };
-        let bodyObjectBuffer = new ArrayBuffer(4 * 4);
-        let queues = {};
-        let numRemovedQueues = 0;
-        const _cleanupQueues = () => {
-          if (++numRemovedQueues >= 16) {
-            const newQueues = {};
-            for (const id in queues) {
-              const entry = queues[id];
-              if (entry !== null) {
-                newQueues[id] = entry;
-              }
-            }
-            queues = newQueues;
-            numRemovedQueues = 0;
-          }
-        };
-        worker.requestRegisterObject = (n, added, removed, updated, set, clear) => {
-          worker.postMessage({
-            type: 'registerObject',
-            n,
-            added,
-            removed,
-            updated,
-            set,
-            clear,
-          });
-        };
-        worker.requestUnregisterObject = (n, added, removed, updated, set, clear) => {
-          worker.postMessage({
-            type: 'unregisterObject',
-            n,
-            added,
-            removed,
-            updated,
-            set,
-            clear,
-          });
-        };
-        worker.requestAddObject = (name, position, rotation, value) => {
-          worker.postMessage({
-            type: 'addObject',
-            name,
-            position,
-            rotation,
-            value,
-          });
-        };
-        worker.requestRemoveObject = (x, z, index) => {
-          worker.postMessage({
-            type: 'removeObject',
-            x,
-            z,
-            index,
-          });
-        };
-        worker.requestSetObjectData = (x, z, index, value) => {
-          worker.postMessage({
-            type: 'setObjectData',
-            x,
-            z,
-            index,
-            value,
-          });
-        };
-        worker.requestSetBlock = (x, y, z, v) => {
-          worker.postMessage({
-            type: 'setBlock',
-            name,
-            x,
-            y,
-            z,
-            v,
-          });
-        };
-        worker.requestClearBlock = (x, y, z) => {
-          worker.postMessage({
-            type: 'clearBlock',
-            x,
-            y,
-            z,
-          });
-        };
-        worker.requestGenerate = (x, z, index, numPositions, numObjectIndices, numIndices, cb) => {
-          localMessage.type = 'generate';
-          const id = _makeId();
-          localMessage.id = id;
-          localGenerateMessageArgs.x = x;
-          localGenerateMessageArgs.z = z;
-          localGenerateMessageArgs.index = index;
-          localGenerateMessageArgs.numPositions = numPositions;
-          localGenerateMessageArgs.numObjectIndices = numObjectIndices;
-          localGenerateMessageArgs.numIndices = numIndices;
-          localGenerateMessageArgs.buffer = generateBuffer;
-          localMessage.args = localGenerateMessageArgs;
-
-          worker.postMessage(localMessage, [generateBuffer]);
-          queues[id] = newGenerateBuffer => {
-            generateBuffer = newGenerateBuffer;
-
-            cb(newGenerateBuffer);
-          };
-        };
-        worker.requestUngenerate = (x, z) => {
-          localMessage.type = 'ungenerate';
-          const id = _makeId();
-          localMessage.id = id;
-          localUngenerateMessageArgs.x = x;
-          localUngenerateMessageArgs.z = z;
-          localMessage.args = localUngenerateMessageArgs;
-
-          worker.postMessage(localMessage);
-        };
-        worker.requestUpdate = (x, z, cb) => {
-          localMessage.type = 'update';
-          const id = _makeId();
-          localMessage.id = id;
-          localUpdateMessageArgs.x = x;
-          localUpdateMessageArgs.z = z;
-          localUpdateMessageArgs.buffer = generateBuffer;
-          localMessage.args = localUpdateMessageArgs;
-
-          worker.postMessage(localMessage, [generateBuffer]);
-          queues[id] = newGenerateBuffer => {
-            generateBuffer = newGenerateBuffer;
-
-            cb(newGenerateBuffer);
-          };
-        };
-        worker.requestCull = (hmdPosition, projectionMatrix, matrixWorldInverse, cb) => {
-          const id = _makeId();
-          worker.postMessage({
-            type: 'cull',
-            id,
-            args: {
-              hmdPosition: hmdPosition.toArray(localArray3),
-              projectionMatrix: projectionMatrix.toArray(localArray16),
-              matrixWorldInverse: matrixWorldInverse.toArray(localArray162),
-              buffer: cullBuffer,
-            },
-          }, [cullBuffer]);
-          cullBuffer = null;
-
-          queues[id] = buffer => {
-            cullBuffer = buffer;
-            cb(buffer);
-          };
-        };
-        worker.getHoveredObjects = cb => {
-          const id = _makeId();
-          const {gamepads} = pose.getStatus();
-
-          const float32Array = new Float32Array(hoveredObjectsBuffer, 0, 6);
-          float32Array[0] = gamepads.left.worldPosition.x;
-          float32Array[1] = gamepads.left.worldPosition.y;
-          float32Array[2] = gamepads.left.worldPosition.z;
-          float32Array[3] = gamepads.right.worldPosition.x;
-          float32Array[4] = gamepads.right.worldPosition.y;
-          float32Array[5] = gamepads.right.worldPosition.z;
-
-          worker.postMessage({
-            type: 'getHoveredObjects',
-            id,
-            args: {
-              buffer: hoveredObjectsBuffer,
-            },
-          }, [hoveredObjectsBuffer]);
-          queues[id] = newHoveredObjectsBuffer => {
-            hoveredObjectsBuffer = newHoveredObjectsBuffer;
-
-            cb(newHoveredObjectsBuffer);
-          };
-        };
-        worker.getTeleportObject = (position, side, cb) => {
-          const id = _makeId();
-
-          const teleportObjectBuffer = teleportObjectBuffers[side];
-          const float32Array = new Float32Array(teleportObjectBuffer, 0, 3);
-          float32Array[0] = position.x;
-          float32Array[1] = position.y;
-          float32Array[2] = position.z;
-
-          worker.postMessage({
-            type: 'getTeleportObject',
-            id,
-            args: {
-              buffer: teleportObjectBuffer,
-            },
-          }, [teleportObjectBuffer]);
-          queues[id] = newTeleportObjectsBuffer => {
-            teleportObjectBuffers[side] = newTeleportObjectsBuffer;
-
-            cb(newTeleportObjectsBuffer);
-          };
-        };
-        worker.getBodyObject = (position, cb) => {
-          const id = _makeId();
-
-          const float32Array = new Float32Array(bodyObjectBuffer, 0, 3);
-          float32Array[0] = position.x;
-          float32Array[1] = position.y;
-          float32Array[2] = position.z;
-
-          worker.postMessage({
-            type: 'getBodyObject',
-            id,
-            args: {
-              buffer: bodyObjectBuffer,
-            },
-          }, [bodyObjectBuffer]);
-          queues[id] = newBodyObjectBuffer => {
-            bodyObjectBuffer = newBodyObjectBuffer;
-
-            cb(newBodyObjectBuffer);
-          };
-        };
-        worker.requestResponse = (id, result, transfers) => {
-          worker.postMessage({
-            type: 'response',
-            id,
-            result,
-          }, transfers);
-        };
-        worker.onmessage = e => {
-          const {data} = e;
-          const {type, args} = data;
-
-          if (type === 'response') {
-            const [id] = args;
-            const {result} = data;
-
-            queues[id](result);
-            queues[id] = null;
-
-            _cleanupQueues();
-          } else if (type === 'chunkUpdate') {
-            const [x, z] = args;
-            _refreshChunk(x, z);
-          } else if (type === 'textureAtlas') {
-            const [imageBitmap] = args;
-            textureAtlas.image = imageBitmap;
-            textureAtlas.needsUpdate = true;
-          } else if (type === 'objectAdded') {
-            const [n, x, z, objectIndex, position, rotation, value] = args;
-
-            const objectApi = objectApis[n];
-            if (objectApi) {
-              objectApi.addedCallback(
-                _getObjectId(x, z, objectIndex),
-                localVector.fromArray(position),
-                localQuaternion.fromArray(rotation),
-                value,
-                x,
-                z,
-                objectIndex
-              );
-            }
-          } else if (type === 'objectRemoved') {
-            const [n, x, z, objectIndex] = args;
-
-            const objectApi = objectApis[n];
-            if (objectApi) {
-              objectApi.removedCallback(_getObjectId(x, z, objectIndex), x, z, objectIndex);
-            }
-          } else if (type === 'objectUpdated') {
-            const [n, x, z, objectIndex, position, rotation, value] = args;
-
-            const objectApi = objectApis[n];
-            if (objectApi) {
-              objectApi.updateCallback(_getObjectId(x, z, objectIndex), localVector.fromArray(position), localQuaternion.fromArray(rotation), value);
-            }
-          } else {
-            console.warn('objects got unknown worker message type:', JSON.stringify(type));
-          }
-        };
-
         const _requestObjectsGenerate = (x, z, index, numPositions, numObjectIndices, numIndices, cb) => {
-          worker.requestGenerate(x, z, index, numPositions, numObjectIndices, numIndices, objectsChunkBuffer => {
-            cb(protocolUtils.parseWorker(objectsChunkBuffer));
-          });
-        };
-        const _requestObjectsUpdate = (x, z, cb) => {
-          worker.requestUpdate(x, z, objectsChunkBuffer => {
-            cb(protocolUtils.parseWorker(objectsChunkBuffer));
-          });
+          generatorElement.requestObjectsGenerate(x, z, index, numPositions, numObjectIndices, numIndices, cb);
         };
         const _makeObjectsChunkMesh = (chunk, gbuffer) => {
           const {x, z} = chunk;
@@ -695,8 +396,7 @@ void main() {
             torchLightmaps,
             update: chunkData => {
               const {positions: newPositions, uvs: newUvs, ssaos: newSsaos, frames: newFrames, skyLightmaps: newSkyLightmaps, torchLightmaps: newTorchLightmaps, objectIndices: newObjectIndices, indices: newIndices} = chunkData;
-              const heightfieldElement = elements.getEntitiesElement().querySelector(HEIGHTFIELD_PLUGIN);
-              if (newPositions.length > 0 && heightfieldElement) {
+              if (newPositions.length > 0) {
                 version++;
 
                 positions.set(newPositions);
@@ -811,7 +511,7 @@ void main() {
 
           if (hoveredTrackedObjectSpec && hoveredTrackedObjectSpec.isSet()) {
             const {n} = hoveredTrackedObjectSpec;
-            const objectApi = objectApis[n];
+            const objectApi = generatorElement.getObjectApi(n);
 
             if (objectApi && objectApi.triggerCallback) {
               const {x, z, objectIndex} = hoveredTrackedObjectSpec;
@@ -827,7 +527,7 @@ void main() {
 
           if (hoveredTrackedObjectSpec && hoveredTrackedObjectSpec.isSet()) {
             const {n} = hoveredTrackedObjectSpec;
-            const objectApi = objectApis[n];
+            const objectApi = generatorElement.getObjectApi(n);
 
             if (objectApi && objectApi.gripCallback) {
               const {x, z, objectIndex} = hoveredTrackedObjectSpec;
@@ -835,7 +535,7 @@ void main() {
             }
           } else if (isFinite(hoveredTrackedBlock.x)) {
             const {v} = hoveredTrackedBlock;
-            const objectApi = objectApis[v];
+            const objectApi = generatorElement.getObjectApi(v);
 
             if (objectApi && objectApi.gripBlockCallback) {
               const {x, y, z} = hoveredTrackedBlock;
@@ -846,8 +546,6 @@ void main() {
         input.on('gripdown', _gripdown, {
           priority: -4,
         });
-
-        const objectApis = {};
 
         let craftElement = null;
         const recipeQueue = [];
@@ -934,73 +632,32 @@ void main() {
         teleport.addTarget(_teleportTarget);
 
         class ObjectApi {
-          registerGeometry(name, fn) {
-            worker.requestRegisterGeometry(name, fn);
-            return Promise.resolve();
-          }
-
-          registerTexture(name, img) {
-            const rect = textures.pack(img.width, img.height);
-            const uv = textures.uv(rect);
-            worker.requestRegisterTexture(name, uv);
-
-            return createImageBitmap(img, 0, 0, img.width, img.height, {
-              // imageOrientation: 'flipY',
-            })
-              .then(imageBitmap => {
-                ctx.drawImage(imageBitmap, rect.x, rect.y);
-                textureAtlas.needsUpdate = true;
-              });
-          }
-
           addObject(name, position = zeroVector, rotation = zeroQuaternion, value = 0) {
-            worker.requestAddObject(name, position.toArray(), rotation.toArray(), value);
+            generatorElement.requestAddObject(name, position.toArray(), rotation.toArray(), value);
           }
 
           removeObject(x, z, objectIndex) {
-            worker.requestRemoveObject(x, z, objectIndex);
+            generatorElement.requestRemoveObject(x, z, objectIndex);
           }
 
           setData(x, z, objectIndex, value) {
-            worker.requestSetObjectData(x, z, objectIndex, value);
+            generatorElement.requestSetObjectData(x, z, objectIndex, value);
           }
 
           registerObject(objectApi) {
-            const {object} = objectApi;
-            const n = murmur(object);
-            objectApis[n] = objectApi;
-
-            worker.requestRegisterObject(
-              n,
-              Boolean(objectApi.addedCallback),
-              Boolean(objectApi.removedCallback),
-              Boolean(objectApi.updateCallback),
-              Boolean(objectApi.setCallback),
-              Boolean(objectApi.clearCallback)
-            );
+            generatorElement.registerObject(objectApi);
           }
 
           unregisterObject(objectApi) {
-            const {object} = objectApi;
-            const n = murmur(object);
-            objectApis[n] = null;
-
-            worker.requestUnregisterObject(
-              n,
-              Boolean(objectApi.addedCallback),
-              Boolean(objectApi.removedCallback),
-              Boolean(objectApi.updateCallback),
-              Boolean(objectApi.setCallback),
-              Boolean(objectApi.clearCallback)
-            );
+            generatorElement.unregisterObject(objectApi);
           }
 
           setBlock(x, y, z, block) {
-            worker.requestSetBlock(x, y, z, murmur(block));
+            generatorElement.requestSetBlock(x, y, z, block);
           }
 
           clearBlock(x, y, z) {
-            worker.requestClearBlock(x, y, z);
+            generatorElement.requestClearBlock(x, y, z);
           }
 
           registerRecipe(recipe) {
@@ -1027,20 +684,6 @@ void main() {
             const hoveredTrackedObjectSpec = hoveredTrackedObjects[side];
             return hoveredTrackedObjectSpec.isSet() ? hoveredTrackedObjectSpec : null;
           }
-
-          /* getObjectAt(position, rotation) {
-            for (const trackedObjectIndex in trackedObjects) {
-              const trackedObject = trackedObjects[trackedObjectIndex];
-
-              if (trackedObject &&
-                trackedObject.positionX === position.x && trackedObject.positionY === position.y && trackedObject.positionZ === position.z &&
-                trackedObject.rotationX === rotation.x && trackedObject.rotationY === rotation.y && trackedObject.rotationZ === rotation.z && trackedObject.rotationW === rotation.w
-              ) {
-                return trackedObject;
-              }
-            }
-            return null;
-          } */
         }
         const objectApi = new ObjectApi();
 
@@ -1212,34 +855,28 @@ void main() {
           if (!running) {
             running = true;
 
-            const {x, z} = chunk;
-            worker.requestUngenerate(x, z);
-
             const {[dataSymbol]: objectsChunkMesh} = chunk;
             objectsObject.renderList.splice(objectsObject.renderList.indexOf(objectsChunkMesh.renderListEntry), 1);
 
             objectsChunkMesh.destroy();
 
-            objectsChunkMeshes[_getChunkIndex(x, z)] = null;
+            objectsChunkMeshes[_getChunkIndex(chunk.x, chunk.z)] = null;
 
             _next();
           } else {
             queue.push(_removeChunk.bind(this, chunk));
           }
         };
-        const _refreshChunk = (x, z) => {
+        /* const _refreshChunk = (x, z) => {
           if (!running) {
             running = true;
 
             _requestObjectsUpdate(x, z, objectsChunkData => {
-              const heightfieldElement = elements.getEntitiesElement().querySelector(HEIGHTFIELD_PLUGIN);
-              if (heightfieldElement) {
-                const chunk = heightfieldElement.getChunk(x, z);
-                if (chunk) {
-                  const {[dataSymbol]: oldObjectsChunkMesh} = chunk;
-                  if (oldObjectsChunkMesh) {
-                    oldObjectsChunkMesh.update(objectsChunkData);
-                  }
+              const chunk = heightfieldElement.getChunk(x, z);
+              if (chunk) {
+                const {[dataSymbol]: oldObjectsChunkMesh} = chunk;
+                if (oldObjectsChunkMesh) {
+                  oldObjectsChunkMesh.update(objectsChunkData);
                 }
               }
 
@@ -1248,7 +885,7 @@ void main() {
           } else {
             queue.push(_refreshChunk.bind(this, x, z));
           }
-        };
+        }; */
 
         let updatingHover = false;
         let lastHoverUpdateTime = 0;
@@ -1269,7 +906,7 @@ void main() {
               const timeDiff = now - lastHoverUpdateTime;
 
               if (timeDiff > 1000 / 30) {
-                worker.getHoveredObjects(hoveredObjectsBuffer => {
+                generatorElement.requestHoveredObjects(hoveredObjectsBuffer => {
                   objectsMaterial.uniforms.selectedObject.value.set(-1, -1);
                   objectsMaterial.uniforms.selectedBlockLeft.value.set(-1, -1, -1);
                   objectsMaterial.uniforms.selectedBlockRight.value.set(-1, -1, -1);
@@ -1318,7 +955,7 @@ void main() {
                   const timeDiff = now - lastTeleportUpdateTime[side];
 
                   if (timeDiff > 1000 / 30) {
-                    worker.getTeleportObject(teleportPosition, side, teleportObjectBuffer => {
+                    generatorElement.requestTeleportObject(teleportPosition, side, teleportObjectBuffer => {
                       const teleportPosition = teleportPositions[side];
 
                       if (teleportPosition) {
@@ -1362,7 +999,7 @@ void main() {
               if (timeDiff > 1000 / 30) {
                 const {hmd} = pose.getStatus();
                 const {worldPosition: hmdPosition} = hmd;
-                worker.getBodyObject(hmdPosition, hoveredBodyBuffer => {
+                generatorElement.requestBodyObject(hmdPosition, hoveredBodyBuffer => {
                   if (new Uint32Array(hoveredBodyBuffer, 0, 1)[0] !== 0) {
                     const uint32Array = new Uint32Array(hoveredBodyBuffer, 0, 4);
                     const int32Array = new Int32Array(hoveredBodyBuffer, 0, 4);
@@ -1372,7 +1009,7 @@ void main() {
                     const z = int32Array[2];
                     const objectIndex = uint32Array[3];
 
-                    const objectApi = objectApis[n];
+                    const objectApi = generatorElement.getObjectApi(n);
                     if (objectApi && objectApi.collideCallback) {
                       objectApi.collideCallback(_getObjectId(x, z, objectIndex), x, z, objectIndex);
                     }
@@ -1437,9 +1074,7 @@ void main() {
         )
           .then(() => {
             const _requestCull = (hmdPosition, projectionMatrix, matrixWorldInverse, cb) => {
-              worker.requestCull(hmdPosition, projectionMatrix, matrixWorldInverse, cullBuffer => {
-                cb(protocolUtils.parseCull(cullBuffer));
-              });
+              generatorElement.requestObjectsCull(hmdPosition, projectionMatrix, matrixWorldInverse, cb);
             };
             const _debouncedRefreshCull = _debounce(next => {
               const {hmd} = pose.getStatus();
@@ -1462,13 +1097,12 @@ void main() {
             const _add = chunk => {
               _addChunk(chunk);
             };
-            heightfieldElement.on('add', _add);
+            generatorElement.on('add', _add);
             const _remove = chunk => {
               _removeChunk(chunk);
             };
-            heightfieldElement.on('remove', _remove);
-
-            heightfieldElement.forEachChunk(chunk => {
+            generatorElement.on('remove', _remove);
+            generatorElement.forEachChunk(chunk => {
               _add(chunk);
             });
 
@@ -1480,8 +1114,8 @@ void main() {
             _recurseRefreshCull();
 
             cleanups.push(() => {
-              heightfieldElement.removeListener('add', _add);
-              heightfieldElement.removeListener('remove', _remove);
+              generatorElement.removeListener('add', _add);
+              generatorElement.removeListener('remove', _remove);
 
               clearTimeout(refreshCullTimeout);
             });

@@ -12,7 +12,7 @@ const grass = objectApi => {
           const v = generateApi.getNoise('grass', chunk.x, chunk.z, dx, dz);
 
           if (v < grassProbability) {
-            const elevation = objectApi.getHeightfield(chunk.x, chunk.z)[(dx + (dz * generateApi.NUM_CELLS_OVERSCAN)) * 8];
+            const elevation = Math.floor(objectApi.getElevation(chunk.x * NUM_CELLS + dx, chunk.z * NUM_CELLS + dz));
 
             if (elevation > 64) {
               const ax = (chunk.x * generateApi.NUM_CELLS) + dx;
