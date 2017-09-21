@@ -51,6 +51,9 @@ const NUM_VOXELS_CHUNK_HEIGHT = BLOCK_BUFFER_SIZE / 4 / NUM_CHUNKS_HEIGHT;
 
 const terrainDecorationsSymbol = Symbol();
 const objectsDecorationsSymbol = Symbol();
+const lightsSymbol = Symbol();
+
+const _getLightsArrayIndex = (x, z) => x + z * 3;
 
 const _align = (n, alignment) => {
   let alignDiff = n % alignment;
@@ -1401,148 +1404,268 @@ self.onmessage = e => {
       })
         .then(_resBlob)
         .then(() => {
-          const ox = Math.floor(x / NUM_CELLS);
-          const oz = Math.floor(z / NUM_CELLS);
-
-          const oldChunk = zde.getChunk(ox, oz);
-          const oldTerrainBuffer = oldChunk.getTerrainBuffer();
-          const oldChunkData = protocolUtils.parseTerrainData(oldTerrainBuffer.buffer, oldTerrainBuffer.byteOffset);
-          const oldBiomes = oldChunkData.biomes.slice();
-          const oldElevations = oldChunkData.elevations.slice();
-          const oldEther = oldChunkData.ether.slice();
-          const oldWater = oldChunkData.water.slice();
-          const oldLava = oldChunkData.lava.slice();
-
-          const lx = x - (ox * NUM_CELLS);
-          const lz = z - (oz * NUM_CELLS);
-          const v = 1;
-          const newEther = Float32Array.from([lx, y, lz, v]);
-          const numNewEthers = newEther.length;
+          const oldChunk = zde.getChunk(Math.floor(x / NUM_CELLS), Math.floor(z / NUM_CELLS));
 
           const offsets = [];
           const _alloc = b => {
-            const offset = Module._malloc(b.byteLength);
-            const shadowBuffer = new b.constructor(Module.HEAP8.buffer, Module.HEAP8.byteOffset + offset, b.length);
-            shadowBuffer.set(b);
-            offsets.push(offset);
-            b.unshadow = () => {
-              b.set(shadowBuffer);
-            };
-            return offset;
+            if (Array.isArray(b)) {
+              const bs = b;
+              const offset = Module._malloc(bs.length * Uint32Array.BYTES_PER_ELEMENT);
+              offsets.push(offset);
+              const array = new Uint32Array(Module.HEAP8.buffer, Module.HEAP8.byteOffset + offset, bs.length);
+              for (let i = 0; i < bs.length; i++) {
+                const b = bs[i];
+                const offset = Module._malloc(b.byteLength);
+                offsets.push(offset);
+                const shadowBuffer = new b.constructor(Module.HEAP8.buffer, Module.HEAP8.byteOffset + offset, b.length);
+                shadowBuffer.set(b);
+                b.unshadow = () => {
+                  b.set(shadowBuffer);
+                };
+                array[i] = offset;
+              }
+              bs.unshadow = () => {
+                for (let i = 0; i < bs.length; i++) {
+                  bs[i].unshadow();
+                }
+              };
+              return offset;
+            } else {
+              const offset = Module._malloc(b.byteLength);
+              offsets.push(offset);
+              const shadowBuffer = new b.constructor(Module.HEAP8.buffer, Module.HEAP8.byteOffset + offset, b.length);
+              shadowBuffer.set(b);
+              b.unshadow = () => {
+                b.set(shadowBuffer);
+              };
+              return offset;
+            }
           };
           const _freeAll = () => {
             for (let i = 0; i < offsets.length; i++) {
               Module._free(offsets[i]);
             }
+            offsets.length = 0;
           };
+          const _retesselate = () => {
+            const oldTerrainBuffer = oldChunk.getTerrainBuffer();
+            const oldChunkData = protocolUtils.parseTerrainData(oldTerrainBuffer.buffer, oldTerrainBuffer.byteOffset);
+            const oldBiomes = oldChunkData.biomes.slice();
+            const oldElevations = oldChunkData.elevations.slice();
+            const oldEther = oldChunkData.ether.slice();
+            const oldWater = oldChunkData.water.slice();
+            const oldLava = oldChunkData.lava.slice();
 
-          const {attributeRanges, indexRanges, heightfield, staticHeightfield, peeks} = slab;
-          const noiser = Module._make_noiser(murmur(DEFAULT_SEED));
-          Module._noiser_fill(
-            noiser,
-            ox,
-            oz,
-            _alloc(oldBiomes),
-            +false,
-            _alloc(oldElevations),
-            +false,
-            _alloc(oldEther),
-            +false,
-            _alloc(oldWater),
-            _alloc(oldLava),
-            +false,
-            _alloc(newEther),
-            numNewEthers,
-            _alloc(slab.positions),
-            _alloc(slab.indices),
-            _alloc(attributeRanges),
-            _alloc(indexRanges),
-            _alloc(heightfield),
-            _alloc(staticHeightfield),
-            _alloc(slab.colors),
-            _alloc(peeks)
-          );
+            const lx = x - (oldChunk.x * NUM_CELLS);
+            const lz = z - (oldChunk.z * NUM_CELLS);
+            const v = 1;
+            const newEther = Float32Array.from([lx, y, lz, v]);
+            const numNewEthers = newEther.length;
 
-          oldBiomes.unshadow();
-          oldElevations.unshadow();
-          oldEther.unshadow();
-          oldWater.unshadow();
-          oldLava.unshadow();
-          slab.positions.unshadow();
-          slab.indices.unshadow();
-          attributeRanges.unshadow();
-          indexRanges.unshadow();
-          heightfield.unshadow();
-          staticHeightfield.unshadow();
-          slab.colors.unshadow();
-          peeks.unshadow();
+            const {attributeRanges, indexRanges, heightfield, staticHeightfield, peeks} = slab;
+            const noiser = Module._make_noiser(murmur(DEFAULT_SEED));
+            Module._noiser_fill(
+              noiser,
+              oldChunk.x,
+              oldChunk.z,
+              _alloc(oldBiomes),
+              +false,
+              _alloc(oldElevations),
+              +false,
+              _alloc(oldEther),
+              +false,
+              _alloc(oldWater),
+              _alloc(oldLava),
+              +false,
+              _alloc(newEther),
+              numNewEthers,
+              _alloc(slab.positions),
+              _alloc(slab.indices),
+              _alloc(attributeRanges),
+              _alloc(indexRanges),
+              _alloc(heightfield),
+              _alloc(staticHeightfield),
+              _alloc(slab.colors),
+              _alloc(peeks)
+            );
 
-          const attributeIndex = attributeRanges[attributeRanges.length - 2] + attributeRanges[attributeRanges.length - 1];
-          const indexIndex = indexRanges[indexRanges.length - 2] + indexRanges[indexRanges.length - 1];
-          const positions = slab.positions.subarray(0, attributeIndex);
-          const indices = slab.indices.subarray(0, indexIndex);
-          const colors = new Float32Array(slab.colors.buffer, slab.colors.byteOffset, attributeIndex);
+            oldBiomes.unshadow();
+            oldElevations.unshadow();
+            oldEther.unshadow();
+            oldWater.unshadow();
+            oldLava.unshadow();
+            slab.positions.unshadow();
+            slab.indices.unshadow();
+            attributeRanges.unshadow();
+            indexRanges.unshadow();
+            heightfield.unshadow();
+            staticHeightfield.unshadow();
+            slab.colors.unshadow();
+            peeks.unshadow();
 
-          const geometries = Array(NUM_CHUNKS_HEIGHT);
-          for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
-            geometries[i] = {
-              /* attributeRange: {
-                landStart: attributeRanges[i * 6 + 0],
-                landCount: attributeRanges[i * 6 + 1],
-                waterStart: attributeRanges[i * 6 + 2],
-                waterCount: attributeRanges[i * 6 + 3],
-                lavaStart: attributeRanges[i * 6 + 4],
-                lavaCount: attributeRanges[i * 6 + 5],
-              }, */
-              indexRange: {
-                landStart: indexRanges[i * 6 + 0],
-                landCount: indexRanges[i * 6 + 1],
-                waterStart: indexRanges[i * 6 + 2],
-                waterCount: indexRanges[i * 6 + 3],
-                lavaStart: indexRanges[i * 6 + 4],
-                lavaCount: indexRanges[i * 6 + 5],
-              },
-              boundingSphere: Float32Array.from([
-                ox * NUM_CELLS + NUM_CELLS_HALF,
-                i * NUM_CELLS + NUM_CELLS_HALF,
-                oz * NUM_CELLS + NUM_CELLS_HALF,
-                NUM_CELLS_CUBE,
-              ]),
-              peeks: slab.peeksArray[i],
+            const attributeIndex = attributeRanges[attributeRanges.length - 2] + attributeRanges[attributeRanges.length - 1];
+            const indexIndex = indexRanges[indexRanges.length - 2] + indexRanges[indexRanges.length - 1];
+            const positions = slab.positions.subarray(0, attributeIndex);
+            const indices = slab.indices.subarray(0, indexIndex);
+            const colors = new Float32Array(slab.colors.buffer, slab.colors.byteOffset, attributeIndex);
+
+            const geometries = Array(NUM_CHUNKS_HEIGHT);
+            for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
+              geometries[i] = {
+                /* attributeRange: {
+                  landStart: attributeRanges[i * 6 + 0],
+                  landCount: attributeRanges[i * 6 + 1],
+                  waterStart: attributeRanges[i * 6 + 2],
+                  waterCount: attributeRanges[i * 6 + 3],
+                  lavaStart: attributeRanges[i * 6 + 4],
+                  lavaCount: attributeRanges[i * 6 + 5],
+                }, */
+                indexRange: {
+                  landStart: indexRanges[i * 6 + 0],
+                  landCount: indexRanges[i * 6 + 1],
+                  waterStart: indexRanges[i * 6 + 2],
+                  waterCount: indexRanges[i * 6 + 3],
+                  lavaStart: indexRanges[i * 6 + 4],
+                  lavaCount: indexRanges[i * 6 + 5],
+                },
+                boundingSphere: Float32Array.from([
+                  oldChunk.x * NUM_CELLS + NUM_CELLS_HALF,
+                  i * NUM_CELLS + NUM_CELLS_HALF,
+                  oldChunk.z * NUM_CELLS + NUM_CELLS_HALF,
+                  NUM_CELLS_CUBE,
+                ]),
+                peeks: slab.peeksArray[i],
+              };
+            }
+
+            const chunkData = {
+              positions,
+              colors,
+              indices,
+              geometries,
+              heightfield,
+              staticHeightfield,
+              biomes: oldBiomes,
+              elevations: oldElevations,
+              ether: oldEther,
+              water: oldWater,
+              lava: oldLava,
             };
-          }
 
-          const chunkData = {
-            positions,
-            colors,
-            indices,
-            geometries,
-            heightfield,
-            staticHeightfield,
-            biomes: oldBiomes,
-            elevations: oldElevations,
-            ether: oldEther,
-            water: oldWater,
-            lava: oldLava,
+            const terrainBuffer = oldChunk.getTerrainBuffer();
+            protocolUtils.stringifyTerrainData(chunkData, terrainBuffer.buffer, terrainBuffer.byteOffset);
+
+            oldChunk.chunkData.terrain = chunkData;
+            oldChunk.chunkData.decorations.terrain = {
+              skyLightmaps: new Uint8Array(chunkData.positions.length / 3).fill(0xFF),
+              torchLightmaps: new Uint8Array(chunkData.positions.length / 3).fill(0xFF),
+            };
+            oldChunk[terrainDecorationsSymbol] = false;
+            mapChunkMeshes[_getChunkIndex(x, z)] = null;
+
+            Module._destroy_noiser(noiser);
+            _freeAll();
           };
+          const _relight = () => {
+            const _decorateChunkLightsSub = (chunk, x, y, z) => _decorateChunkLightsRange(
+              chunk,
+              Math.max(x - 15, (chunk.x - 1) * NUM_CELLS),
+              Math.min(x + 15, (chunk.x + 2) * NUM_CELLS),
+              Math.max(y - 15, 0),
+              Math.min(y + 15, NUM_CELLS_HEIGHT),
+              Math.max(z - 15, (chunk.z - 1) * NUM_CELLS),
+              Math.min(z + 15, (chunk.z + 2) * NUM_CELLS),
+              true
+            );
+            const _decorateChunkLightsRange = (chunk, minX, maxX, minY, maxY, minZ, maxZ, relight) => {
+              const {x: ox, z: oz} = chunk;
+              const updatingLights = chunk[lightsRenderedSymbol];
 
-          const terrainBuffer = oldChunk.getTerrainBuffer();
-          protocolUtils.stringifyTerrainData(chunkData, terrainBuffer.buffer, terrainBuffer.byteOffset);
+              const lavaArray = Array(9);
+              const objectLightsArray = Array(9);
+              const etherArray = Array(9);
+              const blocksArray = Array(9);
+              const lightsArray = Array(9);
+              for (let doz = -1; doz <= 1; doz++) {
+                for (let dox = -1; dox <= 1; dox++) {
+                  const arrayIndex = _getLightsArrayIndex(dox + 1, doz + 1);
 
-          oldChunk.chunkData.terrain = chunkData;
-          oldChunk.chunkData.decorations.terrain = {
-            skyLightmaps: new Uint8Array(chunkData.positions.length / 3).fill(0xFF),
-            torchLightmaps: new Uint8Array(chunkData.positions.length / 3).fill(0xFF),
+                  const aox = ox + dox;
+                  const aoz = oz + doz;
+                  const chunk = zde.getChunk(aox, aoz);
+if (!chunk) {
+  throw new Error('no neighbor chunk: ' + aox + ' : ' + aoz);
+}
+                  const uint32Buffer = chunk.getTerrainBuffer();
+                  const {ether, lava} = protocolUtils.parseTerrainData(uint32Buffer.buffer, uint32Buffer.byteOffset); // XXX can be reduced to only parse the needed fields
+                  lavaArray[arrayIndex] = lava;
+
+                  const objectLights = chunk.getLightBuffer();
+                  objectLightsArray[arrayIndex] = objectLights;
+
+                  etherArray[arrayIndex] = ether;
+
+                  const blocks = chunk.getBlockBuffer();
+                  blocksArray[arrayIndex] = blocks;
+
+                  let lights = chunk[lightsSymbol];
+                  if (!lights) {
+                    lights = new Uint8Array(NUM_CELLS_OVERSCAN * (NUM_CELLS_HEIGHT + 1) * NUM_CELLS_OVERSCAN);
+                    chunk[lightsSymbol] = lights;
+                  }
+                  lightsArray[arrayIndex] = lights;
+                }
+              }
+
+              Module._lght(
+                ox, oz,
+                minX, maxX, minY, maxY, minZ, maxZ,
+                +relight,
+                _alloc(lavaArray),
+                _alloc(objectLightsArray),
+                _alloc(etherArray),
+                _alloc(blocksArray),
+                _alloc(lightsArray),
+              );
+
+              lightsArray.unshadow();
+
+              _freeAll();
+            };
+
+            _decorateChunkLightsSub(oldChunk, x, y, z);
           };
-          oldChunk[terrainDecorationsSymbol] = false;
-          mapChunkMeshes[_getChunkIndex(x, z)] = null;
+          const _relightmap = () => {
+            const terrainBuffer = oldChunk.getTerrainBuffer();
+            const {positions, staticHeightfield} = protocolUtils.parseTerrainData(terrainBuffer.buffer, terrainBuffer.byteOffset);
+            const {[lightsSymbol]: lights} = oldChunk;
 
-          Module._destroy_noiser(noiser);
-          _freeAll();
+            const numPositions = positions.length;
+            const {skyLightmaps, torchLightmaps} = oldChunk.chunkData.decorations.terrain;
+
+            Module._lghtmap(
+              oldChunk.x,
+              oldChunk.z,
+              _alloc(positions),
+              numPositions,
+              _alloc(staticHeightfield),
+              _alloc(lights),
+              _alloc(skyLightmaps),
+              _alloc(torchLightmaps)
+            );
+
+            skyLightmaps.unshadow();
+            torchLightmaps.unshadow();
+
+            _freeAll();
+          };
+          _retesselate();
+          _relight();
+          _relightmap();
 
           postMessage({
             type: 'chunkUpdate',
-            args: [ox, oz],
+            args: [oldChunk.x, oldChunk.z],
           });
         })
         .catch(err => {
