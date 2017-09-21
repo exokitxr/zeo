@@ -190,6 +190,156 @@ const boundingSpheres = (() => {
   return result;
 })();
 
+const offsets = [];
+const _alloc = b => {
+  if (Array.isArray(b)) {
+    const bs = b;
+    const offset = Module._malloc(bs.length * Uint32Array.BYTES_PER_ELEMENT);
+    offsets.push(offset);
+    const array = new Uint32Array(Module.HEAP8.buffer, Module.HEAP8.byteOffset + offset, bs.length);
+    for (let i = 0; i < bs.length; i++) {
+      const b = bs[i];
+      const offset = Module._malloc(b.byteLength);
+      offsets.push(offset);
+      const shadowBuffer = new b.constructor(Module.HEAP8.buffer, Module.HEAP8.byteOffset + offset, b.length);
+      shadowBuffer.set(b);
+      b.unshadow = () => {
+        b.set(shadowBuffer);
+      };
+      array[i] = offset;
+    }
+    bs.unshadow = () => {
+      for (let i = 0; i < bs.length; i++) {
+        bs[i].unshadow();
+      }
+    };
+    return offset;
+  } else {
+    const offset = Module._malloc(b.byteLength);
+    offsets.push(offset);
+    const shadowBuffer = new b.constructor(Module.HEAP8.buffer, Module.HEAP8.byteOffset + offset, b.length);
+    shadowBuffer.set(b);
+    b.unshadow = () => {
+      b.set(shadowBuffer);
+    };
+    return offset;
+  }
+};
+const _freeAll = () => {
+  for (let i = 0; i < offsets.length; i++) {
+    Module._free(offsets[i]);
+  }
+  offsets.length = 0;
+};
+const _relight = (chunk, x, y, z) => {
+  const _decorateChunkLightsSub = (chunk, x, y, z) => _decorateChunkLightsRange(
+    chunk,
+    Math.max(x - 15, (chunk.x - 1) * NUM_CELLS),
+    Math.min(x + 15, (chunk.x + 2) * NUM_CELLS),
+    Math.max(y - 15, 0),
+    Math.min(y + 15, NUM_CELLS_HEIGHT),
+    Math.max(z - 15, (chunk.z - 1) * NUM_CELLS),
+    Math.min(z + 15, (chunk.z + 2) * NUM_CELLS),
+    true
+  );
+  const _decorateChunkLightsRange = (chunk, minX, maxX, minY, maxY, minZ, maxZ, relight) => {
+    const {x: ox, z: oz} = chunk;
+    const updatingLights = chunk[lightsRenderedSymbol];
+
+    const lavaArray = Array(9);
+    const objectLightsArray = Array(9);
+    const etherArray = Array(9);
+    const blocksArray = Array(9);
+    const lightsArray = Array(9);
+    for (let doz = -1; doz <= 1; doz++) {
+      for (let dox = -1; dox <= 1; dox++) {
+        const arrayIndex = _getLightsArrayIndex(dox + 1, doz + 1);
+
+        const aox = ox + dox;
+        const aoz = oz + doz;
+        const chunk = zde.getChunk(aox, aoz);
+if (!chunk) { // XXX handle this
+throw new Error('no neighbor chunk: ' + aox + ' : ' + aoz);
+}
+        const uint32Buffer = chunk.getTerrainBuffer();
+        const {ether, lava} = protocolUtils.parseTerrainData(uint32Buffer.buffer, uint32Buffer.byteOffset); // XXX can be reduced to only parse the needed fields
+        lavaArray[arrayIndex] = lava;
+
+        const objectLights = chunk.getLightBuffer();
+        objectLightsArray[arrayIndex] = objectLights;
+
+        etherArray[arrayIndex] = ether;
+
+        const blocks = chunk.getBlockBuffer();
+        blocksArray[arrayIndex] = blocks;
+
+        let lights = chunk[lightsSymbol];
+        if (!lights) {
+          lights = new Uint8Array(NUM_CELLS_OVERSCAN * (NUM_CELLS_HEIGHT + 1) * NUM_CELLS_OVERSCAN);
+          chunk[lightsSymbol] = lights;
+        }
+        lightsArray[arrayIndex] = lights;
+      }
+    }
+
+    Module._lght(
+      ox, oz,
+      minX, maxX, minY, maxY, minZ, maxZ,
+      +relight,
+      _alloc(lavaArray),
+      _alloc(objectLightsArray),
+      _alloc(etherArray),
+      _alloc(blocksArray),
+      _alloc(lightsArray),
+    );
+
+    lightsArray.unshadow();
+
+    _freeAll();
+  };
+
+  _decorateChunkLightsSub(chunk, x, y, z);
+};
+const _relightmap = chunk => {
+  const _relightmapTerrain = () => {
+    const terrainBuffer = chunk.getTerrainBuffer();
+    const {positions} = protocolUtils.parseTerrainData(terrainBuffer.buffer, terrainBuffer.byteOffset);
+    const {skyLightmaps, torchLightmaps} = chunk.chunkData.decorations.terrain;
+    _relightmapSpec({positions, skyLightmaps, torchLightmaps});
+  };
+  const _relightmapObjects = () => {
+    const {positions} = chunk.chunkData.objects;
+    const {skyLightmaps, torchLightmaps} = chunk.chunkData.decorations.objects;
+    _relightmapSpec({positions, skyLightmaps, torchLightmaps});
+  };
+  const _relightmapSpec = ({positions, skyLightmaps, torchLightmaps}) => {
+    const terrainBuffer = chunk.getTerrainBuffer();
+    const {staticHeightfield} = protocolUtils.parseTerrainData(terrainBuffer.buffer, terrainBuffer.byteOffset);
+    const {[lightsSymbol]: lights} = chunk;
+
+    const numPositions = positions.length;
+
+    Module._lghtmap(
+      chunk.x,
+      chunk.z,
+      _alloc(positions),
+      numPositions,
+      _alloc(staticHeightfield),
+      _alloc(lights),
+      _alloc(skyLightmaps),
+      _alloc(torchLightmaps)
+    );
+
+    skyLightmaps.unshadow();
+    torchLightmaps.unshadow();
+
+    _freeAll();
+  };
+
+  _relightmapTerrain();
+  _relightmapObjects();
+};
+
 class TrackedObject {
   constructor(n, position, rotation, value) {
     this.n = n;
@@ -1120,48 +1270,6 @@ self.onmessage = e => {
         connection.clearBlock(x, y, z, () => {
           oldChunk.clearBlock(x - ox * NUM_CELLS, y, z - oz * NUM_CELLS);
 
-          const offsets = [];
-          const _alloc = b => {
-            if (Array.isArray(b)) {
-              const bs = b;
-              const offset = Module._malloc(bs.length * Uint32Array.BYTES_PER_ELEMENT);
-              offsets.push(offset);
-              const array = new Uint32Array(Module.HEAP8.buffer, Module.HEAP8.byteOffset + offset, bs.length);
-              for (let i = 0; i < bs.length; i++) {
-                const b = bs[i];
-                const offset = Module._malloc(b.byteLength);
-                offsets.push(offset);
-                const shadowBuffer = new b.constructor(Module.HEAP8.buffer, Module.HEAP8.byteOffset + offset, b.length);
-                shadowBuffer.set(b);
-                b.unshadow = () => {
-                  b.set(shadowBuffer);
-                };
-                array[i] = offset;
-              }
-              bs.unshadow = () => {
-                for (let i = 0; i < bs.length; i++) {
-                  bs[i].unshadow();
-                }
-              };
-              return offset;
-            } else {
-              const offset = Module._malloc(b.byteLength);
-              offsets.push(offset);
-              const shadowBuffer = new b.constructor(Module.HEAP8.buffer, Module.HEAP8.byteOffset + offset, b.length);
-              shadowBuffer.set(b);
-              b.unshadow = () => {
-                b.set(shadowBuffer);
-              };
-              return offset;
-            }
-          };
-          const _freeAll = () => {
-            for (let i = 0; i < offsets.length; i++) {
-              Module._free(offsets[i]);
-            }
-            offsets.length = 0;
-          };
-
           const _retesselate = () => {
             _makeGeometeriesBuffer.reset();
             const geometriesPositions = _makeGeometeriesBuffer(Float32Array);
@@ -1261,103 +1369,9 @@ self.onmessage = e => {
 
             _freeAll();
           };
-          const _relight = () => {
-            const _decorateChunkLightsSub = (chunk, x, y, z) => _decorateChunkLightsRange(
-              chunk,
-              Math.max(x - 15, (chunk.x - 1) * NUM_CELLS),
-              Math.min(x + 15, (chunk.x + 2) * NUM_CELLS),
-              Math.max(y - 15, 0),
-              Math.min(y + 15, NUM_CELLS_HEIGHT),
-              Math.max(z - 15, (chunk.z - 1) * NUM_CELLS),
-              Math.min(z + 15, (chunk.z + 2) * NUM_CELLS),
-              true
-            );
-            const _decorateChunkLightsRange = (chunk, minX, maxX, minY, maxY, minZ, maxZ, relight) => {
-              const {x: ox, z: oz} = chunk;
-              const updatingLights = chunk[lightsRenderedSymbol];
-
-              const lavaArray = Array(9);
-              const objectLightsArray = Array(9);
-              const etherArray = Array(9);
-              const blocksArray = Array(9);
-              const lightsArray = Array(9);
-              for (let doz = -1; doz <= 1; doz++) {
-                for (let dox = -1; dox <= 1; dox++) {
-                  const arrayIndex = _getLightsArrayIndex(dox + 1, doz + 1);
-
-                  const aox = ox + dox;
-                  const aoz = oz + doz;
-                  const chunk = zde.getChunk(aox, aoz);
-if (!chunk) { // XXX handle this
-  throw new Error('no neighbor chunk: ' + aox + ' : ' + aoz);
-}
-                  const uint32Buffer = chunk.getTerrainBuffer();
-                  const {ether, lava} = protocolUtils.parseTerrainData(uint32Buffer.buffer, uint32Buffer.byteOffset); // XXX can be reduced to only parse the needed fields
-                  lavaArray[arrayIndex] = lava;
-
-                  const objectLights = chunk.getLightBuffer();
-                  objectLightsArray[arrayIndex] = objectLights;
-
-                  etherArray[arrayIndex] = ether;
-
-                  const blocks = chunk.getBlockBuffer();
-                  blocksArray[arrayIndex] = blocks;
-
-                  let lights = chunk[lightsSymbol];
-                  if (!lights) {
-                    lights = new Uint8Array(NUM_CELLS_OVERSCAN * (NUM_CELLS_HEIGHT + 1) * NUM_CELLS_OVERSCAN);
-                    chunk[lightsSymbol] = lights;
-                  }
-                  lightsArray[arrayIndex] = lights;
-                }
-              }
-
-              Module._lght(
-                ox, oz,
-                minX, maxX, minY, maxY, minZ, maxZ,
-                +relight,
-                _alloc(lavaArray),
-                _alloc(objectLightsArray),
-                _alloc(etherArray),
-                _alloc(blocksArray),
-                _alloc(lightsArray),
-              );
-
-              lightsArray.unshadow();
-
-              _freeAll();
-            };
-
-            _decorateChunkLightsSub(oldChunk, x, y, z);
-          };
-          const _relightmap = () => {
-            const terrainBuffer = oldChunk.getTerrainBuffer();
-            const {positions} = oldChunk.chunkData.objects;
-            const {staticHeightfield} = protocolUtils.parseTerrainData(terrainBuffer.buffer, terrainBuffer.byteOffset);
-            const {[lightsSymbol]: lights} = oldChunk;
-
-            const numPositions = positions.length;
-            const {skyLightmaps, torchLightmaps} = oldChunk.chunkData.decorations.objects;
-
-            Module._lghtmap(
-              oldChunk.x,
-              oldChunk.z,
-              _alloc(positions),
-              numPositions,
-              _alloc(staticHeightfield),
-              _alloc(lights),
-              _alloc(skyLightmaps),
-              _alloc(torchLightmaps)
-            );
-
-            skyLightmaps.unshadow();
-            torchLightmaps.unshadow();
-
-            _freeAll();
-          };
           _retesselate();
-          _relight();
-          _relightmap();
+          _relight(oldChunk, x, y, z);
+          _relightmap(oldChunk);
 
           postMessage({
             type: 'chunkUpdate',
@@ -1530,47 +1544,6 @@ if (!chunk) { // XXX handle this
         .then(() => {
           const oldChunk = zde.getChunk(Math.floor(x / NUM_CELLS), Math.floor(z / NUM_CELLS));
 
-          const offsets = [];
-          const _alloc = b => {
-            if (Array.isArray(b)) {
-              const bs = b;
-              const offset = Module._malloc(bs.length * Uint32Array.BYTES_PER_ELEMENT);
-              offsets.push(offset);
-              const array = new Uint32Array(Module.HEAP8.buffer, Module.HEAP8.byteOffset + offset, bs.length);
-              for (let i = 0; i < bs.length; i++) {
-                const b = bs[i];
-                const offset = Module._malloc(b.byteLength);
-                offsets.push(offset);
-                const shadowBuffer = new b.constructor(Module.HEAP8.buffer, Module.HEAP8.byteOffset + offset, b.length);
-                shadowBuffer.set(b);
-                b.unshadow = () => {
-                  b.set(shadowBuffer);
-                };
-                array[i] = offset;
-              }
-              bs.unshadow = () => {
-                for (let i = 0; i < bs.length; i++) {
-                  bs[i].unshadow();
-                }
-              };
-              return offset;
-            } else {
-              const offset = Module._malloc(b.byteLength);
-              offsets.push(offset);
-              const shadowBuffer = new b.constructor(Module.HEAP8.buffer, Module.HEAP8.byteOffset + offset, b.length);
-              shadowBuffer.set(b);
-              b.unshadow = () => {
-                b.set(shadowBuffer);
-              };
-              return offset;
-            }
-          };
-          const _freeAll = () => {
-            for (let i = 0; i < offsets.length; i++) {
-              Module._free(offsets[i]);
-            }
-            offsets.length = 0;
-          };
           const _retesselate = () => {
             const oldTerrainBuffer = oldChunk.getTerrainBuffer();
             const oldChunkData = protocolUtils.parseTerrainData(oldTerrainBuffer.buffer, oldTerrainBuffer.byteOffset);
@@ -1690,102 +1663,9 @@ if (!chunk) { // XXX handle this
             Module._destroy_noiser(noiser);
             _freeAll();
           };
-          const _relight = () => {
-            const _decorateChunkLightsSub = (chunk, x, y, z) => _decorateChunkLightsRange(
-              chunk,
-              Math.max(x - 15, (chunk.x - 1) * NUM_CELLS),
-              Math.min(x + 15, (chunk.x + 2) * NUM_CELLS),
-              Math.max(y - 15, 0),
-              Math.min(y + 15, NUM_CELLS_HEIGHT),
-              Math.max(z - 15, (chunk.z - 1) * NUM_CELLS),
-              Math.min(z + 15, (chunk.z + 2) * NUM_CELLS),
-              true
-            );
-            const _decorateChunkLightsRange = (chunk, minX, maxX, minY, maxY, minZ, maxZ, relight) => {
-              const {x: ox, z: oz} = chunk;
-              const updatingLights = chunk[lightsRenderedSymbol];
-
-              const lavaArray = Array(9);
-              const objectLightsArray = Array(9);
-              const etherArray = Array(9);
-              const blocksArray = Array(9);
-              const lightsArray = Array(9);
-              for (let doz = -1; doz <= 1; doz++) {
-                for (let dox = -1; dox <= 1; dox++) {
-                  const arrayIndex = _getLightsArrayIndex(dox + 1, doz + 1);
-
-                  const aox = ox + dox;
-                  const aoz = oz + doz;
-                  const chunk = zde.getChunk(aox, aoz);
-if (!chunk) { // XXX handle this
-  throw new Error('no neighbor chunk: ' + aox + ' : ' + aoz);
-}
-                  const uint32Buffer = chunk.getTerrainBuffer();
-                  const {ether, lava} = protocolUtils.parseTerrainData(uint32Buffer.buffer, uint32Buffer.byteOffset); // XXX can be reduced to only parse the needed fields
-                  lavaArray[arrayIndex] = lava;
-
-                  const objectLights = chunk.getLightBuffer();
-                  objectLightsArray[arrayIndex] = objectLights;
-
-                  etherArray[arrayIndex] = ether;
-
-                  const blocks = chunk.getBlockBuffer();
-                  blocksArray[arrayIndex] = blocks;
-
-                  let lights = chunk[lightsSymbol];
-                  if (!lights) {
-                    lights = new Uint8Array(NUM_CELLS_OVERSCAN * (NUM_CELLS_HEIGHT + 1) * NUM_CELLS_OVERSCAN);
-                    chunk[lightsSymbol] = lights;
-                  }
-                  lightsArray[arrayIndex] = lights;
-                }
-              }
-
-              Module._lght(
-                ox, oz,
-                minX, maxX, minY, maxY, minZ, maxZ,
-                +relight,
-                _alloc(lavaArray),
-                _alloc(objectLightsArray),
-                _alloc(etherArray),
-                _alloc(blocksArray),
-                _alloc(lightsArray),
-              );
-
-              lightsArray.unshadow();
-
-              _freeAll();
-            };
-
-            _decorateChunkLightsSub(oldChunk, x, y, z);
-          };
-          const _relightmap = () => {
-            const terrainBuffer = oldChunk.getTerrainBuffer();
-            const {positions, staticHeightfield} = protocolUtils.parseTerrainData(terrainBuffer.buffer, terrainBuffer.byteOffset);
-            const {[lightsSymbol]: lights} = oldChunk;
-
-            const numPositions = positions.length;
-            const {skyLightmaps, torchLightmaps} = oldChunk.chunkData.decorations.terrain;
-
-            Module._lghtmap(
-              oldChunk.x,
-              oldChunk.z,
-              _alloc(positions),
-              numPositions,
-              _alloc(staticHeightfield),
-              _alloc(lights),
-              _alloc(skyLightmaps),
-              _alloc(torchLightmaps)
-            );
-
-            skyLightmaps.unshadow();
-            torchLightmaps.unshadow();
-
-            _freeAll();
-          };
           _retesselate();
-          _relight();
-          _relightmap();
+          _relight(oldChunk, x, y, z);
+          _relightmap(oldChunk);
 
           postMessage({
             type: 'chunkUpdate',
