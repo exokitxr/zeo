@@ -477,8 +477,11 @@ class Generator {
         generatorElement.getElevation = _getElevation;
         generatorElement.getBestElevation = _getBestElevation; */
         generatorElement.forEachChunk = fn => {
-          for (const index in chunker.chunks) {
-            fn(chunker.chunks[index]);
+          for (const index in mapChunkMeshes) {
+            const mapChunkMesh = mapChunkMeshes[index];
+            if (mapChunkMesh) {
+              fn(mapChunkMesh);
+            }
           }
         };
 
@@ -631,7 +634,7 @@ class Generator {
           }
 
           _requestGenerate(x, z, () => {
-            mapChunkMeshes[index] = true;
+            mapChunkMeshes[index] = chunk;
 
             _emit('add', chunk);
 
