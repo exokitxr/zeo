@@ -231,6 +231,224 @@ const _freeAll = () => {
   }
   offsets.length = 0;
 };
+const _retesselateTerrain = (chunk, x, y, z) => {
+  const oldTerrainBuffer = chunk.getTerrainBuffer();
+  const oldChunkData = protocolUtils.parseTerrainData(oldTerrainBuffer.buffer, oldTerrainBuffer.byteOffset);
+  const oldBiomes = oldChunkData.biomes.slice();
+  const oldElevations = oldChunkData.elevations.slice();
+  const oldEther = oldChunkData.ether.slice();
+  const oldWater = oldChunkData.water.slice();
+  const oldLava = oldChunkData.lava.slice();
+
+  const lx = x - (chunk.x * NUM_CELLS);
+  const lz = z - (chunk.z * NUM_CELLS);
+  const v = 1;
+  const newEther = Float32Array.from([lx, y, lz, v]);
+  const numNewEthers = newEther.length;
+
+  const {attributeRanges, indexRanges, heightfield, staticHeightfield, peeks} = slab;
+  const noiser = Module._make_noiser(murmur(DEFAULT_SEED));
+  Module._noiser_fill(
+    noiser,
+    chunk.x,
+    chunk.z,
+    _alloc(oldBiomes),
+    +false,
+    _alloc(oldElevations),
+    +false,
+    _alloc(oldEther),
+    +false,
+    _alloc(oldWater),
+    _alloc(oldLava),
+    +false,
+    _alloc(newEther),
+    numNewEthers,
+    _alloc(slab.positions),
+    _alloc(slab.indices),
+    _alloc(attributeRanges),
+    _alloc(indexRanges),
+    _alloc(heightfield),
+    _alloc(staticHeightfield),
+    _alloc(slab.colors),
+    _alloc(peeks)
+  );
+
+  oldBiomes.unshadow();
+  oldElevations.unshadow();
+  oldEther.unshadow();
+  oldWater.unshadow();
+  oldLava.unshadow();
+  slab.positions.unshadow();
+  slab.indices.unshadow();
+  attributeRanges.unshadow();
+  indexRanges.unshadow();
+  heightfield.unshadow();
+  staticHeightfield.unshadow();
+  slab.colors.unshadow();
+  peeks.unshadow();
+
+  const attributeIndex = attributeRanges[attributeRanges.length - 2] + attributeRanges[attributeRanges.length - 1];
+  const indexIndex = indexRanges[indexRanges.length - 2] + indexRanges[indexRanges.length - 1];
+  const positions = slab.positions.subarray(0, attributeIndex);
+  const indices = slab.indices.subarray(0, indexIndex);
+  const colors = new Float32Array(slab.colors.buffer, slab.colors.byteOffset, attributeIndex);
+
+  const geometries = Array(NUM_CHUNKS_HEIGHT);
+  for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
+    geometries[i] = {
+      /* attributeRange: {
+        landStart: attributeRanges[i * 6 + 0],
+        landCount: attributeRanges[i * 6 + 1],
+        waterStart: attributeRanges[i * 6 + 2],
+        waterCount: attributeRanges[i * 6 + 3],
+        lavaStart: attributeRanges[i * 6 + 4],
+        lavaCount: attributeRanges[i * 6 + 5],
+      }, */
+      indexRange: {
+        landStart: indexRanges[i * 6 + 0],
+        landCount: indexRanges[i * 6 + 1],
+        waterStart: indexRanges[i * 6 + 2],
+        waterCount: indexRanges[i * 6 + 3],
+        lavaStart: indexRanges[i * 6 + 4],
+        lavaCount: indexRanges[i * 6 + 5],
+      },
+      boundingSphere: Float32Array.from([
+        chunk.x * NUM_CELLS + NUM_CELLS_HALF,
+        i * NUM_CELLS + NUM_CELLS_HALF,
+        chunk.z * NUM_CELLS + NUM_CELLS_HALF,
+        NUM_CELLS_CUBE,
+      ]),
+      peeks: slab.peeksArray[i],
+    };
+  }
+
+  const chunkData = {
+    positions,
+    colors,
+    indices,
+    geometries,
+    heightfield,
+    staticHeightfield,
+    biomes: oldBiomes,
+    elevations: oldElevations,
+    ether: oldEther,
+    water: oldWater,
+    lava: oldLava,
+  };
+
+  const terrainBuffer = chunk.getTerrainBuffer();
+  protocolUtils.stringifyTerrainData(chunkData, terrainBuffer.buffer, terrainBuffer.byteOffset);
+
+  chunk.chunkData.terrain = chunkData;
+  chunk.chunkData.decorations.terrain = {
+    skyLightmaps: new Uint8Array(chunkData.positions.length / 3),
+    torchLightmaps: new Uint8Array(chunkData.positions.length / 3),
+  };
+  chunk[terrainDecorationsSymbol] = false;
+  mapChunkMeshes[_getChunkIndex(x, z)] = null;
+
+  Module._destroy_noiser(noiser);
+  _freeAll();
+};
+const _retesselateObjects = chunk => {
+  _makeGeometeriesBuffer.reset();
+  const geometriesPositions = _makeGeometeriesBuffer(Float32Array);
+  const geometriesUvs = _makeGeometeriesBuffer(Float32Array);
+  const geometriesSsaos = _makeGeometeriesBuffer(Uint8Array);
+  const geometriesFrames = _makeGeometeriesBuffer(Float32Array);
+  const geometriesObjectIndices = _makeGeometeriesBuffer(Float32Array);
+  const geometriesIndices = _makeGeometeriesBuffer(Uint32Array);
+  const geometriesObjects = _makeGeometeriesBuffer(Uint32Array);
+
+  const resultSize = 7 * 8;
+  const resultOffset = Module._malloc(resultSize * 4);
+  offsets.push(resultOffset);
+  const result = new Uint32Array(Module.HEAP8.buffer, Module.HEAP8.byteOffset + resultOffset, resultSize);
+  Module._objectize(
+    _alloc(chunk.getObjectBuffer()),
+    _alloc(geometriesBuffer),
+    _alloc(geometryTypes),
+    _alloc(chunk.getBlockBuffer()),
+    _alloc(blockTypes),
+    _alloc(Int32Array.from([NUM_CELLS, NUM_CELLS, NUM_CELLS])),
+    _alloc(transparentVoxels),
+    _alloc(translucentVoxels),
+    _alloc(faceUvs),
+    _alloc(Float32Array.from([chunk.x * NUM_CELLS, 0, chunk.z * NUM_CELLS])),
+    _alloc(geometriesPositions),
+    _alloc(geometriesUvs),
+    _alloc(geometriesSsaos),
+    _alloc(geometriesFrames),
+    _alloc(geometriesObjectIndices),
+    _alloc(geometriesIndices),
+    _alloc(geometriesObjects),
+    resultOffset
+  );
+
+  const numNewPositions = result.subarray(NUM_CHUNKS_HEIGHT * 0, NUM_CHUNKS_HEIGHT * 1);
+  const numNewUvs = result.subarray(NUM_CHUNKS_HEIGHT * 1, NUM_CHUNKS_HEIGHT * 2);
+  const numNewSsaos = result.subarray(NUM_CHUNKS_HEIGHT * 2, NUM_CHUNKS_HEIGHT * 3);
+  const numNewFrames = result.subarray(NUM_CHUNKS_HEIGHT * 3, NUM_CHUNKS_HEIGHT * 4);
+  const numNewObjectIndices = result.subarray(NUM_CHUNKS_HEIGHT * 4, NUM_CHUNKS_HEIGHT * 5);
+  const numNewIndices = result.subarray(NUM_CHUNKS_HEIGHT * 5, NUM_CHUNKS_HEIGHT * 6);
+  const numNewObjects = result.subarray(NUM_CHUNKS_HEIGHT * 6, NUM_CHUNKS_HEIGHT * 7);
+
+  geometriesPositions.unshadow();
+  geometriesUvs.unshadow();
+  geometriesSsaos.unshadow();
+  geometriesFrames.unshadow();
+  geometriesObjectIndices.unshadow();
+  geometriesIndices.unshadow();
+  geometriesObjects.unshadow();
+
+  const localGeometries = Array(NUM_CHUNKS_HEIGHT);
+  for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
+    const attributeRangeStart = i === 0 ? 0 : numNewPositions[i - 1];
+    const attributeRangeCount = numNewPositions[i] - attributeRangeStart;
+    const indexRangeStart = i === 0 ? 0 : numNewIndices[i - 1];
+    const indexRangeCount = numNewIndices[i] - indexRangeStart;
+
+    const boundingSphere = boundingSpheres[i];
+    boundingSphere[0] = chunk.x * NUM_CELLS + NUM_CELLS_HALF;
+    boundingSphere[1] = i * NUM_CELLS + NUM_CELLS_HALF;
+    boundingSphere[2] = chunk.z * NUM_CELLS + NUM_CELLS_HALF;
+    boundingSphere[3] = NUM_CELLS_CUBE;
+
+    localGeometries[i] = {
+      attributeRange: {
+        start: attributeRangeStart,
+        count: attributeRangeCount,
+      },
+      indexRange: {
+        start: indexRangeStart,
+        count: indexRangeCount,
+      },
+      boundingSphere,
+    };
+  };
+  const chunkData = {
+    positions: new Float32Array(geometriesPositions.buffer, geometriesPositions.byteOffset, numNewPositions[NUM_CHUNKS_HEIGHT - 1]),
+    uvs: new Float32Array(geometriesUvs.buffer, geometriesUvs.byteOffset, numNewUvs[NUM_CHUNKS_HEIGHT - 1]),
+    ssaos: new Uint8Array(geometriesSsaos.buffer, geometriesSsaos.byteOffset, numNewSsaos[NUM_CHUNKS_HEIGHT - 1]),
+    frames: new Float32Array(geometriesFrames.buffer, geometriesFrames.byteOffset, numNewFrames[NUM_CHUNKS_HEIGHT - 1]),
+    objectIndices: new Float32Array(geometriesObjectIndices.buffer, geometriesObjectIndices.byteOffset, numNewObjectIndices[NUM_CHUNKS_HEIGHT - 1]),
+    indices: new Uint32Array(geometriesIndices.buffer, geometriesIndices.byteOffset, numNewIndices[NUM_CHUNKS_HEIGHT - 1]),
+    objects: new Uint32Array(geometriesObjects.buffer, geometriesObjects.byteOffset, numNewObjects[NUM_CHUNKS_HEIGHT - 1]),
+    geometries: localGeometries,
+  };
+
+  const geometryBuffer = chunk.getGeometryBuffer();
+  protocolUtils.stringifyGeometry(chunkData, geometryBuffer.buffer, geometryBuffer.byteOffset);
+
+  chunk.chunkData.objects = chunkData;
+  chunk.chunkData.decorations.objects = {
+    skyLightmaps: new Uint8Array(chunkData.positions.length / 3),
+    torchLightmaps: new Uint8Array(chunkData.positions.length / 3),
+  };
+  chunk[objectsDecorationsSymbol] = false;
+
+  _freeAll();
+};
 const _relight = (chunk, x, y, z) => {
   const _decorateChunkLightsSub = (chunk, x, y, z) => _decorateChunkLightsRange(
     chunk,
@@ -1270,106 +1488,7 @@ self.onmessage = e => {
         connection.clearBlock(x, y, z, () => {
           oldChunk.clearBlock(x - ox * NUM_CELLS, y, z - oz * NUM_CELLS);
 
-          const _retesselate = () => {
-            _makeGeometeriesBuffer.reset();
-            const geometriesPositions = _makeGeometeriesBuffer(Float32Array);
-            const geometriesUvs = _makeGeometeriesBuffer(Float32Array);
-            const geometriesSsaos = _makeGeometeriesBuffer(Uint8Array);
-            const geometriesFrames = _makeGeometeriesBuffer(Float32Array);
-            const geometriesObjectIndices = _makeGeometeriesBuffer(Float32Array);
-            const geometriesIndices = _makeGeometeriesBuffer(Uint32Array);
-            const geometriesObjects = _makeGeometeriesBuffer(Uint32Array);
-
-            const resultSize = 7 * 8;
-            const resultOffset = Module._malloc(resultSize * 4);
-            offsets.push(resultOffset);
-            const result = new Uint32Array(Module.HEAP8.buffer, Module.HEAP8.byteOffset + resultOffset, resultSize);
-            Module._objectize(
-              _alloc(oldChunk.getObjectBuffer()),
-              _alloc(geometriesBuffer),
-              _alloc(geometryTypes),
-              _alloc(oldChunk.getBlockBuffer()),
-              _alloc(blockTypes),
-              _alloc(Int32Array.from([NUM_CELLS, NUM_CELLS, NUM_CELLS])),
-              _alloc(transparentVoxels),
-              _alloc(translucentVoxels),
-              _alloc(faceUvs),
-              _alloc(Float32Array.from([ox * NUM_CELLS, 0, oz * NUM_CELLS])),
-              _alloc(geometriesPositions),
-              _alloc(geometriesUvs),
-              _alloc(geometriesSsaos),
-              _alloc(geometriesFrames),
-              _alloc(geometriesObjectIndices),
-              _alloc(geometriesIndices),
-              _alloc(geometriesObjects),
-              resultOffset
-            );
-
-            const numNewPositions = result.subarray(NUM_CHUNKS_HEIGHT * 0, NUM_CHUNKS_HEIGHT * 1);
-            const numNewUvs = result.subarray(NUM_CHUNKS_HEIGHT * 1, NUM_CHUNKS_HEIGHT * 2);
-            const numNewSsaos = result.subarray(NUM_CHUNKS_HEIGHT * 2, NUM_CHUNKS_HEIGHT * 3);
-            const numNewFrames = result.subarray(NUM_CHUNKS_HEIGHT * 3, NUM_CHUNKS_HEIGHT * 4);
-            const numNewObjectIndices = result.subarray(NUM_CHUNKS_HEIGHT * 4, NUM_CHUNKS_HEIGHT * 5);
-            const numNewIndices = result.subarray(NUM_CHUNKS_HEIGHT * 5, NUM_CHUNKS_HEIGHT * 6);
-            const numNewObjects = result.subarray(NUM_CHUNKS_HEIGHT * 6, NUM_CHUNKS_HEIGHT * 7);
-
-            geometriesPositions.unshadow();
-            geometriesUvs.unshadow();
-            geometriesSsaos.unshadow();
-            geometriesFrames.unshadow();
-            geometriesObjectIndices.unshadow();
-            geometriesIndices.unshadow();
-            geometriesObjects.unshadow();
-
-            const localGeometries = Array(NUM_CHUNKS_HEIGHT);
-            for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
-              const attributeRangeStart = i === 0 ? 0 : numNewPositions[i - 1];
-              const attributeRangeCount = numNewPositions[i] - attributeRangeStart;
-              const indexRangeStart = i === 0 ? 0 : numNewIndices[i - 1];
-              const indexRangeCount = numNewIndices[i] - indexRangeStart;
-
-              const boundingSphere = boundingSpheres[i];
-              boundingSphere[0] = oldChunk.x * NUM_CELLS + NUM_CELLS_HALF;
-              boundingSphere[1] = i * NUM_CELLS + NUM_CELLS_HALF;
-              boundingSphere[2] = oldChunk.z * NUM_CELLS + NUM_CELLS_HALF;
-              boundingSphere[3] = NUM_CELLS_CUBE;
-
-              localGeometries[i] = {
-                attributeRange: {
-                  start: attributeRangeStart,
-                  count: attributeRangeCount,
-                },
-                indexRange: {
-                  start: indexRangeStart,
-                  count: indexRangeCount,
-                },
-                boundingSphere,
-              };
-            };
-            const chunkData = {
-              positions: new Float32Array(geometriesPositions.buffer, geometriesPositions.byteOffset, numNewPositions[NUM_CHUNKS_HEIGHT - 1]),
-              uvs: new Float32Array(geometriesUvs.buffer, geometriesUvs.byteOffset, numNewUvs[NUM_CHUNKS_HEIGHT - 1]),
-              ssaos: new Uint8Array(geometriesSsaos.buffer, geometriesSsaos.byteOffset, numNewSsaos[NUM_CHUNKS_HEIGHT - 1]),
-              frames: new Float32Array(geometriesFrames.buffer, geometriesFrames.byteOffset, numNewFrames[NUM_CHUNKS_HEIGHT - 1]),
-              objectIndices: new Float32Array(geometriesObjectIndices.buffer, geometriesObjectIndices.byteOffset, numNewObjectIndices[NUM_CHUNKS_HEIGHT - 1]),
-              indices: new Uint32Array(geometriesIndices.buffer, geometriesIndices.byteOffset, numNewIndices[NUM_CHUNKS_HEIGHT - 1]),
-              objects: new Uint32Array(geometriesObjects.buffer, geometriesObjects.byteOffset, numNewObjects[NUM_CHUNKS_HEIGHT - 1]),
-              geometries: localGeometries,
-            };
-
-            const geometryBuffer = oldChunk.getGeometryBuffer();
-            protocolUtils.stringifyGeometry(chunkData, geometryBuffer.buffer, geometryBuffer.byteOffset);
-
-            oldChunk.chunkData.objects = chunkData;
-            oldChunk.chunkData.decorations.objects = {
-              skyLightmaps: new Uint8Array(chunkData.positions.length / 3),
-              torchLightmaps: new Uint8Array(chunkData.positions.length / 3),
-            };
-            oldChunk[objectsDecorationsSymbol] = false;
-
-            _freeAll();
-          };
-          _retesselate();
+          _retesselateObjects(oldChunk);
           _relight(oldChunk, x, y, z);
           _relightmap(oldChunk);
 
@@ -1544,126 +1663,7 @@ self.onmessage = e => {
         .then(() => {
           const oldChunk = zde.getChunk(Math.floor(x / NUM_CELLS), Math.floor(z / NUM_CELLS));
 
-          const _retesselate = () => {
-            const oldTerrainBuffer = oldChunk.getTerrainBuffer();
-            const oldChunkData = protocolUtils.parseTerrainData(oldTerrainBuffer.buffer, oldTerrainBuffer.byteOffset);
-            const oldBiomes = oldChunkData.biomes.slice();
-            const oldElevations = oldChunkData.elevations.slice();
-            const oldEther = oldChunkData.ether.slice();
-            const oldWater = oldChunkData.water.slice();
-            const oldLava = oldChunkData.lava.slice();
-
-            const lx = x - (oldChunk.x * NUM_CELLS);
-            const lz = z - (oldChunk.z * NUM_CELLS);
-            const v = 1;
-            const newEther = Float32Array.from([lx, y, lz, v]);
-            const numNewEthers = newEther.length;
-
-            const {attributeRanges, indexRanges, heightfield, staticHeightfield, peeks} = slab;
-            const noiser = Module._make_noiser(murmur(DEFAULT_SEED));
-            Module._noiser_fill(
-              noiser,
-              oldChunk.x,
-              oldChunk.z,
-              _alloc(oldBiomes),
-              +false,
-              _alloc(oldElevations),
-              +false,
-              _alloc(oldEther),
-              +false,
-              _alloc(oldWater),
-              _alloc(oldLava),
-              +false,
-              _alloc(newEther),
-              numNewEthers,
-              _alloc(slab.positions),
-              _alloc(slab.indices),
-              _alloc(attributeRanges),
-              _alloc(indexRanges),
-              _alloc(heightfield),
-              _alloc(staticHeightfield),
-              _alloc(slab.colors),
-              _alloc(peeks)
-            );
-
-            oldBiomes.unshadow();
-            oldElevations.unshadow();
-            oldEther.unshadow();
-            oldWater.unshadow();
-            oldLava.unshadow();
-            slab.positions.unshadow();
-            slab.indices.unshadow();
-            attributeRanges.unshadow();
-            indexRanges.unshadow();
-            heightfield.unshadow();
-            staticHeightfield.unshadow();
-            slab.colors.unshadow();
-            peeks.unshadow();
-
-            const attributeIndex = attributeRanges[attributeRanges.length - 2] + attributeRanges[attributeRanges.length - 1];
-            const indexIndex = indexRanges[indexRanges.length - 2] + indexRanges[indexRanges.length - 1];
-            const positions = slab.positions.subarray(0, attributeIndex);
-            const indices = slab.indices.subarray(0, indexIndex);
-            const colors = new Float32Array(slab.colors.buffer, slab.colors.byteOffset, attributeIndex);
-
-            const geometries = Array(NUM_CHUNKS_HEIGHT);
-            for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
-              geometries[i] = {
-                /* attributeRange: {
-                  landStart: attributeRanges[i * 6 + 0],
-                  landCount: attributeRanges[i * 6 + 1],
-                  waterStart: attributeRanges[i * 6 + 2],
-                  waterCount: attributeRanges[i * 6 + 3],
-                  lavaStart: attributeRanges[i * 6 + 4],
-                  lavaCount: attributeRanges[i * 6 + 5],
-                }, */
-                indexRange: {
-                  landStart: indexRanges[i * 6 + 0],
-                  landCount: indexRanges[i * 6 + 1],
-                  waterStart: indexRanges[i * 6 + 2],
-                  waterCount: indexRanges[i * 6 + 3],
-                  lavaStart: indexRanges[i * 6 + 4],
-                  lavaCount: indexRanges[i * 6 + 5],
-                },
-                boundingSphere: Float32Array.from([
-                  oldChunk.x * NUM_CELLS + NUM_CELLS_HALF,
-                  i * NUM_CELLS + NUM_CELLS_HALF,
-                  oldChunk.z * NUM_CELLS + NUM_CELLS_HALF,
-                  NUM_CELLS_CUBE,
-                ]),
-                peeks: slab.peeksArray[i],
-              };
-            }
-
-            const chunkData = {
-              positions,
-              colors,
-              indices,
-              geometries,
-              heightfield,
-              staticHeightfield,
-              biomes: oldBiomes,
-              elevations: oldElevations,
-              ether: oldEther,
-              water: oldWater,
-              lava: oldLava,
-            };
-
-            const terrainBuffer = oldChunk.getTerrainBuffer();
-            protocolUtils.stringifyTerrainData(chunkData, terrainBuffer.buffer, terrainBuffer.byteOffset);
-
-            oldChunk.chunkData.terrain = chunkData;
-            oldChunk.chunkData.decorations.terrain = {
-              skyLightmaps: new Uint8Array(chunkData.positions.length / 3),
-              torchLightmaps: new Uint8Array(chunkData.positions.length / 3),
-            };
-            oldChunk[terrainDecorationsSymbol] = false;
-            mapChunkMeshes[_getChunkIndex(x, z)] = null;
-
-            Module._destroy_noiser(noiser);
-            _freeAll();
-          };
-          _retesselate();
+          _retesselateTerrain(oldChunk, x, y, z);
           _relight(oldChunk, x, y, z);
           _relightmap(oldChunk);
 
