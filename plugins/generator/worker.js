@@ -1085,7 +1085,6 @@ const _decorateTerrainChunk = (chunk, index, numPositions, numIndices) => {
       const indexOffset = index * numIndices;
 
       trackedMapChunkMeshes.array[i] = {
-        offset: new THREE.Vector3(x, i, z),
         indexRange: {
           landStart: indexRange.landStart + indexOffset,
           landCount: indexRange.landCount,
