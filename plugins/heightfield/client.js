@@ -690,7 +690,7 @@ class Heightfield {
             const triangle = new THREE.Triangle(a, b, c);
             const baryCoord = new THREE.Vector3();
             const _getHeightfieldIndex = (x, z) => (x + (z * (NUM_CELLS + 1))) * HEIGHTFIELD_DEPTH;
-            const _getElevation = (x, z) => {
+            /* const _getElevation = (x, z) => {
               const ox = Math.floor(x / NUM_CELLS);
               const oz = Math.floor(z / NUM_CELLS);
               const mapChunkMesh = mapChunkMeshes[_getChunkIndex(ox, oz)];
@@ -737,7 +737,7 @@ class Heightfield {
               return baryCoord.x * ea +
                 baryCoord.y * eb +
                 baryCoord.z * ec;
-            };
+            }; */
             const _getBestHeightfieldTriangleElevation = (heightfield, x, z, y) => {
               const ax = Math.floor(x);
               const az = Math.floor(z);
