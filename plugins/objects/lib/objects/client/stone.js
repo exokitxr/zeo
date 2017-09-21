@@ -35,7 +35,7 @@ const stone = objectApi => {
           const {side} = e;
 
           if (grabbable.getGrabberSide() === side) {
-            const hoveredObject = objectApi.getHoveredObject(side);
+            /* const hoveredObject = objectApi.getHoveredObject(side);
 
             if (hoveredObject && (hoveredObject.is('stone-wall') || hoveredObject.is('stone-wall-2'))) {
               localVector.copy(hoveredObject.position).add(upVector);
@@ -62,7 +62,10 @@ const stone = objectApi => {
               objectApi.addObject('stone-wall', localVector, localQuaternion);
 
               items.destroyItem(grabbable);
-            }
+            } */
+
+            objectApi.setBlock(Math.floor(grabbable.position.x), Math.floor(grabbable.position.y), Math.floor(grabbable.position.z), 'house-stone');
+            items.destroyItem(grabbable);
 
             e.stopImmediatePropagation();
           }
@@ -111,7 +114,7 @@ const stone = objectApi => {
     };
     objectApi.registerObject(stoneObjectApi);
 
-    const stoneWallObjectApi = {
+    /* const stoneWallObjectApi = {
       object: 'stone-wall',
       gripCallback(id, side, x, z, objectIndex) {
         const itemId = _makeId();
@@ -163,7 +166,7 @@ const stone = objectApi => {
         objectApi.removeObject(x, z, objectIndex);
       },
     };
-    objectApi.registerObject(stoneWall2ObjectApi);
+    objectApi.registerObject(stoneWall2ObjectApi); */
 
     accept(() => {
       items.unregisterItem(this, stoneItemApi);

@@ -1367,34 +1367,32 @@ self.onmessage = e => {
       const {name, position: positionArray, rotation: rotationArray, value} = data;
 
       const x = Math.floor(positionArray[0] / NUM_CELLS);
+      const y = Math.floor(positionArray[1]);
       const z = Math.floor(positionArray[2] / NUM_CELLS);
       const oldChunk = zde.getChunk(x, z);
       if (oldChunk) {
         const n = murmur(name);
         const matrix = positionArray.concat(rotationArray).concat(oneVector.toArray());
-        // const position = new THREE.Vector3().fromArray(positionArray);
-        // const rotation = new THREE.Quaternion().fromArray(rotationArray);
 
         connection.addObject(x, z, n, matrix, value, objectIndex => {
-          const {offsets: {index, numPositions, numObjectIndices, numIndices}} = oldChunk;
-          _requestObjectsChunk(x, z, index, numPositions, numObjectIndices, numIndices)
-            .then(newChunk => {
-              zde.removeChunk(x, z);
-              zde.pushChunk(newChunk);
+          oldChunk.addObject(n, matrix, value);
 
-              postMessage({
-                type: 'chunkUpdate',
-                args: [x, z],
-              });
+          _retesselateObjects(oldChunk);
+          _relight(oldChunk, x, y, z);
+          _relightmap(oldChunk);
 
-              const objectApi = objectApis[n];
-              if (objectApi && objectApi.added) {
-                postMessage({
-                  type: 'objectAdded',
-                  args: [n, x, z, objectIndex, positionArray, rotationArray, value],
-                });
-              }
+          postMessage({
+            type: 'chunkUpdate',
+            args: [x, z],
+          });
+
+          const objectApi = objectApis[n];
+          if (objectApi && objectApi.added) {
+            postMessage({
+              type: 'objectAdded',
+              args: [n, x, z, objectIndex, positionArray, rotationArray, value],
             });
+          }
         });
       }
       break;
@@ -1404,27 +1402,30 @@ self.onmessage = e => {
 
       const oldChunk = zde.getChunk(x, z);
       if (oldChunk) {
-        connection.removeObject(x, z, objectIndex, n => {
-          const {offsets: {index, numPositions, numObjectIndices, numIndices}} = oldChunk;
-          _requestObjectsChunk(x, z, index, numPositions, numObjectIndices, numIndices)
-            .then(newChunk => {
-              zde.removeChunk(x, z);
-              zde.pushChunk(newChunk);
+        const oldObject = oldChunk.getObject(objectIndex);
+        if (oldObject) {
+          const y = Math.floor(oldObject[1][1]);
+          connection.removeObject(x, z, objectIndex, n => {
+            oldChunk.removeObject(oldObject);
 
-              postMessage({
-                type: 'chunkUpdate',
-                args: [xf, z],
-              });
+            _retesselateObjects(oldChunk);
+            _relight(oldChunk, x, y, z);
+            _relightmap(oldChunk);
 
-              const objectApi = objectApis[n];
-              if (objectApi && objectApi.removed) {
-                postMessage({
-                  type: 'objectRemoved',
-                  args: [n, x, z, objectIndex],
-                });
-              }
+            postMessage({
+              type: 'chunkUpdate',
+              args: [x, z],
             });
-        });
+
+            const objectApi = objectApis[n];
+            if (objectApi && objectApi.removed) {
+              postMessage({
+                type: 'objectRemoved',
+                args: [n, x, z, objectIndex],
+              });
+            }
+          });
+        }
       }
       break;
     }
@@ -1458,22 +1459,21 @@ self.onmessage = e => {
       const oldChunk = zde.getChunk(ox, oz);
       if (oldChunk) {
         connection.setBlock(x, y, z, v, () => {
-          const {offsets: {index, numPositions, numObjectIndices, numIndices}} = oldChunk;
-          _requestObjectsChunk(ox, oz, index, numPositions, numObjectIndices, numIndices)
-            .then(newChunk => {
-              zde.removeChunk(ox, oz);
-              zde.pushChunk(newChunk);
+          oldChunk.setBlock(x - ox * NUM_CELLS, y, z - oz * NUM_CELLS, v);
 
-              postMessage({
-                type: 'chunkUpdate',
-                args: [ox, oz],
-              });
+          _retesselateObjects(oldChunk);
+          _relight(oldChunk, x, y, z);
+          _relightmap(oldChunk);
 
-              /* postMessage({ // XXX enable this for registered listeners
-                type: 'blockSet',
-                args: [x, y, z, v],
-              }); */
-            });
+          postMessage({
+            type: 'chunkUpdate',
+            args: [ox, oz],
+          });
+
+          /* postMessage({ // XXX enable this for registered listeners
+            type: 'blockSet',
+            args: [x, y, z, v],
+          }); */
         });
       }
       break;
@@ -1502,18 +1502,6 @@ self.onmessage = e => {
             args: [x, y, z],
           }); */
         });
-
-      /* const {offsets: {index, numPositions, numObjectIndices, numIndices}} = oldChunk;
-      _requestObjectsChunk(ox, oz, index, numPositions, numObjectIndices, numIndices)
-        .then(newChunk => {
-          zde.removeChunk(ox, oz);
-          zde.pushChunk(newChunk);
-
-          postMessage({
-            type: 'chunkUpdate',
-            args: [ox, oz],
-          });
-        }); */
       }
       break;
     }

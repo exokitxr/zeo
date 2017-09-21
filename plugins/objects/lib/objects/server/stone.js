@@ -28,7 +28,7 @@ const stone = objectApi => {
         return geometry;
       })();
       objectApi.registerGeometry('stone', stoneGeometry);
-      const stoneWallGeometry = (() => {
+      /* const stoneWallGeometry = (() => {
         const stoneUvs = objectApi.getUv('stone');
         const uvWidth = stoneUvs[2] - stoneUvs[0];
         const uvHeight = stoneUvs[3] - stoneUvs[1];
@@ -72,7 +72,7 @@ const stone = objectApi => {
 
         return geometry;
       })();
-      objectApi.registerGeometry('stone-wall-2', stoneWall2Geometry);
+      objectApi.registerGeometry('stone-wall-2', stoneWall2Geometry); */
 
       objectApi.registerGenerator('stone', chunk => {
         const localVector = new THREE.Vector3();
