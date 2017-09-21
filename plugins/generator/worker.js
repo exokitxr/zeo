@@ -318,11 +318,11 @@ const _retesselateTerrain = (chunk, x, y, z) => {
         chunk.z * NUM_CELLS + NUM_CELLS_HALF,
         NUM_CELLS_CUBE,
       ]),
-      peeks: slab.peeksArray[i],
+      peeks: slab.peeksArray[i].slice(),
     };
   }
 
-  const chunkData = {
+  const chunkDataSpec = {
     positions,
     colors,
     indices,
@@ -337,8 +337,9 @@ const _retesselateTerrain = (chunk, x, y, z) => {
   };
 
   const terrainBuffer = chunk.getTerrainBuffer();
-  protocolUtils.stringifyTerrainData(chunkData, terrainBuffer.buffer, terrainBuffer.byteOffset);
+  protocolUtils.stringifyTerrainData(chunkDataSpec, terrainBuffer.buffer, terrainBuffer.byteOffset);
 
+  const chunkData = protocolUtils.parseTerrainData(terrainBuffer.buffer, terrainBuffer.byteOffset);
   chunk.chunkData.terrain = chunkData;
   chunk.chunkData.decorations.terrain = {
     skyLightmaps: new Uint8Array(chunkData.positions.length / 3),
@@ -426,7 +427,7 @@ const _retesselateObjects = chunk => {
       boundingSphere,
     };
   };
-  const chunkData = {
+  const chunkDataSpec = {
     positions: new Float32Array(geometriesPositions.buffer, geometriesPositions.byteOffset, numNewPositions[NUM_CHUNKS_HEIGHT - 1]),
     uvs: new Float32Array(geometriesUvs.buffer, geometriesUvs.byteOffset, numNewUvs[NUM_CHUNKS_HEIGHT - 1]),
     ssaos: new Uint8Array(geometriesSsaos.buffer, geometriesSsaos.byteOffset, numNewSsaos[NUM_CHUNKS_HEIGHT - 1]),
@@ -438,8 +439,9 @@ const _retesselateObjects = chunk => {
   };
 
   const geometryBuffer = chunk.getGeometryBuffer();
-  protocolUtils.stringifyGeometry(chunkData, geometryBuffer.buffer, geometryBuffer.byteOffset);
+  protocolUtils.stringifyGeometry(chunkDataSpec, geometryBuffer.buffer, geometryBuffer.byteOffset);
 
+  const chunkData = protocolUtils.parseGeometry(geometryBuffer.buffer, geometryBuffer.byteOffset);
   chunk.chunkData.objects = chunkData;
   chunk.chunkData.decorations.objects = {
     skyLightmaps: new Uint8Array(chunkData.positions.length / 3),
