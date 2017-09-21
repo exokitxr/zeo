@@ -29,13 +29,16 @@ const objectsTesselatorLib = require('./objects-tesselator');
 const NUM_CELLS_CUBE = Math.sqrt((NUM_CELLS_HALF + 16) * (NUM_CELLS_HALF + 16) * 3); // larger than the actual bounding box to account for geometry overflow
 const NUM_VOXELS_CHUNK_HEIGHT = BLOCK_BUFFER_SIZE / 4 / NUM_CHUNKS_HEIGHT; */
 
+const DIRECTIONS = [
+  [-1, -1],
+  [-1, 1],
+  [1, -1],
+  [1, 1],
+];
+
 const lightsSymbol = Symbol();
 const lightsRenderedSymbol = Symbol();
 const lightmapsSymbol = Symbol();
-
-const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
-// const _getLightsIndex = (x, y, z) => x + y * NUM_CELLS_OVERSCAN + z * NUM_CELLS_OVERSCAN * (NUM_CELLS_HEIGHT + 1);
-const _getLightsArrayIndex = (x, z) => x + z * 3;
 
 class Generator {
   constructor(archae) {
@@ -50,10 +53,11 @@ class Generator {
     const {THREE} = three;
     const {mod} = jsUtils;
     const {murmur} = hashUtils;
-    const {alea, vxl} = randomUtils;
+    const {alea, vxlPath, vxl} = randomUtils;
     const {jimp} = imageUtils;
 
     const geometriesBuffer = new Uint8Array(NUM_POSITIONS_CHUNK);
+    geometriesBuffer.version = 0;
     const geometryTypes = new Uint32Array(4096);
     let geometriesIndex = 0;
     let geometriesOffset = 0;
@@ -88,13 +92,17 @@ class Generator {
     const texturesPngDataPath = path.join(dirname, dataDirectory, 'textures.png');
     const texturesJsonDataPath = path.join(dirname, dataDirectory, 'textures.json');
 
+    const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
+    // const _getLightsIndex = (x, y, z) => x + y * NUM_CELLS_OVERSCAN + z * NUM_CELLS_OVERSCAN * (NUM_CELLS_HEIGHT + 1);
+    const _getLightsArrayIndex = (x, z) => x + z * 3;
+
     const _generateChunk = chunk => {
       _generateChunkTerrain(chunk);
       _generateChunkObjects(chunk);
     };
-    const _generateChunkTerrain = chunk => {
+    const _generateChunkTerrain = (chunk, opts) => {
       const uint32Buffer = chunk.getTerrainBuffer();
-      protocolUtils.stringifyTerrainData(terrainTesselator.generate(chunk.x, chunk.z), uint32Buffer.buffer, uint32Buffer.byteOffset);
+      protocolUtils.stringifyTerrainData(terrainTesselator.generate(chunk.x, chunk.z, opts), uint32Buffer.buffer, uint32Buffer.byteOffset);
     };
     const _generateChunkObjects = chunk => {
       for (let i = 0; i < generators.length; i++) {
@@ -725,12 +733,12 @@ class Generator {
 
         function serveObjectsObjectizeJs(req, res, next) {
           res.type('application/javascript');
-          fs.createReadStream('/home/k/vxl/build/wasm/objectize.js').pipe(res);
+          fs.createReadStream(path.join(vxlPath, 'bin', 'objectize.js')).pipe(res);
         }
         app.get('/archae/objects/objectize.js', serveObjectsObjectizeJs);
         function serveObjectsObjectizeWasm(req, res, next) {
           res.type('application/octret-stream');
-          fs.createReadStream('/home/k/vxl/build/wasm/objectize.wasm').pipe(res);
+          fs.createReadStream(path.join(vxlPath, 'bin', 'objectize.wasm')).pipe(res);
         }
         app.get('/archae/objects/objectize.wasm', serveObjectsObjectizeWasm);
         function serveObjectsTemplates(req, res, next) {
@@ -742,7 +750,7 @@ class Generator {
           res.write(new Buffer(faceUvs.buffer, faceUvs.byteOffset, faceUvs.byteLength));
           res.end();
         }
-        app.get('/archae/objects/templates.dat', serveObjectsTemplates);
+        app.get('/archae/objects/geometry.bin', serveObjectsTemplates);
 
         function serveGeneratorChunks(req, res, next) {
           const {query: {x: xs, z: zs}} = req;
@@ -764,6 +772,7 @@ class Generator {
               .then(chunk => {
                 res.type('application/octet-stream');
                 res.set('Texture-Atlas-Version', textureImg.version);
+                res.set('Geometry-Version', geometriesBuffer.version);
 
                 const terrainBuffer = chunk.getTerrainBuffer();
                 res.write(new Buffer(terrainBuffer.buffer, terrainBuffer.byteOffset, terrainBuffer.byteLength));
@@ -799,7 +808,6 @@ class Generator {
         app.get('/archae/generator/chunks', serveGeneratorChunks);
 
         function serveGeneratorVoxels(req, res, next) {
-throw new Error('not implemented yet');
           const {query: {x: xs, y: ys, z: zs}} = req;
           const x = parseInt(xs, 10);
           const y = parseInt(ys, 10);
@@ -823,11 +831,7 @@ throw new Error('not implemented yet');
               const index = _getChunkIndex(ox, oz);
               if (!seenIndex[index]) {
                 let chunk = zde.getChunk(ox, oz);
-                if (!chunk) {
-                  chunk = _generateChunk(zde.makeChunk(ox, oz), {
-                    newEther,
-                  });
-                } else {
+                if (chunk) {
                   const oldTerrainBuffer = chunk.getTerrainBuffer();
                   const oldChunkData = protocolUtils.parseTerrainData(oldTerrainBuffer.buffer, oldTerrainBuffer.byteOffset);
                   const oldBiomes = oldChunkData.biomes.slice();
@@ -836,7 +840,7 @@ throw new Error('not implemented yet');
                   const oldWater = oldChunkData.water.slice();
                   const oldLava = oldChunkData.lava.slice();
 
-                  chunk = _generateChunkGeometry(chunk, {
+                  _generateChunkTerrain(chunk, {
                     oldBiomes,
                     oldElevations,
                     oldEther,
@@ -844,12 +848,9 @@ throw new Error('not implemented yet');
                     oldLava,
                     newEther,
                   });
-                }
 
-                regeneratePromises.push(
-                  _decorateChunkLightsSub(chunk, x, y, z)
-                    .then(chunk => _decorateChunkLightmaps(chunk))
-                );
+                  regeneratePromises.push(generatorElement.requestRelight(x, y, z));
+                }
 
                 seenIndex[index] = true;
               }
@@ -918,11 +919,11 @@ throw new Error('not implemented yet');
                 if (chunk) {
                   const objectIndex = chunk.addObject(n, matrix, value);
 
-                  _decorateChunkGeometry(chunk)
+                  _decorateChunkObjectsGeometry(chunk)
                     .then(() => {
                       _saveChunks();
 
-                      return generator.requestRelight(Math.floor(matrix[0]), Math.floor(matrix[1]), Math.floor(matrix[2]));
+                      return generatorElement.requestRelight(Math.floor(matrix[0]), Math.floor(matrix[1]), Math.floor(matrix[2]));
                     })
                     .then(() => {
                       c.send(JSON.stringify({
@@ -950,11 +951,11 @@ throw new Error('not implemented yet');
                   const matrix = chunk.getObjectMatrix(index);
                   const n = chunk.removeObject(index);
 
-                  _decorateChunkGeometry(chunk)
+                  _decorateChunkObjectsGeometry(chunk)
                     .then(() => {
                       _saveChunks();
 
-                      return generator.requestRelight(Math.floor(matrix[0]), Math.floor(matrix[1]), Math.floor(matrix[2]));
+                      return generatorElement.requestRelight(Math.floor(matrix[0]), Math.floor(matrix[1]), Math.floor(matrix[2]));
                     })
                     .then(() => {
                       c.send(JSON.stringify({
@@ -1005,11 +1006,11 @@ throw new Error('not implemented yet');
                 if (chunk) {
                   chunk.setBlock(x - ox * NUM_CELLS, y, z - oz * NUM_CELLS, v);
 
-                  _decorateChunkGeometry(chunk)
+                  _decorateChunkObjectsGeometry(chunk)
                     .then(() => {
                       _saveChunks();
 
-                      return generator.requestRelight(x, y, z);
+                      return generatorElement.requestRelight(x, y, z);
                     })
                     .then(() => {
                       c.send(JSON.stringify({
@@ -1038,11 +1039,11 @@ throw new Error('not implemented yet');
                 if (chunk) {
                   chunk.clearBlock(x - ox * NUM_CELLS, y, z - oz * NUM_CELLS);
 
-                  _decorateChunkGeometry(chunk)
+                  _decorateChunkObjectsGeometry(chunk)
                     .then(() => {
                       _saveChunks();
 
-                      return generator.requestRelight(x, y, z);
+                      return generatorElement.requestRelight(x, y, z);
                     })
                     .then(() => {
                       c.send(JSON.stringify({

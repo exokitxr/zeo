@@ -653,11 +653,11 @@ void main() {
           }
 
           setBlock(x, y, z, block) {
-            generatorElement.requestSetBlock(x, y, z, block);
+            generatorElement.setBlock(x, y, z, block);
           }
 
           clearBlock(x, y, z) {
-            generatorElement.requestClearBlock(x, y, z);
+            generatorElement.clearBlock(x, y, z);
           }
 
           registerRecipe(recipe) {
@@ -867,25 +867,21 @@ void main() {
             queue.push(_removeChunk.bind(this, chunk));
           }
         };
-        /* const _refreshChunk = (x, z) => {
+        const _refreshChunk = chunk => {
           if (!running) {
             running = true;
 
-            _requestObjectsUpdate(x, z, objectsChunkData => {
-              const chunk = heightfieldElement.getChunk(x, z);
-              if (chunk) {
-                const {[dataSymbol]: oldObjectsChunkMesh} = chunk;
-                if (oldObjectsChunkMesh) {
-                  oldObjectsChunkMesh.update(objectsChunkData);
-                }
-              }
+            const oldObjectsChunkMesh = objectsChunkMeshes[_getChunkIndex(chunk.x, chunk.z)];
+            const {gbuffer} = oldObjectsChunkMesh;
+            _requestObjectsGenerate(chunk.x, chunk.z, gbuffer.index, gbuffer.slices.positions.length, gbuffer.slices.objectIndices.length, gbuffer.slices.indices.length, objectsChunkData => {
+              oldObjectsChunkMesh.update(objectsChunkData);
 
               _next();
             });
           } else {
-            queue.push(_refreshChunk.bind(this, x, z));
+            queue.push(_refreshChunk.bind(this, chunk));
           }
-        }; */
+        };
 
         let updatingHover = false;
         let lastHoverUpdateTime = 0;
@@ -1102,6 +1098,10 @@ void main() {
               _removeChunk(chunk);
             };
             generatorElement.on('remove', _remove);
+            const _refresh = chunk => {
+              _refreshChunk(chunk);
+            };
+            generatorElement.on('refresh', _refresh);
             generatorElement.forEachChunk(chunk => {
               _add(chunk);
             });

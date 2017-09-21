@@ -8,12 +8,12 @@ importScripts('/archae/assets/alea.js');
 const {exports: alea} = self.module;
 self.module = {};
 
-/* Module = {
+Module = {
   print(text) { console.log(text); },
   printErr(text) { console.warn(text); },
   wasmBinaryFile: '/archae/objects/objectize.wasm',
 };
-importScripts('/archae/objects/objectize.js'); */
+importScripts('/archae/objects/objectize.js');
 
 const zeode = require('zeode');
 const {
@@ -45,12 +45,9 @@ const {
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
-/* const DIRECTIONS = [
-  [-1, -1],
-  [-1, 1],
-  [1, -1],
-  [1, 1],
-]; */
+const NUM_CELLS_HALF = NUM_CELLS / 2;
+const NUM_CELLS_CUBE = Math.sqrt((NUM_CELLS_HALF + 16) * (NUM_CELLS_HALF + 16) * 3); // larger than the actual bounding box to account for geometry overflow
+const NUM_VOXELS_CHUNK_HEIGHT = BLOCK_BUFFER_SIZE / 4 / NUM_CHUNKS_HEIGHT;
 
 const terrainDecorationsSymbol = Symbol();
 const objectsDecorationsSymbol = Symbol();
@@ -165,6 +162,7 @@ const oneVector = new THREE.Vector3(1, 1, 1);
 const bodyOffsetVector = new THREE.Vector3(0, -1.6 / 2, 0);
 
 let textureAtlasVersion = '';
+let geometryVersion = '';
 const objectApis = {};
 
 const _makeGeometeriesBuffer = (() => {
@@ -178,6 +176,14 @@ const _makeGeometeriesBuffer = (() => {
   result.reset = () => {
     index = 0;
   };
+  return result;
+})();
+const boundingSpheres = (() => {
+  const slab = new ArrayBuffer(NUM_CHUNKS_HEIGHT * 4 * Float32Array.BYTES_PER_ELEMENT);
+  const result = Array(NUM_CHUNKS_HEIGHT);
+  for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
+    result[i] = new Float32Array(slab, i * 4 * Float32Array.BYTES_PER_ELEMENT, 4);
+  }
   return result;
 })();
 
@@ -645,17 +651,23 @@ const _requestChunk = (x, z) => {
 
           _updateTextureAtlas();
         }
+        const newGeometryVersion = headers.get('Geometry-Version');
+        if (newGeometryVersion !== geometryVersion) {
+          geometryVersion = newGeometryVersion;
+
+          _updateGeometries();
+        }
 
         let index = 0;
-        const terrainBuffer = new Uint32Array(buffer, index, TERRAIN_BUFFER_SIZE / 4);
+        const terrainBuffer = new Uint32Array(buffer, index, TERRAIN_BUFFER_SIZE / Uint32Array.BYTES_PER_ELEMENT);
         index += TERRAIN_BUFFER_SIZE;
-        const objectBuffer = new Uint32Array(buffer, index, OBJECT_BUFFER_SIZE / 4);
+        const objectBuffer = new Uint32Array(buffer, index, OBJECT_BUFFER_SIZE / Uint32Array.BYTES_PER_ELEMENT);
         index += OBJECT_BUFFER_SIZE;
-        const blockBuffer = new Uint32Array(buffer, index, BLOCK_BUFFER_SIZE / 4);
+        const blockBuffer = new Uint32Array(buffer, index, BLOCK_BUFFER_SIZE / Uint32Array.BYTES_PER_ELEMENT);
         index += BLOCK_BUFFER_SIZE;
-        const lightBuffer = new Float32Array(buffer, index, LIGHT_BUFFER_SIZE / 4);
+        const lightBuffer = new Float32Array(buffer, index, LIGHT_BUFFER_SIZE / Float32Array.BYTES_PER_ELEMENT);
         index += LIGHT_BUFFER_SIZE;
-        const geometryBuffer = new Uint8Array(buffer, index, GEOMETRY_BUFFER_SIZE);
+        const geometryBuffer = new Uint8Array(buffer, index, GEOMETRY_BUFFER_SIZE / Uint8Array.BYTES_PER_ELEMENT);
         index += GEOMETRY_BUFFER_SIZE;
         const decorationsBuffer = new Uint8Array(buffer, index);
 
@@ -666,23 +678,18 @@ const _requestChunk = (x, z) => {
           decorations: protocolUtils.parseDecorations(decorationsBuffer.buffer, decorationsBuffer.byteOffset),
         };
         zde.pushChunk(chunk);
-        // _decorateTerrainChunk(chunk, index, numIndices);
-        // _decorateObjectsChunk(chunk, chunkData, index, numPositions, numObjectIndices, numIndices);
-        // _offsetChunkData(chunkData, index, numPositions);
         return chunk;
       });
   }
 };
 const _requestTerrainChunk = (x, y, index, numPositions, numIndices) => _requestChunk(x, y)
   .then(chunk => {
-    _decorateTerrainChunk(chunk, index, numIndices);
-    _offsetChunkData(chunk.chunkData.terrain, index, numPositions);
+    _decorateTerrainChunk(chunk, index, numPositions, numIndices);
     return chunk;
   });
 const _requestObjectsChunk = (x, z, index, numPositions, numObjectIndices, numIndices) => _requestChunk(x, z)
   .then(chunk => {
     _decorateObjectsChunk(chunk, index, numPositions, numObjectIndices, numIndices);
-    _offsetChunkData(chunk.chunkData.objects, index, numPositions);
     return chunk;
   });
 const _offsetChunkData = (chunkData, index, numPositions) => {
@@ -692,91 +699,97 @@ const _offsetChunkData = (chunkData, index, numPositions) => {
     indices[i] += positionOffset;
   }
 };
-const _decorateTerrainChunk = (chunk, index, numIndices) => {
-  const {x, z} = chunk;
+const _decorateTerrainChunk = (chunk, index, numPositions, numIndices) => {
+  if (!chunk[terrainDecorationsSymbol]) {
+    const {x, z} = chunk;
 
-  const trackedMapChunkMeshes = {
-    array: Array(NUM_CHUNKS_HEIGHT),
-    groups: new Int32Array(NUM_RENDER_GROUPS * 6),
-  };
-  for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
-    const {indexRange, boundingSphere, peeks} = chunk.chunkData.terrain.geometries[i];
-    const indexOffset = index * numIndices;
-
-    trackedMapChunkMeshes.array[i] = {
-      offset: new THREE.Vector3(x, i, z),
-      indexRange: {
-        landStart: indexRange.landStart + indexOffset,
-        landCount: indexRange.landCount,
-        waterStart: indexRange.waterStart + indexOffset,
-        waterCount: indexRange.waterCount,
-        lavaStart: indexRange.lavaStart + indexOffset,
-        lavaCount: indexRange.lavaCount,
-      },
-      boundingSphere: new THREE.Sphere(
-        new THREE.Vector3().fromArray(boundingSphere, 0),
-        boundingSphere[3]
-      ),
-      peeks,
-      visibleIndex: -1,
+    const trackedMapChunkMeshes = {
+      array: Array(NUM_CHUNKS_HEIGHT),
+      groups: new Int32Array(NUM_RENDER_GROUPS * 6),
     };
-  }
-  mapChunkMeshes[_getChunkIndex(x, z)] = trackedMapChunkMeshes;
+    for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
+      const {indexRange, boundingSphere, peeks} = chunk.chunkData.terrain.geometries[i];
+      const indexOffset = index * numIndices;
 
-  chunk[terrainDecorationsSymbol] = true;
+      trackedMapChunkMeshes.array[i] = {
+        offset: new THREE.Vector3(x, i, z),
+        indexRange: {
+          landStart: indexRange.landStart + indexOffset,
+          landCount: indexRange.landCount,
+          waterStart: indexRange.waterStart + indexOffset,
+          waterCount: indexRange.waterCount,
+          lavaStart: indexRange.lavaStart + indexOffset,
+          lavaCount: indexRange.lavaCount,
+        },
+        boundingSphere: new THREE.Sphere(
+          new THREE.Vector3().fromArray(boundingSphere, 0),
+          boundingSphere[3]
+        ),
+        peeks,
+        visibleIndex: -1,
+      };
+    }
+    mapChunkMeshes[_getChunkIndex(x, z)] = trackedMapChunkMeshes;
+
+    _offsetChunkData(chunk.chunkData.terrain, index, numPositions);
+
+    chunk[terrainDecorationsSymbol] = true;
+  }
 };
 let ids = 0;
 const _decorateObjectsChunk = (chunk, index, numPositions, numObjectIndices, numIndices) => {
-  chunk.id = ids++;
+  if (!chunk[objectsDecorationsSymbol]) {
+    chunk.id = ids++;
 
-  chunk.offsets = {
-    index,
-    numPositions,
-    numObjectIndices,
-    numIndices,
-  };
-
-  const objectsMap = {};
-  const {objects} = chunk.chunkData.objects;
-  const numObjects = objects.length / 7;
-  for (let i = 0; i < numObjects; i++) {
-    const baseIndex = i * 7;
-    const index = objects[baseIndex];
-    objectsMap[index] = new Float32Array(objects.buffer, objects.byteOffset + ((baseIndex + 1) * 4), 6);
-  }
-  chunk.objectsMap = objectsMap;
-
-  const {objectIndices} = chunk.chunkData.objects;
-  const objectIndexOffset = index * numObjectIndices;
-  for (let i = 0; i < objectIndices.length; i++) {
-    objectIndices[i] += objectIndexOffset;
-  }
-
-  const {geometries} = chunk.chunkData.objects;
-  const renderSpec = {
-    index: _getChunkIndex(chunk.x, chunk.z),
-    array: Array(NUM_CHUNKS_HEIGHT),
-    groups: new Int32Array(NUM_RENDER_GROUPS * 2),
-  };
-  const indexOffset = index * numIndices;
-  for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
-    const {indexRange, boundingSphere} = geometries[i];
-    renderSpec.array[i] = {
-      indexRange: {
-        start: indexRange.start + indexOffset,
-        count: indexRange.count,
-      },
-      boundingSphere: new THREE.Sphere(
-        new THREE.Vector3().fromArray(boundingSphere),
-        boundingSphere[3]
-      ),
+    chunk.offsets = {
+      index,
+      numPositions,
+      numObjectIndices,
+      numIndices,
     };
+
+    const objectsMap = {};
+    const {objects} = chunk.chunkData.objects;
+    const numObjects = objects.length / 7;
+    for (let i = 0; i < numObjects; i++) {
+      const baseIndex = i * 7;
+      const index = objects[baseIndex];
+      objectsMap[index] = new Float32Array(objects.buffer, objects.byteOffset + ((baseIndex + 1) * 4), 6);
+    }
+    chunk.objectsMap = objectsMap;
+
+    const {objectIndices} = chunk.chunkData.objects;
+    const objectIndexOffset = index * numObjectIndices;
+    for (let i = 0; i < objectIndices.length; i++) {
+      objectIndices[i] += objectIndexOffset;
+    }
+
+    const {geometries} = chunk.chunkData.objects;
+    const renderSpec = {
+      index: _getChunkIndex(chunk.x, chunk.z),
+      array: Array(NUM_CHUNKS_HEIGHT),
+      groups: new Int32Array(NUM_RENDER_GROUPS * 2),
+    };
+    const indexOffset = index * numIndices;
+    for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
+      const {indexRange, boundingSphere} = geometries[i];
+      renderSpec.array[i] = {
+        indexRange: {
+          start: indexRange.start + indexOffset,
+          count: indexRange.count,
+        },
+        boundingSphere: new THREE.Sphere(
+          new THREE.Vector3().fromArray(boundingSphere),
+          boundingSphere[3]
+        ),
+      };
+    }
+    chunk.renderSpec = renderSpec;
+
+    _offsetChunkData(chunk.chunkData.objects, index, numPositions);
+
+    chunk[objectsDecorationsSymbol] = true;
   }
-  chunk.renderSpec = renderSpec;
-
-  chunk[objectsDecorationsSymbol] = true;
-
-  return chunk;
 };
 const _updateTextureAtlas = _debounce(next => {
   return fetch(`/archae/objects/texture-atlas.png`, {
@@ -791,6 +804,39 @@ const _updateTextureAtlas = _debounce(next => {
         type: 'textureAtlas',
         args: [imageBitmap],
       }, [imageBitmap]);
+
+      next();
+    })
+    .catch(err => {
+      console.warn(err);
+
+      next();
+    });
+});
+let geometriesBuffer = null;
+let geometryTypes = null;
+let blockTypes = null;
+let transparentVoxels = null;
+let translucentVoxels = null;
+let faceUvs = null;
+const _updateGeometries = _debounce(next => {
+  fetch(`/archae/objects/geometry.bin`, {
+    credentials: 'include',
+  })
+    .then(_resArrayBuffer)
+    .then(arrayBuffer => {
+      const templates = protocolUtils.parseTemplates(arrayBuffer);
+      geometriesBuffer = templates.geometriesBuffer;
+      geometryTypes = templates.geometryTypes;
+      blockTypes = templates.blockTypes;
+      transparentVoxels = templates.transparentVoxels;
+      translucentVoxels = templates.translucentVoxels;
+      faceUvs = templates.faceUvs;
+
+      next();
+    })
+    .catch(err => {
+      console.warn(err);
 
       next();
     });
@@ -1069,87 +1115,145 @@ self.onmessage = e => {
       const oldChunk = zde.getChunk(ox, oz);
       if (oldChunk) {
         connection.clearBlock(x, y, z, () => {
-          /* fetch(`/archae/objects/templates.dat`, {
-            credentials: 'include',
-          })
-            .then(_resArrayBuffer)
-            .then(arrayBuffer => {
-              const {geometriesBuffer, geometryTypes, blockTypes, transparentVoxels, translucentVoxels, faceUvs} = protocolUtils.parseTemplates(arrayBuffer);
+          oldChunk.clearBlock(x - ox * NUM_CELLS, y, z - oz * NUM_CELLS);
 
-              const offsets = [];
-              const _alloc = b => {
-                const offset = Module._malloc(b.byteLength);
-                new b.constructor(Module.HEAP8.buffer, Module.HEAP8.byteOffset + offset).set(b);
-                offsets.push(offset);
-                return offset;
-              };
-              const _freeAll = () => {
-                for (let i = 0; i < offsets.length; i++) {
-                  Module._free(offsets[i]);
-                }
-              };
+          const offsets = [];
+          const _alloc = b => {
+            const offset = Module._malloc(b.byteLength);
+            const shadowBuffer = new b.constructor(Module.HEAP8.buffer, Module.HEAP8.byteOffset + offset, b.length);
+            shadowBuffer.set(b);
+            offsets.push(offset);
+            b.unshadow = () => {
+              b.set(shadowBuffer);
+            };
+            return offset;
+          };
+          const _freeAll = () => {
+            for (let i = 0; i < offsets.length; i++) {
+              Module._free(offsets[i]);
+            }
+          };
 
-              _makeGeometeriesBuffer.reset();
-              const geometriesPositions = _makeGeometeriesBuffer(Float32Array);
-              const geometriesUvs = _makeGeometeriesBuffer(Float32Array);
-              const geometriesSsaos = _makeGeometeriesBuffer(Uint8Array);
-              const geometriesFrames = _makeGeometeriesBuffer(Float32Array);
-              const geometriesObjectIndices = _makeGeometeriesBuffer(Float32Array);
-              const geometriesIndices = _makeGeometeriesBuffer(Uint32Array);
-              const geometriesObjects = _makeGeometeriesBuffer(Uint32Array);
+          _makeGeometeriesBuffer.reset();
+          const geometriesPositions = _makeGeometeriesBuffer(Float32Array);
+          const geometriesUvs = _makeGeometeriesBuffer(Float32Array);
+          const geometriesSsaos = _makeGeometeriesBuffer(Uint8Array);
+          const geometriesFrames = _makeGeometeriesBuffer(Float32Array);
+          const geometriesObjectIndices = _makeGeometeriesBuffer(Float32Array);
+          const geometriesIndices = _makeGeometeriesBuffer(Uint32Array);
+          const geometriesObjects = _makeGeometeriesBuffer(Uint32Array);
 
-              console.log('objectize 1');
+          const resultSize = 7 * 8;
+          const resultOffset = Module._malloc(resultSize * 4);
+          offsets.push(resultOffset);
+          const result = new Uint32Array(Module.HEAP8.buffer, Module.HEAP8.byteOffset + resultOffset, resultSize);
+          Module._objectize(
+            _alloc(oldChunk.getObjectBuffer()),
+            _alloc(geometriesBuffer),
+            _alloc(geometryTypes),
+            _alloc(oldChunk.getBlockBuffer()),
+            _alloc(blockTypes),
+            _alloc(Int32Array.from([NUM_CELLS, NUM_CELLS, NUM_CELLS])),
+            _alloc(transparentVoxels),
+            _alloc(translucentVoxels),
+            _alloc(faceUvs),
+            _alloc(Float32Array.from([ox * NUM_CELLS, 0, oz * NUM_CELLS])),
+            _alloc(geometriesPositions),
+            _alloc(geometriesUvs),
+            _alloc(geometriesSsaos),
+            _alloc(geometriesFrames),
+            _alloc(geometriesObjectIndices),
+            _alloc(geometriesIndices),
+            _alloc(geometriesObjects),
+            resultOffset
+          );
 
-              const resultSize = 7 * 8;
-              const resultOffset = Module._malloc(resultSize * 4);
-              offsets.push(resultOffset);
-              const result = new Uint32Array(Module.HEAP8.buffer, Module.HEAP8.byteOffset + resultOffset, resultSize);
-              Module._objectize(
-                _alloc(oldChunk.getObjectBuffer()),
-                _alloc(geometriesBuffer),
-                _alloc(geometryTypes),
-                _alloc(oldChunk.getBlockBuffer()),
-                _alloc(blockTypes),
-                _alloc(Int32Array.from([NUM_CELLS, NUM_CELLS, NUM_CELLS])),
-                _alloc(transparentVoxels),
-                _alloc(translucentVoxels),
-                _alloc(faceUvs),
-                _alloc(Float32Array.from([x * NUM_CELLS, 0, z * NUM_CELLS])),
-                _alloc(geometriesPositions),
-                _alloc(geometriesUvs),
-                _alloc(geometriesSsaos),
-                _alloc(geometriesFrames),
-                _alloc(geometriesObjectIndices),
-                _alloc(geometriesIndices),
-                _alloc(geometriesObjects),
-                resultOffset
-              );
-              console.log('got result', Array.from(result));
-              _freeAll();
+          const numNewPositions = result.subarray(NUM_CHUNKS_HEIGHT * 0, NUM_CHUNKS_HEIGHT * 1);
+          const numNewUvs = result.subarray(NUM_CHUNKS_HEIGHT * 1, NUM_CHUNKS_HEIGHT * 2);
+          const numNewSsaos = result.subarray(NUM_CHUNKS_HEIGHT * 2, NUM_CHUNKS_HEIGHT * 3);
+          const numNewFrames = result.subarray(NUM_CHUNKS_HEIGHT * 3, NUM_CHUNKS_HEIGHT * 4);
+          const numNewObjectIndices = result.subarray(NUM_CHUNKS_HEIGHT * 4, NUM_CHUNKS_HEIGHT * 5);
+          const numNewIndices = result.subarray(NUM_CHUNKS_HEIGHT * 5, NUM_CHUNKS_HEIGHT * 6);
+          const numNewObjects = result.subarray(NUM_CHUNKS_HEIGHT * 6, NUM_CHUNKS_HEIGHT * 7);
 
-              console.log('objectize 2');
-            })
-            .catch(err => {
-              console.warn(err);
-            }); */
+          geometriesPositions.unshadow();
+          geometriesUvs.unshadow();
+          geometriesSsaos.unshadow();
+          geometriesFrames.unshadow();
+          geometriesObjectIndices.unshadow();
+          geometriesIndices.unshadow();
+          geometriesObjects.unshadow();
 
-          const {offsets: {index, numPositions, numObjectIndices, numIndices}} = oldChunk;
-          _requestObjectsChunk(ox, oz, index, numPositions, numObjectIndices, numIndices)
-            .then(newChunk => {
-              zde.removeChunk(ox, oz);
-              zde.pushChunk(newChunk);
+          const localGeometries = Array(NUM_CHUNKS_HEIGHT);
+          for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
+            const attributeRangeStart = i === 0 ? 0 : numNewPositions[i - 1];
+            const attributeRangeCount = numNewPositions[i] - attributeRangeStart;
+            const indexRangeStart = i === 0 ? 0 : numNewIndices[i - 1];
+            const indexRangeCount = numNewIndices[i] - indexRangeStart;
 
-              postMessage({
-                type: 'chunkUpdate',
-                args: [ox, oz],
-              });
+            const boundingSphere = boundingSpheres[i];
+            boundingSphere[0] = oldChunk.x * NUM_CELLS + NUM_CELLS_HALF;
+            boundingSphere[1] = i * NUM_CELLS + NUM_CELLS_HALF;
+            boundingSphere[2] = oldChunk.z * NUM_CELLS + NUM_CELLS_HALF;
+            boundingSphere[3] = NUM_CELLS_CUBE;
 
-              /* postMessage({ // XXX enable this for registered listeners
-                type: 'clearBlock',
-                args: [x, y, z],
-              }); */
-            });
+            localGeometries[i] = {
+              attributeRange: {
+                start: attributeRangeStart,
+                count: attributeRangeCount,
+              },
+              indexRange: {
+                start: indexRangeStart,
+                count: indexRangeCount,
+              },
+              boundingSphere,
+            };
+          };
+          const chunkData = {
+            positions: new Float32Array(geometriesPositions.buffer, geometriesPositions.byteOffset, numNewPositions[NUM_CHUNKS_HEIGHT - 1]),
+            uvs: new Float32Array(geometriesUvs.buffer, geometriesUvs.byteOffset, numNewUvs[NUM_CHUNKS_HEIGHT - 1]),
+            ssaos: new Uint8Array(geometriesSsaos.buffer, geometriesSsaos.byteOffset, numNewSsaos[NUM_CHUNKS_HEIGHT - 1]),
+            frames: new Float32Array(geometriesFrames.buffer, geometriesFrames.byteOffset, numNewFrames[NUM_CHUNKS_HEIGHT - 1]),
+            objectIndices: new Float32Array(geometriesObjectIndices.buffer, geometriesObjectIndices.byteOffset, numNewObjectIndices[NUM_CHUNKS_HEIGHT - 1]),
+            indices: new Uint32Array(geometriesIndices.buffer, geometriesIndices.byteOffset, numNewIndices[NUM_CHUNKS_HEIGHT - 1]),
+            objects: new Uint32Array(geometriesObjects.buffer, geometriesObjects.byteOffset, numNewObjects[NUM_CHUNKS_HEIGHT - 1]),
+            geometries: localGeometries,
+          };
+
+          const geometryBuffer = oldChunk.getGeometryBuffer();
+          protocolUtils.stringifyGeometry(chunkData, geometryBuffer.buffer, geometryBuffer.byteOffset);
+
+          oldChunk.chunkData.objects = chunkData;
+          oldChunk.chunkData.decorations.objects = {
+            skyLightmaps: new Uint8Array(chunkData.positions.length / 3).fill(0xFF),
+            torchLightmaps: new Uint8Array(chunkData.positions.length / 3).fill(0xFF),
+          };
+          oldChunk[objectsDecorationsSymbol] = false;
+
+          _freeAll();
+
+          postMessage({
+            type: 'chunkUpdate',
+            args: [ox, oz],
+          });
+
+          /* postMessage({ // XXX enable this for registered listeners
+            type: 'clearBlock',
+            args: [x, y, z],
+          }); */
         });
+
+      /* const {offsets: {index, numPositions, numObjectIndices, numIndices}} = oldChunk;
+      _requestObjectsChunk(ox, oz, index, numPositions, numObjectIndices, numIndices)
+        .then(newChunk => {
+          zde.removeChunk(ox, oz);
+          zde.pushChunk(newChunk);
+
+          postMessage({
+            type: 'chunkUpdate',
+            args: [ox, oz],
+          });
+        }); */
       }
       break;
     }
@@ -1228,9 +1332,6 @@ self.onmessage = e => {
       const {x, z} = args;
 
       const chunk = _unrequestChunk(x, z);
-if (!chunk) { // XXX
-  console.log('no chunk to ungenerate', x, z);
-}
       chunk.forEachObject((n, matrix, value, objectIndex) => {
         const objectApi = objectApis[n];
 
@@ -1256,12 +1357,12 @@ if (!chunk) { // XXX
         result: buffer,
       }, [buffer]);
       break;
-    } */
+    }
     case 'heightfield': {
       const {id, args} = data;
       const {x, y, buffer} = args;
 
-      const chunk = tra.getChunk(x, y);
+      const chunk = zde.getChunk(x, y);
 
       const heightfield = new Float32Array(buffer, 0, newHeightfield.length);
       if (chunk) {
@@ -1276,7 +1377,7 @@ if (!chunk) { // XXX
         result: heightfield,
       }, [heightfield.buffer]);
       break;
-    }
+    } */
     case 'terrainCull': {
       const {id, args} = data;
       const {hmdPosition, projectionMatrix, matrixWorldInverse, buffer} = args;
@@ -1292,229 +1393,157 @@ if (!chunk) { // XXX
     }
     case 'subVoxel': {
       const {id, args} = data;
-      const {position: [x, y, z], gslots} = args;
-      let {buffer} = args;
+      const {position: [x, y, z]} = args;
 
-      /* (() => { // XXX
-        const ox = Math.floor(x / NUM_CELLS);
-        const oz = Math.floor(z / NUM_CELLS);
-
-        const chunk = tra.getChunk(ox, oz);
-        const oldTerrainBuffer = chunk.getTerrainBuffer();
-        const oldChunkData = protocolUtils.parseTerrainData(oldTerrainBuffer.buffer, oldTerrainBuffer.byteOffset);
-        const oldBiomes = oldChunkData.biomes.slice();
-        const oldElevations = oldChunkData.elevations.slice();
-        const oldEther = oldChunkData.ether.slice();
-        const oldWater = oldChunkData.water.slice();
-        const oldLava = oldChunkData.lava.slice();
-
-        const lx = x - (ox * NUM_CELLS);
-        const lz = z - (oz * NUM_CELLS);
-        const v = 1;
-        const newEther = Float32Array.from([lx, y, lz, v]);
-        const numNewEthers = newEther.length;
-
-        const offsets = [];
-        const _alloc = b => {
-          const offset = Module._malloc(b.byteLength);
-          new b.constructor(Module.HEAP8.buffer, Module.HEAP8.byteOffset + offset).set(b);
-          offsets.push(offset);
-          return offset;
-        };
-        const _freeAll = () => {
-          for (let i = 0; i < offsets.length; i++) {
-            Module._free(offsets[i]);
-          }
-        };
-
-        console.log('fill 1');
-
-        const noiser = Module._make_noiser(murmur(DEFAULT_SEED));
-        Module._noiser_fill(
-          noiser,
-          ox,
-          oz,
-          _alloc(oldBiomes),
-          +false,
-          _alloc(oldElevations),
-          +false,
-          _alloc(oldEther),
-          +false,
-          _alloc(oldWater),
-          _alloc(oldLava),
-          +false,
-          _alloc(newEther),
-          numNewEthers,
-          _alloc(slab.positions),
-          _alloc(slab.indices),
-          _alloc(slab.attributeRanges),
-          _alloc(slab.indexRanges),
-          _alloc(slab.heightfield),
-          _alloc(slab.staticHeightfield),
-          _alloc(slab.colors),
-          _alloc(slab.peeks)
-        );
-
-        const {index, numPositions, numIndices} = gslots[_getChunkIndex(ox, oz)];
-        // const chunkData = protocolUtils.parseTerrainData(chunkBuffer.buffer, chunkBuffer.byteOffset);
-        const chunkData = {
-          buffer,
-          positions,
-          colors,
-          indices,
-          geometries,
-          heightfield,
-          staticHeightfield,
-          biomes,
-          elevations,
-          ether,
-          water,
-          lava,
-        };
-        // chunkData.decorations = protocolUtils.parseDecorations(decorationsBuffer.buffer, decorationsBuffer.byteOffset);
-        // XXX recompile the lightmaps
-        // XXX regenerate the lightmaps
-        chunkData.decorations = {
-          skyLightmaps,
-          torchLightmaps,
-        };
-        _offsetChunkData(chunkData, index, numPositions);
-        chunk.chunkData = chunkData;
-
-        const terrainBuffer = chunk.getTerrainBuffer();
-        protocolUtils.stringifyTerrainData(chunkData, terrainBuffer.buffer, terrainBuffer.byteOffset);
-
-        _registerChunk(chunk, index, numIndices);
-
-        let writeByteOffset = 0;
-        const chunksHeader = new Uint32Array(buffer, writeByteOffset, 1);
-        chunksHeader[0] = 1;
-        writeByteOffset += 4;
-
-        const chunkHeader1 = new Int32Array(buffer, writeByteOffset, 2);
-        chunkHeader1[0] = ox;
-        chunkHeader1[1] = oz;
-        writeByteOffset += 4 * 2;
-
-        const chunkHeader2 = new Uint32Array(buffer, writeByteOffset, 1);
-        writeByteOffset += 4;
-
-        const newWriteByteOffset = protocolUtils.stringifyTerrainRenderChunk(chunk.chunkData, chunk.chunkData.decorations, buffer, writeByteOffset)[1];
-        const numChunkBytes = newWriteByteOffset - writeByteOffset;
-        writeByteOffset = newWriteByteOffset;
-
-        chunkHeader2[0] = numChunkBytes;
-
-        postMessage({
-          type: 'response',
-          args: [id],
-          result: buffer,
-        }, [buffer]);
-
-        Module._destroy_noiser(noiser);
-        _freeAll();
-
-        console.log('fill 2');
-      })(); */
-
-      fetch(`/archae/heightfield/voxels?x=${x}&y=${y}&z=${z}`, {
+      fetch(`/archae/generator/voxels?x=${x}&y=${y}&z=${z}`, {
         method: 'DELETE',
         credentials: 'include',
       })
-        .then(_resArrayBuffer)
-        .then(responseBuffer => {
-          let readByteOffset = 0;
-          const numChunks = new Uint32Array(responseBuffer, readByteOffset, 1)[0];
-          readByteOffset += 4;
+        .then(_resBlob)
+        .then(() => {
+          const ox = Math.floor(x / NUM_CELLS);
+          const oz = Math.floor(z / NUM_CELLS);
 
-          if (numChunks > 0) {
-            const chunkSpecs = [];
-            for (let i = 0; i < numChunks; i++) {
-              const chunkHeader = new Int32Array(responseBuffer, readByteOffset, 2);
-              const x = chunkHeader[0];
-              const z = chunkHeader[1];
-              readByteOffset += 4 * 2;
+          const oldChunk = zde.getChunk(ox, oz);
+          const oldTerrainBuffer = oldChunk.getTerrainBuffer();
+          const oldChunkData = protocolUtils.parseTerrainData(oldTerrainBuffer.buffer, oldTerrainBuffer.byteOffset);
+          const oldBiomes = oldChunkData.biomes.slice();
+          const oldElevations = oldChunkData.elevations.slice();
+          const oldEther = oldChunkData.ether.slice();
+          const oldWater = oldChunkData.water.slice();
+          const oldLava = oldChunkData.lava.slice();
 
-              const chunkLength = new Uint32Array(responseBuffer, readByteOffset, 1)[0];
-              readByteOffset += 4;
-              const chunkBuffer = new Uint8Array(responseBuffer, readByteOffset, chunkLength);
-              readByteOffset += chunkLength;
+          const lx = x - (ox * NUM_CELLS);
+          const lz = z - (oz * NUM_CELLS);
+          const v = 1;
+          const newEther = Float32Array.from([lx, y, lz, v]);
+          const numNewEthers = newEther.length;
 
-              const decorationsLength = new Uint32Array(responseBuffer, readByteOffset, 1)[0];
-              readByteOffset += 4;
-              const decorationsBuffer = new Uint8Array(responseBuffer, readByteOffset, decorationsLength);
-              readByteOffset += decorationsLength;
-
-              const chunk = tra.getChunk(x, z);
-              const index = _getChunkIndex(x, z);
-              const gslot = gslots[index];
-              if (chunk && gslot) {
-                const {index, numPositions, numIndices} = gslot;
-
-                const chunkData = protocolUtils.parseTerrainData(chunkBuffer.buffer, chunkBuffer.byteOffset);
-                chunkData.decorations = protocolUtils.parseDecorations(decorationsBuffer.buffer, decorationsBuffer.byteOffset);
-                _offsetChunkData(chunkData, index, numPositions);
-                chunk.chunkData = chunkData;
-
-                const terrainBuffer = chunk.getTerrainBuffer();
-                new Uint8Array(terrainBuffer.buffer, terrainBuffer.byteOffset).set(chunkBuffer);
-
-                _registerChunk(chunk, index, numIndices);
-
-                chunkSpecs.push({
-                  x,
-                  z,
-                  chunkData,
-                });
-              }
+          const offsets = [];
+          const _alloc = b => {
+            const offset = Module._malloc(b.byteLength);
+            const shadowBuffer = new b.constructor(Module.HEAP8.buffer, Module.HEAP8.byteOffset + offset, b.length);
+            shadowBuffer.set(b);
+            offsets.push(offset);
+            b.unshadow = () => {
+              b.set(shadowBuffer);
+            };
+            return offset;
+          };
+          const _freeAll = () => {
+            for (let i = 0; i < offsets.length; i++) {
+              Module._free(offsets[i]);
             }
-            const numChunkSpecs = chunkSpecs.length;
+          };
 
-            let writeByteOffset = 0;
-            const chunksHeader = new Uint32Array(buffer, writeByteOffset, 1);
-            writeByteOffset += 4;
+          const {attributeRanges, indexRanges, heightfield, staticHeightfield, peeks} = slab;
+          const noiser = Module._make_noiser(murmur(DEFAULT_SEED));
+          Module._noiser_fill(
+            noiser,
+            ox,
+            oz,
+            _alloc(oldBiomes),
+            +false,
+            _alloc(oldElevations),
+            +false,
+            _alloc(oldEther),
+            +false,
+            _alloc(oldWater),
+            _alloc(oldLava),
+            +false,
+            _alloc(newEther),
+            numNewEthers,
+            _alloc(slab.positions),
+            _alloc(slab.indices),
+            _alloc(attributeRanges),
+            _alloc(indexRanges),
+            _alloc(heightfield),
+            _alloc(staticHeightfield),
+            _alloc(slab.colors),
+            _alloc(peeks)
+          );
 
-            let numResponseChunks = 0;
-            for (let i = 0; i < numChunkSpecs; i++) {
-              const chunkSpec = chunkSpecs[i];
-              const {x, z} = chunkSpec;
-              const chunk = tra.getChunk(x, z);
-              if (chunk) {
-                const chunkHeader1 = new Int32Array(buffer, writeByteOffset, 2);
-                chunkHeader1[0] = x;
-                chunkHeader1[1] = z;
-                writeByteOffset += 4 * 2;
+          oldBiomes.unshadow();
+          oldElevations.unshadow();
+          oldEther.unshadow();
+          oldWater.unshadow();
+          oldLava.unshadow();
+          slab.positions.unshadow();
+          slab.indices.unshadow();
+          attributeRanges.unshadow();
+          indexRanges.unshadow();
+          heightfield.unshadow();
+          staticHeightfield.unshadow();
+          slab.colors.unshadow();
+          peeks.unshadow();
 
-                const chunkHeader2 = new Uint32Array(buffer, writeByteOffset, 1);
-                writeByteOffset += 4;
+          const attributeIndex = attributeRanges[attributeRanges.length - 2] + attributeRanges[attributeRanges.length - 1];
+          const indexIndex = indexRanges[indexRanges.length - 2] + indexRanges[indexRanges.length - 1];
+          const positions = slab.positions.subarray(0, attributeIndex);
+          const indices = slab.indices.subarray(0, indexIndex);
+          const colors = new Float32Array(slab.colors.buffer, slab.colors.byteOffset, attributeIndex);
 
-                const newWriteByteOffset = protocolUtils.stringifyTerrainRenderChunk(chunk.chunkData, chunk.chunkData.decorations, buffer, writeByteOffset)[1];
-                const numChunkBytes = newWriteByteOffset - writeByteOffset;
-                writeByteOffset = newWriteByteOffset;
-
-                chunkHeader2[0] = numChunkBytes;
-
-                numResponseChunks++;
-              }
-            }
-            chunksHeader[0] = numResponseChunks;
-
-            postMessage({
-              type: 'response',
-              args: [id],
-              result: buffer,
-            }, [buffer]);
-          } else {
-            let writeByteOffset = 0;
-            new Uint32Array(buffer, writeByteOffset, 1)[0] = 0;
-            writeByteOffset += 4;
-
-            postMessage({
-              type: 'response',
-              args: [id],
-              result: buffer,
-            }, [buffer]);
+          const geometries = Array(NUM_CHUNKS_HEIGHT);
+          for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
+            geometries[i] = {
+              /* attributeRange: {
+                landStart: attributeRanges[i * 6 + 0],
+                landCount: attributeRanges[i * 6 + 1],
+                waterStart: attributeRanges[i * 6 + 2],
+                waterCount: attributeRanges[i * 6 + 3],
+                lavaStart: attributeRanges[i * 6 + 4],
+                lavaCount: attributeRanges[i * 6 + 5],
+              }, */
+              indexRange: {
+                landStart: indexRanges[i * 6 + 0],
+                landCount: indexRanges[i * 6 + 1],
+                waterStart: indexRanges[i * 6 + 2],
+                waterCount: indexRanges[i * 6 + 3],
+                lavaStart: indexRanges[i * 6 + 4],
+                lavaCount: indexRanges[i * 6 + 5],
+              },
+              boundingSphere: Float32Array.from([
+                ox * NUM_CELLS + NUM_CELLS_HALF,
+                i * NUM_CELLS + NUM_CELLS_HALF,
+                oz * NUM_CELLS + NUM_CELLS_HALF,
+                NUM_CELLS_CUBE,
+              ]),
+              peeks: slab.peeksArray[i],
+            };
           }
+
+          const chunkData = {
+            positions,
+            colors,
+            indices,
+            geometries,
+            heightfield,
+            staticHeightfield,
+            biomes: oldBiomes,
+            elevations: oldElevations,
+            ether: oldEther,
+            water: oldWater,
+            lava: oldLava,
+          };
+
+          const terrainBuffer = oldChunk.getTerrainBuffer();
+          protocolUtils.stringifyTerrainData(chunkData, terrainBuffer.buffer, terrainBuffer.byteOffset);
+
+          oldChunk.chunkData.terrain = chunkData;
+          oldChunk.chunkData.decorations.terrain = {
+            skyLightmaps: new Uint8Array(chunkData.positions.length / 3).fill(0xFF),
+            torchLightmaps: new Uint8Array(chunkData.positions.length / 3).fill(0xFF),
+          };
+          oldChunk[terrainDecorationsSymbol] = false;
+          mapChunkMeshes[_getChunkIndex(x, z)] = null;
+
+          Module._destroy_noiser(noiser);
+          _freeAll();
+
+          postMessage({
+            type: 'chunkUpdate',
+            args: [ox, oz],
+          });
         })
         .catch(err => {
           console.warn(err);

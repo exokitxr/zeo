@@ -405,6 +405,7 @@ class Heightfield {
 
               const meshes = {
                 renderListEntries,
+                gbuffer,
                 index: gbuffer.index,
                 numPositions: gbuffer.slices.positions.length,
                 numIndices: gbuffer.slices.indices.length,
@@ -597,8 +598,26 @@ class Heightfield {
                 queue.push(_removeChunk.bind(this, chunk));
               }
             };
+            const _refreshChunk = chunk => {
+              if (!running) {
+                running = true;
 
-            const _requestSubVoxel = (() => { // XXX after these mutations, we need to refresh the nearby objects and grass lightmaps
+                const oldMapChunkMeshes = mapChunkMeshes[_getChunkIndex(chunk.x, chunk.z)];
+                const {gbuffer} = oldMapChunkMeshes;
+                _requestTerrainGenerate(chunk.x, chunk.z, gbuffer.index, gbuffer.slices.positions.length, gbuffer.slices.indices.length, chunkData => {
+                  oldMapChunkMeshes.update(chunkData);
+
+                  _next();
+                });
+              } else {
+                queue.push(_refreshChunk.bind(this, chunk));
+              }
+            };
+
+            const _requestSubVoxel = (x, y, z) => {
+              generatorElement.subVoxel(x, y, z);
+            };
+            /* const _requestSubVoxel = (() => {
               let running = false;
               const queue = [];
               const nextSubVoxel = () => {
@@ -633,7 +652,7 @@ class Heightfield {
                   }
                   generatorElement.requestSubVoxel(x, y, z, gslots, buffer => {
                     // XXX re-render here
-                    /* let byteOffset = 0;
+                    let byteOffset = 0;
                     const numChunks = new Uint32Array(buffer, byteOffset, 1);
                     byteOffset += 4;
 
@@ -653,7 +672,7 @@ class Heightfield {
                       if (trackedMapChunkMeshes) {
                         trackedMapChunkMeshes.update(protocolUtils.parseRenderChunk(chunkBuffer.buffer, chunkBuffer.byteOffset));
                       }
-                    } */
+                    }
 
                     nextSubVoxel();
                   });
@@ -662,7 +681,7 @@ class Heightfield {
                 }
               };
               return _recurse;
-            })();
+            })(); */
 
             const a = new THREE.Vector3();
             const b = new THREE.Vector3();
@@ -896,6 +915,10 @@ class Heightfield {
               _removeChunk(chunk);
             };
             generatorElement.on('remove', _remove);
+            const _refresh = chunk => {
+              _refreshChunk(chunk);
+            };
+            generatorElement.on('refresh', _refresh);
             generatorElement.forEachChunk(chunk => {
               _add(chunk);
             });

@@ -107,7 +107,6 @@ class Generator {
 
     let terrainGenerateBuffer = new ArrayBuffer(NUM_POSITIONS_CHUNK);
     let objectsGenerateBuffer = new ArrayBuffer(NUM_POSITIONS_CHUNK);
-    let voxelBuffer = new ArrayBuffer(NUM_POSITIONS_CHUNK * 4);
     let terrainCullBuffer = new ArrayBuffer(100 * 1024);
     let objectsCullBuffer = new ArrayBuffer(100 * 1024);
     let hoveredObjectsBuffer = new ArrayBuffer(12 * 2 * 4);
@@ -375,22 +374,15 @@ class Generator {
         cb(newBodyObjectBuffer);
       };
     };
-    worker.requestSubVoxel = (x, y, z, gslots, cb) => {
+    worker.requestSubVoxel = (x, y, z) => {
       const id = _makeId();
       worker.postMessage({
         type: 'subVoxel',
         id,
         args: {
           position: [x, y, z],
-          gslots,
-          buffer: voxelBuffer,
         },
-      }, [voxelBuffer]);
-      queues[id] = newTerrainBuffer => {
-        voxelBuffer = newTerrainBuffer;
-
-        cb(newTerrainBuffer);
-      };
+      });
     };
     /* worker.respond = (id, result, transfers) => {
       worker.postMessage({
@@ -413,7 +405,11 @@ class Generator {
         _cleanupQueues();
       } else if (type === 'chunkUpdate') {
         const [x, z] = args;
-        _refreshChunk(x, z);
+
+        const chunk = chunker.getChunk(x, z);
+        if (chunk) {
+          _emit('refresh', chunk);
+        }
       } else if (type === 'textureAtlas') {
         const [imageBitmap] = args;
         textureAtlas.image = imageBitmap;
@@ -500,8 +496,8 @@ class Generator {
             cb(protocolUtils.parseWorker(buffer));
           });
         };
-        generatorElement.requestSubVoxel = (x, y, z, gslots, cb) => {
-          worker.requestSubVoxel(x, y, z, gslots, cb);
+        generatorElement.subVoxel = (x, y, z) => {
+          worker.requestSubVoxel(x, y, z);
         };
         generatorElement.requestAddObject = (name, position, rotation, value) => {
           worker.requestAddObject(name, position, rotation, value);
