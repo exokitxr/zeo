@@ -25,10 +25,6 @@ const protocolUtils = require('./lib/utils/protocol-utils');
 const terrainTesselatorLib = require('./terrain-tesselator');
 const objectsTesselatorLib = require('./objects-tesselator');
 
-/* const NUM_CELLS_HALF = NUM_CELLS / 2;
-const NUM_CELLS_CUBE = Math.sqrt((NUM_CELLS_HALF + 16) * (NUM_CELLS_HALF + 16) * 3); // larger than the actual bounding box to account for geometry overflow
-const NUM_VOXELS_CHUNK_HEIGHT = BLOCK_BUFFER_SIZE / 4 / NUM_CHUNKS_HEIGHT; */
-
 const DIRECTIONS = [
   [-1, -1],
   [-1, 1],
@@ -426,12 +422,6 @@ class Generator {
           getBiome(x, z) {
             return noiser.getBiome(x, z);
           }
-          /* getHeightfield(x, z) {
-            return protocolUtils.parseTerrainData(zde.getChunk(x, z).getTerrainBuffer()).heightfield;
-          }
-          getBiomes(x, z) {
-            return protocolUtils.parseTerrainData(zde.getChunk(x, z).getTerrainBuffer()).biomes;
-          } */
           registerGeometry(name, geometry) {
             if (!geometry.getAttribute('ssao')) {
               const ssaos = new Uint8Array(geometry.getAttribute('position').array.length / 3);
