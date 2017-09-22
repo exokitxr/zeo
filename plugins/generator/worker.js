@@ -443,7 +443,7 @@ const _retesselateObjects = chunk => {
     skyLightmaps: new Uint8Array(chunkData.positions.length / 3),
     torchLightmaps: new Uint8Array(chunkData.positions.length / 3),
   };
-  chunk[objectsDecorationsSymbol] = false;
+  _undecorateObjectsChunk(chunk);
 
   _freeAll();
 };
