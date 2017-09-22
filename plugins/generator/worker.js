@@ -835,57 +835,76 @@ connection.on('message', e => {
   } else if (type === 'setBlock') {
     const {args: {x, y, z, v}} = m;
 
-    const oldChunk = zde.getChunk(x, z);
+    const ox = Math.floor(x / NUM_CELLS);
+    const oz = Math.floor(z / NUM_CELLS);
+    const oldChunk = zde.getChunk(ox, oz);
     if (oldChunk) {
-      const {offsets: {index, numPositions, numObjectIndices, numIndices}} = oldChunk;
-      _requestObjectsChunk(x, z, index, numPositions, numObjectIndices, numIndices)
-        .then(newChunk => {
-          const oldChunk = zde.removeChunk(x, z);
-          _undecorateTerrainChunk(oldChunk);
-          _undecorateObjectsChunk(oldChunk);
-          zde.pushChunk(newChunk);
+      oldChunk.setBlock(x - ox * NUM_CELLS, y, z - oz * NUM_CELLS, v);
 
-          postMessage({
-            type: 'chunkUpdate',
-            args: [x, z],
-          });
+      _retesselateObjects(oldChunk);
+      _relight(oldChunk, x, y, z);
+      _relightmap(oldChunk);
 
-          const objectApi = objectApis[n];
-          if (objectApi && objectApi.set) {
-            postMessage({
-              type: 'blockSet',
-              args: [x, y, z, v],
-            });
-          }
+      postMessage({
+        type: 'chunkUpdate',
+        args: [ox, oz],
+      });
+
+      const objectApi = objectApis[n];
+      if (objectApi && objectApi.set) {
+        postMessage({
+          type: 'blockSet',
+          args: [x, y, z, v],
         });
+      }
     }
-  } else if (type === 'removeObject') {
-     const {args: {x, y, z}} = m;
+  } else if (type === 'clearBlock') {
+    const {args: {x, y, z, v}} = m;
 
-    const oldChunk = zde.getChunk(x, z);
+    const ox = Math.floor(x / NUM_CELLS);
+    const oz = Math.floor(z / NUM_CELLS);
+    const oldChunk = zde.getChunk(ox, oz);
     if (oldChunk) {
-      const {offsets: {index, numPositions, numObjectIndices, numIndices}} = oldChunk;
-      _requestObjectsChunk(x, z, index, numPositions, numObjectIndices, numIndices)
-        .then(newChunk => {
-          const oldChunk = zde.removeChunk(x, z);
-          _undecorateTerrainChunk(oldChunk);
-          _undecorateObjectsChunk(oldChunk);
-          zde.pushChunk(newChunk);
+      oldChunk.clearBlock(x - ox * NUM_CELLS, y, z - oz * NUM_CELLS);
 
-          postMessage({
-            type: 'chunkUpdate',
-            args: [x, z],
-          });
+      _retesselateObjects(oldChunk);
+      _relight(oldChunk, x, y, z);
+      _relightmap(oldChunk);
 
-          const objectApi = objectApis[n];
-          if (objectApi && objectApi.clear) {
-            postMessage({
-              type: 'blockCleared',
-              args: [x, y, z],
-            });
-          }
-        });
+      postMessage({
+        type: 'chunkUpdate',
+        args: [ox, oz],
+      });
     }
+  } else if (type === 'subVoxel') {
+    const seenChunks = [];
+    for (let i = 0; i < DIRECTIONS.length; i++) {
+      const [dx, dz] = DIRECTIONS[i];
+      const ax = x + dx * 2;
+      const az = z + dz * 2;
+      const ox = Math.floor(ax / NUM_CELLS);
+      const oz = Math.floor(az / NUM_CELLS);
+
+      if (!seenChunks.some(([x, z]) => x === ox && z === oz)) {
+        const oldChunk = zde.getChunk(ox, oz);
+
+        const lx = x - (ox * NUM_CELLS);
+        const lz = z - (oz * NUM_CELLS);
+        const v = 1;
+        const newEther = Float32Array.from([lx, y, lz, v]);
+
+        _retesselateTerrain(oldChunk, newEther);
+        _relight(oldChunk, x, y, z);
+        _relightmap(oldChunk);
+
+        seenChunks.push([ox, oz]);
+      }
+    }
+
+    postMessage({
+      type: 'chunkUpdates',
+      args: seenChunks,
+    });
   } else if (type === 'response') {
     const {id, result} = m;
 
@@ -897,6 +916,19 @@ connection.on('message', e => {
     console.warn('generator worker got invalid connection message', m);
   }
 });
+connection.subVoxel = (x, y, z, cb) => {
+  const id = _makeId();
+  connection.send(JSON.stringify({
+    method: 'subVoxel',
+    id,
+    args: {
+      x,
+      y,
+      z,
+    },
+  }));
+  queues[id] = cb;
+};
 connection.addObject = (x, z, n, matrix, value, cb) => {
   const id = _makeId();
   connection.send(JSON.stringify({
@@ -1687,14 +1719,7 @@ self.onmessage = e => {
       const {id, args} = data;
       const {position: [x, y, z]} = args;
 
-      fetch(`/archae/generator/voxels?x=${x}&y=${y}&z=${z}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      })
-        .then(_resBlob)
-        .catch(err => {
-          console.warn(err);
-        });
+      connection.subVoxel(x, y, z, () => {});
 
       const seenChunks = [];
       for (let i = 0; i < DIRECTIONS.length; i++) {
@@ -1703,13 +1728,14 @@ self.onmessage = e => {
         const az = z + dz * 2;
         const ox = Math.floor(ax / NUM_CELLS);
         const oz = Math.floor(az / NUM_CELLS);
-        const lx = x - (ox * NUM_CELLS);
-        const lz = z - (oz * NUM_CELLS);
-        const v = 1;
-        const newEther = Float32Array.from([lx, y, lz, v]);
 
         if (!seenChunks.some(([x, z]) => x === ox && z === oz)) {
           const oldChunk = zde.getChunk(ox, oz);
+
+          const lx = x - (ox * NUM_CELLS);
+          const lz = z - (oz * NUM_CELLS);
+          const v = 1;
+          const newEther = Float32Array.from([lx, y, lz, v]);
 
           _retesselateTerrain(oldChunk, newEther);
           _relight(oldChunk, x, y, z);

@@ -125,104 +125,6 @@ class Generator {
       protocolUtils.stringifyGeometry(objectsTesselator.tesselate(chunk), geometryBuffer.buffer, geometryBuffer.byteOffset);
       return Promise.resolve(chunk);
     };
-    /* const _makeChunkObjectsGeometry = (() => { // XXX can be externalized
-      const _makeGeometeriesBuffer = (() => {
-        const slab = new ArrayBuffer(GEOMETRY_BUFFER_SIZE * NUM_CHUNKS_HEIGHT * 7);
-        let index = 0;
-        const result = constructor => {
-          const result = new constructor(slab, index, (GEOMETRY_BUFFER_SIZE * NUM_CHUNKS_HEIGHT) / constructor.BYTES_PER_ELEMENT);
-          index += GEOMETRY_BUFFER_SIZE * NUM_CHUNKS_HEIGHT;
-          return result;
-        };
-        result.reset = () => {
-          index = 0;
-        };
-        return result;
-      })();
-      const boundingSpheres = (() => {
-        const slab = new ArrayBuffer(NUM_CHUNKS_HEIGHT * 4 * Float32Array.BYTES_PER_ELEMENT);
-        const result = Array(NUM_CHUNKS_HEIGHT);
-        for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
-          result[i] = new Float32Array(slab, i * 4 * Float32Array.BYTES_PER_ELEMENT, 4);
-        }
-        return result;
-      })();
-      return chunk => {
-        _makeGeometeriesBuffer.reset();
-        const geometriesPositions = _makeGeometeriesBuffer(Float32Array);
-        const geometriesUvs = _makeGeometeriesBuffer(Float32Array);
-        const geometriesSsaos = _makeGeometeriesBuffer(Uint8Array);
-        const geometriesFrames = _makeGeometeriesBuffer(Float32Array);
-        const geometriesObjectIndices = _makeGeometeriesBuffer(Float32Array);
-        const geometriesIndices = _makeGeometeriesBuffer(Uint32Array);
-        const geometriesObjects = _makeGeometeriesBuffer(Uint32Array);
-
-        const {
-          positions: numNewPositions,
-          uvs: numNewUvs,
-          ssaos: numNewSsaos,
-          frames: numNewFrames,
-          objectIndices: numNewObjectIndices,
-          indices: numNewIndices,
-          objects: numNewObjects,
-        } = vxl.objectize({
-          src: chunk.getObjectBuffer(),
-          geometries: geometriesBuffer,
-          geometryIndex: geometryTypes,
-          blocks: chunk.getBlockBuffer(),
-          blockTypes,
-          dims: Int32Array.from([NUM_CELLS, NUM_CELLS, NUM_CELLS]),
-          transparentVoxels,
-          translucentVoxels,
-          faceUvs,
-          shift: Float32Array.from([chunk.x * NUM_CELLS, 0, chunk.z * NUM_CELLS]),
-          positions: geometriesPositions,
-          uvs: geometriesUvs,
-          ssaos: geometriesSsaos,
-          frames: geometriesFrames,
-          objectIndices: geometriesObjectIndices,
-          indices: geometriesIndices,
-          objects: geometriesObjects,
-        });
-
-        const localGeometries = Array(NUM_CHUNKS_HEIGHT);
-        for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
-          const attributeRangeStart = i === 0 ? 0 : numNewPositions[i - 1];
-          const attributeRangeCount = numNewPositions[i] - attributeRangeStart;
-          const indexRangeStart = i === 0 ? 0 : numNewIndices[i - 1];
-          const indexRangeCount = numNewIndices[i] - indexRangeStart;
-
-          const boundingSphere = boundingSpheres[i];
-          boundingSphere[0] = chunk.x * NUM_CELLS + NUM_CELLS_HALF;
-          boundingSphere[1] = i * NUM_CELLS + NUM_CELLS_HALF;
-          boundingSphere[2] = chunk.z * NUM_CELLS + NUM_CELLS_HALF;
-          boundingSphere[3] = NUM_CELLS_CUBE;
-
-          localGeometries[i] = {
-            attributeRange: {
-              start: attributeRangeStart,
-              count: attributeRangeCount,
-            },
-            indexRange: {
-              start: indexRangeStart,
-              count: indexRangeCount,
-            },
-            boundingSphere,
-          };
-        };
-
-        return {
-          positions: new Float32Array(geometriesPositions.buffer, geometriesPositions.byteOffset, numNewPositions[NUM_CHUNKS_HEIGHT - 1]),
-          uvs: new Float32Array(geometriesUvs.buffer, geometriesUvs.byteOffset, numNewUvs[NUM_CHUNKS_HEIGHT - 1]),
-          ssaos: new Uint8Array(geometriesSsaos.buffer, geometriesSsaos.byteOffset, numNewSsaos[NUM_CHUNKS_HEIGHT - 1]),
-          frames: new Float32Array(geometriesFrames.buffer, geometriesFrames.byteOffset, numNewFrames[NUM_CHUNKS_HEIGHT - 1]),
-          objectIndices: new Float32Array(geometriesObjectIndices.buffer, geometriesObjectIndices.byteOffset, numNewObjectIndices[NUM_CHUNKS_HEIGHT - 1]),
-          indices: new Uint32Array(geometriesIndices.buffer, geometriesIndices.byteOffset, numNewIndices[NUM_CHUNKS_HEIGHT - 1]),
-          objects: new Uint32Array(geometriesObjects.buffer, geometriesObjects.byteOffset, numNewObjects[NUM_CHUNKS_HEIGHT - 1]),
-          geometries: localGeometries,
-        };
-      };
-    })(); */
     const _symbolizeChunk = chunk => {
       if (chunk) {
         chunk[lightsSymbol] = new Uint8Array(NUM_CELLS_OVERSCAN * (NUM_CELLS_HEIGHT + 1) * NUM_CELLS_OVERSCAN);
@@ -807,90 +709,6 @@ class Generator {
         }
         app.get('/archae/generator/chunks', serveGeneratorChunks);
 
-        function serveGeneratorVoxels(req, res, next) {
-          const {query: {x: xs, y: ys, z: zs}} = req;
-          const x = parseInt(xs, 10);
-          const y = parseInt(ys, 10);
-          const z = parseInt(zs, 10);
-
-          if (!isNaN(x) && !isNaN(y) && !isNaN(z)) {
-            const v = req.method === 'POST' ? -1 : 1;
-
-            const regeneratePromises = [];
-            const seenIndex = {};
-            for (let i = 0; i < DIRECTIONS.length; i++) {
-              const [dx, dz] = DIRECTIONS[i];
-              const ax = x + dx * 2;
-              const az = z + dz * 2;
-              const ox = Math.floor(ax / NUM_CELLS);
-              const oz = Math.floor(az / NUM_CELLS);
-              const lx = x - (ox * NUM_CELLS);
-              const lz = z - (oz * NUM_CELLS);
-              const newEther = Float32Array.from([lx, y, lz, v]);
-
-              const index = _getChunkIndex(ox, oz);
-              if (!seenIndex[index]) {
-                let chunk = zde.getChunk(ox, oz);
-                if (chunk) {
-                  const oldTerrainBuffer = chunk.getTerrainBuffer();
-                  const oldChunkData = protocolUtils.parseTerrainData(oldTerrainBuffer.buffer, oldTerrainBuffer.byteOffset);
-                  const oldBiomes = oldChunkData.biomes.slice();
-                  const oldElevations = oldChunkData.elevations.slice();
-                  const oldEther = oldChunkData.ether.slice();
-                  const oldWater = oldChunkData.water.slice();
-                  const oldLava = oldChunkData.lava.slice();
-
-                  _generateChunkTerrain(chunk, {
-                    oldBiomes,
-                    oldElevations,
-                    oldEther,
-                    oldWater,
-                    oldLava,
-                    newEther,
-                  });
-
-                  regeneratePromises.push(generatorElement.requestRelight(x, y, z));
-                }
-
-                seenIndex[index] = true;
-              }
-            }
-            _saveChunks();
-
-            Promise.all(regeneratePromises)
-              .then(regeneratedChunks => {
-                res.send();
-                /* res.type('application/octet-stream');
-
-                const chunksHeader = Uint32Array.from([regeneratedChunks.length]);
-                res.write(new Buffer(chunksHeader.buffer, chunksHeader.byteOffset, chunksHeader.byteLength));
-                for (let i = 0; i < regeneratedChunks.length; i++) {
-                  const chunk = regeneratedChunks[i];
-
-                  const chunkHeader1 = Int32Array.from([chunk.x, chunk.z]);
-                  res.write(new Buffer(chunkHeader1.buffer, chunkHeader1.byteOffset, chunkHeader1.byteLength));
-
-                  const uint32Buffer = chunk.getBuffer();
-                  const chunkHeader2 = Uint32Array.from([uint32Buffer.byteLength]);
-                  res.write(new Buffer(chunkHeader2.buffer, chunkHeader2.byteOffset, chunkHeader2.byteLength));
-                  res.write(new Buffer(uint32Buffer.buffer, uint32Buffer.byteOffset, uint32Buffer.byteLength));
-
-                  const {[lightmapsSymbol]: decorationsObject} = chunk;
-                  const [arrayBuffer, byteOffset] = protocolUtils.stringifyDecorations(decorationsObject);
-                  const chunkHeader3 = Uint32Array.from([byteOffset]);
-                  res.write(new Buffer(chunkHeader3.buffer, chunkHeader3.byteOffset, chunkHeader3.byteLength));
-                  res.write(new Buffer(arrayBuffer, 0, byteOffset));
-                }
-                res.end(); */
-              });
-          } else {
-            res.status(400);
-            res.send();
-          }
-        }
-        app.post('/archae/generator/voxels', serveGeneratorVoxels);
-        app.delete('/archae/generator/voxels', serveGeneratorVoxels);
-
         const connections = [];
         const _connection = c => {
           const {url} = c.upgradeReq;
@@ -911,7 +729,67 @@ class Generator {
               const m = JSON.parse(msg);
               const {method} = m;
 
-              if (method === 'addObject') {
+              if (method === 'subVoxel') {
+                const {id, args} = m;
+                const {x, y, z} = args;
+                const v = 1;
+
+                const regeneratePromises = [];
+                const seenIndex = {};
+                for (let i = 0; i < DIRECTIONS.length; i++) {
+                  const [dx, dz] = DIRECTIONS[i];
+                  const ax = x + dx * 2;
+                  const az = z + dz * 2;
+                  const ox = Math.floor(ax / NUM_CELLS);
+                  const oz = Math.floor(az / NUM_CELLS);
+                  const lx = x - (ox * NUM_CELLS);
+                  const lz = z - (oz * NUM_CELLS);
+                  const newEther = Float32Array.from([lx, y, lz, v]);
+
+                  const index = _getChunkIndex(ox, oz);
+                  if (!seenIndex[index]) {
+                    let chunk = zde.getChunk(ox, oz);
+                    if (chunk) {
+                      const oldTerrainBuffer = chunk.getTerrainBuffer();
+                      const oldChunkData = protocolUtils.parseTerrainData(oldTerrainBuffer.buffer, oldTerrainBuffer.byteOffset);
+                      const oldBiomes = oldChunkData.biomes.slice();
+                      const oldElevations = oldChunkData.elevations.slice();
+                      const oldEther = oldChunkData.ether.slice();
+                      const oldWater = oldChunkData.water.slice();
+                      const oldLava = oldChunkData.lava.slice();
+
+                      _generateChunkTerrain(chunk, {
+                        oldBiomes,
+                        oldElevations,
+                        oldEther,
+                        oldWater,
+                        oldLava,
+                        newEther,
+                      });
+
+                      regeneratePromises.push(generatorElement.requestRelight(x, y, z));
+                    }
+
+                    seenIndex[index] = true;
+                  }
+                }
+                _saveChunks();
+
+                Promise.all(regeneratePromises)
+                  .then(regeneratedChunks => {
+                    c.send(JSON.stringify({
+                      type: 'response',
+                      id,
+                      result: null,
+                    }));
+
+                    _broadcast({
+                      type: 'subVoxel',
+                      args,
+                      result: {x, y, z},
+                    });
+                  });
+              } else if (method === 'addObject') {
                 const {id, args} = m;
                 const {x, z, n, matrix, value} = args;
 
