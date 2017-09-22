@@ -1,4 +1,3 @@
-const promiseser = require('promiseser');
 const {
   NUM_CELLS,
   NUM_CELLS_HEIGHT,
@@ -376,6 +375,9 @@ class Heightfield {
             const _requestTerrainGenerate = (x, z, index, numPositions, numIndices, cb) => {
               generatorElement.requestTerrainGenerate(x, z, index, numPositions, numIndices, cb);
             };
+            const _requestTerrainsGenerate = (specs, cb) => {
+              generatorElement.requestTerrainsGenerate(specs, cb);
+            };
             const _makeMapChunkMeshes = (chunk, gbuffer) => {
               const {index, geometry, slices: {positions, colors, skyLightmaps, torchLightmaps, indices}} = gbuffer;
 
@@ -433,7 +435,7 @@ class Heightfield {
 
                     meshes.heightfield = heightfield.slice();
                     // XXX preallocate stck buffers
-                    meshes.staticHeightfield = staticHeightfield.slice(); // XXX this needs to be refreshed along with terrain destruction
+                    meshes.staticHeightfield = staticHeightfield.slice();
 
                     const newPositionsLength = newPositions.length;
                     const newColorsLength = newColors.length;
@@ -468,12 +470,10 @@ class Heightfield {
                     });
                   }
                 },
-                partialUpdate: (chunkData) => {
+                updateImmediate: chunkData => {
                   const {positions: newPositions, colors: newColors, skyLightmaps: newSkyLightmaps, torchLightmaps: newTorchLightmaps, indices: newIndices, heightfield, staticHeightfield} = chunkData;
 
                   if (newPositions.length > 0) {
-                    version++;
-
                     // geometry
 
                     positions.set(newPositions);
@@ -484,7 +484,7 @@ class Heightfield {
 
                     meshes.heightfield = heightfield.slice();
                     // XXX preallocate stck buffers
-                    meshes.staticHeightfield = staticHeightfield.slice(); // XXX this needs to be refreshed along with terrain destruction
+                    meshes.staticHeightfield = staticHeightfield.slice();
 
                     const newPositionsLength = newPositions.length;
                     const newColorsLength = newColors.length;
@@ -492,25 +492,20 @@ class Heightfield {
                     const newTorchLightmapsLength = newTorchLightmaps.length;
                     const newIndicesLength = newIndices.length;
 
-                    const localVersion = version;
-                    return () => {
-                      if (version === localVersion) {
-                        /* renderListEntries[0].visible = false;
-                        renderListEntries[1].visible = false;
-                        renderListEntries[2].visible = false; */
+                    /* renderListEntries[0].visible = false;
+                    renderListEntries[1].visible = false;
+                    renderListEntries[2].visible = false; */
 
-                        renderer.updateAttribute(geometry.attributes.position, index * positions.length, newPositionsLength, false);
-                        renderer.updateAttribute(geometry.attributes.color, index * colors.length, newColorsLength, false);
-                        renderer.updateAttribute(geometry.attributes.skyLightmap, index * skyLightmaps.length, newSkyLightmapsLength, false);
-                        renderer.updateAttribute(geometry.attributes.torchLightmap, index * torchLightmaps.length, newTorchLightmapsLength, false);
-                        renderer.updateAttribute(geometry.index, index * indices.length, newIndicesLength, true);
-                        renderer.getContext().flush();
+                    renderer.updateAttribute(geometry.attributes.position, index * positions.length, newPositionsLength, false);
+                    renderer.updateAttribute(geometry.attributes.color, index * colors.length, newColorsLength, false);
+                    renderer.updateAttribute(geometry.attributes.skyLightmap, index * skyLightmaps.length, newSkyLightmapsLength, false);
+                    renderer.updateAttribute(geometry.attributes.torchLightmap, index * torchLightmaps.length, newTorchLightmapsLength, false);
+                    renderer.updateAttribute(geometry.index, index * indices.length, newIndicesLength, true);
+                    renderer.getContext().flush();
 
-                        renderListEntries[0].visible = true;
-                        renderListEntries[1].visible = true;
-                        renderListEntries[2].visible = true;
-                      }
-                    };
+                    /* renderListEntries[0].visible = true;
+                    renderListEntries[1].visible = true;
+                    renderListEntries[2].visible = true; */
                   }
                 },
                 destroy: () => {
@@ -663,20 +658,69 @@ class Heightfield {
               if (!running) {
                 running = true;
 
-                promiseser(chunks.map(chunk => () => new Promise((accept, reject) => {
+                cullEnabled = false;
+
+                const specs = chunks.map(chunk => {
                   const oldMapChunkMeshes = mapChunkMeshes[_getChunkIndex(chunk.x, chunk.z)];
                   const {gbuffer} = oldMapChunkMeshes;
-                  _requestTerrainGenerate(chunk.x, chunk.z, gbuffer.index, gbuffer.slices.positions.length, gbuffer.slices.indices.length, chunkData => {
-                    accept(oldMapChunkMeshes.partialUpdate(chunkData));
-                  });
-                })))
-                  .then(fns => {
-                    for (let i = 0; i < fns.length; i++) {
-                      fns[i]();
+                  return {
+                    x: chunk.x,
+                    y: chunk.z,
+                    index: gbuffer.index,
+                    numPositions: gbuffer.slices.positions.length,
+                    numIndices: gbuffer.slices.indices.length,
+                  };
+                });
+
+                _requestTerrainsGenerate(specs, chunkDatas => {
+                  cullEnabled = true;
+
+                  for (let i = 0; i < chunkDatas.length; i++) {
+                    const chunkData = chunkDatas[i];
+                    const spec = specs[i];
+                    const oldMapChunkMeshes = mapChunkMeshes[_getChunkIndex(spec.x, spec.y)];
+                    oldMapChunkMeshes.updateImmediate(chunkData);
+
+                    const {geometries} = chunkData;
+                    for (let j = 0; j < NUM_CHUNKS_HEIGHT; j++) {
+                      const geometry = geometries[j];
+                      const {indexRange} = geometry;
+                      const {landStart, landCount, waterStart, waterCount, lavaStart, lavaCount} = indexRange;
                     }
 
-                    _next();
-                  });
+                    const {index, numIndices} = spec;
+                    const indexOffset = index * numIndices;
+                    oldMapChunkMeshes.renderListEntries[0].groups = geometries.map(geometry => {
+                      const {indexRange} = geometry;
+                      const {landStart, landCount} = indexRange;
+                      return {
+                        start: landStart + indexOffset,
+                        count: landCount,
+                        materialIndex: 0,
+                      };
+                    });
+                    oldMapChunkMeshes.renderListEntries[1].groups = geometries.map(geometry => {
+                      const {indexRange} = geometry;
+                      const {waterStart, waterCount} = indexRange;
+                      return {
+                        start: waterStart + indexOffset,
+                        count: waterCount,
+                        materialIndex: 0,
+                      };
+                    });
+                    oldMapChunkMeshes.renderListEntries[2].groups = geometries.map(geometry => {
+                      const {indexRange} = geometry;
+                      const {lavaStart, lavaCount} = indexRange;
+                      return {
+                        start: lavaStart + indexOffset,
+                        count: lavaCount,
+                        materialIndex: 0,
+                      };
+                    });
+                  }
+
+                  _next();
+                });
               } else {
                 queue.push(_refreshChunks.bind(this, chunks));
               }
@@ -955,19 +999,22 @@ class Heightfield {
             const _requestCull = (hmdPosition, projectionMatrix, matrixWorldInverse, cb) => {
               generatorElement.requestTerrainCull(hmdPosition, projectionMatrix, matrixWorldInverse, cb);
             };
+            let cullEnabled = true;
             const _debouncedRefreshCull = _debounce(next => {
               const {hmd} = pose.getStatus();
               const {worldPosition: hmdPosition} = hmd;
               const {projectionMatrix, matrixWorldInverse} = camera;
               _requestCull(hmdPosition, projectionMatrix, matrixWorldInverse, culls => {
-                for (let i = 0; i < culls.length; i++) {
-                  const {index, landGroups, waterGroups, lavaGroups} = culls[i];
+                if (cullEnabled) {
+                  for (let i = 0; i < culls.length; i++) {
+                    const {index, landGroups, waterGroups, lavaGroups} = culls[i];
 
-                  const trackedMapChunkMeshes = mapChunkMeshes[index];
-                  if (trackedMapChunkMeshes) {
-                    trackedMapChunkMeshes.renderListEntries[0].groups = landGroups;
-                    trackedMapChunkMeshes.renderListEntries[1].groups = waterGroups;
-                    trackedMapChunkMeshes.renderListEntries[2].groups = lavaGroups;
+                    const trackedMapChunkMeshes = mapChunkMeshes[index];
+                    if (trackedMapChunkMeshes) {
+                      trackedMapChunkMeshes.renderListEntries[0].groups = landGroups;
+                      trackedMapChunkMeshes.renderListEntries[1].groups = waterGroups;
+                      trackedMapChunkMeshes.renderListEntries[2].groups = lavaGroups;
+                    }
                   }
                 }
 

@@ -105,7 +105,7 @@ class Generator {
     const _requestImageBitmap = src => _requestImage(src)
       .then(img => createImageBitmap(img, 0, 0, img.width, img.height));
 
-    let terrainGenerateBuffer = new ArrayBuffer(NUM_POSITIONS_CHUNK);
+    let terrainGenerateBuffer = new ArrayBuffer(4 * NUM_POSITIONS_CHUNK);
     let objectsGenerateBuffer = new ArrayBuffer(NUM_POSITIONS_CHUNK);
     let terrainCullBuffer = new ArrayBuffer(100 * 1024);
     let objectsCullBuffer = new ArrayBuffer(100 * 1024);
@@ -163,6 +163,22 @@ class Generator {
           index,
           numPositions,
           numIndices,
+          buffer: terrainGenerateBuffer,
+        },
+      }, [terrainGenerateBuffer]);
+      queues[id] = newGenerateBuffer => {
+        terrainGenerateBuffer = newGenerateBuffer;
+
+        cb(newGenerateBuffer);
+      };
+    };
+    worker.requestTerrainsGenerate = (specs, cb) => {
+      const id = _makeId();
+      worker.postMessage({
+        type: 'terrainsGenerate',
+        id,
+        args: {
+          specs,
           buffer: terrainGenerateBuffer,
         },
       }, [terrainGenerateBuffer]);
@@ -499,6 +515,11 @@ class Generator {
         generatorElement.requestTerrainGenerate = (x, z, index, numPositions, numIndices, cb) => {
           worker.requestTerrainGenerate(x, z, index, numPositions, numIndices, buffer => {
             cb(protocolUtils.parseTerrainRenderChunk(buffer));
+          });
+        };
+        generatorElement.requestTerrainsGenerate = (specs, cb) => {
+          worker.requestTerrainsGenerate(specs, buffer => {
+            cb(protocolUtils.parseTerrainsRenderChunk(buffer));
           });
         };
         generatorElement.requestObjectsGenerate = (x, z, index, numPositions, numObjectIndices, numIndices, cb) => {

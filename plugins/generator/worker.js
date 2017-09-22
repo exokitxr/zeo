@@ -474,9 +474,6 @@ const _relight = (chunk, x, y, z) => {
         const aox = ox + dox;
         const aoz = oz + doz;
         const chunk = zde.getChunk(aox, aoz);
-if (!chunk) { // XXX handle this
-throw new Error('no neighbor chunk: ' + aox + ' : ' + aoz);
-}
         const uint32Buffer = chunk.getTerrainBuffer();
         const {ether, lava} = protocolUtils.parseTerrainData(uint32Buffer.buffer, uint32Buffer.byteOffset); // XXX can be reduced to only parse the needed fields
         lavaArray[arrayIndex] = lava;
@@ -1092,6 +1089,11 @@ const _requestTerrainChunk = (x, y, index, numPositions, numIndices) => _request
     _decorateTerrainChunk(chunk, index, numPositions, numIndices);
     return chunk;
   });
+const _getTerrainChunk = (x, y, index, numPositions, numIndices) => {
+  const chunk = zde.getChunk(x, y);
+  _decorateTerrainChunk(chunk, index, numPositions, numIndices);
+  return chunk;
+};
 const _requestObjectsChunk = (x, z, index, numPositions, numObjectIndices, numIndices) => _requestChunk(x, z)
   .then(chunk => {
     _decorateObjectsChunk(chunk, index, numPositions, numObjectIndices, numIndices);
@@ -1580,6 +1582,21 @@ self.onmessage = e => {
         .catch(err => {
           console.warn(err);
         });
+      break;
+    }
+    case 'terrainsGenerate': {
+      const {id, args} = data;
+      const {specs} = args;
+      let {buffer} = args;
+
+      const chunks = specs.map(({x, y, index, numPositions, numIndices}) => _getTerrainChunk(x, y, index, numPositions, numIndices));
+      protocolUtils.stringifyTerrainsRenderChunk(chunks, buffer, 0);
+
+      postMessage({
+        type: 'response',
+        args: [id],
+        result: buffer,
+      }, [buffer]);
       break;
     }
     case 'objectsGenerate': {

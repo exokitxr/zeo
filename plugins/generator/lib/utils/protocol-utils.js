@@ -23,6 +23,8 @@ const DECORATIONS_HEADER_ENTRIES = 4;
 const DECORATIONS_HEADER_SIZE = UINT32_SIZE * DECORATIONS_HEADER_ENTRIES;
 const TERRAIN_RENDER_HEADER_ENTRIES = 5 + (1 * NUM_CHUNKS_HEIGHT) + 2;
 const TERRAIN_RENDER_HEADER_SIZE = UINT32_SIZE * TERRAIN_RENDER_HEADER_ENTRIES;
+const TERRAINS_RENDER_HEADER_ENTRIES = 1;
+const TERRAINS_RENDER_HEADER_SIZE = UINT32_SIZE * TERRAINS_RENDER_HEADER_ENTRIES;
 const TERRAIN_CULL_HEADER_ENTRIES = 1;
 const TERRAIN_CULL_HEADER_SIZE = UINT32_SIZE * TERRAIN_CULL_HEADER_ENTRIES;
 const OBJECTS_CULL_HEADER_ENTRIES = 1;
@@ -559,6 +561,7 @@ const parseTerrainRenderChunk = (buffer, byteOffset) => {
 
   return {
     buffer,
+    byteOffset,
     positions,
     colors,
     skyLightmaps,
@@ -568,6 +571,54 @@ const parseTerrainRenderChunk = (buffer, byteOffset) => {
     heightfield,
     staticHeightfield,
   };
+};
+
+const _getTerrainsRenderChunkSize = chunks => {
+  let result = 0;
+  for (let i = 0; i < chunks.length; i++) {
+    const chunk = chunks[i];
+    result += _getTerrainRenderChunkSize(chunk.chunkData.terrain, chunk.chunkData.decorations.terrain);
+  }
+  return result;
+};
+
+const stringifyTerrainsRenderChunk = (mapChunks, arrayBuffer, byteOffset) => {
+  if (arrayBuffer === undefined || byteOffset === undefined) {
+    const bufferSize = _getTerrainsRenderChunkSize(mapChunks);
+    arrayBuffer = new ArrayBuffer(bufferSize);
+    byteOffset = 0;
+  }
+
+  const headerBuffer = new Uint32Array(arrayBuffer, byteOffset, TERRAINS_RENDER_HEADER_ENTRIES);
+  let index = 0;
+  headerBuffer[index++] = mapChunks.length;
+  byteOffset += TERRAINS_RENDER_HEADER_SIZE;
+
+  for (let i = 0; i < mapChunks.length; i++) {
+    const mapChunk = mapChunks[i];
+    byteOffset = stringifyTerrainRenderChunk(mapChunk.chunkData.terrain, mapChunk.chunkData.decorations.terrain, arrayBuffer, byteOffset)[1];
+  }
+
+  return [arrayBuffer, byteOffset];
+};
+
+const parseTerrainsRenderChunk = (buffer, byteOffset) => {
+  if (byteOffset === undefined) {
+    byteOffset = 0;
+  }
+
+  const headerBuffer = new Uint32Array(buffer, byteOffset, TERRAINS_RENDER_HEADER_ENTRIES);
+  let index = 0;
+  const numMapChunks = headerBuffer[index++];
+  byteOffset += TERRAINS_RENDER_HEADER_SIZE;
+
+  const mapChunks = Array(numMapChunks);
+  for (let i = 0; i < numMapChunks; i++) {
+    const mapChunk = parseTerrainRenderChunk(buffer, byteOffset);
+    mapChunks[i] = mapChunk;
+    byteOffset = mapChunk.byteOffset;
+  }
+  return mapChunks;
 };
 
 const _getDecorationsSizeFromMetadata = metadata => {
@@ -1485,6 +1536,9 @@ module.exports = {
 
   stringifyTerrainRenderChunk,
   parseTerrainRenderChunk,
+
+  stringifyTerrainsRenderChunk,
+  parseTerrainsRenderChunk,
 
   stringifyDecorations,
   parseDecorations,
