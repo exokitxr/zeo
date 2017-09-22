@@ -67,7 +67,8 @@ class Generator {
     const transparentVoxels = new Uint8Array(256);
     const translucentVoxels = new Uint8Array(256);
     const faceUvs = new Float32Array(256 * 6 * 4);
-    const lights = {};
+    const lights = new Uint32Array(256);;
+    let lightsIndex = 0;
     const noiser = vxl.noiser({
       seed: murmur(DEFAULT_SEED),
     });
@@ -95,6 +96,14 @@ class Generator {
     const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
     // const _getLightsIndex = (x, y, z) => x + y * NUM_CELLS_OVERSCAN + z * NUM_CELLS_OVERSCAN * (NUM_CELLS_HEIGHT + 1);
     const _getLightsArrayIndex = (x, z) => x + z * 3;
+    const _findLight = n => {
+      for (let i = 0; i < 256; i++) {
+        if (lights[i * 2 + 0] === n) {
+          return lights[i * 2 + 1];
+        }
+      }
+      return 0;
+    };
 
     const _generateChunk = chunk => {
       _generateChunkTerrain(chunk);
@@ -462,7 +471,7 @@ class Generator {
           }
           registerBlock(name, blockSpec) {
             const index = ++blockTypesIndex;
-            blockSpec.index = index;
+            // blockSpec.index = index;
 
             blockTypes[index] = murmur(name);
 
@@ -473,7 +482,10 @@ class Generator {
             }
           }
           registerLight(name, v) {
-            lights[murmur(name)] = v;
+            const index = ++lightsIndex;
+
+            lights[index * 2 + 0] = murmur(name);
+            lights[index * 2 + 1] = v;
           }
           setBlock(chunk, x, y, z, name) {
             const ox = Math.floor(x / NUM_CELLS);
@@ -563,7 +575,7 @@ class Generator {
             const matrix = position.toArray().concat(rotation.toArray());
             const objectIndex = chunk.addObject(n, matrix, value);
 
-            const light = lights[n];
+            const light = _findLight(n);
             if (light) {
               chunk.addLightAt(objectIndex, position.x, position.y, position.z, light);
             }
@@ -649,6 +661,7 @@ class Generator {
           res.write(new Buffer(transparentVoxels.buffer, transparentVoxels.byteOffset, transparentVoxels.byteLength));
           res.write(new Buffer(translucentVoxels.buffer, translucentVoxels.byteOffset, translucentVoxels.byteLength));
           res.write(new Buffer(faceUvs.buffer, faceUvs.byteOffset, faceUvs.byteLength));
+          res.write(new Buffer(lights.buffer, lights.byteOffset, lights.byteLength));
           res.end();
         }
         app.get('/archae/objects/geometry.bin', serveObjectsTemplates);
@@ -831,11 +844,7 @@ class Generator {
                 if (chunk) {
                   const matrix = chunk.getObjectMatrix(index);
                   const n = chunk.removeObject(index);
-
-                  const light = lights[n];
-                  if (light) {
-                    chunk.removeLight(index);
-                  }
+                  chunk.removeLight(index);
 
                   _decorateChunkObjectsGeometry(chunk)
                     .then(() => {

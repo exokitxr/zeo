@@ -772,7 +772,11 @@ connection.on('message', e => {
     const oldChunk = zde.getChunk(ox, oz);
     if (oldChunk) {
       const matrix = positions.concat(rotations).concat(zeroVectorArray);
-      oldChunk.addObject(n, matrix, value);
+      const objectIndex = oldChunk.addObject(n, matrix, value);
+      const light = _findLight(n);
+      if (light) {
+        oldChunk.addLightAt(objectIndex, positions[0], positions[1], positions[2], light);
+      }
 
       const x = Math.floor(positions[0]);
       const y = Math.floor(positions[1]);
@@ -803,6 +807,7 @@ connection.on('message', e => {
       const oldObject = oldChunk.getObject(objectIndex);
       if (oldObject) {
         const n = oldChunk.removeObject(objectIndex);
+        oldChunk.removeLight(objectIndex);
 
         const matrix = oldObject[1];
         const x = Math.floor(matrix[0]);
@@ -1275,6 +1280,15 @@ let blockTypes = null;
 let transparentVoxels = null;
 let translucentVoxels = null;
 let faceUvs = null;
+let lights = null;
+const _findLight = n => {
+  for (let i = 0; i < 256; i++) {
+    if (lights[i * 2 + 0] === n) {
+      return lights[i * 2 + 1];
+    }
+  }
+  return 0;
+};
 const _updateGeometries = _debounce(next => {
   fetch(`/archae/objects/geometry.bin`, {
     credentials: 'include',
@@ -1288,6 +1302,7 @@ const _updateGeometries = _debounce(next => {
       transparentVoxels = templates.transparentVoxels;
       translucentVoxels = templates.translucentVoxels;
       faceUvs = templates.faceUvs;
+      lights = templates.lights;
 
       next();
     })
@@ -1462,6 +1477,10 @@ self.onmessage = e => {
 
         const matrix = positions.concat(rotations).concat(zeroVectorArray);
         const objectIndex = oldChunk.addObject(n, matrix, value);
+        const light = _findLight(n);
+        if (light) {
+          oldChunk.addLightAt(objectIndex, positions[0], positions[1], positions[2], light);
+        }
 
         const x = Math.floor(positions[0]);
         const y = Math.floor(positions[1]);
@@ -1496,6 +1515,7 @@ self.onmessage = e => {
           connection.removeObject(ox, oz, objectIndex, () => {});
 
           const n = oldChunk.removeObject(objectIndex);
+          oldChunk.removeLight(objectIndex);
 
           const matrix = oldObject[1];
           const x = Math.floor(matrix[0]);

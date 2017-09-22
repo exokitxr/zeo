@@ -1366,11 +1366,12 @@ const _getTemplatesSize = () => {
     (4096 * UINT32_SIZE) + // block types
     (256 * UINT8_SIZE) + // transparent voxels
     (256 * UINT8_SIZE) + // translucent voxels
-    (256 * 6 * 4 * FLOAT32_SIZE); // face uvs
+    (256 * 6 * 4 * FLOAT32_SIZE) + // face uvs
+    (256 * UINT32_SIZE); // lights
 };
 
 const stringifyTemplates = (geometry, arrayBuffer, byteOffset) => {
-  const {geometriesBuffer, geometryTypes, blockTypes, transparentVoxels, translucentVoxels, faceUvs} = geometry;
+  const {geometriesBuffer, geometryTypes, blockTypes, transparentVoxels, translucentVoxels, faceUvs, lights} = geometry;
 
   if (arrayBuffer === undefined || byteOffset === undefined) {
     const bufferSize = _getTemplatesSize();
@@ -1401,6 +1402,10 @@ const stringifyTemplates = (geometry, arrayBuffer, byteOffset) => {
   const faceUvsBuffer = new Float32Array(arrayBuffer, byteOffset, 256 * 6 * 4);
   faceUvsBuffer.set(faceUvs);
   byteOffset += 256 * 6 * 4 * FLOAT32_SIZE;
+
+  const lightsBuffer = new Float32Array(arrayBuffer, byteOffset, 256);
+  lightsBuffer.set(lights);
+  byteOffset += 256 * UINT32_SIZE;
 
   return [arrayBuffer, byteOffset];
 };
@@ -1434,6 +1439,10 @@ const parseTemplates = (buffer, byteOffset) => {
   const faceUvs = faceUvsBuffer;
   byteOffset += 256 * 6 * 4 * FLOAT32_SIZE;
 
+  const lightsBuffer = new Uint32Array(buffer, byteOffset, 256);
+  const lights = lightsBuffer;
+  byteOffset += 256 * UINT32_SIZE;
+
   return {
     geometriesBuffer,
     geometryTypes,
@@ -1441,7 +1450,7 @@ const parseTemplates = (buffer, byteOffset) => {
     transparentVoxels,
     translucentVoxels,
     faceUvs,
-    faceUvs,
+    lights,
   };
 };
 
