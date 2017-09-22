@@ -55,6 +55,16 @@ const DIRECTIONS = [
   [1, -1],
   [1, 1],
 ];
+const CROSS_DIRECTIONS = [
+  [-1, -1],
+  [0, -1],
+  [1, -1],
+  [-1, 0],
+  [1, 0],
+  [-1, 1],
+  [0, 1],
+  [1, 1],
+];
 
 const zeroVector = new THREE.Vector3();
 const zeroVectorArray = zeroVector.toArray();
@@ -470,7 +480,7 @@ const _relight = (chunk, x, y, z) => {
     const etherArray = Array(9);
     const blocksArray = Array(9);
     const lightsArray = Array(9);
-    for (let doz = -1; doz <= 1; doz++) {
+    for (let doz = -1; doz <= 1; doz++) { // XXX can be reduced to use only the relight range
       for (let dox = -1; dox <= 1; dox++) {
         const arrayIndex = _getLightsArrayIndex(dox + 1, doz + 1);
 
@@ -773,23 +783,42 @@ connection.on('message', e => {
     if (oldChunk) {
       const matrix = positions.concat(rotations).concat(zeroVectorArray);
       const objectIndex = oldChunk.addObject(n, matrix, value);
-      const light = _findLight(n);
-      if (light) {
-        oldChunk.addLightAt(objectIndex, positions[0], positions[1], positions[2], light);
-      }
 
       const x = Math.floor(positions[0]);
       const y = Math.floor(positions[1]);
       const z = Math.floor(positions[2]);
 
+      const updateSpecs = [[ox, oz]];
+
+      const light = _findLight(n);
+      if (light) {
+        oldChunk.addLightAt(objectIndex, positions[0], positions[1], positions[2], light);
+
+        for (let i = 0; i < CROSS_DIRECTIONS.length; i++) {
+          const [dx, dz] = CROSS_DIRECTIONS[i];
+          const ox = Math.floor((x + dx * light) / NUM_CELLS);
+          const oz = Math.floor((z + dz * light) / NUM_CELLS);
+          if (!updateSpecs.some(update => update[0] === ox && update[1] === oz)) {
+            updateSpecs.push([ox, oz]);
+          }
+        }
+      }
+
       _retesselateObjects(oldChunk);
       _relight(oldChunk, x, y, z);
-      _relightmap(oldChunk);
 
-      postMessage({
-        type: 'chunkUpdate',
-        args: [ox, oz],
-      });
+      for (let i = 0; i < updateSpecs.length; i++) {
+        const updateSpec = updateSpecs[i];
+        const [ox, oz] = updateSpec;
+
+        const chunk = zde.getChunk(ox, oz);
+        _relightmap(chunk);
+
+        postMessage({
+          type: 'chunkUpdate',
+          args: [ox, oz],
+        });
+      }
 
       const objectApi = objectApis[n];
       if (objectApi && objectApi.added) {
@@ -807,21 +836,41 @@ connection.on('message', e => {
       const oldObject = oldChunk.getObject(objectIndex);
       if (oldObject) {
         const n = oldChunk.removeObject(objectIndex);
-        oldChunk.removeLight(objectIndex);
+        const light = oldChunk.removeLight(objectIndex);
 
         const matrix = oldObject[1];
         const x = Math.floor(matrix[0]);
         const y = Math.floor(matrix[1]);
         const z = Math.floor(matrix[2]);
 
+        const updateSpecs = [[ox, oz]];
+        if (light) {
+          for (let i = 0; i < CROSS_DIRECTIONS.length; i++) {
+            const [dx, dz] = CROSS_DIRECTIONS[i];
+            const ox = Math.floor((x + dx * light) / NUM_CELLS);
+            const oz = Math.floor((z + dz * light) / NUM_CELLS);
+            if (!updateSpecs.some(update => update[0] === ox && update[1] === oz)) {
+              updateSpecs.push([ox, oz]);
+            }
+          }
+        }
+
         _retesselateObjects(oldChunk);
         _relight(oldChunk, x, y, z);
         _relightmap(oldChunk);
 
-        postMessage({
-          type: 'chunkUpdate',
-          args: [ox, oz],
-        });
+        for (let i = 0; i < updateSpecs.length; i++) {
+          const updateSpec = updateSpecs[i];
+          const [ox, oz] = updateSpec;
+
+          const chunk = zde.getChunk(ox, oz);
+          _relightmap(chunk);
+
+          postMessage({
+            type: 'chunkUpdate',
+            args: [ox, oz],
+          });
+        }
 
         const objectApi = objectApis[n];
         if (objectApi && objectApi.removed) {
@@ -1477,23 +1526,42 @@ self.onmessage = e => {
 
         const matrix = positions.concat(rotations).concat(zeroVectorArray);
         const objectIndex = oldChunk.addObject(n, matrix, value);
-        const light = _findLight(n);
-        if (light) {
-          oldChunk.addLightAt(objectIndex, positions[0], positions[1], positions[2], light);
-        }
 
         const x = Math.floor(positions[0]);
         const y = Math.floor(positions[1]);
         const z = Math.floor(positions[2]);
 
+        const updateSpecs = [[ox, oz]];
+
+        const light = _findLight(n);
+        if (light) {
+          oldChunk.addLightAt(objectIndex, positions[0], positions[1], positions[2], light);
+
+          for (let i = 0; i < CROSS_DIRECTIONS.length; i++) {
+            const [dx, dz] = CROSS_DIRECTIONS[i];
+            const ox = Math.floor((x + dx * light) / NUM_CELLS);
+            const oz = Math.floor((z + dz * light) / NUM_CELLS);
+            if (!updateSpecs.some(update => update[0] === ox && update[1] === oz)) {
+              updateSpecs.push([ox, oz]);
+            }
+          }
+        }
+
         _retesselateObjects(oldChunk);
         _relight(oldChunk, x, y, z);
-        _relightmap(oldChunk);
 
-        postMessage({
-          type: 'chunkUpdate',
-          args: [ox, oz],
-        });
+        for (let i = 0; i < updateSpecs.length; i++) {
+          const updateSpec = updateSpecs[i];
+          const [ox, oz] = updateSpec;
+
+          const chunk = zde.getChunk(ox, oz);
+          _relightmap(chunk);
+
+          postMessage({
+            type: 'chunkUpdate',
+            args: [ox, oz],
+          });
+        }
 
         const objectApi = objectApis[n];
         if (objectApi && objectApi.added) {
@@ -1515,16 +1583,40 @@ self.onmessage = e => {
           connection.removeObject(ox, oz, objectIndex, () => {});
 
           const n = oldChunk.removeObject(objectIndex);
-          oldChunk.removeLight(objectIndex);
+          const light = oldChunk.removeLight(objectIndex);
 
           const matrix = oldObject[1];
           const x = Math.floor(matrix[0]);
           const y = Math.floor(matrix[1]);
           const z = Math.floor(matrix[2]);
 
+          const updateSpecs = [[ox, oz]];
+          if (light) {
+            for (let i = 0; i < CROSS_DIRECTIONS.length; i++) {
+              const [dx, dz] = CROSS_DIRECTIONS[i];
+              const ox = Math.floor((x + dx * light) / NUM_CELLS);
+              const oz = Math.floor((z + dz * light) / NUM_CELLS);
+              if (!updateSpecs.some(update => update[0] === ox && update[1] === oz)) {
+                updateSpecs.push([ox, oz]);
+              }
+            }
+          }
+
           _retesselateObjects(oldChunk);
           _relight(oldChunk, x, y, z);
-          _relightmap(oldChunk);
+
+          for (let i = 0; i < updateSpecs.length; i++) {
+            const updateSpec = updateSpecs[i];
+            const [ox, oz] = updateSpec;
+
+            const chunk = zde.getChunk(ox, oz);
+            _relightmap(chunk);
+
+            postMessage({
+              type: 'chunkUpdate',
+              args: [ox, oz],
+            });
+          }
 
           postMessage({
             type: 'chunkUpdate',
