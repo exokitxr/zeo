@@ -149,17 +149,13 @@ const zde = zeode();
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
 const localVector3 = new THREE.Vector3();
-const localVector4 = new THREE.Vector3();
 const localQuaternion = new THREE.Quaternion();
 const localQuaternion2 = new THREE.Quaternion();
 const localCoord = new THREE.Vector2();
 const localRay = new THREE.Ray();
 const localRay2 = new THREE.Ray();
-const localMatrix = new THREE.Matrix4();
-const localMatrix2 = new THREE.Matrix4();
 const localBox = new THREE.Box3();
 const localBox2 = new THREE.Box3();
-const localFrustum = new THREE.Frustum();
 
 const oneVector = new THREE.Vector3(1, 1, 1);
 const bodyOffsetVector = new THREE.Vector3(0, -1.6 / 2, 0);
@@ -345,8 +341,7 @@ const _retesselateTerrain = (chunk, x, y, z) => {
     skyLightmaps: new Uint8Array(chunkData.positions.length / 3),
     torchLightmaps: new Uint8Array(chunkData.positions.length / 3),
   };
-  chunk[terrainDecorationsSymbol] = false;
-  mapChunkMeshes[_getChunkIndex(x, z)] = null;
+  _undecorateTerrainChunk(chunk);
 
   Module._destroy_noiser(noiser);
   _freeAll();
@@ -775,7 +770,9 @@ connection.on('message', e => {
       const {offsets: {index, numPositions, numObjectIndices, numIndices}} = oldChunk;
       _requestObjectsChunk(x, z, index, numPositions, numObjectIndices, numIndices)
         .then(newChunk => {
-          zde.removeChunk(x, z);
+          const oldChunk = zde.removeChunk(x, z);
+          _undecorateTerrainChunk(oldChunk);
+          _undecorateObjectsChunk(oldChunk);
           zde.pushChunk(newChunk);
 
           postMessage({
@@ -800,7 +797,9 @@ connection.on('message', e => {
       const {offsets: {index, numPositions, numObjectIndices, numIndices}} = oldChunk;
       _requestObjectsChunk(x, z, index, numPositions, numObjectIndices, numIndices)
         .then(newChunk => {
-          zde.removeChunk(x, z);
+          const oldChunk = zde.removeChunk(x, z);
+          _undecorateTerrainChunk(oldChunk);
+          _undecorateObjectsChunk(oldChunk);
           zde.pushChunk(newChunk);
 
           postMessage({
@@ -843,7 +842,9 @@ connection.on('message', e => {
       const {offsets: {index, numPositions, numObjectIndices, numIndices}} = oldChunk;
       _requestObjectsChunk(x, z, index, numPositions, numObjectIndices, numIndices)
         .then(newChunk => {
-          zde.removeChunk(x, z);
+          const oldChunk = zde.removeChunk(x, z);
+          _undecorateTerrainChunk(oldChunk);
+          _undecorateObjectsChunk(oldChunk);
           zde.pushChunk(newChunk);
 
           postMessage({
@@ -868,7 +869,9 @@ connection.on('message', e => {
       const {offsets: {index, numPositions, numObjectIndices, numIndices}} = oldChunk;
       _requestObjectsChunk(x, z, index, numPositions, numObjectIndices, numIndices)
         .then(newChunk => {
-          zde.removeChunk(x, z);
+          const oldChunk = zde.removeChunk(x, z);
+          _undecorateTerrainChunk(oldChunk);
+          _undecorateObjectsChunk(oldChunk);
           zde.pushChunk(newChunk);
 
           postMessage({
@@ -1006,7 +1009,35 @@ function mod(value, divisor) {
 }
 const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
 
-const mapChunkMeshes = {};
+const NUM_MAP_CHUNK_MESHES = 512;
+const terrainMapChunkMeshes = new Int32Array(NUM_MAP_CHUNK_MESHES * NUM_CELLS_HEIGHT * 14);
+let terrainMapChunkMeshesIndex = 0;
+const _findFreeTerrainMapChunkMeshIndex = () => {
+  let baseIndex = 0;
+  for (let i = 0; i < NUM_MAP_CHUNK_MESHES * NUM_CELLS_HEIGHT; i++) {
+    if (terrainMapChunkMeshes[baseIndex] === 0) {
+      terrainMapChunkMeshesIndex = Math.max(i, terrainMapChunkMeshesIndex);
+      return i;
+    }
+    baseIndex += 14;
+  }
+  throw new Error('ran out of map chunk mesh buffer');
+  return -1;
+};
+const objectsMapChunkMeshes = new Int32Array(NUM_MAP_CHUNK_MESHES * (1 + 2 + NUM_CHUNKS_HEIGHT * 2));
+let objectsMapChunkMeshesIndex = 0;
+const _findFreeObjectsMapChunkMeshIndex = () => {
+  let baseIndex = 0;
+  for (let i = 0; i < NUM_MAP_CHUNK_MESHES; i++) {
+    if (objectsMapChunkMeshes[baseIndex] === 0) {
+      objectsMapChunkMeshesIndex = Math.max(i, objectsMapChunkMeshesIndex);
+      return i;
+    }
+    baseIndex += 1 + 2 + NUM_CHUNKS_HEIGHT * 2;
+  }
+  throw new Error('ran out of map chunk mesh buffer');
+  return -1;
+};
 
 const _requestChunk = (x, z) => {
   const chunk = zde.getChunk(x, z);
@@ -1076,36 +1107,43 @@ const _decorateTerrainChunk = (chunk, index, numPositions, numIndices) => {
   if (!chunk[terrainDecorationsSymbol]) {
     const {x, z} = chunk;
 
-    const trackedMapChunkMeshes = {
-      array: Array(NUM_CHUNKS_HEIGHT),
-      groups: new Int32Array(NUM_RENDER_GROUPS * 6),
-    };
+    const terrainMapChunkMeshIndices = Array(NUM_CHUNKS_HEIGHT);
     for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
-      const {indexRange, boundingSphere, peeks} = chunk.chunkData.terrain.geometries[i];
+      const {indexRange, peeks} = chunk.chunkData.terrain.geometries[i];
       const indexOffset = index * numIndices;
 
-      trackedMapChunkMeshes.array[i] = {
-        indexRange: {
-          landStart: indexRange.landStart + indexOffset,
-          landCount: indexRange.landCount,
-          waterStart: indexRange.waterStart + indexOffset,
-          waterCount: indexRange.waterCount,
-          lavaStart: indexRange.lavaStart + indexOffset,
-          lavaCount: indexRange.lavaCount,
-        },
-        boundingSphere: new THREE.Sphere(
-          new THREE.Vector3().fromArray(boundingSphere, 0),
-          boundingSphere[3]
-        ),
-        peeks,
-        visibleIndex: -1,
-      };
+      const terrainMapChunkMeshIndex = _findFreeTerrainMapChunkMeshIndex();
+      const baseIndex = terrainMapChunkMeshIndex * 14;
+      terrainMapChunkMeshes[baseIndex + 0] = 1;
+      terrainMapChunkMeshes[baseIndex + 1] = x;
+      terrainMapChunkMeshes[baseIndex + 2] = i;
+      terrainMapChunkMeshes[baseIndex + 3] = z;
+      new Uint8Array(terrainMapChunkMeshes.buffer, terrainMapChunkMeshes.byteOffset + (baseIndex + 4) * 4, 16).set(peeks);
+      terrainMapChunkMeshes[baseIndex + 8] = indexRange.landStart + indexOffset;
+      terrainMapChunkMeshes[baseIndex + 9] = indexRange.landCount;
+      terrainMapChunkMeshes[baseIndex + 10] = indexRange.waterStart + indexOffset;
+      terrainMapChunkMeshes[baseIndex + 11] = indexRange.waterCount;
+      terrainMapChunkMeshes[baseIndex + 12] = indexRange.lavaStart + indexOffset;
+      terrainMapChunkMeshes[baseIndex + 13] = indexRange.lavaCount;
+
+      terrainMapChunkMeshIndices[i] = terrainMapChunkMeshIndex;
     }
-    mapChunkMeshes[_getChunkIndex(x, z)] = trackedMapChunkMeshes;
 
     _offsetChunkData(chunk.chunkData.terrain, index, numPositions);
 
-    chunk[terrainDecorationsSymbol] = true;
+    chunk[terrainDecorationsSymbol] = () => {
+      for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
+        const terrainMapChunkMeshIndex = terrainMapChunkMeshIndices[i];
+        const baseIndex = terrainMapChunkMeshIndex * 14;
+        terrainMapChunkMeshes[baseIndex] = 0;
+      }
+    };
+  }
+};
+const _undecorateTerrainChunk = chunk => {
+  if (chunk[terrainDecorationsSymbol]) {
+    chunk[terrainDecorationsSymbol]();
+    chunk[terrainDecorationsSymbol] = null;
   }
 };
 let ids = 0;
@@ -1136,31 +1174,30 @@ const _decorateObjectsChunk = (chunk, index, numPositions, numObjectIndices, num
       objectIndices[i] += objectIndexOffset;
     }
 
+    const objectsMapChunkMeshIndex = _findFreeObjectsMapChunkMeshIndex();
+    const baseIndex = objectsMapChunkMeshIndex * (1 + 2 + NUM_CHUNKS_HEIGHT * 2);
+    objectsMapChunkMeshes[baseIndex + 0] = 1;
+    objectsMapChunkMeshes[baseIndex + 1] = chunk.x;
+    objectsMapChunkMeshes[baseIndex + 2] = chunk.z;
     const {geometries} = chunk.chunkData.objects;
-    const renderSpec = {
-      index: _getChunkIndex(chunk.x, chunk.z),
-      array: Array(NUM_CHUNKS_HEIGHT),
-      groups: new Int32Array(NUM_RENDER_GROUPS * 2),
-    };
     const indexOffset = index * numIndices;
     for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
-      const {indexRange, boundingSphere} = geometries[i];
-      renderSpec.array[i] = {
-        indexRange: {
-          start: indexRange.start + indexOffset,
-          count: indexRange.count,
-        },
-        boundingSphere: new THREE.Sphere(
-          new THREE.Vector3().fromArray(boundingSphere),
-          boundingSphere[3]
-        ),
-      };
+      const {indexRange} = geometries[i];
+      objectsMapChunkMeshes[baseIndex + 3 + i * 2 + 0] = indexRange.start + indexOffset;
+      objectsMapChunkMeshes[baseIndex + 3 + i * 2 + 1] = indexRange.count;
     }
-    chunk.renderSpec = renderSpec;
 
     _offsetChunkData(chunk.chunkData.objects, index, numPositions);
 
-    chunk[objectsDecorationsSymbol] = true;
+    chunk[objectsDecorationsSymbol] = () => {
+      objectsMapChunkMeshes[baseIndex] = 0;
+    };
+  }
+};
+const _undecorateObjectsChunk = chunk => {
+  if (chunk[objectsDecorationsSymbol]) {
+    chunk[objectsDecorationsSymbol]();
+    chunk[objectsDecorationsSymbol] = null;
   }
 };
 const _updateTextureAtlas = _debounce(next => {
@@ -1214,9 +1251,10 @@ const _updateGeometries = _debounce(next => {
     });
 });
 const _unrequestChunk = (x, z) => {
-  const chunk = zde.removeChunk(x, z);
-  mapChunkMeshes[_getChunkIndex(x, z)] = null;
-  return chunk;
+  const oldChunk = zde.removeChunk(x, z);
+  _undecorateTerrainChunk(oldChunk);
+  _undecorateObjectsChunk(oldChunk);
+  return oldChunk;
 };
 
 let queues = {};
@@ -1627,19 +1665,6 @@ self.onmessage = e => {
       }, [heightfield.buffer]);
       break;
     } */
-    case 'terrainCull': {
-      const {id, args} = data;
-      const {hmdPosition, projectionMatrix, matrixWorldInverse, buffer} = args;
-
-      const mapChunkMeshes = _getTerrainCull(hmdPosition, projectionMatrix, matrixWorldInverse);
-      protocolUtils.stringifyTerrainCull(mapChunkMeshes, buffer, 0);
-      postMessage({
-        type: 'response',
-        args: [id],
-        result: buffer,
-      }, [buffer]);
-      break;
-    }
     case 'subVoxel': {
       const {id, args} = data;
       const {position: [x, y, z]} = args;
@@ -1664,6 +1689,19 @@ self.onmessage = e => {
         .catch(err => {
           console.warn(err);
         });
+      break;
+    }
+    case 'terrainCull': {
+      const {id, args} = data;
+      const {hmdPosition, projectionMatrix, matrixWorldInverse, buffer} = args;
+
+      const groups = _getTerrainCull(hmdPosition, projectionMatrix, matrixWorldInverse);
+      protocolUtils.stringifyTerrainCull(groups, buffer, 0);
+      postMessage({
+        type: 'response',
+        args: [id],
+        result: buffer,
+      }, [buffer]);
       break;
     }
     case 'objectsCull': {
@@ -1741,208 +1779,45 @@ self.onmessage = e => {
   }
 };
 
-class PeekFace {
-  constructor(exitFace, enterFace, x, y, z) {
-    this.exitFace = exitFace;
-    this.enterFace = enterFace;
-    this.x = x;
-    this.y = y;
-    this.z = z;
-  }
-}
-const peekFaceSpecs = [
-  new PeekFace(PEEK_FACES.BACK, PEEK_FACES.FRONT, 0, 0, -1),
-  new PeekFace(PEEK_FACES.FRONT, PEEK_FACES.BACK, 0, 0, 1),
-  new PeekFace(PEEK_FACES.LEFT, PEEK_FACES.RIGHT, -1, 0, 0),
-  new PeekFace(PEEK_FACES.RIGHT, PEEK_FACES.LEFT, 1, 0, 0),
-  new PeekFace(PEEK_FACES.TOP, PEEK_FACES.BOTTOM, 0, 1, 0),
-  new PeekFace(PEEK_FACES.BOTTOM, PEEK_FACES.TOP, 0, -1, 0),
-];
-
-const cullQueueX = new Int32Array(100000);
-const cullQueueY = new Int32Array(100000);
-const cullQueueZ = new Int32Array(100000);
-const cullQueueFaces = new Uint8Array(100000);
-let cullQueueStart = 0;
-let cullQueueEnd = 0;
-let visibleIndex = 0;
-let max = 0;
 const _getTerrainCull = (hmdPosition, projectionMatrix, matrixWorldInverse) => {
-  const ox = Math.floor(hmdPosition[0] / NUM_CELLS);
-  const oy = Math.min(Math.max(Math.floor(hmdPosition[1] / NUM_CELLS), 0), NUM_CHUNKS_HEIGHT - 1);
-  const oz = Math.floor(hmdPosition[2] / NUM_CELLS);
+  const resultSize = NUM_MAP_CHUNK_MESHES * (1 + NUM_RENDER_GROUPS * 6);
+  const resultOffset = Module._malloc(resultSize * 4);
+  offsets.push(resultOffset);
+  const groups = new Uint32Array(Module.HEAP8.buffer, Module.HEAP8.byteOffset + resultOffset, resultSize);
+  const groupsIndex = Module._cllTerrain(
+    _alloc(Float32Array.from(hmdPosition)),
+    _alloc(Float32Array.from(projectionMatrix)),
+    _alloc(Float32Array.from(matrixWorldInverse)),
+    _alloc(terrainMapChunkMeshes),
+    terrainMapChunkMeshesIndex,
+    resultOffset
+  );
 
-  const index =_getChunkIndex(ox, oz);
-  const trackedMapChunkMeshes = mapChunkMeshes[index];
-  if (trackedMapChunkMeshes) {
-    localFrustum.setFromMatrix(localMatrix.fromArray(projectionMatrix).multiply(localMatrix2.fromArray(matrixWorldInverse)));
+  const result = groups.slice(0, groupsIndex); // XXX can be optimized
 
-    const trackedMapChunkMesh = trackedMapChunkMeshes.array[oy];
-    cullQueueX[cullQueueEnd] = ox;
-    cullQueueY[cullQueueEnd] = oy;
-    cullQueueZ[cullQueueEnd] = oz;
-    cullQueueFaces[cullQueueEnd] = PEEK_FACES.NULL;
-    cullQueueEnd = (cullQueueEnd + 1) % 100000;
-    for (;cullQueueStart !== cullQueueEnd; cullQueueStart = (cullQueueStart + 1) % 100000) {
-      const x = cullQueueX[cullQueueStart];
-      const y = cullQueueY[cullQueueStart];
-      const z = cullQueueZ[cullQueueStart];
-      const enterFace = cullQueueFaces[cullQueueStart];
+  _freeAll();
 
-      const trackedMapChunkMesh = mapChunkMeshes[_getChunkIndex(x, z)].array[y];
-      trackedMapChunkMesh.visibleIndex = visibleIndex;
-
-      for (let j = 0; j < peekFaceSpecs.length; j++) {
-        const peekFaceSpec = peekFaceSpecs[j];
-        const ay = y + peekFaceSpec.y;
-        if (ay >= 0 && ay < NUM_CHUNKS_HEIGHT) {
-          const ax = x + peekFaceSpec.x;
-          const az = z + peekFaceSpec.z;
-          if (
-            (ax - ox) * peekFaceSpec.x > 0 ||
-            (ay - oy) * peekFaceSpec.y > 0 ||
-            (az - oz) * peekFaceSpec.z > 0
-          ) {
-            if (enterFace === PEEK_FACES.NULL || trackedMapChunkMesh.peeks[PEEK_FACE_INDICES[enterFace << 3 | peekFaceSpec.exitFace]] === 1) {
-              const trackedMapChunkMeshes = mapChunkMeshes[_getChunkIndex(ax, az)];
-              if (trackedMapChunkMeshes) {
-                const trackedMapChunkMesh = trackedMapChunkMeshes.array[ay];
-
-                if (localFrustum.intersectsSphere(trackedMapChunkMesh.boundingSphere)) {
-                  cullQueueX[cullQueueEnd] = ax;
-                  cullQueueY[cullQueueEnd] = ay;
-                  cullQueueZ[cullQueueEnd] = az;
-                  cullQueueFaces[cullQueueEnd] = peekFaceSpec.enterFace;
-                  cullQueueEnd = (cullQueueEnd + 1) % 100000;
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  for (const index in mapChunkMeshes) {
-    const trackedMapChunkMeshes = mapChunkMeshes[index];
-    if (trackedMapChunkMeshes) {
-      trackedMapChunkMeshes.groups.fill(-1);
-      let landGroupIndex = 0;
-      let landStart = -1;
-      let landCount = 0;
-      let waterGroupIndex = 0;
-      let waterStart = -1;
-      let waterCount = 0;
-      let lavaGroupIndex = 0;
-      let lavaStart = -1;
-      let lavaCount = 0;
-
-      for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) { // XXX optimize this direction
-        const trackedMapChunkMesh = trackedMapChunkMeshes.array[i];
-        if (trackedMapChunkMesh.visibleIndex === visibleIndex) {
-          if (landStart === -1 && trackedMapChunkMesh.indexRange.landCount > 0) {
-            landStart = trackedMapChunkMesh.indexRange.landStart;
-          }
-          landCount += trackedMapChunkMesh.indexRange.landCount;
-
-          if (waterStart === -1 && trackedMapChunkMesh.indexRange.waterCount > 0) {
-            waterStart = trackedMapChunkMesh.indexRange.waterStart;
-          }
-          waterCount += trackedMapChunkMesh.indexRange.waterCount;
-
-          if (lavaStart === -1 && trackedMapChunkMesh.indexRange.lavaCount > 0) {
-            lavaStart = trackedMapChunkMesh.indexRange.lavaStart;
-          }
-          lavaCount += trackedMapChunkMesh.indexRange.lavaCount;
-        } else {
-          if (landStart !== -1) {
-            const baseIndex = landGroupIndex * 6;
-            trackedMapChunkMeshes.groups[baseIndex + 0] = landStart;
-            trackedMapChunkMeshes.groups[baseIndex + 1] = landCount;
-            landGroupIndex++;
-            landStart = -1;
-            landCount = 0;
-          }
-          if (waterStart !== -1) {
-            const baseIndex = waterGroupIndex * 6;
-            trackedMapChunkMeshes.groups[baseIndex + 2] = waterStart;
-            trackedMapChunkMeshes.groups[baseIndex + 3] = waterCount;
-            waterGroupIndex++;
-            waterStart = -1;
-            waterCount = 0;
-          }
-          if (lavaStart !== -1) {
-            const baseIndex = lavaGroupIndex * 6;
-            trackedMapChunkMeshes.groups[baseIndex + 4] = lavaStart;
-            trackedMapChunkMeshes.groups[baseIndex + 5] = lavaCount;
-            lavaGroupIndex++;
-            lavaStart = -1;
-            lavaCount = 0;
-          }
-        }
-      }
-      if (landStart !== -1) {
-        const baseIndex = landGroupIndex * 6;
-        trackedMapChunkMeshes.groups[baseIndex + 0] = landStart;
-        trackedMapChunkMeshes.groups[baseIndex + 1] = landCount;
-      }
-      if (waterStart !== -1) {
-        const baseIndex = waterGroupIndex * 6;
-        trackedMapChunkMeshes.groups[baseIndex + 2] = waterStart;
-        trackedMapChunkMeshes.groups[baseIndex + 3] = waterCount;
-      }
-      if (lavaStart !== -1) {
-        const baseIndex = lavaGroupIndex * 6;
-        trackedMapChunkMeshes.groups[baseIndex + 4] = lavaStart;
-        trackedMapChunkMeshes.groups[baseIndex + 5] = lavaCount;
-      }
-    }
-  }
-
-  visibleIndex = (visibleIndex + 1) % 0xFFFFFFFF;
-
-  return mapChunkMeshes;
+  return result;
 };
 const _getObjectsCull = (hmdPosition, projectionMatrix, matrixWorldInverse) => {
-  localFrustum.setFromMatrix(localMatrix.fromArray(projectionMatrix).multiply(localMatrix2.fromArray(matrixWorldInverse)));
+  const resultSize = NUM_MAP_CHUNK_MESHES * (1 + NUM_RENDER_GROUPS * 2);
+  const resultOffset = Module._malloc(resultSize * 4);
+  offsets.push(resultOffset);
+  const groups = new Uint32Array(Module.HEAP8.buffer, Module.HEAP8.byteOffset + resultOffset, resultSize);
+  const groupsIndex = Module._cllObjects(
+    _alloc(Float32Array.from(hmdPosition)),
+    _alloc(Float32Array.from(projectionMatrix)),
+    _alloc(Float32Array.from(matrixWorldInverse)),
+    _alloc(objectsMapChunkMeshes),
+    objectsMapChunkMeshesIndex,
+    resultOffset
+  );
 
-  for (const index in zde.chunks) {
-    const chunk = zde.chunks[index];
+  const result = groups.slice(0, groupsIndex); // XXX can be optimized
 
-    if (chunk && chunk[objectsDecorationsSymbol]) {
-      const {renderSpec} = chunk;
+  _freeAll();
 
-      renderSpec.groups.fill(-1);
-      let groupIndex = 0;
-      let start = -1;
-      let count = 0;
-      for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) { // XXX optimize this direction
-        const trackedObjectChunkMesh = renderSpec.array[i];
-        if (localFrustum.intersectsSphere(trackedObjectChunkMesh.boundingSphere)) {
-          if (start === -1 && trackedObjectChunkMesh.indexRange.count > 0) {
-            start = trackedObjectChunkMesh.indexRange.start;
-          }
-          count += trackedObjectChunkMesh.indexRange.count;
-        } else {
-          if (start !== -1) {
-            const baseIndex = groupIndex * 2;
-            renderSpec.groups[baseIndex + 0] = start;
-            renderSpec.groups[baseIndex + 1] = count;
-            groupIndex++;
-            start = -1;
-            count = 0;
-          }
-        }
-      }
-      if (start !== -1) {
-        const baseIndex = groupIndex * 2;
-        renderSpec.groups[baseIndex + 0] = start;
-        renderSpec.groups[baseIndex + 1] = count;
-      }
-    }
-  }
-
-  return zde.chunks;
+  return result;
 };
 
 let _id = 0;

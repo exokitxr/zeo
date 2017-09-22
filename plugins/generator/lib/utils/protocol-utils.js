@@ -27,6 +27,10 @@ const TERRAIN_CULL_HEADER_ENTRIES = 1;
 const TERRAIN_CULL_HEADER_SIZE = UINT32_SIZE * TERRAIN_CULL_HEADER_ENTRIES;
 const OBJECTS_CULL_HEADER_ENTRIES = 1;
 const OBJECTS_CULL_HEADER_SIZE = UINT32_SIZE * OBJECTS_CULL_HEADER_ENTRIES;
+const TERRAIN_CULL_GROUP_LENGTH = (1 + NUM_RENDER_GROUPS * 6);
+// const TERRAIN_CULL_GROUP_SIZE = TERRAIN_CULL_GROUP_LENGTH * 4;
+const OBJECTS_CULL_GROUP_LENGTH = (1 + NUM_RENDER_GROUPS * 2);
+// const OBJECTS_CULL_GROUP_SIZE = OBJECTS_CULL_GROUP_LENGTH * 4;
 
 const _getTerrainDataChunkSizeFromMetadata = metadata => {
   const {numPositions, numColors, /*numSkyLightmaps, numTorchLightmaps, */numIndices, numPeeks, numHeightfield, numStaticHeightfield, numBiomes, numElevations, numWater, numLava} = metadata;
@@ -696,55 +700,32 @@ const parseDecorations = (buffer, byteOffset) => {
 };
 
 const _getTerrainCullSizeFromMetadata = metadata => {
-  const {numMapChunks} = metadata;
+  const {numGroups} = metadata;
 
   return TERRAIN_CULL_HEADER_SIZE + // header
-    ((INT32_SIZE + (INT32_SIZE * 2 * NUM_RENDER_GROUPS)) * numMapChunks); // map chunks
+    (numGroups * (1 + NUM_RENDER_GROUPS * 6) * INT32_SIZE); // groups
 };
 
-const _getTerrainCullSize = mapChunks => {
-  let numMapChunks = 0;
-  for (const index in mapChunks) {
-    if (mapChunks[index]) {
-      numMapChunks++;
-    }
-  }
-  return _getTerrainCullSizeFromMetadata({
-    numMapChunks,
-  });
-};
+const _getTerrainCullSize = mapChunks => _getTerrainCullSizeFromMetadata({
+  numGroups: groups.length / (1 + NUM_RENDER_GROUPS * 6),
+});
 
-const stringifyTerrainCull = (mapChunks, arrayBuffer, byteOffset) => {
+const stringifyTerrainCull = (groups, arrayBuffer, byteOffset) => {
   if (arrayBuffer === undefined || byteOffset === undefined) {
-    const bufferSize = _getTerrainCullSize(mapChunks);
+    const bufferSize = _getTerrainCullSize(groups);
     arrayBuffer = new ArrayBuffer(bufferSize);
     byteOffset = 0;
   }
 
-  let numMapChunks = 0;
-  for (const index in mapChunks) {
-    if (mapChunks[index]) {
-      numMapChunks++;
-    }
-  }
+  const numGroups = groups.length / TERRAIN_CULL_GROUP_LENGTH;
 
   const headerBuffer = new Uint32Array(arrayBuffer, byteOffset, TERRAIN_CULL_HEADER_ENTRIES);
   let index = 0;
-  headerBuffer[index++] = numMapChunks;
+  headerBuffer[index++] = numGroups;
   byteOffset += TERRAIN_CULL_HEADER_SIZE;
 
-  for (const index in mapChunks) {
-    const trackedMapChunkMeshes = mapChunks[index];
-    if (trackedMapChunkMeshes) {
-      const indexArray = new Int32Array(arrayBuffer, byteOffset, 1);
-      indexArray[0] = parseInt(index, 10);
-      byteOffset += INT32_SIZE;
-
-      const groupsArray = new Int32Array(arrayBuffer, byteOffset, NUM_RENDER_GROUPS * 6);
-      groupsArray.set(trackedMapChunkMeshes.groups);
-      byteOffset += INT32_SIZE * 6 * NUM_RENDER_GROUPS;
-    }
-  }
+  new Int32Array(arrayBuffer, byteOffset, groups.length).set(groups);
+  byteOffset += groups.byteLength;
 
   return arrayBuffer;
 };
@@ -756,11 +737,11 @@ const parseTerrainCull = (buffer, byteOffset) => {
 
   const headerBuffer = new Uint32Array(buffer, byteOffset, TERRAIN_CULL_HEADER_ENTRIES);
   let index = 0;
-  const numMapChunks = headerBuffer[index++];
+  const numGroups = headerBuffer[index++];
   byteOffset += TERRAIN_CULL_HEADER_SIZE;
 
-  const mapChunks = Array(numMapChunks);
-  for (let i = 0; i < numMapChunks; i++) {
+  const mapChunks = Array(numGroups);
+  for (let i = 0; i < numGroups; i++) {
     const indexArray = new Int32Array(buffer, byteOffset, 1);
     const index = indexArray[0];
     byteOffset += INT32_SIZE;
@@ -1414,53 +1395,32 @@ const parseTemplates = (buffer, byteOffset) => {
 };
 
 const _getObjectsCullSizeFromMetadata = metadata => {
-  const {numObjectChunks} = metadata;
+  const {numGroups} = metadata;
 
-  return OBJECTS_CULL_HEADER_SIZE + // header
-    ((INT32_SIZE + (INT32_SIZE * 2 * NUM_RENDER_GROUPS)) * numObjectChunks); // object chunks
+  return TERRAIN_CULL_HEADER_SIZE + // header
+    (numGroups * (1 + NUM_RENDER_GROUPS * 2) * INT32_SIZE); // groups
 };
 
-const _getObjectsCullSize = objectChunks => {
-  const numObjectChunks = objectChunks.length;
+const _getObjectsCullSize = groups => _getObjectsCullSizeFromMetadata({
+  numGroups: groups.length / (1 + NUM_RENDER_GROUPS * 2),
+});
 
-  return _getObjectsCullSizeFromMetadata({
-    numObjectChunks,
-  });
-};
-
-const stringifyObjectsCull = (objectChunks, arrayBuffer, byteOffset) => {
+const stringifyObjectsCull = (groups, arrayBuffer, byteOffset) => {
   if (arrayBuffer === undefined || byteOffset === undefined) {
-    const bufferSize = _getObjectsCullSize(objectChunks);
+    const bufferSize = _getObjectsCullSize(groups);
     arrayBuffer = new ArrayBuffer(bufferSize);
     byteOffset = 0;
   }
 
+  const numGroups = groups.length / OBJECTS_CULL_GROUP_LENGTH;
+
   const headerBuffer = new Uint32Array(arrayBuffer, byteOffset, OBJECTS_CULL_HEADER_ENTRIES);
   let index = 0;
-  const headerIndex = index;
+  headerBuffer[index++] = numGroups;
   byteOffset += OBJECTS_CULL_HEADER_SIZE;
 
-  let numChunks = 0;
-  for (const index in objectChunks) {
-    const chunk = objectChunks[index];
-
-    if (chunk) {
-      const {renderSpec} = chunk;
-
-      if (renderSpec) {
-        const indexArray = new Int32Array(arrayBuffer, byteOffset, 1);
-        indexArray[0] = renderSpec.index;
-        byteOffset += INT32_SIZE;
-
-        const groupsArray = new Int32Array(arrayBuffer, byteOffset, NUM_RENDER_GROUPS * 2);
-        groupsArray.set(renderSpec.groups);
-        byteOffset += INT32_SIZE * 2 * NUM_RENDER_GROUPS;
-      }
-
-      numChunks++;
-    }
-  }
-  headerBuffer[headerIndex] = numChunks;
+  new Int32Array(arrayBuffer, byteOffset, groups.length).set(groups);
+  byteOffset += groups.byteLength;
 
   return arrayBuffer;
 };
@@ -1472,11 +1432,11 @@ const parseObjectsCull = (buffer, byteOffset) => {
 
   const headerBuffer = new Uint32Array(buffer, byteOffset, OBJECTS_CULL_HEADER_ENTRIES);
   let index = 0;
-  const numObjectChunks = headerBuffer[index++];
+  const numGroups = headerBuffer[index++];
   byteOffset += OBJECTS_CULL_HEADER_SIZE;
 
-  const objectChunks = Array(numObjectChunks);
-  for (let i = 0; i < numObjectChunks; i++) {
+  const objectChunks = Array(numGroups);
+  for (let i = 0; i < numGroups; i++) {
     const indexArray = new Int32Array(buffer, byteOffset, 1);
     const index = indexArray[0];
     byteOffset += INT32_SIZE;
