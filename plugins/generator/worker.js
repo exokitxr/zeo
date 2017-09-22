@@ -49,6 +49,13 @@ const NUM_CELLS_HALF = NUM_CELLS / 2;
 const NUM_CELLS_CUBE = Math.sqrt((NUM_CELLS_HALF + 16) * (NUM_CELLS_HALF + 16) * 3); // larger than the actual bounding box to account for geometry overflow
 const NUM_VOXELS_CHUNK_HEIGHT = BLOCK_BUFFER_SIZE / 4 / NUM_CHUNKS_HEIGHT;
 
+const DIRECTIONS = [
+  [-1, -1],
+  [-1, 1],
+  [1, -1],
+  [1, 1],
+];
+
 const terrainDecorationsSymbol = Symbol();
 const objectsDecorationsSymbol = Symbol();
 const lightsSymbol = Symbol();
@@ -227,7 +234,7 @@ const _freeAll = () => {
   }
   offsets.length = 0;
 };
-const _retesselateTerrain = (chunk, x, y, z) => {
+const _retesselateTerrain = (chunk, newEther) => {
   const oldTerrainBuffer = chunk.getTerrainBuffer();
   const oldChunkData = protocolUtils.parseTerrainData(oldTerrainBuffer.buffer, oldTerrainBuffer.byteOffset);
   const oldBiomes = oldChunkData.biomes.slice();
@@ -235,12 +242,6 @@ const _retesselateTerrain = (chunk, x, y, z) => {
   const oldEther = oldChunkData.ether.slice();
   const oldWater = oldChunkData.water.slice();
   const oldLava = oldChunkData.lava.slice();
-
-  const lx = x - (chunk.x * NUM_CELLS);
-  const lz = z - (chunk.z * NUM_CELLS);
-  const v = 1;
-  const newEther = Float32Array.from([lx, y, lz, v]);
-  const numNewEthers = newEther.length;
 
   const {attributeRanges, indexRanges, heightfield, staticHeightfield, peeks} = slab;
   const noiser = Module._make_noiser(murmur(DEFAULT_SEED));
@@ -258,7 +259,7 @@ const _retesselateTerrain = (chunk, x, y, z) => {
     _alloc(oldLava),
     +false,
     _alloc(newEther),
-    numNewEthers,
+    newEther.length,
     _alloc(slab.positions),
     _alloc(slab.indices),
     _alloc(attributeRanges),
@@ -1674,21 +1675,41 @@ self.onmessage = e => {
         credentials: 'include',
       })
         .then(_resBlob)
-        .then(() => {
-          const oldChunk = zde.getChunk(Math.floor(x / NUM_CELLS), Math.floor(z / NUM_CELLS));
-
-          _retesselateTerrain(oldChunk, x, y, z);
-          _relight(oldChunk, x, y, z);
-          _relightmap(oldChunk);
-
-          postMessage({
-            type: 'chunkUpdate',
-            args: [oldChunk.x, oldChunk.z],
-          });
-        })
         .catch(err => {
           console.warn(err);
         });
+
+      const seenChunks = [];
+      for (let i = 0; i < DIRECTIONS.length; i++) {
+        const [dx, dz] = DIRECTIONS[i];
+        const ax = x + dx * 2;
+        const az = z + dz * 2;
+        const ox = Math.floor(ax / NUM_CELLS);
+        const oz = Math.floor(az / NUM_CELLS);
+        const lx = x - (ox * NUM_CELLS);
+        const lz = z - (oz * NUM_CELLS);
+        const v = 1;
+        const newEther = Float32Array.from([lx, y, lz, v]);
+
+        if (!seenChunks.some(chunk => chunk.x === ox && chunk.z === oz)) {
+          const oldChunk = zde.getChunk(ox, oz);
+
+          _retesselateTerrain(oldChunk, newEther);
+          _relight(oldChunk, x, y, z);
+          _relightmap(oldChunk);
+
+          seenChunks.push(oldChunk);
+        }
+      }
+
+      for (let i = 0; i < seenChunks.length; i++) {
+        const oldChunk = seenChunks[i];
+
+        postMessage({
+          type: 'chunkUpdate',
+          args: [oldChunk.x, oldChunk.z],
+        });
+      }
       break;
     }
     case 'terrainCull': {

@@ -17,7 +17,6 @@ const {
 const NUM_CELLS_HALF = NUM_CELLS / 2;
 const NUM_CELLS_CUBE = Math.sqrt(NUM_CELLS_HALF * NUM_CELLS_HALF * 3);
 const NUM_CELLS_OVERSCAN_Y = NUM_CELLS_HEIGHT + OVERSCAN;
-const HOLE_SIZE = 2;
 
 module.exports = ({
   THREE,
