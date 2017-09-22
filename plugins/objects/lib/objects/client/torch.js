@@ -1,5 +1,4 @@
 const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
-const LIGHTMAP_PLUGIN = 'plugins-lightmap';
 const DEFAULT_MATRIX = [
   0, 0, 0,
   0, 0, 0, 1,
@@ -58,59 +57,15 @@ const torch = objectApi => {
     };
     items.registerItem(this, torchItemApi);
 
-    const torches = {};
-    let Lightmapper = null;
-    let lightmapper = null;
-    const _bindLightmap = torch => {
-      const shape = new Lightmapper.Sphere(torch.position.x, torch.position.y, torch.position.z, 8, 2, Lightmapper.MaxBlend);
-      lightmapper.add(shape);
-      torch.shape = shape;
-    };
-    const _unbindLightmap = torch => {
-      lightmapper.remove(torch.shape);
-      torch.shape = null;
-    };
-    const lightmapElementListener = elements.makeListener(LIGHTMAP_PLUGIN);
-    lightmapElementListener.on('add', entityElement => {
-      Lightmapper = entityElement.Lightmapper;
-      lightmapper = entityElement.lightmapper;
-
-      for (const id in torches) {
-        _bindLightmap(torches[id]);
-      }
-    });
-    lightmapElementListener.on('remove', () => {
-      Lightmapper = null;
-      lightmapper = null;
-
-      for (const id in torches) {
-        torches[id].shape = null;
-      }
-    });
-
     const torchObjectApi = {
       object: 'torch',
       addedCallback(id, position) {
         const torch = {
           position,
-          shape: null,
         };
-
-        if (lightmapper) {
-          _bindLightmap(torch);
-        }
-
-        torches[id] = torch;
       },
-      removedCallback(id) {
-        const torch = torches[id];
-
-        if (lightmapper) {
-          _unbindLightmap(torch);
-        }
-
-        torches[id] = torch;
-      },
+      /* removedCallback(id) {
+      }, */
       gripCallback(id, side, x, z, objectIndex) {
         const itemId = _makeId();
         const asset = 'ITEM.TORCH';
