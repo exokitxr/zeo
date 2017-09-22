@@ -788,31 +788,36 @@ connection.on('message', e => {
         });
     }
   } else if (type === 'removeObject') {
-    const {args: {x, z, index: objectIndex}} = m;
+    const {args: {x: ox, z: oz, index: objectIndex}} = m;
 
-    const oldChunk = zde.getChunk(x, z);
+    const oldChunk = zde.getChunk(ox, oz);
     if (oldChunk) {
-      const {offsets: {index, numPositions, numObjectIndices, numIndices}} = oldChunk;
-      _requestObjectsChunk(x, z, index, numPositions, numObjectIndices, numIndices)
-        .then(newChunk => {
-          const oldChunk = zde.removeChunk(x, z);
-          _undecorateTerrainChunk(oldChunk);
-          _undecorateObjectsChunk(oldChunk);
-          zde.pushChunk(newChunk);
+      const oldObject = oldChunk.getObject(objectIndex);
+      if (oldObject) {
+        const n = oldChunk.removeObject(objectIndex);
 
-          postMessage({
-            type: 'chunkUpdate',
-            args: [x, z],
-          });
+        const matrix = oldObject[1];
+        const x = Math.floor(matrix[0]);
+        const y = Math.floor(matrix[1]);
+        const z = Math.floor(matrix[2]);
 
-          const objectApi = objectApis[n];
-          if (objectApi && objectApi.removed) {
-            postMessage({
-              type: 'objectRemoved',
-              args: [n, x, z, objectIndex],
-            });
-          }
+        _retesselateObjects(oldChunk);
+        _relight(oldChunk, x, y, z);
+        _relightmap(oldChunk);
+
+        postMessage({
+          type: 'chunkUpdate',
+          args: [ox, oz],
         });
+
+        const objectApi = objectApis[n];
+        if (objectApi && objectApi.removed) {
+          postMessage({
+            type: 'objectRemoved',
+            args: [n, ox, oz, objectIndex],
+          });
+        }
+      }
     }
   } else if (type === 'setObjectData') {
     const {args: {x, z, index: objectIndex, value}} = m;
@@ -1472,33 +1477,37 @@ self.onmessage = e => {
       break;
     }
     case 'removeObject': {
-      const {x, z, index: objectIndex} = data;
+      const {x: ox, z: oz, index: objectIndex} = data;
 
-      const oldChunk = zde.getChunk(x, z);
+      const oldChunk = zde.getChunk(ox, oz);
       if (oldChunk) {
         const oldObject = oldChunk.getObject(objectIndex);
         if (oldObject) {
-          const y = Math.floor(oldObject[1][1]);
-          connection.removeObject(x, z, objectIndex, n => {
-            oldChunk.removeObject(oldObject);
+          connection.removeObject(ox, oz, objectIndex, () => {});
 
-            _retesselateObjects(oldChunk);
-            _relight(oldChunk, x, y, z);
-            _relightmap(oldChunk);
+          const n = oldChunk.removeObject(objectIndex);
 
-            postMessage({
-              type: 'chunkUpdate',
-              args: [x, z],
-            });
+          const matrix = oldObject[1];
+          const x = Math.floor(matrix[0]);
+          const y = Math.floor(matrix[1]);
+          const z = Math.floor(matrix[2]);
 
-            const objectApi = objectApis[n];
-            if (objectApi && objectApi.removed) {
-              postMessage({
-                type: 'objectRemoved',
-                args: [n, x, z, objectIndex],
-              });
-            }
+          _retesselateObjects(oldChunk);
+          _relight(oldChunk, x, y, z);
+          _relightmap(oldChunk);
+
+          postMessage({
+            type: 'chunkUpdate',
+            args: [ox, oz],
           });
+
+          const objectApi = objectApis[n];
+          if (objectApi && objectApi.removed) {
+            postMessage({
+              type: 'objectRemoved',
+              args: [n, ox, oz, objectIndex],
+            });
+          }
         }
       }
       break;
