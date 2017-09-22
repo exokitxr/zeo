@@ -1691,25 +1691,21 @@ self.onmessage = e => {
         const v = 1;
         const newEther = Float32Array.from([lx, y, lz, v]);
 
-        if (!seenChunks.some(chunk => chunk.x === ox && chunk.z === oz)) {
+        if (!seenChunks.some(([x, z]) => x === ox && z === oz)) {
           const oldChunk = zde.getChunk(ox, oz);
 
           _retesselateTerrain(oldChunk, newEther);
           _relight(oldChunk, x, y, z);
           _relightmap(oldChunk);
 
-          seenChunks.push(oldChunk);
+          seenChunks.push([ox, oz]);
         }
       }
 
-      for (let i = 0; i < seenChunks.length; i++) {
-        const oldChunk = seenChunks[i];
-
-        postMessage({
-          type: 'chunkUpdate',
-          args: [oldChunk.x, oldChunk.z],
-        });
-      }
+      postMessage({
+        type: 'chunkUpdates',
+        args: seenChunks,
+      });
       break;
     }
     case 'terrainCull': {

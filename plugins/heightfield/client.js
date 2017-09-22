@@ -1,3 +1,4 @@
+const promiseser = require('promiseser');
 const {
   NUM_CELLS,
   NUM_CELLS_HEIGHT,
@@ -467,6 +468,51 @@ class Heightfield {
                     });
                   }
                 },
+                partialUpdate: (chunkData) => {
+                  const {positions: newPositions, colors: newColors, skyLightmaps: newSkyLightmaps, torchLightmaps: newTorchLightmaps, indices: newIndices, heightfield, staticHeightfield} = chunkData;
+
+                  if (newPositions.length > 0) {
+                    version++;
+
+                    // geometry
+
+                    positions.set(newPositions);
+                    colors.set(newColors);
+                    skyLightmaps.set(newSkyLightmaps);
+                    torchLightmaps.set(newTorchLightmaps);
+                    indices.set(newIndices);
+
+                    meshes.heightfield = heightfield.slice();
+                    // XXX preallocate stck buffers
+                    meshes.staticHeightfield = staticHeightfield.slice(); // XXX this needs to be refreshed along with terrain destruction
+
+                    const newPositionsLength = newPositions.length;
+                    const newColorsLength = newColors.length;
+                    const newSkyLightmapsLength = newSkyLightmaps.length;
+                    const newTorchLightmapsLength = newTorchLightmaps.length;
+                    const newIndicesLength = newIndices.length;
+
+                    const localVersion = version;
+                    return () => {
+                      if (version === localVersion) {
+                        /* renderListEntries[0].visible = false;
+                        renderListEntries[1].visible = false;
+                        renderListEntries[2].visible = false; */
+
+                        renderer.updateAttribute(geometry.attributes.position, index * positions.length, newPositionsLength, false);
+                        renderer.updateAttribute(geometry.attributes.color, index * colors.length, newColorsLength, false);
+                        renderer.updateAttribute(geometry.attributes.skyLightmap, index * skyLightmaps.length, newSkyLightmapsLength, false);
+                        renderer.updateAttribute(geometry.attributes.torchLightmap, index * torchLightmaps.length, newTorchLightmapsLength, false);
+                        renderer.updateAttribute(geometry.index, index * indices.length, newIndicesLength, true);
+                        renderer.getContext().flush();
+
+                        renderListEntries[0].visible = true;
+                        renderListEntries[1].visible = true;
+                        renderListEntries[2].visible = true;
+                      }
+                    };
+                  }
+                },
                 destroy: () => {
                   version++;
 
@@ -611,6 +657,28 @@ class Heightfield {
                 });
               } else {
                 queue.push(_refreshChunk.bind(this, chunk));
+              }
+            };
+            const _refreshChunks = chunks => {
+              if (!running) {
+                running = true;
+
+                promiseser(chunks.map(chunk => () => new Promise((accept, reject) => {
+                  const oldMapChunkMeshes = mapChunkMeshes[_getChunkIndex(chunk.x, chunk.z)];
+                  const {gbuffer} = oldMapChunkMeshes;
+                  _requestTerrainGenerate(chunk.x, chunk.z, gbuffer.index, gbuffer.slices.positions.length, gbuffer.slices.indices.length, chunkData => {
+                    accept(oldMapChunkMeshes.partialUpdate(chunkData));
+                  });
+                })))
+                  .then(fns => {
+                    for (let i = 0; i < fns.length; i++) {
+                      fns[i]();
+                    }
+
+                    _next();
+                  });
+              } else {
+                queue.push(_refreshChunks.bind(this, chunks));
               }
             };
 
@@ -919,6 +987,10 @@ class Heightfield {
               _refreshChunk(chunk);
             };
             generatorElement.on('refresh', _refresh);
+            const _refreshes = chunks => {
+              _refreshChunks(chunks);
+            };
+            generatorElement.on('refreshes', _refreshes);
             generatorElement.forEachChunk(chunk => {
               _add(chunk);
             });

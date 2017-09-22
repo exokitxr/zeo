@@ -410,6 +410,13 @@ class Generator {
         if (chunk) {
           _emit('refresh', chunk);
         }
+      } else if (type === 'chunkUpdates') {
+        const coords = args;
+
+        const chunks = coords.map(([x, z]) => chunker.getChunk(x, z));
+        if (chunks.length > 0) {
+          _emit('refreshes', chunks);
+        }
       } else if (type === 'textureAtlas') {
         const [imageBitmap] = args;
         textureAtlas.image = imageBitmap;
