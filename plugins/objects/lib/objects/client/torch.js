@@ -1,4 +1,3 @@
-const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
 const DEFAULT_MATRIX = [
   0, 0, 0,
   0, 0, 0, 1,
@@ -23,10 +22,9 @@ const torch = objectApi => {
           const {side} = e;
 
           if (grabbable.getGrabberSide() === side) {
-            const heightfieldElement = elements.getEntitiesElement().querySelector(HEIGHTFIELD_PLUGIN);
             localVector.set(
               grabbable.position.x,
-              heightfieldElement ? heightfieldElement.getBestElevation(grabbable.position.x, grabbable.position.z, grabbable.position.y) : 0,
+              grabbable.position.y,
               grabbable.position.z
             );
             localEuler.setFromQuaternion(grabbable.rotation, camera.rotation.order);

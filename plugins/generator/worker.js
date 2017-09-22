@@ -56,6 +56,9 @@ const DIRECTIONS = [
   [1, 1],
 ];
 
+const zeroVector = new THREE.Vector3();
+const zeroVectorArray = zeroVector.toArray();
+
 const terrainDecorationsSymbol = Symbol();
 const objectsDecorationsSymbol = Symbol();
 const lightsSymbol = Symbol();
@@ -761,31 +764,36 @@ connection.on('message', e => {
   const {type} = m;
 
   if (type === 'addObject') {
-    const {args: {x, z, n, matrix, value, result: objectIndex}} = m;
+    const {args: {n, positions, rotations, value, result: objectIndex}} = m;
 
-    const oldChunk = zde.getChunk(x, z);
+    const ox = Math.floor(positions[0] / NUM_CELLS);
+    const oz = Math.floor(positions[2] / NUM_CELLS);
+
+    const oldChunk = zde.getChunk(ox, oz);
     if (oldChunk) {
-      const {offsets: {index, numPositions, numObjectIndices, numIndices}} = oldChunk;
-      _requestObjectsChunk(x, z, index, numPositions, numObjectIndices, numIndices)
-        .then(newChunk => {
-          const oldChunk = zde.removeChunk(x, z);
-          _undecorateTerrainChunk(oldChunk);
-          _undecorateObjectsChunk(oldChunk);
-          zde.pushChunk(newChunk);
+      const matrix = positions.concat(rotations).concat(zeroVectorArray);
+      oldChunk.addObject(n, matrix, value);
 
-          postMessage({
-            type: 'chunkUpdate',
-            args: [x, z],
-          });
+      const x = Math.floor(positions[0]);
+      const y = Math.floor(positions[1]);
+      const z = Math.floor(positions[2]);
 
-          const objectApi = objectApis[n];
-          if (objectApi && objectApi.added) {
-            postMessage({
-              type: 'objectAdded',
-              args: [n, x, z, objectIndex, matrix.slice(0, 3), matrix.slice(3, 7), value],
-            });
-          }
+      _retesselateObjects(oldChunk);
+      _relight(oldChunk, x, y, z);
+      _relightmap(oldChunk);
+
+      postMessage({
+        type: 'chunkUpdate',
+        args: [ox, oz],
+      });
+
+      const objectApi = objectApis[n];
+      if (objectApi && objectApi.added) {
+        postMessage({
+          type: 'objectAdded',
+          args: [n, ox, oz, objectIndex, matrix.slice(0, 3), matrix.slice(3, 7), value],
         });
+      }
     }
   } else if (type === 'removeObject') {
     const {args: {x: ox, z: oz, index: objectIndex}} = m;
@@ -934,16 +942,15 @@ connection.subVoxel = (x, y, z, cb) => {
   }));
   queues[id] = cb;
 };
-connection.addObject = (x, z, n, matrix, value, cb) => {
+connection.addObject = (n, positions, rotations, value, cb) => {
   const id = _makeId();
   connection.send(JSON.stringify({
     method: 'addObject',
     id,
     args: {
-      x,
-      z,
       n,
-      matrix,
+      positions,
+      rotations,
       value,
     },
   }));
@@ -1443,36 +1450,39 @@ self.onmessage = e => {
       break;
     }
     case 'addObject': {
-      const {name, position: positionArray, rotation: rotationArray, value} = data;
+      const {name, position: positions, rotation: rotations, value} = data;
 
-      const x = Math.floor(positionArray[0] / NUM_CELLS);
-      const y = Math.floor(positionArray[1]);
-      const z = Math.floor(positionArray[2] / NUM_CELLS);
-      const oldChunk = zde.getChunk(x, z);
+      const ox = Math.floor(positions[0] / NUM_CELLS);
+      const oz = Math.floor(positions[2] / NUM_CELLS);
+
+      const oldChunk = zde.getChunk(ox, oz);
       if (oldChunk) {
         const n = murmur(name);
-        const matrix = positionArray.concat(rotationArray).concat(oneVector.toArray());
+        connection.addObject(n, positions, rotations, value, () => {});
 
-        connection.addObject(x, z, n, matrix, value, objectIndex => {
-          oldChunk.addObject(n, matrix, value);
+        const matrix = positions.concat(rotations).concat(zeroVectorArray);
+        const objectIndex = oldChunk.addObject(n, matrix, value);
 
-          _retesselateObjects(oldChunk);
-          _relight(oldChunk, x, y, z);
-          _relightmap(oldChunk);
+        const x = Math.floor(positions[0]);
+        const y = Math.floor(positions[1]);
+        const z = Math.floor(positions[2]);
 
-          postMessage({
-            type: 'chunkUpdate',
-            args: [x, z],
-          });
+        _retesselateObjects(oldChunk);
+        _relight(oldChunk, x, y, z);
+        _relightmap(oldChunk);
 
-          const objectApi = objectApis[n];
-          if (objectApi && objectApi.added) {
-            postMessage({
-              type: 'objectAdded',
-              args: [n, x, z, objectIndex, positionArray, rotationArray, value],
-            });
-          }
+        postMessage({
+          type: 'chunkUpdate',
+          args: [ox, oz],
         });
+
+        const objectApi = objectApis[n];
+        if (objectApi && objectApi.added) {
+          postMessage({
+            type: 'objectAdded',
+            args: [n, ox, oz, objectIndex, matrix.slice(0, 3), matrix.slice(3, 7), value],
+          });
+        }
       }
       break;
     }

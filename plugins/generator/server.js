@@ -52,6 +52,9 @@ class Generator {
     const {alea, vxlPath, vxl} = randomUtils;
     const {jimp} = imageUtils;
 
+    const zeroVector = new THREE.Vector3();
+    const zeroVectorArray = zeroVector.toArray();
+
     const geometriesBuffer = new Uint8Array(NUM_POSITIONS_CHUNK);
     geometriesBuffer.version = 0;
     const geometryTypes = new Uint32Array(4096);
@@ -781,17 +784,21 @@ class Generator {
                   });
               } else if (method === 'addObject') {
                 const {id, args} = m;
-                const {x, z, n, matrix, value} = args;
+                const {n, positions, rotations, value} = args;
 
-                const chunk = zde.getChunk(x, z);
+                const ox = Math.floor(positions[0] / NUM_CELLS);
+                const oz = Math.floor(positions[2] / NUM_CELLS);
+
+                const chunk = zde.getChunk(ox, oz);
                 if (chunk) {
+                  const matrix = positions.concat(rotations).concat(zeroVectorArray);
                   const objectIndex = chunk.addObject(n, matrix, value);
 
                   _decorateChunkObjectsGeometry(chunk)
                     .then(() => {
                       _saveChunks();
 
-                      return generatorElement.requestRelight(Math.floor(matrix[0]), Math.floor(matrix[1]), Math.floor(matrix[2]));
+                      return generatorElement.requestRelight(Math.floor(positions[0]), Math.floor(positions[1]), Math.floor(positions[2]));
                     })
                     .then(() => {
                       c.send(JSON.stringify({
