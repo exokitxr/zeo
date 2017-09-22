@@ -1498,23 +1498,23 @@ self.onmessage = e => {
       const oz = Math.floor(z / NUM_CELLS);
       const oldChunk = zde.getChunk(ox, oz);
       if (oldChunk) {
-        connection.setBlock(x, y, z, v, () => {
-          oldChunk.setBlock(x - ox * NUM_CELLS, y, z - oz * NUM_CELLS, v);
+        connection.setBlock(x, y, z, v, () => {});
 
-          _retesselateObjects(oldChunk);
-          _relight(oldChunk, x, y, z);
-          _relightmap(oldChunk);
+        oldChunk.setBlock(x - ox * NUM_CELLS, y, z - oz * NUM_CELLS, v);
 
-          postMessage({
-            type: 'chunkUpdate',
-            args: [ox, oz],
-          });
+        _retesselateObjects(oldChunk);
+        _relight(oldChunk, x, y, z);
+        _relightmap(oldChunk);
 
-          /* postMessage({ // XXX enable this for registered listeners
-            type: 'blockSet',
-            args: [x, y, z, v],
-          }); */
+        postMessage({
+          type: 'chunkUpdate',
+          args: [ox, oz],
         });
+
+        /* postMessage({ // XXX enable this for registered listeners
+          type: 'blockSet',
+          args: [x, y, z, v],
+        }); */
       }
       break;
     }
@@ -1525,23 +1525,23 @@ self.onmessage = e => {
       const oz = Math.floor(z / NUM_CELLS);
       const oldChunk = zde.getChunk(ox, oz);
       if (oldChunk) {
-        connection.clearBlock(x, y, z, () => {
-          oldChunk.clearBlock(x - ox * NUM_CELLS, y, z - oz * NUM_CELLS);
+        connection.clearBlock(x, y, z, () => {});
 
-          _retesselateObjects(oldChunk);
-          _relight(oldChunk, x, y, z);
-          _relightmap(oldChunk);
+        oldChunk.clearBlock(x - ox * NUM_CELLS, y, z - oz * NUM_CELLS);
 
-          postMessage({
-            type: 'chunkUpdate',
-            args: [ox, oz],
-          });
+        _retesselateObjects(oldChunk);
+        _relight(oldChunk, x, y, z);
+        _relightmap(oldChunk);
 
-          /* postMessage({ // XXX enable this for registered listeners
-            type: 'clearBlock',
-            args: [x, y, z],
-          }); */
+        postMessage({
+          type: 'chunkUpdate',
+          args: [ox, oz],
         });
+
+        /* postMessage({ // XXX enable this for registered listeners
+          type: 'clearBlock',
+          args: [x, y, z],
+        }); */
       }
       break;
     }
