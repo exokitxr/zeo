@@ -585,8 +585,8 @@ class Generator {
         generatorElement.requestHoveredObjects = cb => {
           worker.requestHoveredObjects(cb);
         };
-        generatorElement.requestTeleportObject = cb => {
-          worker.requestTeleportObject(cb);
+        generatorElement.requestTeleportObject = (position, side, cb) => {
+          worker.requestTeleportObject(position, side, cb);
         };
         generatorElement.requestBodyObject = (position, cb) => {
           worker.requestBodyObject(position, cb);
