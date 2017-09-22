@@ -67,6 +67,7 @@ class Generator {
     const transparentVoxels = new Uint8Array(256);
     const translucentVoxels = new Uint8Array(256);
     const faceUvs = new Float32Array(256 * 6 * 4);
+    const lights = {};
     const noiser = vxl.noiser({
       seed: murmur(DEFAULT_SEED),
     });
@@ -471,6 +472,9 @@ class Generator {
               faceUvs.set(Float32Array.from(blockSpec.uvs[d]), index * 6 * 4 + d * 4);
             }
           }
+          registerLight(name, v) {
+            lights[murmur(name)] = v;
+          }
           setBlock(chunk, x, y, z, name) {
             const ox = Math.floor(x / NUM_CELLS);
             const oz = Math.floor(z / NUM_CELLS);
@@ -557,10 +561,12 @@ class Generator {
           addObject(chunk, name, position, rotation, value) {
             const n = murmur(name);
             const matrix = position.toArray().concat(rotation.toArray());
-            chunk.addObject(n, matrix, value);
-          }
-          addLight(chunk, position, v) {
-            chunk.addLight(position.x, position.y, position.z, v);
+            const objectIndex = chunk.addObject(n, matrix, value);
+
+            const light = lights[n];
+            if (light) {
+              chunk.addLightAt(objectIndex, position.x, position.y, position.z, light);
+            }
           }
           requestLightmaps(x, z, positions) {
             return _requestChunkHard(x, z)
@@ -825,6 +831,11 @@ class Generator {
                 if (chunk) {
                   const matrix = chunk.getObjectMatrix(index);
                   const n = chunk.removeObject(index);
+
+                  const light = lights[n];
+                  if (light) {
+                    chunk.removeLight(index);
+                  }
 
                   _decorateChunkObjectsGeometry(chunk)
                     .then(() => {

@@ -80,6 +80,9 @@ class Objects {
             registerBlock(name, blockSpec) {
               generatorElement.registerBlock(name, blockSpec);
             },
+            registerLight(name, v) {
+              generatorElement.registerLight(name, v);
+            },
             setBlock(chunk, x, y, z, name) {
               generatorElement.setBlock(chunk, x, y, z, name);
             },
@@ -100,9 +103,6 @@ class Objects {
             },
             addObject(chunk, name, position, rotation, value) {
               generatorElement.addObject(chunk, name, position, rotation, value);
-            },
-            addLight(chunk, position, v) {
-              generatorElement.addLight(chunk, position, v);
             },
           };
           objectApi.registerNoise('grass', { // XXX move these into the objects lib

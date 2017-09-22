@@ -524,9 +524,6 @@ const house = objectApi => {
                       localQuaternion.set(0, 0, 0, 1);
                     }
                     objectApi.addObject(chunk, objectType, localVector, localQuaternion, 0);
-                    if (objectType === 'torch') {
-                      objectApi.addLight(chunk, localVector, 16);
-                    }
                   } else {
                     const blockType = (() => {
                       if (col === 'stone') {

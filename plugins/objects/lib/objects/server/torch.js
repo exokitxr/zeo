@@ -36,6 +36,7 @@ const torch = objectApi => {
         return geometry;
       })();
       objectApi.registerGeometry('torch', torchGeometry);
+      objectApi.registerLight('torch', 15);
 
       return () => {
       };
