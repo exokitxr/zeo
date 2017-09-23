@@ -632,6 +632,8 @@ class Heightfield {
 
                 oldMapChunkMeshes.destroy();
 
+                stck.destroyBody(oldMapChunkMeshes.stckBody);
+
                 mapChunkMeshes[_getChunkIndex(x, z)] = null;
 
                 _next();
