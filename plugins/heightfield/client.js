@@ -416,10 +416,9 @@ class Heightfield {
                 torchLightmaps: gbuffer.slices.torchLightmaps,
                 // offset: new THREE.Vector2(chunk.x, chunk.z),
                 heightfield: null,
-                // staticHeightfield: null,
                 stckBody: null,
                 update: chunkData => {
-                  const {positions: newPositions, colors: newColors, skyLightmaps: newSkyLightmaps, torchLightmaps: newTorchLightmaps, indices: newIndices, heightfield, staticHeightfield} = chunkData;
+                  const {positions: newPositions, colors: newColors, skyLightmaps: newSkyLightmaps, torchLightmaps: newTorchLightmaps, indices: newIndices, heightfield, ether} = chunkData;
 
                   if (newPositions.length > 0) {
                     version++;
@@ -433,18 +432,18 @@ class Heightfield {
                     indices.set(newIndices);
 
                     meshes.heightfield = heightfield.slice();
-                    // XXX preallocate stck buffers
-                    // meshes.staticHeightfield = staticHeightfield.slice();
 
+                    // XXX preallocate stck buffers
                     if (!meshes.stckBody) {
-                      meshes.stckBody = stck.makeStaticHeightfieldBody(
+                      meshes.stckBody = stck.makeStaticEtherfieldBody(
                         new THREE.Vector3(chunk.x * NUM_CELLS, 0, chunk.z * NUM_CELLS),
                         NUM_CELLS,
+                        NUM_CELLS_HEIGHT,
                         NUM_CELLS,
-                        staticHeightfield
+                        ether
                       );
                     } else {
-                      meshes.stckBody.setData(staticHeightfield);
+                      meshes.stckBody.setData(ether);
                     }
 
                     const newPositionsLength = newPositions.length;
@@ -481,7 +480,7 @@ class Heightfield {
                   }
                 },
                 updateImmediate: chunkData => {
-                  const {positions: newPositions, colors: newColors, skyLightmaps: newSkyLightmaps, torchLightmaps: newTorchLightmaps, indices: newIndices, heightfield, staticHeightfield} = chunkData;
+                  const {positions: newPositions, colors: newColors, skyLightmaps: newSkyLightmaps, torchLightmaps: newTorchLightmaps, indices: newIndices, heightfield, ether} = chunkData;
 
                   if (newPositions.length > 0) {
                     // geometry
@@ -493,18 +492,18 @@ class Heightfield {
                     indices.set(newIndices);
 
                     meshes.heightfield = heightfield.slice();
-                    // XXX preallocate stck buffers
-                    // meshes.staticHeightfield = staticHeightfield.slice();
 
+                    // XXX preallocate stck buffers
                     if (!meshes.stckBody) {
-                      meshes.stckBody = stck.makeStaticHeightfieldBody(
+                      meshes.stckBody = stck.makeStaticEtherfieldBody(
                         new THREE.Vector3(chunk.x * NUM_CELLS, 0, chunk.z * NUM_CELLS),
                         NUM_CELLS,
+                        NUM_CELLS_HEIGHT,
                         NUM_CELLS,
-                        staticHeightfield
+                        ether
                       );
                     } else {
-                      meshes.stckBody.setData(staticHeightfield);
+                      meshes.stckBody.setData(ether);
                     }
 
                     const newPositionsLength = newPositions.length;

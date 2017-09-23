@@ -21,7 +21,7 @@ const TEMPLATE_HEADER_ENTRIES = 5;
 const TEMPLATE_HEADER_SIZE = UINT32_SIZE * TEMPLATE_HEADER_ENTRIES;
 const DECORATIONS_HEADER_ENTRIES = 5;
 const DECORATIONS_HEADER_SIZE = UINT32_SIZE * DECORATIONS_HEADER_ENTRIES;
-const TERRAIN_RENDER_HEADER_ENTRIES = 5 + (1 * NUM_CHUNKS_HEIGHT) + 2;
+const TERRAIN_RENDER_HEADER_ENTRIES = 5 + (1 * NUM_CHUNKS_HEIGHT) + 3;
 const TERRAIN_RENDER_HEADER_SIZE = UINT32_SIZE * TERRAIN_RENDER_HEADER_ENTRIES;
 const TERRAINS_RENDER_HEADER_ENTRIES = 1;
 const TERRAINS_RENDER_HEADER_SIZE = UINT32_SIZE * TERRAINS_RENDER_HEADER_ENTRIES;
@@ -370,7 +370,7 @@ const _getTerrainRenderChunkSize = (mapChunk, decorations) => {
 };
 
 const stringifyTerrainRenderChunk = (mapChunk, decorations, arrayBuffer, byteOffset) => {
-  const {positions, colors, indices, geometries, heightfield, staticHeightfield} = mapChunk;
+  const {positions, colors, indices, geometries, heightfield, staticHeightfield, ether} = mapChunk;
   const {skyLightmaps, torchLightmaps} = decorations;
 
   if (arrayBuffer === undefined || byteOffset === undefined) {
@@ -393,6 +393,7 @@ const stringifyTerrainRenderChunk = (mapChunk, decorations, arrayBuffer, byteOff
   }
   headerBuffer[index++] = heightfield.length;
   headerBuffer[index++] = staticHeightfield.length;
+  headerBuffer[index++] = ether.length;
   byteOffset += TERRAIN_RENDER_HEADER_SIZE;
 
   const positionsBuffer = new Float32Array(arrayBuffer, byteOffset, positions.length);
@@ -449,6 +450,10 @@ const stringifyTerrainRenderChunk = (mapChunk, decorations, arrayBuffer, byteOff
   staticHeightfieldBuffer.set(staticHeightfield);
   byteOffset += FLOAT32_SIZE * staticHeightfield.length;
 
+  const etherBuffer = new Float32Array(arrayBuffer, byteOffset, ether.length);
+  etherBuffer.set(ether);
+  byteOffset += FLOAT32_SIZE * ether.length;
+
   return [arrayBuffer, byteOffset];
 };
 
@@ -470,7 +475,7 @@ const parseTerrainRenderChunk = (buffer, byteOffset) => {
   }
   const numHeightfield = headerBuffer[index++];
   const numStaticHeightfield = headerBuffer[index++];
-  const numElevations = headerBuffer[index++];
+  const numEther = headerBuffer[index++];
   byteOffset += TERRAIN_RENDER_HEADER_SIZE;
 
   const positionsBuffer = new Float32Array(buffer, byteOffset, numPositions);
@@ -531,6 +536,10 @@ const parseTerrainRenderChunk = (buffer, byteOffset) => {
   const staticHeightfield = staticHeightfieldBuffer;
   byteOffset += FLOAT32_SIZE * numStaticHeightfield;
 
+  const etherBuffer = new Float32Array(buffer, byteOffset, numEther);
+  const ether = etherBuffer;
+  byteOffset += FLOAT32_SIZE * numEther;
+
   return {
     buffer,
     byteOffset,
@@ -542,6 +551,7 @@ const parseTerrainRenderChunk = (buffer, byteOffset) => {
     geometries,
     heightfield,
     staticHeightfield,
+    ether,
   };
 };
 
