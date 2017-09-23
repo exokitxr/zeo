@@ -8,12 +8,15 @@ const FPS = 1000 / 90;
 const GRAVITY = -9.8 / 1000;
 
 const NUM_CELLS = 16;
+const OVERSCAN = 1;
+const NUM_CELLS_OVERSCAN = NUM_CELLS + OVERSCAN;
 const NUM_CELLS_HEIGHT = 128;
 const NUM_CHUNKS_HEIGHT = NUM_CELLS_HEIGHT / NUM_CELLS;
 
 let numBodyTypes = 0;
 const STATIC_BODY_TYPES = {
   staticHeightfield: numBodyTypes++,
+  staticEtherfield: numBodyTypes++,
   staticBlockfield: numBodyTypes++,
 };
 
@@ -25,6 +28,14 @@ function mod(value, divisor) {
   return n < 0 ? (divisor + n) : n;
 }
 const _getStaticBodyIndex = (t, x, z) => (mod(t, 0xFFFF) << 16) | (mod(x, 0xFF) << 8) | mod(z, 0xFF);
+const _getEtherfieldIndex = (x, y, z) => x + (z * NUM_CELLS_OVERSCAN) + (y * NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
+const _li = (left, right, x) => left*(1-x) + right*x;
+const _bi = (bottomLeft, bottomRight, topLeft, topRight, x, y) => bottomLeft*(1-x)*(1-y) + bottomRight*x*(1-y) + topLeft*(1-x)*y + topRight*x*y;
+const _tri = (c010, c110, c000, c100, c011, c111, c001, c101, x, y, z) => _li(
+  _bi(c010, c110, c000, c100, x, z),
+  _bi(c011, c111, c001, c101, x, z),
+  y
+);
 
 const buffer = new ArrayBuffer(protocolUtils.BUFFER_SIZE);
 
@@ -62,6 +73,17 @@ class HeightfieldBody {
     this.n = n;
     this.position = position;
     this.width = width;
+    this.depth = depth;
+    this.data = data;
+  }
+}
+
+class EtherfieldBody {
+  constructor(n, position = new THREE.Vector3(), width = 0, height = 0, depth = 0, data = new Float32Array(0)) {
+    this.n = n;
+    this.position = position;
+    this.width = width;
+    this.height = height;
     this.depth = depth;
     this.data = data;
   }
@@ -145,6 +167,48 @@ const interval = setInterval(() => {
 
         if ((nextPosition.y - (size.y / 2)) < elevation) {
           nextPosition.y = elevation + (size.y / 2);
+          nextVelocity.copy(zeroVector);
+
+          collided = collided || !velocity.equals(zeroVector);
+        }
+      }
+
+      const staticEtherfieldIndex = _getStaticBodyIndex(STATIC_BODY_TYPES.staticEtherfield, ox, oz);
+      const staticEtherfieldBody = staticBodies[staticEtherfieldIndex];
+      if (staticEtherfieldBody) {
+        const ox = Math.floor(nextPosition.x / NUM_CELLS);
+        const oz = Math.floor(nextPosition.z / NUM_CELLS);
+        const lx = nextPosition.x - ox * NUM_CELLS;
+        const ly = nextPosition.y;
+        const lz = nextPosition.z - oz * NUM_CELLS;
+        const minX = Math.floor(lx);
+        const maxX = Math.ceil(lx);
+        const minY = Math.floor(ly);
+        const maxY = Math.ceil(ly);
+        const minZ = Math.floor(lz);
+        const maxZ = Math.ceil(lz);
+        const alx = lx - minX;
+        const aly = ly - minY;
+        const alz = lz - minZ;
+
+        const _getEtherfield = (x, y, z) => staticEtherfieldBody.data[_getEtherfieldIndex(x, y, z)];
+
+        let t1, t2, t3, t4;
+        const v = _tri(
+          t1 = _getEtherfield(minX, minY, minZ),
+          t2 = _getEtherfield(maxX, minY, minZ),
+          t3 = _getEtherfield(minX, minY, maxZ),
+          t4 = _getEtherfield(maxX, minY, maxZ),
+          _getEtherfield(minX, maxY, minZ),
+          _getEtherfield(maxX, maxY, minZ),
+          _getEtherfield(minX, maxY, maxZ),
+          _getEtherfield(maxX, maxY, maxZ),
+          alx,
+          aly,
+          alz
+        );
+        if (v < 0) {
+          nextPosition.copy(position);
           nextVelocity.copy(zeroVector);
 
           collided = collided || !velocity.equals(zeroVector);
@@ -242,6 +306,23 @@ self.onmessage = e => {
           const index = _getStaticBodyIndex(STATIC_BODY_TYPES.staticHeightfield, ox, oz);
           staticBodies[index] = body;
           
+          break;
+        }
+        case 'staticEtherfield': {
+          const {position, width, height, depth, data} = spec;
+          const body = new EtherfieldBody(
+            n,
+            new THREE.Vector3().fromArray(position),
+            width,
+            height,
+            depth,
+            data
+          );
+          const ox = Math.floor(position[0] / NUM_CELLS);
+          const oz = Math.floor(position[2] / NUM_CELLS);
+          const index = _getStaticBodyIndex(STATIC_BODY_TYPES.staticEtherfield, ox, oz);
+          staticBodies[index] = body;
+
           break;
         }
         case 'staticBlockfield': {

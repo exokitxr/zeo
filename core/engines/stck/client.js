@@ -7,6 +7,7 @@ const NUM_CELLS = 16;
 let numBodyTypes = 0;
 const STATIC_BODY_TYPES = {
   staticHeightfield: numBodyTypes++,
+  staticEtherfield: numBodyTypes++,
   staticBlockfield: numBodyTypes++,
 };
 
@@ -130,6 +131,23 @@ class Stck {
             worker.requestAddBody(n, 'staticHeightfield', {
               position: position.toArray(),
               width,
+              depth,
+              data,
+            });
+
+            return body;
+          },
+          makeStaticEtherfieldBody(position, width, height, depth, data) {
+            const ox = Math.floor(position.x / NUM_CELLS);
+            const oz = Math.floor(position.z / NUM_CELLS);
+            const n = _getStaticBodyIndex(STATIC_BODY_TYPES.staticEtherfield, ox, oz);
+            const body = new Body(n);
+            bodies[n] = body;
+
+            worker.requestAddBody(n, 'staticEtherfield', {
+              position: position.toArray(),
+              width,
+              height,
               depth,
               data,
             });
