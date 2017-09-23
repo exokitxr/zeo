@@ -193,12 +193,11 @@ const interval = setInterval(() => {
 
         const _getEtherfield = (x, y, z) => staticEtherfieldBody.data[_getEtherfieldIndex(x, y, z)];
 
-        let t1, t2, t3, t4;
         const v = _tri(
-          t1 = _getEtherfield(minX, minY, minZ),
-          t2 = _getEtherfield(maxX, minY, minZ),
-          t3 = _getEtherfield(minX, minY, maxZ),
-          t4 = _getEtherfield(maxX, minY, maxZ),
+          _getEtherfield(minX, minY, minZ),
+          _getEtherfield(maxX, minY, minZ),
+          _getEtherfield(minX, minY, maxZ),
+          _getEtherfield(maxX, minY, maxZ),
           _getEtherfield(minX, maxY, minZ),
           _getEtherfield(maxX, maxY, minZ),
           _getEtherfield(minX, maxY, maxZ),
