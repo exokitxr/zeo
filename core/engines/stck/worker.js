@@ -22,6 +22,7 @@ const STATIC_BODY_TYPES = {
 
 const zeroVector = new THREE.Vector3();
 const upVector = new THREE.Vector3(0, 1, 0);
+const forwardVector = new THREE.Vector3(0, 0, -1);
 
 function mod(value, divisor) {
   var n = value % divisor;
@@ -68,7 +69,7 @@ class BoxBody {
   }
 }
 
-class HeightfieldBody {
+/* class HeightfieldBody {
   constructor(n, position = new THREE.Vector3(), width = 0, depth = 0, data = new Float32Array(0)) {
     this.n = n;
     this.position = position;
@@ -76,7 +77,7 @@ class HeightfieldBody {
     this.depth = depth;
     this.data = data;
   }
-}
+} */
 
 class EtherfieldBody {
   constructor(n, position = new THREE.Vector3(), width = 0, height = 0, depth = 0, data = new Float32Array(0)) {
@@ -103,8 +104,10 @@ class BlockfieldBody {
 let lastUpdateTime = Date.now();
 const nextPosition = new THREE.Vector3();
 const nextVelocity = new THREE.Vector3();
+// const localCoord = new THREE.Vector2();
 const localVector = new THREE.Vector3();
-const localCoord = new THREE.Vector2();
+const localVector2 = new THREE.Vector3();
+const localQuaternion = new THREE.Quaternion();
 const localTriangle = new THREE.Triangle();
 const numPositions = 3;
 const positions = (() => {
@@ -116,6 +119,115 @@ const positions = (() => {
 })();
 const elevations = Array(numPositions);
 const localBaryCoord = new THREE.Vector3();
+const _checkCollision = position => {
+  const ox = Math.floor(position.x / NUM_CELLS);
+  const oz = Math.floor(position.z / NUM_CELLS);
+  /* const staticHeightfieldIndex = _getStaticBodyIndex(STATIC_BODY_TYPES.staticHeightfield, ox, oz);
+  const staticHeightfieldBody = staticBodies[staticHeightfieldIndex];
+  if (staticHeightfieldBody) {
+    const nextPosition2D = localCoord.set(position.x, position.z);
+
+    const ax = Math.floor(nextPosition2D.x);
+    const ay = Math.floor(nextPosition2D.y);
+
+    const _getIndex = ({x, z}) => (x - ox * NUM_CELLS) + ((z - oz * NUM_CELLS) * (staticHeightfieldBody.width + 1));
+    const _getElevation = index => staticHeightfieldBody.data[index] + staticHeightfieldBody.position.y;
+
+    if ((nextPosition2D.x - ax) <= (1 - (nextPosition2D.y - ay))) { // top left triangle
+      positions[0].set(ax, 0, ay);
+      positions[1].set(ax + 1, 0, ay);
+      positions[2].set(ax, 0, ay + 1);
+    } else { // bottom right triangle
+      positions[0].set(ax + 1, 0, ay);
+      positions[1].set(ax, 0, ay + 1);
+      positions[2].set(ax + 1, 0, ay + 1);
+    };
+    elevations[0] = _getElevation(_getIndex(positions[0]));
+    elevations[1] = _getElevation(_getIndex(positions[1]));
+    elevations[2] = _getElevation(_getIndex(positions[2]));
+    localTriangle.set(positions[0], positions[1], positions[2])
+      .barycoordFromPoint(
+        localVector.set(nextPosition2D.x, 0, nextPosition2D.y),
+        localBaryCoord
+      );
+    const elevation = localBaryCoord.x * elevations[0] +
+      localBaryCoord.y * elevations[1] +
+      localBaryCoord.z * elevations[2];
+
+    if ((nextPosition.y - (size.y / 2)) < elevation) {
+      nextPosition.y = elevation + (size.y / 2);
+      nextVelocity.copy(zeroVector);
+
+      collided = collided || !velocity.equals(zeroVector);
+    }
+  } */
+
+  const staticEtherfieldIndex = _getStaticBodyIndex(STATIC_BODY_TYPES.staticEtherfield, ox, oz);
+  const staticEtherfieldBody = staticBodies[staticEtherfieldIndex];
+  if (staticEtherfieldBody) {
+    const ox = Math.floor(position.x / NUM_CELLS);
+    const oz = Math.floor(position.z / NUM_CELLS);
+    const lx = position.x - ox * NUM_CELLS;
+    const ly = position.y;
+    const lz = position.z - oz * NUM_CELLS;
+    const minX = Math.floor(lx);
+    const maxX = Math.ceil(lx);
+    const minY = Math.floor(ly);
+    const maxY = Math.ceil(ly);
+    const minZ = Math.floor(lz);
+    const maxZ = Math.ceil(lz);
+    const alx = lx - minX;
+    const aly = ly - minY;
+    const alz = lz - minZ;
+
+    const _getEtherfield = (x, y, z) => staticEtherfieldBody.data[_getEtherfieldIndex(x, y, z)];
+
+    const v = _tri(
+      _getEtherfield(minX, minY, minZ),
+      _getEtherfield(maxX, minY, minZ),
+      _getEtherfield(minX, minY, maxZ),
+      _getEtherfield(maxX, minY, maxZ),
+      _getEtherfield(minX, maxY, minZ),
+      _getEtherfield(maxX, maxY, minZ),
+      _getEtherfield(minX, maxY, maxZ),
+      _getEtherfield(maxX, maxY, maxZ),
+      alx,
+      aly,
+      alz
+    );
+    if (v < 0) {
+      return true;
+    }
+  }
+
+  const staticBlockfieldIndex = _getStaticBodyIndex(STATIC_BODY_TYPES.staticBlockfield, ox, oz);
+  const staticBlockfieldBody = staticBodies[staticBlockfieldIndex];
+  if (staticBlockfieldBody) {
+    const ax = Math.floor(position.x);
+    const ay = Math.floor(position.y);
+    const az = Math.floor(position.z);
+    const ox = Math.floor(ax / NUM_CELLS);
+    const oz = Math.floor(az / NUM_CELLS);
+    const lx = ax - ox * NUM_CELLS;
+    const ly = ay;
+    const lz = az - oz * NUM_CELLS;
+
+    const _getBlockfieldIndex = (x, y, z) => {
+      const oy = Math.floor(y / NUM_CELLS);
+      return oy * NUM_CELLS * NUM_CELLS * NUM_CELLS +
+        (x) +
+        ((y - oy * NUM_CELLS) * NUM_CELLS) +
+        (z * NUM_CELLS * NUM_CELLS);
+    };
+
+    const block = staticBlockfieldBody.data[_getBlockfieldIndex(lx, ly, lz)];
+    if (block) {
+      return true;
+    }
+  }
+
+  return false;
+};
 const interval = setInterval(() => {
   const now = Date.now();
   const timeDiff = now - lastUpdateTime;
@@ -131,116 +243,11 @@ const interval = setInterval(() => {
 
       let collided = false;
 
-      const ox = Math.floor(nextPosition.x / NUM_CELLS);
-      const oz = Math.floor(nextPosition.z / NUM_CELLS);
-      const staticHeightfieldIndex = _getStaticBodyIndex(STATIC_BODY_TYPES.staticHeightfield, ox, oz);
-      const staticHeightfieldBody = staticBodies[staticHeightfieldIndex];
-      if (staticHeightfieldBody) {
-        const nextPosition2D = localCoord.set(nextPosition.x, nextPosition.z);
+      if (_checkCollision(nextPosition)) {
+        nextPosition.copy(position);
+        nextVelocity.copy(zeroVector);
 
-        const ax = Math.floor(nextPosition2D.x);
-        const ay = Math.floor(nextPosition2D.y);
-
-        const _getIndex = ({x, z}) => (x - ox * NUM_CELLS) + ((z - oz * NUM_CELLS) * (staticHeightfieldBody.width + 1));
-        const _getElevation = index => staticHeightfieldBody.data[index] + staticHeightfieldBody.position.y;
-
-        if ((nextPosition2D.x - ax) <= (1 - (nextPosition2D.y - ay))) { // top left triangle
-          positions[0].set(ax, 0, ay);
-          positions[1].set(ax + 1, 0, ay);
-          positions[2].set(ax, 0, ay + 1);
-        } else { // bottom right triangle
-          positions[0].set(ax + 1, 0, ay);
-          positions[1].set(ax, 0, ay + 1);
-          positions[2].set(ax + 1, 0, ay + 1);
-        };
-        elevations[0] = _getElevation(_getIndex(positions[0]));
-        elevations[1] = _getElevation(_getIndex(positions[1]));
-        elevations[2] = _getElevation(_getIndex(positions[2]));
-        localTriangle.set(positions[0], positions[1], positions[2])
-          .barycoordFromPoint(
-            localVector.set(nextPosition2D.x, 0, nextPosition2D.y),
-            localBaryCoord
-          );
-        const elevation = localBaryCoord.x * elevations[0] +
-          localBaryCoord.y * elevations[1] +
-          localBaryCoord.z * elevations[2];
-
-        if ((nextPosition.y - (size.y / 2)) < elevation) {
-          nextPosition.y = elevation + (size.y / 2);
-          nextVelocity.copy(zeroVector);
-
-          collided = collided || !velocity.equals(zeroVector);
-        }
-      }
-
-      const staticEtherfieldIndex = _getStaticBodyIndex(STATIC_BODY_TYPES.staticEtherfield, ox, oz);
-      const staticEtherfieldBody = staticBodies[staticEtherfieldIndex];
-      if (staticEtherfieldBody) {
-        const ox = Math.floor(nextPosition.x / NUM_CELLS);
-        const oz = Math.floor(nextPosition.z / NUM_CELLS);
-        const lx = nextPosition.x - ox * NUM_CELLS;
-        const ly = nextPosition.y;
-        const lz = nextPosition.z - oz * NUM_CELLS;
-        const minX = Math.floor(lx);
-        const maxX = Math.ceil(lx);
-        const minY = Math.floor(ly);
-        const maxY = Math.ceil(ly);
-        const minZ = Math.floor(lz);
-        const maxZ = Math.ceil(lz);
-        const alx = lx - minX;
-        const aly = ly - minY;
-        const alz = lz - minZ;
-
-        const _getEtherfield = (x, y, z) => staticEtherfieldBody.data[_getEtherfieldIndex(x, y, z)];
-
-        const v = _tri(
-          _getEtherfield(minX, minY, minZ),
-          _getEtherfield(maxX, minY, minZ),
-          _getEtherfield(minX, minY, maxZ),
-          _getEtherfield(maxX, minY, maxZ),
-          _getEtherfield(minX, maxY, minZ),
-          _getEtherfield(maxX, maxY, minZ),
-          _getEtherfield(minX, maxY, maxZ),
-          _getEtherfield(maxX, maxY, maxZ),
-          alx,
-          aly,
-          alz
-        );
-        if (v < 0) {
-          nextPosition.copy(position);
-          nextVelocity.copy(zeroVector);
-
-          collided = collided || !velocity.equals(zeroVector);
-        }
-      }
-
-      const staticBlockfieldIndex = _getStaticBodyIndex(STATIC_BODY_TYPES.staticBlockfield, ox, oz);
-      const staticBlockfieldBody = staticBodies[staticBlockfieldIndex];
-      if (staticBlockfieldBody) {
-        const ax = Math.floor(nextPosition.x);
-        const ay = Math.floor(nextPosition.y);
-        const az = Math.floor(nextPosition.z);
-        const ox = Math.floor(ax / NUM_CELLS);
-        const oz = Math.floor(az / NUM_CELLS);
-        const lx = ax - ox * NUM_CELLS;
-        const ly = ay;
-        const lz = az - oz * NUM_CELLS;
-
-        const _getBlockfieldIndex = (x, y, z) => {
-          const oy = Math.floor(y / NUM_CELLS);
-          return oy * NUM_CELLS * NUM_CELLS * NUM_CELLS +
-            (x) +
-            ((y - oy * NUM_CELLS) * NUM_CELLS) +
-            (z * NUM_CELLS * NUM_CELLS);
-        };
-
-        const block = staticBlockfieldBody.data[_getBlockfieldIndex(lx, ly, lz)];
-        if (block) {
-          nextPosition.copy(position);
-          nextVelocity.copy(zeroVector);
-
-          collided = collided || !velocity.equals(zeroVector);
-        }
+        collided = collided || !velocity.equals(zeroVector);
       }
 
       if ((nextPosition.y - (size.y / 2)) < 0) { // hard limit to y=0
@@ -262,9 +269,23 @@ const interval = setInterval(() => {
 
   lastUpdateTime = now;
 }, FPS);
-
 this._cleanup = () => {
   clearInterval(interval);
+};
+
+const TELEPORT_GRAVITY = GRAVITY * 1000 / 50000;
+const _getTeleportTarget = (position, rotation) => {
+  const velocity = localVector2.copy(forwardVector) // cannot be localVector since it's an argument
+    .applyQuaternion(rotation)
+    .multiplyScalar(0.05);
+  for (let i = 0; i < 1000; i++) {
+    position.add(velocity);
+    if (_checkCollision(position)) {
+      return position;
+    }
+    velocity.y += TELEPORT_GRAVITY;
+  }
+  return null;
 };
 
 self.onmessage = e => {
@@ -291,7 +312,7 @@ self.onmessage = e => {
 
           break;
         }
-        case 'staticHeightfield': {
+        /* case 'staticHeightfield': {
           const {position, width, depth, data} = spec;
           const body = new HeightfieldBody(
             n,
@@ -306,7 +327,7 @@ self.onmessage = e => {
           staticBodies[index] = body;
           
           break;
-        }
+        } */
         case 'staticEtherfield': {
           const {position, width, height, depth, data} = spec;
           const body = new EtherfieldBody(
@@ -342,7 +363,7 @@ self.onmessage = e => {
           break;
         }
         default: {
-          console.warn('invalid body type:', type);
+          console.warn('stck worker got invalid body type:', type);
 
           break;
         }
@@ -376,6 +397,16 @@ self.onmessage = e => {
       const [n, newData] = args;
 
       staticBodies[n].data = newData;
+
+      break;
+    }
+    case 'teleport': {
+      const {args} = data;
+      const [id, positionArray, rotationArray] = args;
+
+      const teleportTarget = _getTeleportTarget(localVector.fromArray(positionArray), localQuaternion.fromArray(rotationArray));
+      protocolUtils.stringifyResponse(id, teleportTarget, buffer, 0);
+      postMessage(buffer);
 
       break;
     }

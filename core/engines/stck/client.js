@@ -36,9 +36,26 @@ class Stck {
         const {events} = jsUtils;
         const {EventEmitter} = events;
 
+        const localVector = new THREE.Vector3();
+
         const bodies = {};
 
         const worker = new Worker('archae/plugins/_core_engines_stck/build/worker.js');
+        let queues = {};
+        let numRemovedQueues = 0;
+        const _cleanupQueues = () => {
+          if (++numRemovedQueues >= 16) {
+            const newQueues = {};
+            for (const id in queues) {
+              const entry = queues[id];
+              if (entry !== null) {
+                newQueues[id] = entry;
+              }
+            }
+            queues = newQueues;
+            numRemovedQueues = 0;
+          }
+        };
         worker.requestAddBody = (n, type, spec) => {
           worker.postMessage({
             method: 'addBody',
@@ -63,20 +80,44 @@ class Stck {
             args: [n, data],
           });
         };
+        worker.requestTeleport = (position, rotation, cb) => {
+          const id = _makeId();
+          worker.postMessage({
+            method: 'teleport',
+            args: [id, position, rotation],
+          });
+          queues[id] = data => {
+            cb(protocolUtils.parseResponse(localVector, data, 0));
+          };
+        };
         worker.onmessage = e => {
           const {data} = e;
-          const n = protocolUtils.parseN(data);
-          const body = bodies[n];
+          const type = protocolUtils.parseType(data);
 
-          if (body) {
-            const type = protocolUtils.parseType(data);
+          if (type === protocolUtils.TYPE_UPDATE) {
+            const n = protocolUtils.parseN(data);
+            const body = bodies[n];
 
-            if (type === protocolUtils.TYPE_UPDATE) {
+            if (body) {
               protocolUtils.parseUpdate(body.position, body.rotation, body.scale, body.velocity, data);
               body.emit('update');
-            } else if (type === protocolUtils.TYPE_COLLIDE) {
+            }
+          } else if (type === protocolUtils.TYPE_COLLIDE) {
+            const n = protocolUtils.parseN(data);
+            const body = bodies[n];
+
+            if (body) {
               body.emit('collide');
             }
+          } else if (type === protocolUtils.TYPE_RESPONSE) {
+            const id = protocolUtils.parseN(data);
+
+            queues[id](data);
+            queues[id] = null;
+
+            _cleanupQueues();
+          } else {
+            console.warn('stck worker got invalid message type: ', type);
           }
         };
 
@@ -171,6 +212,9 @@ class Stck {
 
             return body;
           },
+          requestTeleport(position, rotation, cb) {
+            worker.requestTeleport(position.toArray(), rotation.toArray(), cb);
+          },
           destroyBody(body) {
             const {n} = body;
 
@@ -188,6 +232,8 @@ class Stck {
   }
 }
 
+let ids = 0;
+const _makeId = () => ids++;
 let ns = 0;
 const _makeN = () => ns++;
 function mod(value, divisor) {

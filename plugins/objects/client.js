@@ -608,7 +608,7 @@ void main() {
           teleportPositions[e.side] = null;
         }
         teleport.on('end', _teleportEnd);
-        const _teleportTarget = (position, rotation, scale, side) => {
+        /* const _teleportTarget = (position, rotation, scale, side) => {
           localEuler.setFromQuaternion(rotation, camera.rotation.order);
           const angleFactor = Math.min(Math.pow(Math.max(localEuler.x + Math.PI * 0.45, 0) / (Math.PI * 0.8), 2), 1);
           localEuler.x = 0;
@@ -649,7 +649,7 @@ void main() {
             return null;
           }
         };
-        teleport.addTarget(_teleportTarget);
+        teleport.addTarget(_teleportTarget); */
 
         class ObjectApi {
           addObject(name, position = zeroVector, rotation = zeroQuaternion, value = 0) {
@@ -1071,7 +1071,7 @@ void main() {
 
           teleport.removeListener('start', _teleportStart);
           teleport.removeListener('end', _teleportEnd);
-          teleport.removeTarget(_teleportTarget);
+          // teleport.removeTarget(_teleportTarget);
 
           input.removeListener('triggerdown', _triggerdown);
           input.removeListener('gripdown', _gripdown);

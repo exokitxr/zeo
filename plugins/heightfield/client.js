@@ -925,7 +925,7 @@ class Heightfield {
 
             const heightfieldEntity = {
               entityAddedCallback(entityElement) {
-                const _teleportTarget = (position, rotation, scale, side, hmdPosition) => {
+                /* const _teleportTarget = (position, rotation, scale, side, hmdPosition) => {
                   localEuler.setFromQuaternion(rotation, camera.rotation.order);
                   const angleFactor = Math.min(Math.pow(Math.max(localEuler.x + Math.PI * 0.45, 0) / (Math.PI * 0.8), 2), 1);
                   localEuler.x = 0;
@@ -956,12 +956,12 @@ class Heightfield {
                     return null;
                   }
                 };
-                teleport.addTarget(_teleportTarget);
+                teleport.addTarget(_teleportTarget); */
 
                 entityElement.requestFrame = _requestFrame;
 
                 entityElement._cleanup = () => {
-                  teleport.removeTarget(_teleportTarget);
+                  // teleport.removeTarget(_teleportTarget);
                 };
               },
             };
