@@ -140,6 +140,7 @@ class Stck {
     this._cleanup();
   }
 }
-const _makeN = () => Math.floor(Math.random() * 0xFFFFFFFF);
+let ns = 0;
+const _makeN = () => ns++;
 
 module.exports = Stck;
