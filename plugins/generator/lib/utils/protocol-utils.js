@@ -225,21 +225,6 @@ const parseTerrainData = (buffer, byteOffset) => {
   const numWater = headerBuffer[index++];
   const numLava = headerBuffer[index++];
   byteOffset += TERRAIN_DATA_HEADER_SIZE;
-/* if (typeof window !== 'undefined') {
-  console.log('parse terrain data', {
-    numPositions,
-    numColors,
-    numIndices,
-    numPeeks,
-    numHeightfield,
-    numStaticHeightfield,
-    numBiomes,
-    numElevations,
-    numEther,
-    numWater,
-    numLava,
-  });
-} */
 
   const positionsBuffer = new Float32Array(buffer, byteOffset, numPositions);
   const positions = positionsBuffer;
