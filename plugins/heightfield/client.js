@@ -417,7 +417,6 @@ class Heightfield {
                 offset: new THREE.Vector2(chunk.x, chunk.z),
                 heightfield: null,
                 staticHeightfield: null,
-                lightmap: null,
                 stckBody: null,
                 update: chunkData => {
                   const {positions: newPositions, colors: newColors, skyLightmaps: newSkyLightmaps, torchLightmaps: newTorchLightmaps, indices: newIndices, heightfield, staticHeightfield} = chunkData;
@@ -595,7 +594,10 @@ class Heightfield {
 
                   oldMapChunkMeshes.destroy();
 
-                  stck.destroyBody(oldMapChunkMeshes.stckBody);
+                  if (oldMapChunkMeshes.stckBody) {
+                    stck.destroyBody(oldMapChunkMeshes.stckBody);
+                    oldMapChunkMeshes.stckBody = null;
+                  }
 
                   mapChunkMeshes[index] = null;
                 }
@@ -607,12 +609,14 @@ class Heightfield {
 
                   heightfieldObject.renderList.push(newMapChunkMeshes.renderListEntries[0], newMapChunkMeshes.renderListEntries[1], newMapChunkMeshes.renderListEntries[2]);
 
-                  newMapChunkMeshes.stckBody = stck.makeStaticHeightfieldBody(
-                    new THREE.Vector3(x * NUM_CELLS, 0, z * NUM_CELLS),
-                    NUM_CELLS,
-                    NUM_CELLS,
-                    newMapChunkMeshes.staticHeightfield
-                  );
+                  if (newMapChunkMeshes.staticHeightfield) {
+                    newMapChunkMeshes.stckBody = stck.makeStaticHeightfieldBody(
+                      new THREE.Vector3(x * NUM_CELLS, 0, z * NUM_CELLS),
+                      NUM_CELLS,
+                      NUM_CELLS,
+                      newMapChunkMeshes.staticHeightfield
+                    );
+                  }
 
                   mapChunkMeshes[index] = newMapChunkMeshes;
                   chunk[dataSymbol] = newMapChunkMeshes;
@@ -632,7 +636,10 @@ class Heightfield {
 
                 oldMapChunkMeshes.destroy();
 
-                stck.destroyBody(oldMapChunkMeshes.stckBody);
+                if (oldMapChunkMeshes.stckBody) {
+                  stck.destroyBody(oldMapChunkMeshes.stckBody);
+                  oldMapChunkMeshes.stckBody = null;
+                }
 
                 mapChunkMeshes[_getChunkIndex(x, z)] = null;
 
