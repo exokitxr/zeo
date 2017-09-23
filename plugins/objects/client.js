@@ -21,7 +21,7 @@ const dataSymbol = Symbol();
 
 class Objects {
   mount() {
-    const {three, pose, input, elements, render, world, teleport, utils: {js: {mod, bffr, sbffr}, hash: {murmur}}} = zeo;
+    const {three, pose, input, elements, render, world, teleport, stck, utils: {js: {mod, bffr, sbffr}, hash: {murmur}}} = zeo;
     const {THREE, scene, camera, renderer} = three;
 
     return Promise.all([
@@ -388,14 +388,17 @@ void main() {
 
           let version = 0;
 
-          return {
+          const mesh = {
             renderListEntry,
             gbuffer,
             offset: new THREE.Vector2(x, z),
             skyLightmaps,
             torchLightmaps,
+            blockfield: null,
+            stckBody: null,
             update: chunkData => {
-              const {positions: newPositions, uvs: newUvs, ssaos: newSsaos, frames: newFrames, skyLightmaps: newSkyLightmaps, torchLightmaps: newTorchLightmaps, objectIndices: newObjectIndices, indices: newIndices} = chunkData;
+              const {positions: newPositions, uvs: newUvs, ssaos: newSsaos, frames: newFrames, skyLightmaps: newSkyLightmaps, torchLightmaps: newTorchLightmaps, objectIndices: newObjectIndices, indices: newIndices, blockfield} = chunkData;
+
               if (newPositions.length > 0) {
                 version++;
 
@@ -407,6 +410,8 @@ void main() {
                 torchLightmaps.set(newTorchLightmaps);
                 indices.set(newIndices);
                 objectIndices.set(newObjectIndices);
+
+                mesh.blockfield = blockfield.slice();
 
                 const newPositionsLength = newPositions.length;
                 const newUvsLength = newUvs.length;
@@ -449,6 +454,7 @@ void main() {
               geometries.free(gbuffer);
             },
           };
+          return mesh;
         };
 
         class HoveredTrackedObject {
@@ -833,6 +839,11 @@ void main() {
 
               oldObjectsChunkMesh.destroy();
               objectsChunkMeshes[index] = null;
+
+              if (oldObjectsChunkMesh.stckBody) {
+                stck.destroyBody(oldObjectsChunkMesh.stckBody);
+                oldObjectsChunkMesh.stckBody = null;
+              }
             }
 
             const gbuffer = geometries.alloc();
@@ -841,6 +852,16 @@ void main() {
               const newObjectsChunkMesh = _makeObjectsChunkMesh(chunk, gbuffer);
               newObjectsChunkMesh.update(objectsChunkData);
               objectsObject.renderList.push(newObjectsChunkMesh.renderListEntry);
+
+              if (newObjectsChunkMesh.blockfield) {
+                newObjectsChunkMesh.stckBody = stck.makeStaticBlockfieldBody(
+                  new THREE.Vector3(x * NUM_CELLS, 0, z * NUM_CELLS),
+                  NUM_CELLS,
+                  NUM_CELLS_HEIGHT,
+                  NUM_CELLS,
+                  newObjectsChunkMesh.blockfield
+                );
+              }
 
               objectsChunkMeshes[index] = newObjectsChunkMesh;
               chunk[dataSymbol] = newObjectsChunkMesh;
@@ -861,6 +882,11 @@ void main() {
             objectsChunkMesh.destroy();
 
             objectsChunkMeshes[_getChunkIndex(chunk.x, chunk.z)] = null;
+
+            if (objectsChunkMesh.stckBody) {
+              stck.destroyBody(objectsChunkMesh.stckBody);
+              objectsChunkMesh.stckBody = null;
+            }
 
             _next();
           } else {

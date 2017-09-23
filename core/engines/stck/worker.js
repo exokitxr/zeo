@@ -7,14 +7,24 @@ const protocolUtils = require('./lib/utils/protocol-utils');
 const FPS = 1000 / 90;
 const GRAVITY = -9.8 / 1000;
 
+const NUM_CELLS = 16;
+const NUM_CELLS_HEIGHT = 128;
+const NUM_CHUNKS_HEIGHT = NUM_CELLS_HEIGHT / NUM_CELLS;
+
 const zeroVector = new THREE.Vector3();
 const upVector = new THREE.Vector3(0, 1, 0);
 
+function mod(value, divisor) {
+  var n = value % divisor;
+  return n < 0 ? (divisor + n) : n;
+}
+const _getBodyIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
+
 const buffer = new ArrayBuffer(protocolUtils.BUFFER_SIZE);
 
-const dynamicBoxBodies = [];
-const staticBoxBodies = [];
-const staticHeightfieldBodies = [];
+const dynamicBoxBodies = {};
+const staticHeightfieldBodies = {};
+const staticBlockfieldBodies = {};
 
 class BoxBody {
   constructor(n, position = new THREE.Vector3(), rotation = new THREE.Quaternion(), scale = new THREE.Vector3(1, 1, 1), size = new THREE.Vector3(0.1, 0.1, 0.1), velocity = new THREE.Vector3()) {
@@ -52,12 +62,21 @@ class HeightfieldBody {
   }
 }
 
+class BlockfieldBody {
+  constructor(n, position = new THREE.Vector3(), width = 0, height = 0, depth = 0, data = new Uint8Array(0)) {
+    this.n = n;
+    this.position = position;
+    this.width = width;
+    this.height = height;
+    this.depth = depth;
+    this.data = data;
+  }
+}
+
 let lastUpdateTime = Date.now();
 const nextPosition = new THREE.Vector3();
 const nextVelocity = new THREE.Vector3();
 const localVector = new THREE.Vector3();
-const localMin = new THREE.Vector2();
-const localMax = new THREE.Vector2();
 const localCoord = new THREE.Vector2();
 const localTriangle = new THREE.Triangle();
 const numPositions = 3;
@@ -74,27 +93,28 @@ const interval = setInterval(() => {
   const now = Date.now();
   const timeDiff = now - lastUpdateTime;
 
-  for (let i = 0; i < dynamicBoxBodies.length; i++) {
+  for (const i in dynamicBoxBodies) {
     const body = dynamicBoxBodies[i];
-    const {position, velocity, size} = body;
-    nextVelocity.copy(velocity)
-      .add(localVector.copy(upVector).multiplyScalar(GRAVITY * timeDiff));
-    nextPosition.copy(position)
-      .add(localVector.copy(nextVelocity).multiplyScalar(timeDiff / 1000));
+    if (body) {
+      const {position, velocity, size} = body;
+      nextVelocity.copy(velocity)
+        .add(localVector.copy(upVector).multiplyScalar(GRAVITY * timeDiff));
+      nextPosition.copy(position)
+        .add(localVector.copy(nextVelocity).multiplyScalar(timeDiff / 1000));
 
-    let collided = false;
+      let collided = false;
 
-    for (let j = 0; j < staticHeightfieldBodies.length; j++) {
-      const staticHeightfieldBody = staticHeightfieldBodies[j];
-      localMin.set(staticHeightfieldBody.position.x, staticHeightfieldBody.position.z);
-      localMax.copy(localMin).add(localCoord.set(staticHeightfieldBody.width, staticHeightfieldBody.depth));
-      const nextPosition2D = localCoord.set(nextPosition.x, nextPosition.z);
+      const ox = Math.floor(nextPosition.x / NUM_CELLS);
+      const oz = Math.floor(nextPosition.z / NUM_CELLS);
+      const index = _getBodyIndex(ox, oz);
+      const staticHeightfieldBody = staticHeightfieldBodies[index];
+      if (staticHeightfieldBody) {
+        const nextPosition2D = localCoord.set(nextPosition.x, nextPosition.z);
 
-      if (nextPosition2D.x >= localMin.x && nextPosition2D.x < localMax.x && nextPosition2D.y >= localMin.y && nextPosition2D.y < localMax.y) { // if heightfield applies
         const ax = Math.floor(nextPosition2D.x);
         const ay = Math.floor(nextPosition2D.y);
 
-        const _getIndex = ({x, z}) => (x - localMin.x) + ((z - localMin.y) * (staticHeightfieldBody.width + 1));
+        const _getIndex = ({x, z}) => (x - ox * NUM_CELLS) + ((z - oz * NUM_CELLS) * (staticHeightfieldBody.width + 1));
         const _getElevation = index => staticHeightfieldBody.data[index] + staticHeightfieldBody.position.y;
 
         if ((nextPosition2D.x - ax) <= (1 - (nextPosition2D.y - ay))) { // top left triangle
@@ -125,20 +145,49 @@ const interval = setInterval(() => {
           collided = collided || !velocity.equals(zeroVector);
         }
       }
-    }
-    if ((nextPosition.y - (size.y / 2)) < 0) { // hard limit to y=0
-      nextPosition.y = size.y / 2;
-      nextVelocity.copy(zeroVector);
 
-      collided = collided || !velocity.equals(zeroVector);
-    }
+      const staticBlockfieldBody = staticBlockfieldBodies[index];
+      if (staticBlockfieldBody) {
+        const ax = Math.floor(nextPosition.x);
+        const ay = Math.floor(nextPosition.y);
+        const az = Math.floor(nextPosition.z);
+        const ox = Math.floor(ax / NUM_CELLS);
+        const oz = Math.floor(az / NUM_CELLS);
+        const lx = ax - ox * NUM_CELLS;
+        const ly = ay;
+        const lz = az - oz * NUM_CELLS;
 
-    // emit updates
-    if (!nextPosition.equals(position) || !nextVelocity.equals(velocity)) {
-      body.update(nextPosition, body.rotation, body.scale, nextVelocity);
-    }
-    if (collided) {
-      body.collide();
+        const _getBlockfieldIndex = (x, y, z) => {
+          const oy = Math.floor(y / NUM_CELLS);
+          return oy * NUM_CELLS * NUM_CELLS * NUM_CELLS +
+            (x) +
+            ((y - oy * NUM_CELLS) * NUM_CELLS) +
+            (z * NUM_CELLS * NUM_CELLS);
+        };
+
+        const block = staticBlockfieldBody.data[_getBlockfieldIndex(lx, ly, lz)];
+        if (block) {
+          nextPosition.copy(position);
+          nextVelocity.copy(zeroVector);
+
+          collided = collided || !velocity.equals(zeroVector);
+        }
+      }
+
+      if ((nextPosition.y - (size.y / 2)) < 0) { // hard limit to y=0
+        nextPosition.y = size.y / 2;
+        nextVelocity.copy(zeroVector);
+
+        collided = collided || !velocity.equals(zeroVector);
+      }
+
+      // emit updates
+      if (!nextPosition.equals(position) || !nextVelocity.equals(velocity)) {
+        body.update(nextPosition, body.rotation, body.scale, nextVelocity);
+      }
+      if (collided) {
+        body.collide();
+      }
     }
   }
 
@@ -169,7 +218,10 @@ self.onmessage = e => {
             new THREE.Vector3().fromArray(size),
             new THREE.Vector3().fromArray(velocity)
           );
-          dynamicBoxBodies.push(body);
+          const ox = Math.floor(position[0] / NUM_CELLS);
+          const oz = Math.floor(position[2] / NUM_CELLS);
+          const index = _getBodyIndex(ox, oz);
+          dynamicBoxBodies[index] = body;
 
           break;
         }
@@ -182,8 +234,28 @@ self.onmessage = e => {
             depth,
             data
           );
-          staticHeightfieldBodies.push(body);
+          const ox = Math.floor(position[0] / NUM_CELLS);
+          const oz = Math.floor(position[2] / NUM_CELLS);
+          const index = _getBodyIndex(ox, oz);
+          staticHeightfieldBodies[index] = body;
           
+          break;
+        }
+        case 'staticBlockfield': {
+          const {position, width, height, depth, data} = spec;
+          const body = new BlockfieldBody(
+            n,
+            new THREE.Vector3().fromArray(position),
+            width,
+            height,
+            depth,
+            data
+          );
+          const ox = Math.floor(position[0] / NUM_CELLS);
+          const oz = Math.floor(position[2] / NUM_CELLS);
+          const index = _getBodyIndex(ox, oz);
+          staticBlockfieldBodies[index] = body;
+
           break;
         }
         default: {
@@ -199,17 +271,23 @@ self.onmessage = e => {
       const {args} = data;
       const [n] = args;
 
-      let index = dynamicBoxBodies.findIndex(body => body.n === n);
-      if (index !== -1) {
-        dynamicBoxBodies.splice(index, 1);
+      for (const index in dynamicBoxBodies) {
+        const dynamicBoxBody = dynamicBoxBodies[index];
+        if (dynamicBoxBody && dynamicBoxBody.n === n) {
+          dynamicBoxBodies[index] = null;
+        }
       }
-      index = staticBoxBodies.findIndex(body => body.n === n);
-      if (index !== -1) {
-        staticBoxBodies.splice(index, 1);
+      for (const index in staticHeightfieldBodies) {
+        const staticHeightfieldBody = staticHeightfieldBodies[index];
+        if (staticHeightfieldBody && staticHeightfieldBody.n === n) {
+          staticHeightfieldBody[index] = null;
+        }
       }
-      index = staticHeightfieldBodies.findIndex(body => body.n === n);
-      if (index !== -1) {
-        staticHeightfieldBodies.splice(index, 1);
+      for (const index in staticBlockfieldBodies) {
+        const staticBlockfieldBody = staticBlockfieldBodies[index];
+        if (staticBlockfieldBody && staticBlockfieldBody.n === n) {
+          staticBlockfieldBody[index] = null;
+        }
       }
 
       break;

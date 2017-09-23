@@ -35,6 +35,8 @@ const DIRECTIONS = [
 const lightsSymbol = Symbol();
 const lightsRenderedSymbol = Symbol();
 const lightmapsSymbol = Symbol();
+const blockfieldSymbol = Symbol();
+const blockfieldRenderedSymbol = Symbol();
 
 class Generator {
   constructor(archae) {
@@ -139,6 +141,8 @@ class Generator {
         chunk[lightsSymbol] = new Uint8Array(NUM_CELLS_OVERSCAN * (NUM_CELLS_HEIGHT + 1) * NUM_CELLS_OVERSCAN);
         chunk[lightsRenderedSymbol] = false;
         chunk[lightmapsSymbol] = null;
+        chunk[blockfieldSymbol] = new Uint8Array(NUM_CELLS * NUM_CELLS_HEIGHT * NUM_CELLS);
+        chunk[blockfieldRenderedSymbol] = false;
       }
     };
 
@@ -378,9 +382,19 @@ class Generator {
             return Promise.resolve(chunk);
           }
         };
+        const _requestChunkWithBlockfield = chunk => {
+          if (chunk[blockfieldRenderedSymbol]) {
+            return Promise.resolve(chunk);
+          } else {
+            vxl.blockfield(chunk.getBlockBuffer(), chunk[blockfieldSymbol]);
+            chunk[blockfieldRenderedSymbol] = true;
+            return Promise.resolve(chunk);
+          }
+        };
         const _requestChunk = (x, z) => _requestChunkHard(x, z)
           .then(chunk => _requestChunkWithLights(chunk))
-          .then(chunk => _requestChunkWithLightmaps(chunk));
+          .then(chunk => _requestChunkWithLightmaps(chunk))
+          .then(chunk => _requestChunkWithBlockfield(chunk));
 
         const _writeFileData = (p, data, byteOffset) => new Promise((accept, reject) => {
           const ws = fs.createWriteStream(p, {
@@ -703,7 +717,7 @@ class Generator {
                 const geometryBuffer = chunk.getGeometryBuffer();
                 res.write(new Buffer(geometryBuffer.buffer, geometryBuffer.byteOffset, geometryBuffer.byteLength));
 
-                const [arrayBuffer, byteOffset] = protocolUtils.stringifyDecorations(chunk[lightmapsSymbol]);
+                const [arrayBuffer, byteOffset] = protocolUtils.stringifyDecorations(chunk[lightmapsSymbol], chunk[blockfieldSymbol]);
                 res.end(new Buffer(arrayBuffer, 0, byteOffset));
               })
               .catch(err => {
@@ -900,6 +914,7 @@ class Generator {
                 const chunk = zde.getChunk(ox, oz);
                 if (chunk) {
                   chunk.setBlock(x - ox * NUM_CELLS, y, z - oz * NUM_CELLS, v);
+                  chunk[blockfieldRenderedSymbol] = false;
 
                   _decorateChunkObjectsGeometry(chunk)
                     .then(() => {
@@ -933,6 +948,7 @@ class Generator {
                 const chunk = zde.getChunk(ox, oz);
                 if (chunk) {
                   chunk.clearBlock(x - ox * NUM_CELLS, y, z - oz * NUM_CELLS);
+                  chunk[blockfieldRenderedSymbol] = false;
 
                   _decorateChunkObjectsGeometry(chunk)
                     .then(() => {

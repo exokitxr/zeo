@@ -788,6 +788,10 @@ class Zeo {
                           return stck.makeStaticHeightfieldBody.apply(stck, arguments);
                         }
 
+                        makeStaticBlockfieldBody() {
+                          return stck.makeStaticBlockfieldBody.apply(stck, arguments);
+                        }
+
                         destroyBody(body) {
                           stck.destroyBody(body);
                         }

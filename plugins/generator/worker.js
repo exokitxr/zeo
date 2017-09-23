@@ -455,6 +455,7 @@ const _retesselateObjects = chunk => {
   chunk.chunkData.decorations.objects = {
     skyLightmaps: new Uint8Array(chunkData.positions.length / 3),
     torchLightmaps: new Uint8Array(chunkData.positions.length / 3),
+    blockfield: new Uint8Array(NUM_CELLS * NUM_CELLS_HEIGHT * NUM_CELLS),
   };
   _undecorateObjectsChunk(chunk);
 
@@ -1289,6 +1290,15 @@ const _decorateObjectsChunk = (chunk, index, numPositions, numObjectIndices, num
     }
 
     _offsetChunkData(chunk.chunkData.objects, index, numPositions);
+
+    const blocks = chunk.getBlockBuffer();
+    const {blockfield} = chunk.chunkData.decorations.objects;
+    Module._blockfield(
+      _alloc(blocks),
+      _alloc(blockfield),
+    );
+    blockfield.unshadow();
+    _freeAll();
 
     chunk[objectsDecorationsSymbol] = () => {
       objectsMapChunkMeshes[baseIndex] = 0;

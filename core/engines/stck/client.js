@@ -119,6 +119,21 @@ class Stck {
 
           return body;
         };
+        const _makeStaticBlockfieldBody = (position, width, height, depth, data) => {
+          const n = _makeN();
+          const body = new Body(n);
+          bodies[n] = body;
+
+          worker.requestAddBody(n, 'staticBlockfield', {
+            position: position.toArray(),
+            width,
+            height,
+            depth,
+            data,
+          });
+
+          return body;
+        };
         const _destroyBody = body => {
           const {n} = body;
 
@@ -130,6 +145,7 @@ class Stck {
         return {
           makeDynamicBoxBody: _makeDynamicBoxBody,
           makeStaticHeightfieldBody: _makeStaticHeightfieldBody,
+          makeStaticBlockfieldBody: _makeStaticBlockfieldBody,
           destroyBody: _destroyBody,
         };
       }
