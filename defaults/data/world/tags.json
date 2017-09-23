@@ -129,17 +129,6 @@
       "attributes": {},
       "metadata": {}
     },
-    "yhncxo": {
-      "type": "entity",
-      "id": "yhncxo",
-      "name": "/plugins/npc",
-      "displayName": "npc",
-      "version": "0.0.1",
-      "module": "/plugins/npc",
-      "tagName": "plugins-npc",
-      "attributes": {},
-      "metadata": {}
-    },
     "0pdq0ak": {
       "type": "entity",
       "id": "0pdq0ak",
