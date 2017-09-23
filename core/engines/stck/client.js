@@ -1,5 +1,15 @@
 const protocolUtils = require('./lib/utils/protocol-utils');
 
+const NUM_CELLS = 16;
+// const NUM_CELLS_HEIGHT = 128;
+// const NUM_CHUNKS_HEIGHT = NUM_CELLS_HEIGHT / NUM_CELLS;
+
+let numBodyTypes = 0;
+const STATIC_BODY_TYPES = {
+  staticHeightfield: numBodyTypes++,
+  staticBlockfield: numBodyTypes++,
+};
+
 class Stck {
   constructor(archae) {
     this._archae = archae;
@@ -40,10 +50,16 @@ class Stck {
             args: [n],
           });
         };
-        worker.requestSetState = (n, spec) => {
+        /* worker.requestSetState = (n, spec) => {
           worker.postMessage({
             method: 'setState',
             args: [n, spec],
+          });
+        }; */
+        worker.requestSetData = (n, data) => {
+          worker.postMessage({
+            method: 'setData',
+            args: [n, data],
           });
         };
         worker.onmessage = e => {
@@ -74,79 +90,76 @@ class Stck {
             this.velocity = velocity;
           }
 
-          setState(position, rotation, scale, velocity) {
-            this.position.copy(position);
-            this.rotation.copy(rotation);
-            this.scale.copy(scale);
-            this.velocity.copy(velocity);
-
-            const {n} = this;
-            worker.requestSetState(n, {
-              position: this.position,
-              rotation: this.rotation,
-              scale: this.scale,
-              velocity: this.velocity,
+          /* setState(position, rotation, scale, velocity) {
+            worker.requestSetState(this.n, {
+              position,
+              rotation,
+              scale,
+              velocity,
             });
+          } */
+
+          setData(data) {
+            worker.requestSetData(this.n, data);
           }
         }
 
-        const _makeDynamicBoxBody = (position, size, velocity) => {
-          const n = _makeN();
-          const body = new Body(n);
-          bodies[n] = body;
-
-          worker.requestAddBody(n, 'dynamicBox', {
-            position: position.toArray(),
-            rotation: [0, 0, 0, 1],
-            scale: [1, 1, 1],
-            size: size.toArray(),
-            velocity: velocity.toArray(),
-          });
-
-          return body;
-        };
-        const _makeStaticHeightfieldBody = (position, width, depth, data) => {
-          const n = _makeN();
-          const body = new Body(n);
-          bodies[n] = body;
-
-          worker.requestAddBody(n, 'staticHeightfield', {
-            position: position.toArray(),
-            width,
-            depth,
-            data,
-          });
-
-          return body;
-        };
-        const _makeStaticBlockfieldBody = (position, width, height, depth, data) => {
-          const n = _makeN();
-          const body = new Body(n);
-          bodies[n] = body;
-
-          worker.requestAddBody(n, 'staticBlockfield', {
-            position: position.toArray(),
-            width,
-            height,
-            depth,
-            data,
-          });
-
-          return body;
-        };
-        const _destroyBody = body => {
-          const {n} = body;
-
-          worker.requestRemoveBody(n);
-
-          delete bodies[n];
-        };
-
         return {
-          makeDynamicBoxBody: _makeDynamicBoxBody,
-          makeStaticHeightfieldBody: _makeStaticHeightfieldBody,
-          makeStaticBlockfieldBody: _makeStaticBlockfieldBody,
-          destroyBody: _destroyBody,
+          makeDynamicBoxBody(position, size, velocity) {
+            const n = _makeN();
+            const body = new Body(n);
+            bodies[n] = body;
+
+            worker.requestAddBody(n, 'dynamicBox', {
+              position: position.toArray(),
+              rotation: [0, 0, 0, 1],
+              scale: [1, 1, 1],
+              size: size.toArray(),
+              velocity: velocity.toArray(),
+            });
+
+            return body;
+          },
+          makeStaticHeightfieldBody(position, width, depth, data) {
+            const ox = Math.floor(position.x / NUM_CELLS);
+            const oz = Math.floor(position.z / NUM_CELLS);
+            const n = _getStaticBodyIndex(STATIC_BODY_TYPES.staticHeightfield, ox, oz);
+            const body = new Body(n);
+            bodies[n] = body;
+
+            worker.requestAddBody(n, 'staticHeightfield', {
+              position: position.toArray(),
+              width,
+              depth,
+              data,
+            });
+
+            return body;
+          },
+          makeStaticBlockfieldBody(position, width, height, depth, data) {
+            const ox = Math.floor(position.x / NUM_CELLS);
+            const oz = Math.floor(position.z / NUM_CELLS);
+            const n = _getStaticBodyIndex(STATIC_BODY_TYPES.staticBlockfield, ox, oz);
+            const body = new Body(n);
+            bodies[n] = body;
+
+            worker.requestAddBody(n, 'staticBlockfield', {
+              position: position.toArray(),
+              width,
+              height,
+              depth,
+              data,
+            });
+
+            return body;
+          },
+          destroyBody(body) {
+            const {n} = body;
+
+            worker.requestRemoveBody(n);
+
+            delete bodies[n];
+          },
         };
       }
     });
@@ -156,7 +169,13 @@ class Stck {
     this._cleanup();
   }
 }
+
 let ns = 0;
 const _makeN = () => ns++;
+function mod(value, divisor) {
+  var n = value % divisor;
+  return n < 0 ? (divisor + n) : n;
+}
+const _getStaticBodyIndex = (t, x, z) => (mod(t, 0xFFFF) << 16) | (mod(x, 0xFF) << 8) | mod(z, 0xFF);
 
 module.exports = Stck;

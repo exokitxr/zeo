@@ -414,9 +414,9 @@ class Heightfield {
                 numIndices: gbuffer.slices.indices.length,
                 skyLightmaps: gbuffer.slices.skyLightmaps,
                 torchLightmaps: gbuffer.slices.torchLightmaps,
-                offset: new THREE.Vector2(chunk.x, chunk.z),
+                // offset: new THREE.Vector2(chunk.x, chunk.z),
                 heightfield: null,
-                staticHeightfield: null,
+                // staticHeightfield: null,
                 stckBody: null,
                 update: chunkData => {
                   const {positions: newPositions, colors: newColors, skyLightmaps: newSkyLightmaps, torchLightmaps: newTorchLightmaps, indices: newIndices, heightfield, staticHeightfield} = chunkData;
@@ -434,7 +434,18 @@ class Heightfield {
 
                     meshes.heightfield = heightfield.slice();
                     // XXX preallocate stck buffers
-                    meshes.staticHeightfield = staticHeightfield.slice();
+                    // meshes.staticHeightfield = staticHeightfield.slice();
+
+                    if (!meshes.stckBody) {
+                      meshes.stckBody = stck.makeStaticHeightfieldBody(
+                        new THREE.Vector3(chunk.x * NUM_CELLS, 0, chunk.z * NUM_CELLS),
+                        NUM_CELLS,
+                        NUM_CELLS,
+                        staticHeightfield
+                      );
+                    } else {
+                      meshes.stckBody.setData(staticHeightfield);
+                    }
 
                     const newPositionsLength = newPositions.length;
                     const newColorsLength = newColors.length;
@@ -483,7 +494,18 @@ class Heightfield {
 
                     meshes.heightfield = heightfield.slice();
                     // XXX preallocate stck buffers
-                    meshes.staticHeightfield = staticHeightfield.slice();
+                    // meshes.staticHeightfield = staticHeightfield.slice();
+
+                    if (!meshes.stckBody) {
+                      meshes.stckBody = stck.makeStaticHeightfieldBody(
+                        new THREE.Vector3(chunk.x * NUM_CELLS, 0, chunk.z * NUM_CELLS),
+                        NUM_CELLS,
+                        NUM_CELLS,
+                        staticHeightfield
+                      );
+                    } else {
+                      meshes.stckBody.setData(staticHeightfield);
+                    }
 
                     const newPositionsLength = newPositions.length;
                     const newColorsLength = newColors.length;
@@ -512,12 +534,12 @@ class Heightfield {
 
                   geometries.free(gbuffer);
 
-                  /* if (meshes.shape) {
-                    _unbindLightmap(meshes);
-                  } */
+                  if (meshes.stckBody) {
+                    stck.destroyBody(meshes.stckBody);
+                    meshes.stckBody = null;
+                  }
                 },
               };
-
               return meshes;
             };
 
@@ -594,11 +616,6 @@ class Heightfield {
 
                   oldMapChunkMeshes.destroy();
 
-                  if (oldMapChunkMeshes.stckBody) {
-                    stck.destroyBody(oldMapChunkMeshes.stckBody);
-                    oldMapChunkMeshes.stckBody = null;
-                  }
-
                   mapChunkMeshes[index] = null;
                 }
 
@@ -608,15 +625,6 @@ class Heightfield {
                   newMapChunkMeshes.update(chunkData);
 
                   heightfieldObject.renderList.push(newMapChunkMeshes.renderListEntries[0], newMapChunkMeshes.renderListEntries[1], newMapChunkMeshes.renderListEntries[2]);
-
-                  if (newMapChunkMeshes.staticHeightfield) {
-                    newMapChunkMeshes.stckBody = stck.makeStaticHeightfieldBody(
-                      new THREE.Vector3(x * NUM_CELLS, 0, z * NUM_CELLS),
-                      NUM_CELLS,
-                      NUM_CELLS,
-                      newMapChunkMeshes.staticHeightfield
-                    );
-                  }
 
                   mapChunkMeshes[index] = newMapChunkMeshes;
                   chunk[dataSymbol] = newMapChunkMeshes;
@@ -635,11 +643,6 @@ class Heightfield {
                 heightfieldObject.renderList.splice(heightfieldObject.renderList.indexOf(oldMapChunkMeshes.renderListEntries[0]), 3);
 
                 oldMapChunkMeshes.destroy();
-
-                if (oldMapChunkMeshes.stckBody) {
-                  stck.destroyBody(oldMapChunkMeshes.stckBody);
-                  oldMapChunkMeshes.stckBody = null;
-                }
 
                 mapChunkMeshes[_getChunkIndex(x, z)] = null;
 

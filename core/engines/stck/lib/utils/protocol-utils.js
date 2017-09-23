@@ -3,7 +3,7 @@ let type = 0;
 const TYPE_UPDATE = type++;
 const TYPE_COLLIDE = type++;
 
-const parseN = (buffer, byteOffset = 0) => new Uint32Array(buffer, byteOffset, 1)[0];
+const parseN = (buffer, byteOffset = 0) => new Int32Array(buffer, byteOffset, 1)[0];
 const parseType = (buffer, byteOffset = 0) => new Uint32Array(buffer, byteOffset + 4, 1)[0];
 const parseUpdate = (position, rotation, scale, velocity, buffer, byteOffset = 0) => {
   byteOffset += 4 * 2;
@@ -20,10 +20,10 @@ const stringifyUpdate = (n, position, rotation, scale, velocity, buffer, byteOff
     byteOffset = 0;
   }
 
-  const headerArray = new Uint32Array(buffer, byteOffset, 2);
-  headerArray[0] = n;
-  headerArray[1] = TYPE_UPDATE;
-  byteOffset += 4 * 2;
+  new Int32Array(buffer, byteOffset, 1)[0] = n;
+  byteOffset += 4;
+  new Uint32Array(buffer, byteOffset, 1)[0] = TYPE_UPDATE;
+  byteOffset += 4;
 
   const array = new Float32Array(buffer, byteOffset, 10 + 3);
   array[0] = position.x;
@@ -52,10 +52,10 @@ const stringifyCollide = (n, buffer, byteOffset) => {
     byteOffset = 0;
   }
 
-  const headerArray = new Uint32Array(buffer, byteOffset, 2);
-  headerArray[0] = n;
-  headerArray[1] = TYPE_COLLIDE;
-  byteOffset += 4 * 2;
+  new Int32Array(buffer, byteOffset, 1)[0] = n;
+  byteOffset += 4;
+  new Uint32Array(buffer, byteOffset, 1)[1] = TYPE_COLLIDE;
+  byteOffset += 4;
 
   return buffer;
 };

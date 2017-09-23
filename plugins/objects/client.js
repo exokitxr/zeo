@@ -373,7 +373,7 @@ void main() {
           generatorElement.requestObjectsGenerate(x, z, index, numPositions, numObjectIndices, numIndices, cb);
         };
         const _makeObjectsChunkMesh = (chunk, gbuffer) => {
-          const {x, z} = chunk;
+          // const {x, z} = chunk;
 
           const {index, geometry, slices: {positions, uvs, ssaos, frames, skyLightmaps, torchLightmaps, objectIndices, indices}} = gbuffer;
           const material = objectsMaterial;
@@ -391,10 +391,9 @@ void main() {
           const mesh = {
             renderListEntry,
             gbuffer,
-            offset: new THREE.Vector2(x, z),
+            // offset: new THREE.Vector2(x, z),
             skyLightmaps,
             torchLightmaps,
-            blockfield: null,
             stckBody: null,
             update: chunkData => {
               const {positions: newPositions, uvs: newUvs, ssaos: newSsaos, frames: newFrames, skyLightmaps: newSkyLightmaps, torchLightmaps: newTorchLightmaps, objectIndices: newObjectIndices, indices: newIndices, blockfield} = chunkData;
@@ -411,7 +410,17 @@ void main() {
                 indices.set(newIndices);
                 objectIndices.set(newObjectIndices);
 
-                mesh.blockfield = blockfield.slice();
+                if (!mesh.stckBody) {
+                  mesh.stckBody = stck.makeStaticBlockfieldBody(
+                    new THREE.Vector3(chunk.x * NUM_CELLS, 0, chunk.z * NUM_CELLS),
+                    NUM_CELLS,
+                    NUM_CELLS_HEIGHT,
+                    NUM_CELLS,
+                    blockfield
+                  );
+                } else {
+                  mesh.stckBody.setData(blockfield);
+                }
 
                 const newPositionsLength = newPositions.length;
                 const newUvsLength = newUvs.length;
@@ -452,6 +461,11 @@ void main() {
               version++;
 
               geometries.free(gbuffer);
+
+              if (mesh.stckBody) {
+                stck.destroyBody(mesh.stckBody);
+                 mesh.stckBody = null;
+              }
             },
           };
           return mesh;
@@ -839,11 +853,6 @@ void main() {
 
               oldObjectsChunkMesh.destroy();
               objectsChunkMeshes[index] = null;
-
-              if (oldObjectsChunkMesh.stckBody) {
-                stck.destroyBody(oldObjectsChunkMesh.stckBody);
-                oldObjectsChunkMesh.stckBody = null;
-              }
             }
 
             const gbuffer = geometries.alloc();
@@ -852,16 +861,6 @@ void main() {
               const newObjectsChunkMesh = _makeObjectsChunkMesh(chunk, gbuffer);
               newObjectsChunkMesh.update(objectsChunkData);
               objectsObject.renderList.push(newObjectsChunkMesh.renderListEntry);
-
-              if (newObjectsChunkMesh.blockfield) {
-                newObjectsChunkMesh.stckBody = stck.makeStaticBlockfieldBody(
-                  new THREE.Vector3(x * NUM_CELLS, 0, z * NUM_CELLS),
-                  NUM_CELLS,
-                  NUM_CELLS_HEIGHT,
-                  NUM_CELLS,
-                  newObjectsChunkMesh.blockfield
-                );
-              }
 
               objectsChunkMeshes[index] = newObjectsChunkMesh;
               chunk[dataSymbol] = newObjectsChunkMesh;
@@ -882,11 +881,6 @@ void main() {
             objectsChunkMesh.destroy();
 
             objectsChunkMeshes[_getChunkIndex(chunk.x, chunk.z)] = null;
-
-            if (objectsChunkMesh.stckBody) {
-              stck.destroyBody(objectsChunkMesh.stckBody);
-              objectsChunkMesh.stckBody = null;
-            }
 
             _next();
           } else {

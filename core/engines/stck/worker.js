@@ -11,6 +11,12 @@ const NUM_CELLS = 16;
 const NUM_CELLS_HEIGHT = 128;
 const NUM_CHUNKS_HEIGHT = NUM_CELLS_HEIGHT / NUM_CELLS;
 
+let numBodyTypes = 0;
+const STATIC_BODY_TYPES = {
+  staticHeightfield: numBodyTypes++,
+  staticBlockfield: numBodyTypes++,
+};
+
 const zeroVector = new THREE.Vector3();
 const upVector = new THREE.Vector3(0, 1, 0);
 
@@ -18,13 +24,12 @@ function mod(value, divisor) {
   var n = value % divisor;
   return n < 0 ? (divisor + n) : n;
 }
-const _getBodyIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
+const _getStaticBodyIndex = (t, x, z) => (mod(t, 0xFFFF) << 16) | (mod(x, 0xFF) << 8) | mod(z, 0xFF);
 
 const buffer = new ArrayBuffer(protocolUtils.BUFFER_SIZE);
 
-const dynamicBoxBodies = {};
-const staticHeightfieldBodies = {};
-const staticBlockfieldBodies = {};
+const dynamicBodies = {};
+const staticBodies = {};
 
 class BoxBody {
   constructor(n, position = new THREE.Vector3(), rotation = new THREE.Quaternion(), scale = new THREE.Vector3(1, 1, 1), size = new THREE.Vector3(0.1, 0.1, 0.1), velocity = new THREE.Vector3()) {
@@ -93,8 +98,8 @@ const interval = setInterval(() => {
   const now = Date.now();
   const timeDiff = now - lastUpdateTime;
 
-  for (const i in dynamicBoxBodies) {
-    const body = dynamicBoxBodies[i];
+  for (const index in dynamicBodies) {
+    const body = dynamicBodies[index];
     if (body) {
       const {position, velocity, size} = body;
       nextVelocity.copy(velocity)
@@ -106,8 +111,8 @@ const interval = setInterval(() => {
 
       const ox = Math.floor(nextPosition.x / NUM_CELLS);
       const oz = Math.floor(nextPosition.z / NUM_CELLS);
-      const index = _getBodyIndex(ox, oz);
-      const staticHeightfieldBody = staticHeightfieldBodies[index];
+      const staticHeightfieldIndex = _getStaticBodyIndex(STATIC_BODY_TYPES.staticHeightfield, ox, oz);
+      const staticHeightfieldBody = staticBodies[staticHeightfieldIndex];
       if (staticHeightfieldBody) {
         const nextPosition2D = localCoord.set(nextPosition.x, nextPosition.z);
 
@@ -146,7 +151,8 @@ const interval = setInterval(() => {
         }
       }
 
-      const staticBlockfieldBody = staticBlockfieldBodies[index];
+      const staticBlockfieldIndex = _getStaticBodyIndex(STATIC_BODY_TYPES.staticBlockfield, ox, oz);
+      const staticBlockfieldBody = staticBodies[staticBlockfieldIndex];
       if (staticBlockfieldBody) {
         const ax = Math.floor(nextPosition.x);
         const ay = Math.floor(nextPosition.y);
@@ -218,10 +224,7 @@ self.onmessage = e => {
             new THREE.Vector3().fromArray(size),
             new THREE.Vector3().fromArray(velocity)
           );
-          const ox = Math.floor(position[0] / NUM_CELLS);
-          const oz = Math.floor(position[2] / NUM_CELLS);
-          const index = _getBodyIndex(ox, oz);
-          dynamicBoxBodies[index] = body;
+          dynamicBodies[n] = body;
 
           break;
         }
@@ -236,8 +239,8 @@ self.onmessage = e => {
           );
           const ox = Math.floor(position[0] / NUM_CELLS);
           const oz = Math.floor(position[2] / NUM_CELLS);
-          const index = _getBodyIndex(ox, oz);
-          staticHeightfieldBodies[index] = body;
+          const index = _getStaticBodyIndex(STATIC_BODY_TYPES.staticHeightfield, ox, oz);
+          staticBodies[index] = body;
           
           break;
         }
@@ -253,8 +256,8 @@ self.onmessage = e => {
           );
           const ox = Math.floor(position[0] / NUM_CELLS);
           const oz = Math.floor(position[2] / NUM_CELLS);
-          const index = _getBodyIndex(ox, oz);
-          staticBlockfieldBodies[index] = body;
+          const index = _getStaticBodyIndex(STATIC_BODY_TYPES.staticBlockfield, ox, oz);
+          staticBodies[index] = body;
 
           break;
         }
@@ -271,32 +274,28 @@ self.onmessage = e => {
       const {args} = data;
       const [n] = args;
 
-      for (const index in dynamicBoxBodies) {
-        const dynamicBoxBody = dynamicBoxBodies[index];
-        if (dynamicBoxBody && dynamicBoxBody.n === n) {
-          dynamicBoxBodies[index] = null;
-        }
+      if (dynamicBodies[n]) {
+        dynamicBodies[n] = null;
       }
-      for (const index in staticHeightfieldBodies) {
-        const staticHeightfieldBody = staticHeightfieldBodies[index];
-        if (staticHeightfieldBody && staticHeightfieldBody.n === n) {
-          staticHeightfieldBody[index] = null;
-        }
-      }
-      for (const index in staticBlockfieldBodies) {
-        const staticBlockfieldBody = staticBlockfieldBodies[index];
-        if (staticBlockfieldBody && staticBlockfieldBody.n === n) {
-          staticBlockfieldBody[index] = null;
-        }
+      if (staticBodies[n]) {
+        staticBodies[n] = null;
       }
 
       break;
     }
-    case 'setState': {
+    /* case 'setState': {
       const {args} = data;
       const [n, spec] = args;
 
       // XXX
+
+      break;
+    } */
+    case 'setData': {
+      const {args} = data;
+      const [n, newData] = args;
+
+      staticBodies[n].data = newData;
 
       break;
     }
