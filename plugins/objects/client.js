@@ -652,6 +652,10 @@ void main() {
         teleport.addTarget(_teleportTarget); */
 
         class ObjectApi {
+           getHash(s) {
+            return murmur(s);
+          }
+
           addObject(name, position = zeroVector, rotation = zeroQuaternion, value = 0) {
             generatorElement.requestAddObject(name, position.toArray(), rotation.toArray(), value);
           }
@@ -703,6 +707,11 @@ void main() {
           getHoveredObject(side) {
             const hoveredTrackedObjectSpec = hoveredTrackedObjects[side];
             return hoveredTrackedObjectSpec.isSet() ? hoveredTrackedObjectSpec : null;
+          }
+
+          getHoveredBlock(side) {
+            const hoveredTrackedBlock = hoveredTrackedBlocks[side];
+            return isFinite(hoveredTrackedBlock.x) ? hoveredTrackedBlock.v : null;
           }
         }
         const objectApi = new ObjectApi();

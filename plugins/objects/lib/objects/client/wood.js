@@ -17,6 +17,8 @@ const wood = objectApi => {
   const localEuler = new THREE.Euler();
 
   return () => new Promise((accept, reject) => {
+    const treeHash = objectApi.getHash('tree');
+
     const woodItemApi = {
       asset: 'ITEM.WOOD',
       itemAddedCallback(grabbable) {
@@ -24,6 +26,8 @@ const wood = objectApi => {
           const {side} = e;
 
           if (grabbable.getGrabberSide() === side) {
+            const hoveredBlock = objectApi.getHoveredBlock(side);
+
             /* const hoveredObject = objectApi.getHoveredObject(side);
 
             if (hoveredObject && (hoveredObject.is('wood-wall') || hoveredObject.is('wood-wall-2'))) {
@@ -53,8 +57,13 @@ const wood = objectApi => {
               items.destroyItem(grabbable);
             } */
 
-            objectApi.setBlock(Math.floor(grabbable.position.x), Math.floor(grabbable.position.y), Math.floor(grabbable.position.z), 'tree');
-            items.destroyItem(grabbable);
+            if (hoveredBlock === treeHash) {
+              objectApi.setBlock(Math.floor(grabbable.position.x), Math.floor(grabbable.position.y), Math.floor(grabbable.position.z), 'crafting-table');
+              items.destroyItem(grabbable);
+            } else {
+              objectApi.setBlock(Math.floor(grabbable.position.x), Math.floor(grabbable.position.y), Math.floor(grabbable.position.z), 'tree');
+              items.destroyItem(grabbable);
+            }
 
             e.stopImmediatePropagation();
           }

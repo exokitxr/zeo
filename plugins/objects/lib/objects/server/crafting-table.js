@@ -5,14 +5,14 @@ const {three: {THREE}, utils: {image: {jimp}}} = zeo;
 const craftingTable = objectApi => {
   return () => Promise.all([
     jimp.read(path.join(__dirname, '../../img/crafting-table-top.png'))
-      .then(img => objectApi.registerTexture('craftingTableTop', img)),
+      .then(img => objectApi.registerTexture('craftingTableTop', img, {fourTap: true})),
     jimp.read(path.join(__dirname, '../../img/crafting-table-front.png'))
-      .then(img => objectApi.registerTexture('craftingTableFront', img)),
+      .then(img => objectApi.registerTexture('craftingTableFront', img, {fourTap: true})),
     jimp.read(path.join(__dirname, '../../img/crafting-table-side.png'))
-      .then(img => objectApi.registerTexture('craftingTableSide', img)),
+      .then(img => objectApi.registerTexture('craftingTableSide', img, {fourTap: true})),
   ])
     .then(() => {
-      const craftingTableGeometry = (() => {
+      /* const craftingTableGeometry = (() => {
         const geometry = new THREE.BoxBufferGeometry(1, 1, 1)
           .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.5, 0));
         const uvs = geometry.getAttribute('uv').array;
@@ -47,7 +47,24 @@ const craftingTable = objectApi => {
 
         return geometry;
       })();
-      objectApi.registerGeometry('craftingTable', craftingTableGeometry);
+      objectApi.registerGeometry('craftingTable', craftingTableGeometry); */
+
+      const craftingTableSideUvs = objectApi.getTileUv('craftingTableSide');
+      const craftingTableFrontUvs = objectApi.getTileUv('craftingTableFront');
+      const craftingTableTopUvs = objectApi.getTileUv('craftingTableTop');
+      const craftingTableBlock = {
+        uvs: [
+          craftingTableSideUvs,
+          craftingTableSideUvs,
+          craftingTableTopUvs,
+          craftingTableTopUvs,
+          craftingTableSideUvs,
+          craftingTableFrontUvs,
+        ],
+        transparent: false,
+        translucent: false,
+      };
+      objectApi.registerBlock('crafting-table', craftingTableBlock);
 
       return () => {
       };
