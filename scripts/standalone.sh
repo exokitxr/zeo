@@ -7,8 +7,6 @@ pushd "$DIR"/../
 ./index.js server \
   port="$PORT" \
   siteUrl='https://zeovr.io' \
-  vridUrl='https://zeovr.io' \
-  dataDirectorySrc='defaults/data' \
-  cryptoDirectorySrc='defaults/crypto'
+  vridUrl='https://zeovr.io'
 
 popd;

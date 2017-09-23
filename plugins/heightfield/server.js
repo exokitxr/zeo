@@ -27,8 +27,9 @@ const DIRECTIONS = [
 ];
 const OBJECTS_PLUGIN = 'plugins-objects';
 
-const etherSymbol = Symbol();
+// const etherSymbol = Symbol();
 const lightsSymbol = Symbol();
+const lightsRenderedSymbol = Symbol();
 const decorationsSymbol = Symbol();
 const _getLightsIndex = (x, y, z) => x + y * NUM_CELLS_OVERSCAN + z * NUM_CELLS_OVERSCAN * (NUM_CELLS_HEIGHT + 1);
 const _getLightsArrayIndex = (x, z) => x + z * 3;
@@ -48,7 +49,7 @@ class Heightfield {
       utils: {
         js: {mod},
         hash: {murmur},
-        random: {indev},
+        random: {alea, vxl},
       },
     } = zeo;
 
@@ -56,10 +57,28 @@ class Heightfield {
       THREE,
       mod,
       murmur,
-      indev,
+      alea,
+      vxl,
     });
     const trraDataPath = path.join(dirname, dataDirectory, 'trra.dat');
 
+    const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
+    const _generateChunkGeometry = (chunk, opts) => {
+      const uint32Buffer = chunk.getBuffer();
+      protocolUtils.stringifyData(generator.generate(chunk.x, chunk.z, opts), uint32Buffer.buffer, uint32Buffer.byteOffset);
+      chunk.dirty = true;
+      return chunk;
+    };
+    const _generateChunkLights = chunk => {
+      chunk[lightsSymbol] = new Uint8Array(NUM_CELLS_OVERSCAN * (NUM_CELLS_HEIGHT + 1) * NUM_CELLS_OVERSCAN);
+      chunk[lightsRenderedSymbol] = false;
+      return chunk;
+    };
+    const _generateChunk = (chunk, opts) => {
+      chunk = _generateChunkGeometry(chunk, opts);
+      chunk = _generateChunkLights(chunk);
+      return chunk;
+    };
     const _getTrra = () => new Promise((accept, reject) => {
       fs.readFile(trraDataPath, (err, b) => {
         if (!err) {
@@ -67,6 +86,14 @@ class Heightfield {
             seed: DEFAULT_SEED,
           });
           tra.load(b);
+
+          for (const index in tra.chunks) {
+            const chunk = tra.chunks[index];
+            if (chunk) {
+              _generateChunkLights(chunk);
+            }
+          }
+
           accept(tra);
         } else if (err.code === 'ENOENT') {
           touch(trraDataPath, err => {
@@ -114,19 +141,6 @@ class Heightfield {
               next();
             });
         });
-        const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
-        const _getEtherIndex = (x, y, z) => x + (z * NUM_CELLS_OVERSCAN) + (y * NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
-        const _generateChunk = (chunk, opts) => {
-          const chunkData = generator.generate(chunk.x, chunk.z, opts);
-
-          const uint32Buffer = chunk.getBuffer();
-          protocolUtils.stringifyData(chunkData, uint32Buffer.buffer, uint32Buffer.byteOffset);
-          chunk.dirty = true;
-
-          chunk[etherSymbol] = chunkData.ether;
-
-          return chunk;
-        };
         const _ensureNeighboringChunks = (x, z) => {
           const promises = [];
           for (let dz = -1; dz <= 1; dz++) {
@@ -152,178 +166,78 @@ class Heightfield {
         };
         const _decorateChunkLights = chunk => _decorateChunkLightsRange(
           chunk,
-          null,
           (chunk.x - 1) * NUM_CELLS,
           (chunk.x + 2) * NUM_CELLS,
           0,
           NUM_CELLS_HEIGHT + 1,
           (chunk.z - 1) * NUM_CELLS,
           (chunk.z + 2) * NUM_CELLS,
-          null
+          false
         );
-        const _decorateChunkLightsSub = (chunk, x, y, z) => {
-          const minX = Math.max(x - 15, (chunk.x - 1) * NUM_CELLS);
-          const maxX = Math.min(x + 15, (chunk.x + 2) * NUM_CELLS);
-          const minY = Math.max(y - 15, 0);
-          const maxY = Math.min(y + 15, NUM_CELLS_HEIGHT);
-          const minZ = Math.max(z - 15, (chunk.z - 1) * NUM_CELLS);
-          const maxZ = Math.min(z + 15, (chunk.z + 2) * NUM_CELLS);
-
-          const oldLightsArray = Array(9);
-          let hadAllOldLights = true;
-          for (let dz = -1; dz <= 1 && hadAllOldLights; dz++) {
-            for (let dx = -1; dx <= 1 && hadAllOldLights; dx++) {
-              const oldChunk = tra.getChunk(chunk.x + dx, chunk.z + dz);
-              if (oldChunk) {
-                const {[lightsSymbol]: oldLights} = oldChunk;
-                if (oldLights) {
-                  oldLightsArray[_getLightsArrayIndex(dx + 1, dz + 1)] = oldLights;
-                } else {
-                  hadAllOldLights = false;
-                }
-              } else {
-                hadAllOldLights = false;
-              }
-            }
-          }
-
-          if (hadAllOldLights) {
-            const _getOldLights = (x, y, z) => {
-              const lax = Math.floor((x - (chunk.x - 1) * NUM_CELLS) / NUM_CELLS);
-              const laz = Math.floor((z - (chunk.z - 1) * NUM_CELLS) / NUM_CELLS);
-              const lightsArrayIndex = _getLightsArrayIndex(lax, laz);
-              const oldLights = oldLightsArray[lightsArrayIndex];
-
-              const ax = x - Math.floor(x / NUM_CELLS) * NUM_CELLS;
-              const ay = y;
-              const az = z - Math.floor(z / NUM_CELLS) * NUM_CELLS;
-              const lightsIndex = _getLightsIndex(ax, ay, az);
-              return oldLights[lightsIndex];
-            };
-
-            const extraLightSources = [];
-            let x, y, z;
-            // top
-            y = maxY + 1;
-            if (y <= NUM_CELLS_HEIGHT) {
-              for (let z = minZ; z < maxZ; z++) {
-                for (let x = minX; x < maxX; x++) {
-                  extraLightSources.push([x, y, z, _getOldLights(x, y, z)]);
-                }
-              }
-            }
-            // bottom
-            y = minY - 1;
-            if (y >= 0) {
-              for (let z = minZ; z < maxZ; z++) {
-                for (let x = minX; x < maxX; x++) {
-                  extraLightSources.push([x, y, z, _getOldLights(x, y, z)]);
-                }
-              }
-            }
-            // left
-            x = minX - 1;
-            if (x >= (chunk.x - 1) * NUM_CELLS) {
-              for (let z = minZ; z < maxZ; z++) {
-                for (let y = minY; y <= maxY; y++) {
-                  extraLightSources.push([x, y, z, _getOldLights(x, y, z)]);
-                }
-              }
-            }
-            // right
-            x = maxX;
-            if (x < (chunk.x + 2) * NUM_CELLS) {
-              for (let z = minZ; z < maxZ; z++) {
-                for (let y = minY; y <= maxY; y++) {
-                  extraLightSources.push([x, y, z, _getOldLights(x, y, z)]);
-                }
-              }
-            }
-            // back
-            z = minZ - 1;
-            if (z >= (chunk.z - 1) * NUM_CELLS) {
-              for (let x = minX; x < maxX; x++) {
-                for (let y = minY; y <= maxY; y++) {
-                  extraLightSources.push([x, y, z, _getOldLights(x, y, z)]);
-                }
-              }
-            }
-            // front
-            z = maxZ;
-            if (z < (chunk.z + 2) * NUM_CELLS) {
-              for (let x = minX; x < maxX; x++) {
-                for (let y = minY; y <= maxY; y++) {
-                  extraLightSources.push([x, y, z, _getOldLights(x, y, z)]);
-                }
-              }
-            }
-
-            return _decorateChunkLightsRange(
-              chunk,
-              oldLightsArray,
-              minX,
-              maxX,
-              minY,
-              maxY,
-              minZ,
-              maxZ,
-              extraLightSources
-            );
-          } else {
-            return _decorateChunkLights(chunk);
-          }
-        };
-        const _decorateChunkLightsRange = (chunk, oldLightsArray, minX, maxX, minY, maxY, minZ, maxZ, extraLightSources) => {
+        const _decorateChunkLightsSub = (chunk, x, y, z) => _decorateChunkLightsRange(
+          chunk,
+          Math.max(x - 15, (chunk.x - 1) * NUM_CELLS),
+          Math.min(x + 15, (chunk.x + 2) * NUM_CELLS),
+          Math.max(y - 15, 0),
+          Math.min(y + 15, NUM_CELLS_HEIGHT),
+          Math.max(z - 15, (chunk.z - 1) * NUM_CELLS),
+          Math.min(z + 15, (chunk.z + 2) * NUM_CELLS),
+          true
+        );
+        const _decorateChunkLightsRange = (chunk, minX, maxX, minY, maxY, minZ, maxZ, relight) => {
+          const {x: ox, z: oz} = chunk;
           const objectsEntity = elements.getWorldElement().querySelector(OBJECTS_PLUGIN);
 
           return Promise.all([
-            _ensureNeighboringChunks(chunk.x, chunk.z),
-            objectsEntity.ensureNeighboringChunks(chunk.x, chunk.z),
+            _ensureNeighboringChunks(ox, oz),
+            objectsEntity.ensureNeighboringChunks(ox, oz),
           ])
             .then(() => {
-              const hadOldLights = Boolean(chunk[lightsSymbol]);
+              const updatingLights = chunk[lightsRenderedSymbol];
 
-              chunk[lightsSymbol] = generator.light(chunk.x, chunk.z, oldLightsArray, minX, maxX, minY, maxY, minZ, maxZ, {
-                getLightSources: (ox, oz) => {
-                  const _getHeightfieldLightSources = () => {
-                    const chunk = tra.getChunk(ox, oz);
-                    const uint32Buffer = chunk.getBuffer();
-                    const {liquid, liquidTypes} = protocolUtils.parseData(uint32Buffer.buffer, uint32Buffer.byteOffset);
+              const lavaArray = Array(9);
+              const objectLightsArray = Array(9);
+              const etherArray = Array(9);
+              const blocksArray = Array(9);
+              const lightsArray = Array(9);
+              for (let doz = -1; doz <= 1; doz++) {
+                for (let dox = -1; dox <= 1; dox++) {
+                  const arrayIndex = _getLightsArrayIndex(dox + 1, doz + 1);
 
-                    const result = [];
-                    for (let z = 0; z < NUM_CELLS; z++) { // XXX this can be optimized to scan only the passed-in ranges
-                      for (let y = 0; y < NUM_CELLS_HEIGHT; y++) {
-                        for (let x = 0; x < NUM_CELLS; x++) {
-                          const index = _getEtherIndex(x, y, z);
-                          if (liquid[index] === 1 && liquidTypes[index] === 2) { // present && lava
-                            result.push([x + ox * NUM_CELLS, y, z + oz * NUM_CELLS, 15]);
-                          }
-                        }
-                      }
-                    }
-                    return result;
-                  };
-                  const _getObjectsLightSources = () => objectsEntity.getLightSources(chunk.x, chunk.z);
-                  const _getExtraLightSources = () => extraLightSources || [];
+                  const aox = ox + dox;
+                  const aoz = oz + doz;
+                  const chunk = tra.getChunk(aox, aoz);
+                  const uint32Buffer = chunk.getBuffer();
+                  const {ether, lava} = protocolUtils.parseData(uint32Buffer.buffer, uint32Buffer.byteOffset); // XXX can be reduced to only parse the needed fields
+                  lavaArray[arrayIndex] = lava;
 
-                  return _getHeightfieldLightSources()
-                    .concat(_getObjectsLightSources()) // XXX this can be optimized to scan only the passed-in ranges
-                    .concat(_getExtraLightSources());
-                },
-                isOccluded: (x, y, z) => {
-                  const _isOccludedHeightfield = () => {
-                    const ox = Math.floor(x / NUM_CELLS);
-                    const oz = Math.floor(z / NUM_CELLS);
-                    return tra.getChunk(ox, oz)[etherSymbol][_getEtherIndex(x - ox * NUM_CELLS, y, z - oz * NUM_CELLS)] <= -1;
-                  };
-                  const _isOccludedObjects = () => objectsEntity.isOccluded(x, y, z);
+                  const objectLights = objectsEntity.getLights(aox, aoz);
+                  objectLightsArray[arrayIndex] = objectLights;
 
-                  return _isOccludedHeightfield() || _isOccludedObjects();
-                },
-              });
+                  etherArray[arrayIndex] = ether;
+
+                  const blocks = objectsEntity.getBlocks(aox, aoz);
+                  blocksArray[arrayIndex] = blocks;
+
+                  const {[lightsSymbol]: lights} = chunk;
+                  lightsArray[arrayIndex] = lights;
+                }
+              }
+
+              vxl.light(
+                ox, oz,
+                minX, maxX, minY, maxY, minZ, maxZ,
+                relight,
+                lavaArray,
+                objectLightsArray,
+                etherArray,
+                blocksArray,
+                lightsArray,
+              );
+              chunk[lightsRenderedSymbol] = true;
               chunk[decorationsSymbol] = null;
 
-              if (hadOldLights) {
+              if (updatingLights) {
                 heightfieldElement.emit('lights', chunk);
               }
 
@@ -332,32 +246,16 @@ class Heightfield {
         };
         const _decorateChunkLightmaps = chunk => {
           const uint32Buffer = chunk.getBuffer();
-          const geometry = protocolUtils.parseData(uint32Buffer.buffer, uint32Buffer.byteOffset);
-          const {positions, staticHeightfield} = geometry;
+          const {positions, staticHeightfield} = protocolUtils.parseData(uint32Buffer.buffer, uint32Buffer.byteOffset);
           const {[lightsSymbol]: lights} = chunk;
 
-          const numPositions = positions.length / 3;
-          const skyLightmaps = new Uint8Array(numPositions);
-          const torchLightmaps = new Uint8Array(numPositions);
+          const numPositions = positions.length;
+          const numLightmaps = numPositions / 3;
+          const lightmapsBuffer = new ArrayBuffer(numLightmaps * 2);
+          const skyLightmaps = new Uint8Array(lightmapsBuffer, 0, numLightmaps);
+          const torchLightmaps = new Uint8Array(lightmapsBuffer, numLightmaps, numLightmaps);
 
-          const ox = chunk.x * NUM_CELLS;
-          const oz = chunk.z * NUM_CELLS;
-
-          for (let i = 0; i < numPositions; i++) {
-            const baseIndex = i * 3;
-            skyLightmaps[i] = lightmapUtils.renderSkyVoxel(
-              positions[baseIndex + 0] - ox,
-              positions[baseIndex + 1],
-              positions[baseIndex + 2] - oz,
-              staticHeightfield
-            );
-            torchLightmaps[i] = lightmapUtils.renderTorchVoxel(
-              positions[baseIndex + 0] - ox,
-              positions[baseIndex + 1],
-              positions[baseIndex + 2] - oz,
-              lights
-            );
-          }
+          vxl.lightmap(chunk.x, chunk.z, positions, numPositions, staticHeightfield, lights, skyLightmaps, torchLightmaps);
 
           chunk[decorationsSymbol] = {
             skyLightmaps,
@@ -387,7 +285,7 @@ class Heightfield {
               }
               accept(chunk);
             })
-              .then(chunk => !chunk[lightsSymbol] ? _decorateChunkLights(chunk) : Promise.resolve(chunk))
+              .then(chunk => !chunk[lightsRenderedSymbol] ? _decorateChunkLights(chunk) : Promise.resolve(chunk))
               .then(chunk => !chunk[decorationsSymbol] ? _decorateChunkLightmaps(chunk) : Promise.resolve(chunk))
               .then(chunk => {
                 res.type('application/octet-stream');
@@ -446,15 +344,15 @@ class Heightfield {
                   const oldBiomes = oldChunkData.biomes.slice();
                   const oldElevations = oldChunkData.elevations.slice();
                   const oldEther = oldChunkData.ether.slice();
-                  const oldLiquid = oldChunkData.liquid.slice();
-                  const oldLiquidTypes = oldChunkData.liquidTypes.slice();
+                  const oldWater = oldChunkData.water.slice();
+                  const oldLava = oldChunkData.lava.slice();
 
-                  chunk = _generateChunk(chunk, {
+                  chunk = _generateChunkGeometry(chunk, {
                     oldBiomes,
                     oldElevations,
                     oldEther,
-                    oldLiquid,
-                    oldLiquidTypes,
+                    oldWater,
+                    oldLava,
                     newEther,
                   });
                 }
@@ -536,8 +434,8 @@ class Heightfield {
             const seenIndex = {};
             for (let i = 0; i < DIRECTIONS.length; i++) {
               const [dx, dz] = DIRECTIONS[i];
-              const ax = x + dx * 15;
-              const az = z + dz * 15;
+              const ax = x + dx * (NUM_CELLS / 2);
+              const az = z + dz * (NUM_CELLS / 2);
               const ox = Math.floor(ax / NUM_CELLS);
               const oz = Math.floor(az / NUM_CELLS);
 
@@ -563,7 +461,7 @@ class Heightfield {
                 chunk = _generateChunk(tra.makeChunk(x, z));
                 _saveChunks();
               }
-              if (chunk[lightsSymbol]) {
+              if (chunk[lightsRenderedSymbol]) {
                 return Promise.resolve(chunk);
               } else {
                 return _decorateChunkLights(chunk);
@@ -573,32 +471,16 @@ class Heightfield {
             return _requestLightedChunk(x, z)
               .then(chunk => {
                 const uint32Buffer = chunk.getBuffer();
-                const geometry = protocolUtils.parseData(uint32Buffer.buffer, uint32Buffer.byteOffset);
-                const {staticHeightfield} = geometry;
+                const {staticHeightfield} = protocolUtils.parseData(uint32Buffer.buffer, uint32Buffer.byteOffset);
                 const {[lightsSymbol]: lights} = chunk;
 
-                const numPositions = positions.length / 3;
-                const skyLightmaps = new Uint8Array(numPositions);
-                const torchLightmaps = new Uint8Array(numPositions);
+                const numPositions = positions.length;
+                const numLightmaps = numPositions / 3;
+                const lightmapsBuffer = new ArrayBuffer(numLightmaps * 2);
+                const skyLightmaps = new Uint8Array(lightmapsBuffer, 0, numLightmaps);
+                const torchLightmaps = new Uint8Array(lightmapsBuffer, numLightmaps, numLightmaps);
 
-                const ox = x * NUM_CELLS;
-                const oz = z * NUM_CELLS;
-
-                for (let i = 0; i < numPositions; i++) {
-                  const baseIndex = i * 3;
-                  skyLightmaps[i] = lightmapUtils.renderSkyVoxel(
-                    positions[baseIndex + 0] - ox,
-                    positions[baseIndex + 1],
-                    positions[baseIndex + 2] - oz,
-                    staticHeightfield
-                  );
-                  torchLightmaps[i] = lightmapUtils.renderTorchVoxel(
-                    positions[baseIndex + 0] - ox,
-                    positions[baseIndex + 1],
-                    positions[baseIndex + 2] - oz,
-                    lights
-                  );
-                }
+                vxl.lightmap(chunk.x, chunk.z, positions, numPositions, staticHeightfield, lights, skyLightmaps, torchLightmaps);
 
                 return {
                   skyLightmaps,

@@ -2,11 +2,10 @@ module.exports = ({
   THREE,
   mod,
   murmur,
-  indev,
+  alea,
+  vxl,
 }) => {
 
-const mrch = require('mrch');
-const protocolUtils = require('./lib/utils/protocol-utils');
 const {
   NUM_CELLS,
   OVERSCAN,
@@ -18,14 +17,6 @@ const {
   HEIGHTFIELD_DEPTH,
 
   DEFAULT_SEED,
-
-  PEEK_FACES,
-  PEEK_FACE_INDICES,
-
-  BIOMES,
-  BIOMES_INDEX,
-  BIOMES_TALL,
-  BIOMES_TEMPERATURE_HUMIDITY,
 } = require('./lib/constants/constants');
 const NUM_POSITIONS_CHUNK = 800 * 1024;
 const NUM_CELLS_HALF = NUM_CELLS / 2;
@@ -33,351 +24,114 @@ const NUM_CELLS_CUBE = Math.sqrt(NUM_CELLS_HALF * NUM_CELLS_HALF * 3);
 const NUM_CELLS_OVERSCAN_Y = NUM_CELLS_HEIGHT + OVERSCAN;
 const HOLE_SIZE = 2;
 
-const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
-  for (let i = 0; i < src.length; i++) {
-    dst[startIndexIndex + i] = src[i] + startAttributeIndex;
+const _align = (n, alignment) => {
+  let alignDiff = n % alignment;
+  if (alignDiff > 0) {
+    n += alignment - alignDiff;
   }
+  return n;
 };
 
-const _makeGeometries = (ox, oy, ether, liquid, liquidTypes) => {
-  const positions = new Float32Array(NUM_POSITIONS_CHUNK);
-  const indices = new Uint32Array(NUM_POSITIONS_CHUNK);
-  let attributeIndex = 0;
-  let indexIndex = 0;
+const noiser = vxl.noiser({
+  seed: murmur(DEFAULT_SEED),
+});
 
-  // land
-  const geometries = Array(NUM_CHUNKS_HEIGHT);
+const slab = (() => {
+  const BIOMES_SIZE = _align(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN * Uint8Array.BYTES_PER_ELEMENT, Float32Array.BYTES_PER_ELEMENT);
+  const ELEVATIONS_SIZE = NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN * Float32Array.BYTES_PER_ELEMENT;
+  const ETHER_SIZE = ((NUM_CELLS + 1) * (NUM_CELLS_HEIGHT + 1) * (NUM_CELLS + 1)) * Float32Array.BYTES_PER_ELEMENT;
+  const WATER_SIZE  = ((NUM_CELLS + 1) * (NUM_CELLS_HEIGHT + 1) * (NUM_CELLS + 1)) * Float32Array.BYTES_PER_ELEMENT;
+  const LAVA_SIZE = ((NUM_CELLS + 1) * (NUM_CELLS_HEIGHT + 1) * (NUM_CELLS + 1)) * Float32Array.BYTES_PER_ELEMENT;
+  const POSITIONS_SIZE = NUM_POSITIONS_CHUNK * Float32Array.BYTES_PER_ELEMENT;
+  const INDICES_SIZE = NUM_POSITIONS_CHUNK * Uint32Array.BYTES_PER_ELEMENT;
+  const COLORS_SIZE = NUM_POSITIONS_CHUNK * Float32Array.BYTES_PER_ELEMENT;
+  const HEIGHTFIELD_SIZE = NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN * HEIGHTFIELD_DEPTH * Float32Array.BYTES_PER_ELEMENT;
+  const STATIC_HEIGHTFIELD_SIZE = NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN * Float32Array.BYTES_PER_ELEMENT;
+  const PEEK_SIZE = 16 * Uint8Array.BYTES_PER_ELEMENT;
+  const PEEKS_ARRAY_SIZE = PEEK_SIZE * NUM_CHUNKS_HEIGHT;
+
+  const buffer = new ArrayBuffer(
+    BIOMES_SIZE +
+    ELEVATIONS_SIZE +
+    ETHER_SIZE +
+    WATER_SIZE +
+    LAVA_SIZE +
+    POSITIONS_SIZE +
+    INDICES_SIZE +
+    COLORS_SIZE +
+    HEIGHTFIELD_SIZE +
+    STATIC_HEIGHTFIELD_SIZE +
+    PEEKS_ARRAY_SIZE
+  );
+  let index = 0;
+
+  const biomes = new Uint8Array(buffer, index, BIOMES_SIZE / Uint8Array.BYTES_PER_ELEMENT);
+  index += BIOMES_SIZE;
+  const elevations = new Float32Array(buffer, index, ELEVATIONS_SIZE / Float32Array.BYTES_PER_ELEMENT);
+  index += ELEVATIONS_SIZE;
+  const ether = new Float32Array(buffer, index, ETHER_SIZE / Float32Array.BYTES_PER_ELEMENT);
+  index += ETHER_SIZE;
+  const water = new Float32Array(buffer, index, WATER_SIZE / Float32Array.BYTES_PER_ELEMENT);
+  index += WATER_SIZE;
+  const lava = new Float32Array(buffer, index, LAVA_SIZE / Float32Array.BYTES_PER_ELEMENT);
+  index += LAVA_SIZE;
+  const positions = new Float32Array(buffer, index, POSITIONS_SIZE / Float32Array.BYTES_PER_ELEMENT);
+  index += POSITIONS_SIZE;
+  const indices = new Uint32Array(buffer, index, INDICES_SIZE / Uint32Array.BYTES_PER_ELEMENT);
+  index += INDICES_SIZE;
+  const colors = new Float32Array(buffer, index, COLORS_SIZE / Float32Array.BYTES_PER_ELEMENT);
+  index += COLORS_SIZE;
+  const heightfield = new Float32Array(buffer, index, HEIGHTFIELD_SIZE / Float32Array.BYTES_PER_ELEMENT);
+  index += HEIGHTFIELD_SIZE;
+  const staticHeightfield = new Float32Array(buffer, index, STATIC_HEIGHTFIELD_SIZE / Float32Array.BYTES_PER_ELEMENT);
+  index += STATIC_HEIGHTFIELD_SIZE;
+  const peeks = new Uint8Array(buffer, index, PEEK_SIZE * NUM_CHUNKS_HEIGHT);
+  const peeksArray = Array(NUM_CHUNKS_HEIGHT);
   for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
-    const {positions: newPositions, indices: newIndices} = mrch.marchingCubes(
-      [NUM_CELLS + 1, NUM_CELLS + 1, NUM_CELLS + 1],
-      (x, y, z) => ether[_getEtherIndex(x, y, z)],
-      [
-        [0, NUM_CELLS * i, 0],
-        [NUM_CELLS + 1, (NUM_CELLS * (i + 1)) + 1, NUM_CELLS + 1],
-      ]
-    );
-    positions.set(newPositions, attributeIndex);
-    _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
-
-    geometries[i] = {
-      attributeRange: {
-        landStart: attributeIndex,
-        landCount: newPositions.length,
-        waterStart: 0,
-        waterCount: 0,
-        lavaStart: 0,
-        lavaCount: 0,
-      },
-      indexRange: {
-        landStart: indexIndex,
-        landCount: newIndices.length,
-        waterStart: 0,
-        waterCount: 0,
-        lavaStart: 0,
-        lavaCount: 0,
-      },
-      boundingSphere: null,
-      peeks: null,
-    };
-
-    attributeIndex += newPositions.length;
-    indexIndex += newIndices.length;
-  }
-  for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
-    // water
-    const {positions: newWaterPositions, indices: newWaterIndices} = mrch.marchingCubes(
-      [NUM_CELLS + 1, NUM_CELLS + 1, NUM_CELLS + 1],
-      (x, y, z) => {
-        const index = _getEtherIndex(x, y, z);
-        if (liquidTypes[index] === 1) {
-          const liquidValue = liquid[index];
-          if (liquidValue > 0) {
-            return ether[index] * (liquidValue === 0xFF ? 1 : -1);
-          } else {
-            return 1;
-          }
-        } else {
-          return 1;
-        }
-      },
-      [
-        [0, NUM_CELLS * i, 0],
-        [NUM_CELLS + 1, (NUM_CELLS * (i + 1)) + 1, NUM_CELLS + 1],
-      ]
-    );
-    positions.set(newWaterPositions, attributeIndex);
-    _copyIndices(newWaterIndices, indices, indexIndex, attributeIndex / 3);
-
-    const {attributeRange, indexRange} = geometries[i];
-    attributeRange.waterStart = attributeIndex;
-    attributeRange.waterCount = newWaterPositions.length;
-    indexRange.waterStart = indexIndex;
-    indexRange.waterCount = newWaterIndices.length;
-
-    attributeIndex += newWaterPositions.length;
-    indexIndex += newWaterIndices.length;
-
-    // lava
-    const {positions: newLavaPositions, indices: newLavaIndices} = mrch.marchingCubes(
-      [NUM_CELLS + 1, NUM_CELLS + 1, NUM_CELLS + 1],
-      (x, y, z) => {
-        const index = _getEtherIndex(x, y, z);
-        if (liquidTypes[index] === 2) {
-          const liquidValue = liquid[index];
-          if (liquidValue > 0) {
-            return ether[index] * (liquidValue === 0xFF ? 1 : -1);
-          } else {
-            return 1;
-          }
-        } else {
-          return 1;
-        }
-      },
-      [
-        [0, NUM_CELLS * i, 0],
-        [NUM_CELLS + 1, (NUM_CELLS * (i + 1)) + 1, NUM_CELLS + 1],
-      ]
-    );
-    positions.set(newLavaPositions, attributeIndex);
-    _copyIndices(newLavaIndices, indices, indexIndex, attributeIndex / 3);
-
-    attributeRange.lavaStart = attributeIndex;
-    attributeRange.lavaCount = newLavaPositions.length;
-    indexRange.lavaStart = indexIndex;
-    indexRange.lavaCount = newLavaIndices.length;
-
-    attributeIndex += newLavaPositions.length;
-    indexIndex += newLavaIndices.length;
+    peeksArray[i] = new Uint8Array(buffer, index, PEEK_SIZE / Uint8Array.BYTES_PER_ELEMENT);
+    index += PEEK_SIZE;
   }
 
   return {
+    biomes,
+    elevations,
+    ether,
+    water,
+    lava,
     positions,
     indices,
-    attributeIndex,
-    indexIndex,
-    geometries,
-  }
-};
-
-const DIRECTIONS = [
-  [0, -1],
-  [-1, 0],
-  [1, 0],
-  [0, 1],
-  [-1, -1],
-  [1, -1],
-  [-1, 1],
-  [1, 1],
-];
-
-const _getCachesIndex2D = (x, z) => mod(x, 256) | mod(z, 256) << 8; // XXX make sure this does not overflow cache size
-const _getCacheIndex2D = (x, z) => x + z * NUM_CELLS;
-const _makeCacher2D = (gen, {type = Float32Array} = {}) => {
-  const caches = {};
-  return (x, z) => {
-    const ox = Math.floor(x / NUM_CELLS);
-    const oz = Math.floor(z / NUM_CELLS);
-    const cachesIndex = _getCachesIndex2D(ox, oz);
-    let entry = caches[cachesIndex];
-    if (entry === undefined) {
-      entry = new type(NUM_CELLS * NUM_CELLS);
-      let index = 0;
-      for (let dz = 0; dz < NUM_CELLS; dz++) {
-        for (let dx = 0; dx < NUM_CELLS; dx++) {
-          entry[index++] = gen(ox * NUM_CELLS + dx, oz * NUM_CELLS + dz);
-        }
-      }
-      caches[cachesIndex] = entry;
-    }
-    return entry[_getCacheIndex2D(x - ox * NUM_CELLS, z - oz * NUM_CELLS)];
-  };
-};
-
-const _getCachesIndex3D = (b, x, z) => mod(b, 256) | mod(x, 256) << 8 | mod(z, 256) << 16; // XXX make sure this does not overflow cache size
-const _getCacheIndex3D = (x, z) => x + z * NUM_CELLS;
-const _makeCacher3D = (gen, {type = Float32Array} = {}) => {
-  const caches = {};
-  return (b, x, z) => {
-    const ox = Math.floor(x / NUM_CELLS);
-    const oz = Math.floor(z / NUM_CELLS);
-    const cachesIndex = _getCachesIndex3D(b, ox, oz);
-    let entry = caches[cachesIndex];
-    if (entry === undefined) {
-      entry = new type(NUM_CELLS * NUM_CELLS);
-      let index = 0;
-      for (let dz = 0; dz < NUM_CELLS; dz++) {
-        for (let dx = 0; dx < NUM_CELLS; dx++) {
-          entry[index++] = gen(b, ox * NUM_CELLS + dx, oz * NUM_CELLS + dz);
-        }
-      }
-      caches[cachesIndex] = entry;
-    }
-    return entry[_getCacheIndex3D(x - ox * NUM_CELLS, z - oz * NUM_CELLS)];
-  };
-};
-
-const _random = (() => {
-  const generator = indev({
-    seed: DEFAULT_SEED,
-  });
-  const elevationNoise1 = generator.uniform({
-    frequency: 2,
-    octaves: 1,
-  });
-  const elevationNoise2 = generator.uniform({
-    frequency: 2,
-    octaves: 1,
-  });
-  const elevationNoise3 = generator.uniform({
-    frequency: 2,
-    octaves: 1,
-  });
-
-  let noise = generator.uniform({
-    frequency: 0.001,
-    octaves: 2,
-  });
-  const wormNoise = _makeCacher2D(noise.in2D.bind(noise));
-  noise = generator.uniform({
-    frequency: 0.001,
-    octaves: 4,
-  });
-  const oceanNoise = _makeCacher2D(noise.in2D.bind(noise));
-  noise = generator.uniform({
-    frequency: 0.001,
-    octaves: 4,
-  });
-  const riverNoise = _makeCacher2D(noise.in2D.bind(noise));
-  noise = generator.uniform({
-    frequency: 0.001,
-    octaves: 4,
-  });
-  const temperatureNoise = _makeCacher2D(noise.in2D.bind(noise));
-  noise = generator.uniform({
-    frequency: 0.001,
-    octaves: 4,
-  });
-  const humidityNoise = _makeCacher2D(noise.in2D.bind(noise));
-
-  return {
-    elevationNoise1,
-    elevationNoise2,
-    elevationNoise3,
-    wormNoise,
-    oceanNoise,
-    riverNoise,
-    temperatureNoise,
-    humidityNoise,
+    colors,
+    heightfield,
+    staticHeightfield,
+    peeks,
+    peeksArray,
   };
 })();
 
-const _getBiome = _makeCacher2D((x, z) => {
-  let biome;
-  const _genOcean = () => {
-    if (_random.oceanNoise(x + 1000, z + 1000) < (90 / 255)) {
-      biome = BIOMES.biOcean.index;
-    }
-  };
-  const _genRivers = () => {
-    if (biome === undefined) {
-      const n = _random.riverNoise(x + 1000, z + 1000);
-      const range = 0.04;
-      if (n > 0.5 - range && n < 0.5 + range) {
-        biome = BIOMES.biRiver.index;
-      }
-    }
-  };
-  const _genFreezeWater = () => {
-    if (_random.temperatureNoise(x + 1000, z + 1000) < ((4 * 16) / 255)) {
-      if (biome === BIOMES.biOcean.index) {
-        biome = BIOMES.biFrozenOcean.index;
-      } else if (biome === BIOMES.biRiver.index) {
-        biome = BIOMES.biFrozenRiver.index;
-      }
-    }
-  };
-  const _genLand = () => {
-    if (biome === undefined) {
-      const t = Math.floor(_random.temperatureNoise(x + 1000, z + 1000) * 16);
-      const h = Math.floor(_random.humidityNoise(x + 1000, z + 1000) * 16);
-      biome = BIOMES_TEMPERATURE_HUMIDITY[t + 16 * h].index;
-    }
-  };
-  _genOcean();
-  _genRivers();
-  _genFreezeWater();
-  _genLand();
-
-  return biome;
-}, {type: Uint8Array});
-
-const _getBiomeHeight = _makeCacher3D((b, x, z) => {
-  const biome = BIOMES_INDEX[b];
-  return biome.baseHeight +
-    _random.elevationNoise1.in2D(x * biome.amps[0][0], z * biome.amps[0][0]) * biome.amps[0][1] +
-    _random.elevationNoise2.in2D(x * biome.amps[1][0], z * biome.amps[1][0]) * biome.amps[1][1] +
-    _random.elevationNoise3.in2D(x * biome.amps[2][0], z * biome.amps[2][0]) * biome.amps[2][1];
-});
-
-const _getElevation = _makeCacher2D((x, z) => {
-  const biomeCounts = {};
-  let totalBiomeCounts = 0;
-  for (let dz = -8; dz <= 8; dz++) {
-    for (let dx = -8; dx <= 8; dx++) {
-      const biome = _getBiome(x + dx, z + dz);
-      let biomeCount = biomeCounts[biome];
-      if (!biomeCount) {
-        biomeCount = {
-          count: 0,
-          height: _getBiomeHeight(biome, x, z),
-        };
-        biomeCounts[biome] = biomeCount;
-      }
-      biomeCount.count++;
-      totalBiomeCounts++;
-    }
-  }
-
-  let elevationSum = 0;
-  for (const index in biomeCounts) {
-    const biomeCount = biomeCounts[index];
-    elevationSum += biomeCount.count * biomeCount.height;
-  }
-  return elevationSum / totalBiomeCounts;
-});
-
-const localVector = new THREE.Vector3();
-const localTriangle = new THREE.Triangle();
-localTriangle.points = [localTriangle.a, localTriangle.b, localTriangle.c];
 const _generateMapChunk = (ox, oy, opts) => {
   // generate
 
   let biomes = opts.oldBiomes;
+  let fillBiomes = false;
   if (!biomes) {
-    biomes = new Uint8Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
-    let index = 0;
-    for (let z = 0; z < NUM_CELLS_OVERSCAN; z++) {
-      for (let x = 0; x < NUM_CELLS_OVERSCAN; x++) {
-        biomes[index++] = _getBiome((ox * NUM_CELLS) + x, (oy * NUM_CELLS) + z);
-      }
-    }
+    biomes = slab.biomes;
+    fillBiomes = true;
   }
 
   let elevations = opts.oldElevations;
+  let fillElevations = false;
   if (!elevations) {
-    elevations = new Float32Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
-    let index = 0;
-    for (let z = 0; z < NUM_CELLS_OVERSCAN; z++) {
-      for (let x = 0; x < NUM_CELLS_OVERSCAN; x++) {
-        elevations[index++] = _getElevation((ox * NUM_CELLS) + x, (oy * NUM_CELLS) + z);
-      }
-    }
+    elevations = slab.elevations;
+    fillElevations = true;
   }
 
   let ether = opts.oldEther;
+  let fillEther = false;
   if (!ether) {
-    ether = new Float32Array((NUM_CELLS + 1) * (NUM_CELLS_HEIGHT + 1) * (NUM_CELLS + 1));
-    let index = 0;
+    ether = slab.ether;
+    fillEther = true;
+
+    /* let index = 0;
     for (let z = 0; z < NUM_CELLS_OVERSCAN; z++) {
       for (let x = 0; x < NUM_CELLS_OVERSCAN; x++) {
         const elevation = elevations[index++];
@@ -385,7 +139,7 @@ const _generateMapChunk = (ox, oy, opts) => {
           ether[_getEtherIndex(x, y, z)] = Math.min(Math.max(y - elevation, -1), 1);
         }
       }
-    }
+    } */
 
     /* const _fillOblateSpheroid = (centerX, centerY, centerZ, minX, minZ, maxX, maxZ, radius) => {
       for (let z = -radius; z <= radius; z++) {
@@ -415,7 +169,7 @@ const _generateMapChunk = (ox, oy, opts) => {
       for (let dox = -2; dox <= 2; dox++) {
         const aox = ox + dox;
         const aoy = oy + doy;
-        const n = _random.wormNoise(aox * NUM_CELLS + 1000, aoy * NUM_CELLS + 1000);
+        const n = _random.wormNoise.in2D(aox * NUM_CELLS + 1000, aoy * NUM_CELLS + 1000);
         const numNests = Math.floor(n * 4);
 
         for (let i = 0; i < numNests; i++) {
@@ -472,495 +226,83 @@ const _generateMapChunk = (ox, oy, opts) => {
       }
     } */
   }
-  let liquid = opts.oldLiquid;
-  let liquidTypes = opts.oldLiquidTypes;
-  if (!liquid || !liquidTypes) {
-    liquid = new Uint8Array((NUM_CELLS + 1) * (NUM_CELLS_HEIGHT + 1) * (NUM_CELLS + 1));
-    liquidTypes = new Int8Array((NUM_CELLS + 1) * (NUM_CELLS_HEIGHT + 1) * (NUM_CELLS + 1));
 
-    const _setLiquid = (x, y, z, liquidType) => {
-      x -= ox * NUM_CELLS;
-      z -= oy * NUM_CELLS;
-
-      for (let dz = -2; dz <= 2; dz++) {
-        const az = z + dz;
-        if (az >= 0 && az < (NUM_CELLS + 1)) {
-          for (let dx = -2; dx <= 2; dx++) {
-            const ax = x + dx;
-            if (ax >= 0 && ax < (NUM_CELLS + 1)) {
-              for (let dy = -2; dy <= 2; dy++) {
-                const ay = y + dy;
-                const index = _getEtherIndex(ax, ay, az);
-                const oldLiquidValue = liquid[index];
-
-                if (oldLiquidValue === 0 || oldLiquidValue === 0xFF || oldLiquidValue === 0xFE) {
-                  if (dx > -2 && dx < 2 && dz > -2 && dz < 2 && ay >= 0 && ay < (NUM_CELLS_HEIGHT + 1)) {
-                    if (dx === 0 && dy === 0 && dz === 0) {
-                      liquid[index] = 1;
-                    } else if (liquid[index] === 0) {
-                      liquid[index] = (dy >= 0) ? 0xFF : (dx === 0 && dz === 0 ? 0xFE : 0);
-                    }
-                  }
-                  liquidTypes[index] = liquidType;
-                }
-              }
-            }
-          }
-        }
-      }
-    };
-
-    // water
-    let index = 0;
-    for (let z = 0; z <= NUM_CELLS; z++) {
-      for (let x = 0; x <= NUM_CELLS; x++) {
-        const elevation = elevations[index++];
-        for (let y = 0; y <= NUM_CELLS_HEIGHT; y++) {
-          if (y < 64 && y >= elevation) {
-            const index = _getEtherIndex(x, y, z);
-            liquid[index] = 1;
-            liquidTypes[index] = 1;
-          }
-        }
-      }
-    }
-
-    // lava
-    for (let dz = -1; dz <= 1; dz++) {
-      for (let dx = -1; dx <= 1; dx++) {
-        for (let z = 0; z <= NUM_CELLS; z++) {
-          for (let x = 0; x <= NUM_CELLS; x++) {
-            const ax = ((ox + dx) * NUM_CELLS) + x;
-            const az = ((oy + dz) * NUM_CELLS) + z;
-
-            const elevation = _getElevation(ax, az);
-            const biome = _getBiome(x, z);
-            if (BIOMES_TALL[biome] && elevation >= 90) {
-              if (_random.temperatureNoise(ax + 1000, az + 1000) < 0.15) {
-                _setLiquid(ax, Math.floor(elevation + 1), az, 2);
-              }
-            }
-          }
-        }
-      }
-    }
-
-    _setLiquid(15, Math.floor(_getElevation(15, 2) + 1), 0, 2);
-  }
-  const numNewEthers = opts.newEther.length / 4;
-  for (let i = 0; i < numNewEthers; i++) {
-    const baseIndex = i * 4;
-    const x = opts.newEther[baseIndex + 0];
-    const y = opts.newEther[baseIndex + 1];
-    const z = opts.newEther[baseIndex + 2];
-    const v = opts.newEther[baseIndex + 3];
-    for (let dz = -HOLE_SIZE; dz <= HOLE_SIZE; dz++) {
-      const az = z + dz;
-      if (az >= 0 && az < (NUM_CELLS + 1)) {
-        for (let dx = -HOLE_SIZE; dx <= HOLE_SIZE; dx++) {
-          const ax = x + dx;
-          if (ax >= 0 && ax < (NUM_CELLS + 1)) {
-            for (let dy = -HOLE_SIZE; dy <= HOLE_SIZE; dy++) {
-              const ay = y + dy;
-              if (ay >= 0 && ay < (NUM_CELLS_HEIGHT + 1)) {
-                ether[_getEtherIndex(ax, ay, az)] += v * Math.max(HOLE_SIZE - Math.sqrt(dx * dx + dy * dy + dz * dz), 0) / Math.sqrt(HOLE_SIZE * HOLE_SIZE * 3);
-              }
-            }
-          }
-        }
-      }
-    }
+  let water = opts.oldWater;
+  let lava = opts.oldLava;
+  let fillLiquid = false;
+  if (!water || !lava) {
+    water = slab.water;
+    lava = slab.lava;
+    fillLiquid = true;
   }
 
-  // compile
-
-  const {
-    positions,
-    indices,
-    attributeIndex,
-    indexIndex,
-    geometries,
-  } = _makeGeometries(ox, oy, ether, liquid, liquidTypes);
-  const colors = new Float32Array(NUM_POSITIONS_CHUNK);
-
-  const heightfield = new Float32Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN * HEIGHTFIELD_DEPTH);
-  heightfield.fill(-1024);
-  const staticHeightfield = new Float32Array(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
-  staticHeightfield.fill(-1024);
-
-  const numIndices = indices.length / 3;
-  let localIndexIndex = 0;
-  for (let i = 0; i < numIndices; i++) {
-    localTriangle.a.x = positions[localIndexIndex++];
-    localTriangle.a.y = positions[localIndexIndex++];
-    localTriangle.a.z = positions[localIndexIndex++];
-    localTriangle.b.x = positions[localIndexIndex++];
-    localTriangle.b.y = positions[localIndexIndex++];
-    localTriangle.b.z = positions[localIndexIndex++];
-    localTriangle.c.x = positions[localIndexIndex++];
-    localTriangle.c.y = positions[localIndexIndex++];
-    localTriangle.c.z = positions[localIndexIndex++];
-    if (localTriangle.normal(localVector).y > 0) {
-      for (let j = 0; j < 3; j++) {
-        const point = localTriangle.points[j];
-        const x = Math.floor(point.x);
-        const y = point.y;
-        const z = Math.floor(point.z);
-
-        for (let layer = 0; layer < HEIGHTFIELD_DEPTH; layer++) {
-          const heightfieldXYBaseIndex = _getTopHeightfieldIndex(x, z);
-          const oldY = heightfield[heightfieldXYBaseIndex + layer];
-          if (y > oldY) {
-            if (j === 0 || (y - oldY) >= 5) { // ignore non-surface heights with small height difference
-              for (let k = HEIGHTFIELD_DEPTH - 1; k > layer; k--) {
-                heightfield[heightfieldXYBaseIndex + k] = heightfield[heightfieldXYBaseIndex + k - 1];
-              }
-              heightfield[heightfieldXYBaseIndex + layer] = y;
-            }
-            break;
-          } else if (y === oldY) {
-            break;
-          }
-        }
-
-        const staticheightfieldIndex = _getStaticHeightfieldIndex(x, z);
-        if (y > staticHeightfield[staticheightfieldIndex]) {
-          staticHeightfield[staticheightfieldIndex] = y;
-        }
-      }
-    }
+  let newEther;
+  let numNewEthers = 0;
+  if (opts.newEther && opts.newEther.length > 0) {
+    newEther = opts.newEther;
+    numNewEthers = opts.newEther.length;
+  } else {
+    newEther = new Float32Array(0);
   }
 
-  const _postProcessGeometry = (start, count, getColor, offset) => {
-    const geometryPositions = new Float32Array(positions.buffer, positions.byteOffset + start * 4, count);
-    const geometryColors = new Float32Array(colors.buffer, colors.byteOffset + start * 4, count);
+  const attributeRanges = new Uint32Array(NUM_CHUNKS_HEIGHT * 6);
+  const indexRanges = new Uint32Array(NUM_CHUNKS_HEIGHT * 6);
+  const {heightfield, staticHeightfield, colors, peeks} = slab;
+  noiser.fill(ox, oy, biomes, fillBiomes, elevations, fillElevations, ether, fillEther, water, lava, fillLiquid, newEther, numNewEthers, slab.positions, slab.indices, attributeRanges, indexRanges, heightfield, staticHeightfield, colors, peeks);
 
-    const numPositions = geometryPositions.length / 3;
-    let baseIndex = 0;
-    for (let j = 0; j < numPositions; j++) {
-      const x = geometryPositions[baseIndex + 0];
-      const y = geometryPositions[baseIndex + 1];
-      const z = geometryPositions[baseIndex + 2];
+  const attributeIndex = attributeRanges[attributeRanges.length - 2] + attributeRanges[attributeRanges.length - 1];
+  const indexIndex = indexRanges[indexRanges.length - 2] + indexRanges[indexRanges.length - 1];
+  const positions = slab.positions.subarray(0, attributeIndex);
+  const indices = slab.indices.subarray(0, indexIndex);
 
-      const color = getColor((ox * NUM_CELLS) + x, y, (oy * NUM_CELLS) + z);
-      const colorArray = Array.isArray(color) ? color : _colorIntToArray(color);
-      geometryColors[baseIndex + 0] = colorArray[0];
-      geometryColors[baseIndex + 1] = colorArray[1];
-      geometryColors[baseIndex + 2] = colorArray[2];
-
-      const ax = (ox * NUM_CELLS) + x;
-      const az = (oy * NUM_CELLS) + z;
-      geometryPositions[baseIndex + 0] = ax;
-      geometryPositions[baseIndex + 2] = az;
-      if (offset) {
-        geometryPositions[baseIndex + 1] += offset;
-      }
-
-      baseIndex += 3;
-    }
-  };
-
+  const geometries = Array(NUM_CHUNKS_HEIGHT);
   for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
-    const geometry = geometries[i];
-    const {attributeRange} = geometry;
-    _postProcessGeometry(attributeRange.landStart, attributeRange.landCount, (x, y, z) => BIOMES_INDEX[_getBiome(Math.floor(x), Math.floor(z))].color);
-    _postProcessGeometry(attributeRange.waterStart, attributeRange.waterCount, (x, y, z) => {
-      return [
-        mod(Math.abs(x) / 16.0 * 4.0 * 0.99, 1) * 0.5,
-        mod(Math.abs(z) / 16.0 * 4.0 / 16.0 * 0.99, 1),
-        1.0
-      ];
-    });
-    _postProcessGeometry(attributeRange.lavaStart, attributeRange.lavaCount, (x, y, z) => {
-      return [
-        0.5 + mod(Math.abs(x) / 16.0 * 4.0 * 0.99, 1) * 0.5,
-        mod(Math.abs(z) / 16.0 * 4.0 / 16.0 * 0.99, 1),
-        2.0
-      ];
-    }, 0.01);
-
-    geometry.boundingSphere = new THREE.Sphere(
-      new THREE.Vector3(ox * NUM_CELLS + NUM_CELLS_HALF, i * NUM_CELLS + NUM_CELLS_HALF, oy * NUM_CELLS + NUM_CELLS_HALF),
-      NUM_CELLS_CUBE,
-    );
-  }
-
-  for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
-    const geometry = geometries[i];
-    const peeks = new Uint8Array(16);
-    const seenPeeks = new Uint8Array((NUM_CELLS + 1) * (NUM_CELLS_HEIGHT + 1) * (NUM_CELLS + 1));
-    const minY = i * NUM_CELLS;
-    const maxY = (i + 1) * NUM_CELLS;
-    const _floodFill = (x, y, z, startFace) => {
-      const index = _getEtherIndex(x, y, z);
-      const queue = [[x, y, z, index]];
-      seenPeeks[index] = 1;
-      while (queue.length > 0) {
-        const [x, y, z, index] = queue.shift();
-
-        if (ether[index] >= 0) { // empty
-          if (z === 0 && startFace !== PEEK_FACES.BACK) {
-            peeks[PEEK_FACE_INDICES[startFace << 3 | PEEK_FACES.BACK]] = 1;
-          }
-          if (z === NUM_CELLS && startFace !== PEEK_FACES.FRONT) {
-            peeks[PEEK_FACE_INDICES[startFace << 3 | PEEK_FACES.FRONT]] = 1;
-          }
-          if (x === 0 && startFace !== PEEK_FACES.LEFT) {
-            peeks[PEEK_FACE_INDICES[startFace << 3 | PEEK_FACES.LEFT]] = 1;
-          }
-          if (x === NUM_CELLS && startFace !== PEEK_FACES.RIGHT) {
-            peeks[PEEK_FACE_INDICES[startFace << 3 | PEEK_FACES.RIGHT]] = 1;
-          }
-          if (y === maxY && startFace !== PEEK_FACES.TOP) {
-            peeks[PEEK_FACE_INDICES[startFace << 3 | PEEK_FACES.TOP]] = 1;
-          }
-          if (y === minY && startFace !== PEEK_FACES.BOTTOM) {
-            peeks[PEEK_FACE_INDICES[startFace << 3 | PEEK_FACES.BOTTOM]] = 1;
-          }
-
-          for (let dx = -1; dx <= 1; dx++) {
-            const ax = x + dx;
-            if (ax >= 0 && ax <= NUM_CELLS) {
-              for (let dz = -1; dz <= 1; dz++) {
-                const az = z + dz;
-                if (az >= 0 && az <= NUM_CELLS) {
-                  for (let dy = -1; dy <= 1; dy++) {
-                    const ay = y + dy;
-                    if (ay >= minY && ay <= maxY) {
-                      const index = _getEtherIndex(ax, ay, az);
-                      if (!seenPeeks[index]) {
-                        queue.push([ax, ay, az, index]);
-                        seenPeeks[index] = 1;
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
+    geometries[i] = {
+      /* attributeRange: {
+        landStart: attributeRanges[i * 6 + 0],
+        landCount: attributeRanges[i * 6 + 1],
+        waterStart: attributeRanges[i * 6 + 2],
+        waterCount: attributeRanges[i * 6 + 3],
+        lavaStart: attributeRanges[i * 6 + 4],
+        lavaCount: attributeRanges[i * 6 + 5],
+      }, */
+      indexRange: {
+        landStart: indexRanges[i * 6 + 0],
+        landCount: indexRanges[i * 6 + 1],
+        waterStart: indexRanges[i * 6 + 2],
+        waterCount: indexRanges[i * 6 + 3],
+        lavaStart: indexRanges[i * 6 + 4],
+        lavaCount: indexRanges[i * 6 + 5],
+      },
+      boundingSphere: Float32Array.from([
+        ox * NUM_CELLS + NUM_CELLS_HALF,
+        i * NUM_CELLS + NUM_CELLS_HALF,
+        oy * NUM_CELLS + NUM_CELLS_HALF,
+        NUM_CELLS_CUBE,
+      ]),
+      peeks: slab.peeksArray[i],
     };
-    for (let x = 0; x <= NUM_CELLS; x++) {
-      for (let y = minY; y <= maxY; y++) {
-        _floodFill(x, y, NUM_CELLS, PEEK_FACES.FRONT);
-      }
-    }
-    for (let x = 0; x <= NUM_CELLS; x++) {
-      for (let y = minY; y <= maxY; y++) {
-        _floodFill(x, y, 0, PEEK_FACES.BACK);
-      }
-    }
-    for (let z = 0; z <= NUM_CELLS; z++) {
-      for (let y = minY; y <= maxY; y++) {
-        _floodFill(0, y, z, PEEK_FACES.LEFT);
-      }
-    }
-    for (let z = 0; z <= NUM_CELLS; z++) {
-      for (let y = minY; y <= maxY; y++) {
-        _floodFill(NUM_CELLS, y, z, PEEK_FACES.RIGHT);
-      }
-    }
-    for (let x = 0; x <= NUM_CELLS; x++) {
-      for (let z = 0; z <= NUM_CELLS; z++) {
-        _floodFill(x, maxY, z, PEEK_FACES.TOP);
-      }
-    }
-    for (let x = 0; x <= NUM_CELLS; x++) {
-      for (let z = 0; z <= NUM_CELLS; z++) {
-        _floodFill(x, minY, z, PEEK_FACES.BOTTOM);
-      }
-    }
-
-    for (let startFace = 0; startFace < 6; startFace++) {
-      for (let endFace = 0; endFace < 6; endFace++) {
-        if (endFace !== startFace) {
-          if (peeks[PEEK_FACE_INDICES[startFace << 3 | endFace]] === 1) {
-            peeks[PEEK_FACE_INDICES[endFace << 3 | startFace]] = 1;
-
-            for (let crossFace = 0; crossFace < 6; crossFace++) {
-              if (crossFace !== startFace && crossFace !== endFace) {
-                if (peeks[PEEK_FACE_INDICES[startFace << 3 | crossFace]] === 1) {
-                  peeks[PEEK_FACE_INDICES[crossFace << 3 | startFace]] = 1;
-                  peeks[PEEK_FACE_INDICES[crossFace << 3 | endFace]] = 1;
-                  peeks[PEEK_FACE_INDICES[endFace << 3 | crossFace]] = 1;
-                } else if (peeks[PEEK_FACE_INDICES[endFace << 3 | crossFace]] === 1) {
-                  peeks[PEEK_FACE_INDICES[crossFace << 3 | startFace]] = 1;
-                  peeks[PEEK_FACE_INDICES[crossFace << 3 | endFace]] = 1;
-                  peeks[PEEK_FACE_INDICES[startFace << 3 | crossFace]] = 1;
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-
-    geometry.peeks = peeks;
   }
 
   return {
-    positions: new Float32Array(positions.buffer, positions.byteOffset, attributeIndex),
+    positions,
     colors: new Float32Array(colors.buffer, colors.byteOffset, attributeIndex),
-    indices: new Uint32Array(indices.buffer, indices.byteOffset, indexIndex),
-    geometries: geometries.map(geometry => ({
-      indexRange: geometry.indexRange,
-      boundingSphere: Float32Array.from(geometry.boundingSphere.center.toArray().concat([geometry.boundingSphere.radius])),
-      peeks: geometry.peeks,
-    })),
+    indices,
+    geometries,
     heightfield,
     staticHeightfield,
     biomes,
     elevations,
     ether,
-    liquid,
-    liquidTypes,
+    water,
+    lava,
   };
 };
-// const _getCoordIndex = (x, z) => x + z * NUM_CELLS;
-const _getCoordOverscanIndex = (x, z) => x + z * NUM_CELLS_OVERSCAN;
-const _getEtherIndex = (x, y, z) => x + (z * NUM_CELLS_OVERSCAN) + (y * NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
-const _colorIntToArray = n => ([
-  ((n >> (8 * 2)) & 0xFF) / 0xFF,
-  ((n >> (8 * 1)) & 0xFF) / 0xFF,
-  ((n >> (8 * 0)) & 0xFF) / 0xFF,
-]);
-const _getTopHeightfieldIndex = (x, z) => (x + (z * NUM_CELLS_OVERSCAN)) * HEIGHTFIELD_DEPTH;
-const _getStaticHeightfieldIndex = (x, z) => x + (z * NUM_CELLS_OVERSCAN);
 
-const _getLightsIndex = (x, y, z) => x + y * NUM_CELLS_OVERSCAN + z * NUM_CELLS_OVERSCAN * (NUM_CELLS_HEIGHT + 1);
-const _getLightsArrayIndex = (x, z) => x + z * 3;
-
-const generate = (x, y, opts) => {
-  if (opts === undefined) {
-    opts = {};
-  }
-  if (opts.oldElevations === undefined) {
-    opts.oldElevations = null;
-  }
-  if (opts.oldEther === undefined) {
-    opts.oldEther = null;
-  }
-  if (opts.newEther === undefined) {
-    opts.newEther = new Float32Array(0);
-  }
-  if (opts.oldLiquid === undefined) {
-    opts.oldLiquid = null;
-  }
-  if (opts.oldLiquidTypes === undefined) {
-    opts.oldLiquidTypes = null;
-  }
-  if (opts.regenerate === undefined) {
-    opts.regenerate = false;
-  }
-
-  return _generateMapChunk(x, y, opts);
-};
-
-const _makeLights = () => new Uint8Array(NUM_CELLS_OVERSCAN * (NUM_CELLS_HEIGHT + 1) * NUM_CELLS_OVERSCAN);
-const light = (ox, oz, oldLightsArray, minX, maxX, minY, maxY, minZ, maxZ, {getLightSources, isOccluded}) => {
-  let lightsArray;
-  if (oldLightsArray) {
-    lightsArray = oldLightsArray;
-
-    for (let z = minZ; z < maxZ; z++) {
-      for (let x = minX; x < maxX; x++) {
-        for (let y = minY; y <= maxY; y++) {
-          const lax = Math.floor((x - (ox - 1) * NUM_CELLS) / NUM_CELLS);
-          const laz = Math.floor((z - (oz - 1) * NUM_CELLS) / NUM_CELLS);
-          const lightsArrayIndex = _getLightsArrayIndex(lax, laz);
-          const lights = lightsArray[lightsArrayIndex];
-
-          const ax = x - Math.floor(x / NUM_CELLS) * NUM_CELLS;
-          const ay = y;
-          const az = z - Math.floor(z / NUM_CELLS) * NUM_CELLS;
-          const lightsIndex = _getLightsIndex(ax, ay, az);
-          lightsArray[lightsIndex] = 0;
-        }
-      }
-    }
-  } else {
-    lightsArray = Array(9);
-
-    for (let dz = -1; dz <= 1; dz++) {
-      for (let dx = -1; dx <= 1; dx++) {
-        lightsArray[_getLightsArrayIndex(dx + 1, dz + 1)] = _makeLights();
-      }
-    }
-  }
-
-  const _fillLight = (x, y, z, v) => {
-    const queue = [];
-    const _tryQueue = (x, y, z, v, origin) => {
-      if (x >= minX && x < maxX && y >= minY & y <= maxY && z >= minZ && z < maxZ && v > 0) {
-        const lax = Math.floor((x - (ox - 1) * NUM_CELLS) / NUM_CELLS);
-        const laz = Math.floor((z - (oz - 1) * NUM_CELLS) / NUM_CELLS);
-        const lightsArrayIndex = _getLightsArrayIndex(lax, laz);
-        const lights = lightsArray[lightsArrayIndex];
-
-        const ax = x - Math.floor(x / NUM_CELLS) * NUM_CELLS;
-        const ay = y;
-        const az = z - Math.floor(z / NUM_CELLS) * NUM_CELLS;
-        const lightsIndex = _getLightsIndex(ax, ay, az);
-        if (lights[lightsIndex] < v) {
-          lights[lightsIndex] = v;
-
-          if (origin || !isOccluded(x, y, z)) {
-            queue.push({x, y, z, v});
-          }
-        }
-      }
-    };
-
-    _tryQueue(x, y, z, v, true);
-
-    while (queue.length > 0) {
-      const {x, y, z, v} = queue.shift();
-      for (let dz = -1; dz <= 1; dz++) {
-        for (let dy = -1; dy <= 1; dy++) {
-          for (let dx = -1; dx <= 1; dx++) {
-            _tryQueue(x + dx, y + dy, z + dz, v - (Math.abs(dx) + Math.abs(dy) + Math.abs(dz)), false);
-          }
-        }
-      }
-    }
-  };
-
-  for (let dz = -1; dz <= 1; dz++) {
-    for (let dx = -1; dx <= 1; dx++) {
-      const lightSources = getLightSources(ox + dx, oz + dz);
-      for (let i = 0; i < lightSources.length; i++) {
-        const [x, y, z, v] = lightSources[i];
-        _fillLight(x, y, z, v);
-      }
-    }
-  }
-
-  // merge edges and corner into center lights
-  const centerLights = lightsArray[_getLightsArrayIndex(1, 1)];
-  const eastLights = lightsArray[_getLightsArrayIndex(2, 1)];
-  const southLights = lightsArray[_getLightsArrayIndex(1, 2)];
-  const southeastLights = lightsArray[_getLightsArrayIndex(2, 2)];
-  for (let z = 0; z < NUM_CELLS_OVERSCAN; z++) {
-    for (let y = 0; y < (NUM_CELLS_HEIGHT + 1); y++) {
-      centerLights[_getLightsIndex(NUM_CELLS, y, z)] = eastLights[_getLightsIndex(0, y, z)];
-    }
-  }
-  for (let x = 0; x < NUM_CELLS_OVERSCAN; x++) {
-    for (let y = 0; y < (NUM_CELLS_HEIGHT + 1); y++) {
-      centerLights[_getLightsIndex(x, y, NUM_CELLS)] = southLights[_getLightsIndex(x, y, 0)];
-    }
-  }
-  for (let y = 0; y < (NUM_CELLS_HEIGHT + 1); y++) {
-    centerLights[_getLightsIndex(NUM_CELLS, y, NUM_CELLS)] = southeastLights[_getLightsIndex(0, y, 0)];
-  }
-
-  return centerLights;
-};
+const generate = (x, y, opts = {}) => _generateMapChunk(x, y, opts);
 
 return {
   generate,
-  light,
 };
 
 };

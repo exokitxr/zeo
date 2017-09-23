@@ -720,7 +720,7 @@ void main() {
                 const localVersion = version;
                 heightfieldElement.requestFrame(next => {
                   if (version === localVersion) {
-                    renderListEntry.visible = false;
+                    // renderListEntry.visible = false;
 
                     renderer.updateAttribute(geometry.attributes.position, index * positions.length, newPositionsLength, false);
                     renderer.updateAttribute(geometry.attributes.uv, index * uvs.length, newUvsLength, false);
@@ -996,8 +996,7 @@ void main() {
           }
 
           setBlock(x, y, z, block) {
-            const v = murmur(object);
-            worker.requestSetBlock(x, y, z, v);
+            worker.requestSetBlock(x, y, z, murmur(block));
           }
 
           clearBlock(x, y, z) {
@@ -1293,7 +1292,7 @@ void main() {
 
                     const hoveredTrackedBlock = hoveredTrackedBlocks[side];
                     hoveredTrackedBlock.fromArray(new Float32Array(hoveredObjectsBuffer, byteOffset + 8 * 4, 3));
-                    hoveredTrackedBlock.v = new Uint32Array(hoveredObjectsBuffer, byteOffset + 11 * 4, 1);
+                    hoveredTrackedBlock.v = new Uint32Array(hoveredObjectsBuffer, byteOffset + 11 * 4, 1)[0];
                     objectsMaterial.uniforms[side === 'left' ? 'selectedBlockLeft' : 'selectedBlockRight'].value.copy(hoveredTrackedBlock);
 
                     byteOffset += 12 * 4;

@@ -14,6 +14,8 @@ const WORKER_HEADER_ENTRIES = 9;
 const WORKER_HEADER_SIZE = UINT32_SIZE * WORKER_HEADER_ENTRIES;
 const DECORATIONS_HEADER_ENTRIES = 2;
 const DECORATIONS_HEADER_SIZE = UINT32_SIZE * DECORATIONS_HEADER_ENTRIES;
+const TEMPLATE_HEADER_ENTRIES = 5;
+const TEMPLATE_HEADER_SIZE = UINT32_SIZE * TEMPLATE_HEADER_ENTRIES;
 const CULL_HEADER_ENTRIES = 1;
 const CULL_HEADER_SIZE = UINT32_SIZE * CULL_HEADER_ENTRIES;
 
@@ -484,6 +486,132 @@ const parseWorker = (buffer, byteOffset) => {
   };
 };
 
+const _getTemplateSizeFromMetadata = metadata => {
+  const {numPositions, numUvs, numSsaos, numFrames, numIndices} = metadata;
+
+  return TEMPLATE_HEADER_SIZE + // header
+    (FLOAT32_SIZE * numPositions) + // positions
+    (FLOAT32_SIZE * numUvs) + // uvs
+    _align(UINT8_SIZE * numSsaos, FLOAT32_SIZE) + // ssaos
+    (FLOAT32_SIZE * numFrames) + // frames
+    (UINT32_SIZE * numIndices) + // indices
+    (FLOAT32_SIZE * 6); // bounding box
+};
+
+const _getTemplateSize = geometry => {
+  const {positions, uvs, ssaos, frames, objectIndices, indices, objects} = geometry;
+
+  const numPositions = positions.length;
+  const numUvs = uvs.length;
+  const numSsaos = ssaos.length;
+  const numFrames = frames.length;
+  const numIndices = indices.length;
+
+  return _getTemplateSizeFromMetadata({
+    numPositions,
+    numUvs,
+    numSsaos,
+    numFrames,
+    numIndices,
+  });
+};
+
+const stringifyTemplate = (geometry, arrayBuffer, byteOffset) => {
+  const {positions, uvs, ssaos, frames, indices, boundingBox} = geometry;
+
+  if (arrayBuffer === undefined || byteOffset === undefined) {
+    const bufferSize = _getTemplateSize(geometry);
+    arrayBuffer = new ArrayBuffer(bufferSize);
+    byteOffset = 0;
+  }
+
+  const headerBuffer = new Uint32Array(arrayBuffer, byteOffset, TEMPLATE_HEADER_ENTRIES);
+  let index = 0;
+  headerBuffer[index++] = positions.length;
+  headerBuffer[index++] = uvs.length;
+  headerBuffer[index++] = ssaos.length;
+  headerBuffer[index++] = frames.length;
+  headerBuffer[index++] = indices.length;
+  byteOffset += TEMPLATE_HEADER_SIZE;
+
+  const positionsBuffer = new Float32Array(arrayBuffer, byteOffset, positions.length);
+  positionsBuffer.set(positions);
+  byteOffset += FLOAT32_SIZE * positions.length;
+
+  const uvsBuffer = new Float32Array(arrayBuffer, byteOffset, uvs.length);
+  uvsBuffer.set(uvs);
+  byteOffset += FLOAT32_SIZE * uvs.length;
+
+  const ssaosBuffer = new Uint8Array(arrayBuffer, byteOffset, ssaos.length);
+  ssaosBuffer.set(ssaos);
+  byteOffset += UINT8_SIZE * ssaos.length;
+  byteOffset = _align(byteOffset, FLOAT32_SIZE);
+
+  const framesBuffer = new Float32Array(arrayBuffer, byteOffset, frames.length);
+  framesBuffer.set(frames);
+  byteOffset += FLOAT32_SIZE * frames.length;
+
+  const indicesBuffer = new Uint32Array(arrayBuffer, byteOffset, indices.length);
+  indicesBuffer.set(indices);
+  byteOffset += UINT32_SIZE * indices.length;
+
+  const boundingBoxBuffer = new Float32Array(arrayBuffer, byteOffset, 6);
+  boundingBoxBuffer.set(boundingBox);
+  byteOffset += FLOAT32_SIZE * 6;
+
+  return [arrayBuffer, byteOffset];
+};
+
+const parseTemplate = (buffer, byteOffset) => {
+  if (byteOffset === undefined) {
+    byteOffset = 0;
+  }
+
+  const headerBuffer = new Uint32Array(buffer, byteOffset, TEMPLATE_HEADER_ENTRIES);
+  let index = 0;
+  const numPositions = headerBuffer[index++];
+  const numUvs = headerBuffer[index++];
+  const numSsaos = headerBuffer[index++];
+  const numFrames = headerBuffer[index++];
+  const numIndices = headerBuffer[index++];
+  byteOffset += TEMPLATE_HEADER_SIZE;
+
+  const positionsBuffer = new Float32Array(buffer, byteOffset, numPositions);
+  const positions = positionsBuffer;
+  byteOffset += FLOAT32_SIZE * numPositions;
+
+  const uvsBuffer = new Float32Array(buffer, byteOffset, numUvs);
+  const uvs = uvsBuffer;
+  byteOffset += FLOAT32_SIZE * numUvs;
+
+  const ssaosBuffer = new Uint8Array(buffer, byteOffset, numSsaos);
+  const ssaos = ssaosBuffer;
+  byteOffset += UINT8_SIZE * numSsaos;
+  byteOffset = _align(byteOffset, FLOAT32_SIZE);
+
+  const framesBuffer = new Float32Array(buffer, byteOffset, numFrames);
+  const frames = framesBuffer;
+  byteOffset += FLOAT32_SIZE * numFrames;
+
+  const indicesBuffer = new Uint32Array(buffer, byteOffset, numIndices);
+  const indices = indicesBuffer;
+  byteOffset += UINT32_SIZE * numIndices;
+
+  const boundingBoxBuffer = new Float32Array(buffer, byteOffset, 6);
+  const boundingBox = boundingBoxBuffer;
+  byteOffset += FLOAT32_SIZE * 6;
+
+  return {
+    buffer,
+    positions,
+    uvs,
+    ssaos,
+    frames,
+    indices,
+    boundingBox,
+  };
+};
+
 const _getCullSizeFromMetadata = metadata => {
   const {numObjectChunks} = metadata;
 
@@ -592,6 +720,9 @@ module.exports = {
 
   stringifyWorker,
   parseWorker,
+
+  stringifyTemplate,
+  parseTemplate,
 
   stringifyCull,
   parseCull,

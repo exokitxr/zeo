@@ -817,7 +817,7 @@ const tree = objectApi => {
       const localVector2 = new THREE.Vector3();
       const localVector3 = new THREE.Vector3();
 
-      const treeProbability = 0.015;
+      const treeProbability = 0.225;
 
       objectApi.registerGenerator('trees', chunk => {
         currentChunk = chunk;

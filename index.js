@@ -43,8 +43,7 @@ const flags = {
   dataDirectory: _findArg('dataDirectory'),
   cryptoDirectory: _findArg('cryptoDirectory'),
   installDirectory: _findArg('installDirectory'),
-  dataDirectorySrc: _findArg('dataDirectorySrc'),
-  cryptoDirectorySrc: _findArg('cryptoDirectorySrc'),
+  defaultsDirectory: _findArg('defaultsDirectory'),
   siteUrl: _findArg('siteUrl'),
   vridUrl: _findArg('vridUrl'),
   crdsUrl: _findArg('crdsUrl'),
@@ -68,8 +67,7 @@ const secure = (typeof flags.secure === 'boolean') ? flags.secure : false;
 const dataDirectory = flags.dataDirectory || 'data';
 const cryptoDirectory = flags.cryptoDirectory || 'crypto';
 const installDirectory = flags.installDirectory || 'installed';
-const dataDirectorySrc = flags.dataDirectorySrc || 'defaults/data';
-const cryptoDirectorySrc = flags.cryptoDirectorySrc || 'defaults/crypto';
+const defaultsDirectory = flags.defaultsDirectory || 'defaults';
 const password = (() => {
   try {
     const worldConfigJsonPath = path.join(__dirname, dataDirectory, 'world', 'config.json');
@@ -92,6 +90,14 @@ const password = (() => {
 if (password !== null) {
   console.log(`Reminder: server password is ${JSON.stringify(password)}`);
 }
+const hotload = (() => {
+  try {
+    const noHotloadJsonPath = path.join(__dirname, dataDirectory, 'no-hotload.json');
+    return !fs.existsSync(noHotloadJsonPath, 'utf8');
+  } catch (err) {
+    return false;
+  }
+})();
 const protocolString = !secure ? 'http' : 'https';
 const siteUrl = flags.siteUrl || (protocolString + '://' + hostname + ':' + port);
 const vridUrl = flags.vridUrl || (protocolString + '://' + hostname + ':' + port);
@@ -100,20 +106,20 @@ const fullUrl = protocolString + '://127.0.0.1:' + port;
 const maxUsers = (flags.maxUsers && parseInt(flags.maxUsers, 10)) || 4;
 const config = {
   dirname: __dirname,
-  hostname: hostname,
-  port: port,
-  secure: secure,
+  hostname,
+  port,
+  secure,
+  hotload,
   publicDirectory: 'public',
-  dataDirectory: dataDirectory,
-  cryptoDirectory: cryptoDirectory,
-  installDirectory: installDirectory,
-  password: password,
+  dataDirectory,
+  cryptoDirectory,
+  installDirectory,
+  password,
   cors: true,
   staticSite: false,
   metadata: {
     config: {
-      dataDirectorySrc: dataDirectorySrc,
-      cryptoDirectorySrc: cryptoDirectorySrc,
+      defaultsDirectory,
     },
     site: {
       url: siteUrl,
@@ -128,7 +134,7 @@ const config = {
       url: fullUrl,
       enabled: flags.server,
     },
-    maxUsers: maxUsers,
+    maxUsers,
     transient: {},
   },
 };
