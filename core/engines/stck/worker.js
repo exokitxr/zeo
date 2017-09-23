@@ -58,6 +58,7 @@ const nextVelocity = new THREE.Vector3();
 const localVector = new THREE.Vector3();
 const localMin = new THREE.Vector2();
 const localMax = new THREE.Vector2();
+const localCoord = new THREE.Vector2();
 const localTriangle = new THREE.Triangle();
 const numPositions = 3;
 const positions = (() => {
@@ -86,8 +87,8 @@ const interval = setInterval(() => {
     for (let j = 0; j < staticHeightfieldBodies.length; j++) {
       const staticHeightfieldBody = staticHeightfieldBodies[j];
       localMin.set(staticHeightfieldBody.position.x, staticHeightfieldBody.position.z);
-      localMax.copy(localMin).add(new THREE.Vector2(staticHeightfieldBody.width, staticHeightfieldBody.depth));
-      const nextPosition2D = new THREE.Vector2(nextPosition.x, nextPosition.z);
+      localMax.copy(localMin).add(localCoord.set(staticHeightfieldBody.width, staticHeightfieldBody.depth));
+      const nextPosition2D = localCoord.set(nextPosition.x, nextPosition.z);
 
       if (nextPosition2D.x >= localMin.x && nextPosition2D.x < localMax.x && nextPosition2D.y >= localMin.y && nextPosition2D.y < localMax.y) { // if heightfield applies
         const ax = Math.floor(nextPosition2D.x);
@@ -125,13 +126,14 @@ const interval = setInterval(() => {
         }
       }
     }
-    if ((nextPosition.y - (size.y / 2)) < 0) {
+    if ((nextPosition.y - (size.y / 2)) < 0) { // hard limit to y=0
       nextPosition.y = size.y / 2;
       nextVelocity.copy(zeroVector);
 
       collided = collided || !velocity.equals(zeroVector);
     }
 
+    // emit updates
     if (!nextPosition.equals(position) || !nextVelocity.equals(velocity)) {
       body.update(nextPosition, body.rotation, body.scale, nextVelocity);
     }
