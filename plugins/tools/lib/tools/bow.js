@@ -369,9 +369,9 @@ const bow = ({recipes, data}) => {
       width: 2,
       height: 3,
       input: [
-        null, 'ITEM.WOOD',
         'ITEM.WOOD', null,
-        null, 'ITEM.WOOD',
+        'ITEM.STICK', 'ITEM.WOOD',
+        'ITEM.WOOD', null,
       ],
     };
     recipes.register(bowRecipe);
