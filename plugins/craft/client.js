@@ -1,4 +1,4 @@
-const matrixRotate = require('matrix-rotate');
+const matrixRotate = require('./lib/matrix-rotate');
 
 const SIDES = ['left', 'right'];
 const DIRECTIONS = [
@@ -326,7 +326,7 @@ class Craft {
 
       setGridIndex(index, assetInstance) {
         this.grid[index] = assetInstance;
-        this.grid[outputSymbol] = _getRecipeOutput(this.grid.map(grabbable => grabbable ? grabbable.asset : null));
+        this.grid[outputSymbol] = _getRecipeOutput(this.grid.map(grabbable => grabbable ? grabbable.value : null));
 
         if (assetInstance) {
           const _cleanup = () => {
