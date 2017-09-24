@@ -672,9 +672,9 @@ class Wallet {
             _updatePages();
           })
           .catch(err => {
-            walletState.error = true;
+            console.warn(err);
 
-            return Promise.reject(err);
+            walletState.error = true;
           });
         const _updateWallet = menuUtils.debounce(next => {
           /* const {inputText} = walletState;
@@ -682,13 +682,6 @@ class Wallet {
 
           _refreshAssets()
             .then(() => {
-              walletState.loading = false;
-
-              next();
-            })
-            .catch(err => {
-              console.warn(err);
-
               walletState.loading = false;
 
               next();
