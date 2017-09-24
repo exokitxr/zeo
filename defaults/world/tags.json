@@ -183,6 +183,17 @@
       "tagName": "plugins-grass",
       "attributes": {},
       "metadata": {}
+    },
+    "u3xub": {
+      "type": "tools",
+      "id": "u3xub",
+      "name": "/plugins/tools",
+      "displayName": "tools",
+      "version": "0.0.1",
+      "module": "/plugins/tools",
+      "tagName": "plugins-tools",
+      "attributes": {},
+      "metadata": {}
     }
   }
 }
