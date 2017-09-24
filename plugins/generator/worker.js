@@ -927,13 +927,13 @@ connection.on('message', e => {
       }
     }
   } else if (type === 'clearBlock') {
-    const {args: {x, y, z, v}} = m;
+    const {args: {x, y, z}} = m;
 
     const ox = Math.floor(x / NUM_CELLS);
     const oz = Math.floor(z / NUM_CELLS);
     const oldChunk = zde.getChunk(ox, oz);
     if (oldChunk) {
-      oldChunk.clearBlock(x - ox * NUM_CELLS, y, z - oz * NUM_CELLS);
+      const n = oldChunk.clearBlock(x - ox * NUM_CELLS, y, z - oz * NUM_CELLS);
 
       _retesselateObjects(oldChunk);
       _relight(oldChunk, x, y, z);
@@ -943,6 +943,14 @@ connection.on('message', e => {
         type: 'chunkUpdate',
         args: [ox, oz],
       });
+
+      const objectApi = objectApis[n];
+      if (objectApi && objectApi.clear) {
+        postMessage({
+          type: 'blockCleared',
+          args: [n, x, y, z],
+        });
+      }
     }
   } else if (type === 'subVoxel') {
     const seenChunks = [];
@@ -1415,6 +1423,7 @@ self.onmessage = e => {
     }
     case 'registerObject': {
       const {n, added, removed, updated, set, clear} = data;
+
       let entry = objectApis[n];
       if (!entry) {
         entry = {
@@ -1686,10 +1695,13 @@ self.onmessage = e => {
           args: [ox, oz],
         });
 
-        /* postMessage({ // XXX enable this for registered listeners
-          type: 'blockSet',
-          args: [x, y, z, v],
-        }); */
+        const objectApi = objectApis[v];
+        if (objectApi && objectApi.set) {
+          postMessage({
+            type: 'blockSet',
+            args: [v, x, y, z],
+          });
+        }
       }
       break;
     }
@@ -1702,7 +1714,7 @@ self.onmessage = e => {
       if (oldChunk) {
         connection.clearBlock(x, y, z, () => {});
 
-        oldChunk.clearBlock(x - ox * NUM_CELLS, y, z - oz * NUM_CELLS);
+        const n = oldChunk.clearBlock(x - ox * NUM_CELLS, y, z - oz * NUM_CELLS);
 
         _retesselateObjects(oldChunk);
         _relight(oldChunk, x, y, z);
@@ -1713,10 +1725,13 @@ self.onmessage = e => {
           args: [ox, oz],
         });
 
-        /* postMessage({ // XXX enable this for registered listeners
-          type: 'clearBlock',
-          args: [x, y, z],
-        }); */
+        const objectApi = objectApis[n];
+        if (objectApi && objectApi.clear) {
+          postMessage({
+            type: 'blockCleared',
+            args: [n, x, y, z],
+          });
+        }
       }
       break;
     }

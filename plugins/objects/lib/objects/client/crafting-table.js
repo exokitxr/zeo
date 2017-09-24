@@ -1,4 +1,4 @@
-const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
+// const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
 const CRAFT_PLUGIN = 'plugins-craft';
 const DEFAULT_MATRIX = [
   0, 0, 0,
@@ -50,7 +50,7 @@ const craftingTable = objectApi => {
           const {side} = e;
 
           if (grabbable.getGrabberSide() === side) {
-            const heightfieldElement = elements.getEntitiesElement().querySelector(HEIGHTFIELD_PLUGIN);
+            /* const heightfieldElement = elements.getEntitiesElement().querySelector(HEIGHTFIELD_PLUGIN);
             localVector.set(
               grabbable.position.x,
               heightfieldElement ? heightfieldElement.getBestElevation(grabbable.position.x, grabbable.position.z, grabbable.position.y) : 0,
@@ -60,7 +60,8 @@ const craftingTable = objectApi => {
             localEuler.x = 0;
             localEuler.z = 0;
             localQuaternion.setFromEuler(localEuler);
-            objectApi.addObject('craftingTable', localVector, localQuaternion);
+            objectApi.addObject('craftingTable', localVector, localQuaternion); */
+            objectApi.setBlock(Math.floor(grabbable.position.x), Math.floor(grabbable.position.y), Math.floor(grabbable.position.z), 'crafting-table');
 
             items.destroyItem(grabbable);
 
@@ -83,11 +84,11 @@ const craftingTable = objectApi => {
     items.registerItem(this, craftingTableItemApi);
 
     const craftingTableObjectApi = {
-      object: 'craftingTable',
-      addedCallback(id, position) {
+      object: 'crafting-table',
+      setCallback(id, x, y, z) {
         const craftingTable = {
           id,
-          position: position.clone(),
+          position: new THREE.Vector3(x + 0.5, y, z + 0.5),
           crafter: null,
         };
 
@@ -98,8 +99,8 @@ const craftingTable = objectApi => {
 
         craftingTables[id] = craftingTable;
       },
-      removedCallback(id) {
-        const craftingTable = craftingTable;
+      clearCallback(id) {
+        const craftingTable = craftingTables[id];
 
         const craftElement = elements.getEntitiesElement().querySelector(CRAFT_PLUGIN);
         if (craftElement) {
@@ -114,7 +115,7 @@ const craftingTable = objectApi => {
           craftingTable.crafter.craft();
         }
       },
-      gripCallback(id, side) {
+      gripBlockCallback(side, x, y, z) {
         const itemId = _makeId();
         const asset = 'ITEM.CRAFTINGTABLE';
         const assetInstance = items.makeItem({
@@ -134,7 +135,7 @@ const craftingTable = objectApi => {
         });
         assetInstance.grab(side);
 
-        objectApi.removeObject(x, z, objectIndex);
+        objectApi.clearBlock(x, y, z);
       },
     };
     objectApi.registerObject(craftingTableObjectApi);

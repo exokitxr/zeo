@@ -87,7 +87,7 @@ const stone = objectApi => {
     };
     items.registerItem(this, stoneItemApi);
 
-    const stoneObjectApi = {
+    /* const stoneObjectApi = {
       object: 'stone',
       gripCallback(id, side, x, z, objectIndex) {
         const itemId = _makeId();
@@ -112,7 +112,7 @@ const stone = objectApi => {
         objectApi.removeObject(x, z, objectIndex);
       },
     };
-    objectApi.registerObject(stoneObjectApi);
+    objectApi.registerObject(stoneObjectApi); */
 
     /* const stoneWallObjectApi = {
       object: 'stone-wall',

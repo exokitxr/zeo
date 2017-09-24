@@ -466,6 +466,20 @@ class Generator {
         if (objectApi) {
           objectApi.updateCallback(_getObjectId(x, z, objectIndex), localVector.fromArray(position), localQuaternion.fromArray(rotation), value);
         }
+      } else if (type === 'blockSet') {
+        const [n, x, y, z] = args;
+
+        const objectApi = objectApis[n];
+        if (objectApi) {
+          objectApi.setCallback(_getObjectId(x, y, z), x, y, z);
+        }
+      } else if (type === 'blockCleared') {
+        const [n, x, y, z] = args;
+
+        const objectApi = objectApis[n];
+        if (objectApi) {
+          objectApi.clearCallback(_getObjectId(x, y, z), x, y, z);
+        }
       } else {
         console.warn('generator got unknown worker message type:', JSON.stringify(type));
       }
