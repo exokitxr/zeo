@@ -449,6 +449,8 @@ const house = objectApi => {
               objectApi.setBlock(chunk, chunk.x * NUM_CELLS + 4 + dx, 5 * NUM_CELLS + 2, chunk.z * NUM_CELLS + 4 + dz, 'house-plank');
             }
           }
+
+          objectApi.setBlock(chunk, chunk.x * NUM_CELLS + 2, 4 * NUM_CELLS, chunk.z * NUM_CELLS + 4, 'crafting-table');
         }
       });
 
