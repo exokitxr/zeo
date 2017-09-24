@@ -1,6 +1,6 @@
 FROM debian:latest
 
-RUN apt-get update && apt-get install -y curl gnupg
+RUN apt-get update && apt-get install -y curl gnupg && apt-get clean
 RUN curl -o- https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
   echo "deb http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google.list && \
   apt-get update && apt-get install -y build-essential python curl git google-chrome-stable && apt-get clean
