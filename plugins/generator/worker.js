@@ -1308,8 +1308,46 @@ const _decorateObjectsChunk = (chunk, index, numPositions, numObjectIndices, num
     blockfield.unshadow();
     _freeAll();
 
+    chunk.forEachObject((n, matrix, value, objectIndex) => { // XXX can optimize this with some kind of index
+      const entry = objectApis[n];
+      if (entry && entry.added) {
+        postMessage({
+          type: 'objectAdded',
+          args: [n, chunk.x, chunk.z, objectIndex, matrix.slice(0, 3), matrix.slice(3, 7), value],
+        });
+      }
+    });
+    chunk.forEachBlock((n, x, y, z) => {
+      const entry = objectApis[n];
+      if (entry && entry.set) {
+        postMessage({
+          type: 'blockSet',
+          args: [n, chunk.x * NUM_CELLS + x, y, chunk.z * NUM_CELLS + z],
+        });
+      }
+    });
+
     chunk[objectsDecorationsSymbol] = () => {
       objectsMapChunkMeshes[baseIndex] = 0;
+
+      chunk.forEachObject((n, matrix, value, objectIndex) => {
+        const entry = objectApis[n];
+        if (entry && entry.removed) {
+          postMessage({
+            type: 'objectRemoved',
+            args: [n, chunk.x, chunk.z, objectIndex, matrix.slice(0, 3), matrix.slice(3, 7), value],
+          });
+        }
+      });
+      chunk.forEachBlock((n, x, y, z) => {
+        const entry = objectApis[n];
+        if (entry && entry.clear) {
+          postMessage({
+            type: 'blockCleared',
+            args: [n, x, y, z],
+          });
+        }
+      });
     };
   }
 };
@@ -1439,18 +1477,14 @@ self.onmessage = e => {
         entry.added++;
 
         if (entry.added === 1) {
-          for (let i = 0; i < zde.chunks.length; i++) {
-            const chunk = zde.chunks[i];
-
-            chunk.forEachObject((localN, matrix, value, objectIndex) => {
-              if (localN === n) {
-                postMessage({
-                  type: 'objectAdded',
-                  args: [localN, chunk.x, chunk.z, objectIndex, matrix.slice(0, 3), matrix.slice(3, 7), value],
-                });
-              }
-            });
-          }
+          zde.forEachObject((localN, matrix, value, objectIndex) => { // XXX also need to do this efficiently when the chunk loads
+            if (localN === n) {
+              postMessage({
+                type: 'objectAdded',
+                args: [localN, chunk.x, chunk.z, objectIndex, matrix.slice(0, 3), matrix.slice(3, 7), value],
+              });
+            }
+          });
         }
       }
       if (removed) {
@@ -1462,13 +1496,16 @@ self.onmessage = e => {
       if (set) {
         entry.set++;
 
-        /* if (entry.set === 1) { // XXX figure out an efficient way to index blocks by value
-          for (let i = 0; i < zde.chunks.length; i++) {
-            const chunk = zde.chunks[i];
-
-            // XXX iterate over all chunks
-          }
-        } */
+        if (entry.set === 1) {
+          zde.forEachBlock((localN, x, y, z) => {
+            if (localN === n) {
+              postMessage({
+                type: 'blockSet',
+                args: [n, x, y, z],
+              });
+            }
+          });
+        }
       }
       if (clear) {
         entry.clear++;
