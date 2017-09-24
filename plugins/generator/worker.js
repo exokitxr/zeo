@@ -922,7 +922,7 @@ connection.on('message', e => {
       if (objectApi && objectApi.set) {
         postMessage({
           type: 'blockSet',
-          args: [x, y, z, v],
+          args: [v, ox * NUM_CELLS + x, y, oz * NUM_CELLS + z],
         });
       }
     }
@@ -948,7 +948,7 @@ connection.on('message', e => {
       if (objectApi && objectApi.clear) {
         postMessage({
           type: 'blockCleared',
-          args: [n, x, y, z],
+          args: [n, ox * NUM_CELLS + x, y, oz * NUM_CELLS + z],
         });
       }
     }
@@ -1344,7 +1344,7 @@ const _decorateObjectsChunk = (chunk, index, numPositions, numObjectIndices, num
         if (entry && entry.clear) {
           postMessage({
             type: 'blockCleared',
-            args: [n, x, y, z],
+            args: [n, chunk.x * NUM_CELLS + x, y, chunk.z * NUM_CELLS + z],
           });
         }
       });
@@ -1497,14 +1497,17 @@ self.onmessage = e => {
         entry.set++;
 
         if (entry.set === 1) {
-          zde.forEachBlock((localN, x, y, z) => {
-            if (localN === n) {
-              postMessage({
-                type: 'blockSet',
-                args: [n, x, y, z],
-              });
-            }
-          });
+          for (const index in zde.chunks) {
+            const chunk = zde.chunks[index];
+            chunk.forEachBlock((localN, x, y, z) => {
+              if (localN === n) {
+                postMessage({
+                  type: 'blockSet',
+                  args: [n, chunk.x * NUM_CELLS + x, y, chunk.z * NUM_CELLS + z],
+                });
+              }
+            });
+          }
         }
       }
       if (clear) {
@@ -1736,7 +1739,7 @@ self.onmessage = e => {
         if (objectApi && objectApi.set) {
           postMessage({
             type: 'blockSet',
-            args: [v, x, y, z],
+            args: [v, ox * NUM_CELLS + x, y, oz * NUM_CELLS + z],
           });
         }
       }
@@ -1766,7 +1769,7 @@ self.onmessage = e => {
         if (objectApi && objectApi.clear) {
           postMessage({
             type: 'blockCleared',
-            args: [n, x, y, z],
+            args: [n, ox * NUM_CELLS + x, y, oz * NUM_CELLS + z],
           });
         }
       }
