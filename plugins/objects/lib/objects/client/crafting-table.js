@@ -109,7 +109,7 @@ const craftingTable = objectApi => {
 
         craftingTables[id] = null;
       },
-      triggerCallback(id, side) {
+      triggerBlockCallback(id, side) {
         const craftingTable = craftingTables[id];
         if (craftingTable.crafter) {
           craftingTable.crafter.craft();

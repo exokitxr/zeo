@@ -528,6 +528,7 @@ void main() {
         const _triggerdown = e => {
           const {side} = e;
           const hoveredTrackedObjectSpec = hoveredTrackedObjects[side];
+          const hoveredTrackedBlock = hoveredTrackedBlocks[side];
 
           if (hoveredTrackedObjectSpec && hoveredTrackedObjectSpec.isSet()) {
             const {n} = hoveredTrackedObjectSpec;
@@ -536,6 +537,14 @@ void main() {
             if (objectApi && objectApi.triggerCallback) {
               const {x, z, objectIndex} = hoveredTrackedObjectSpec;
               objectApi.triggerCallback(_getObjectId(x, z, objectIndex), side, x, z, objectIndex);
+            }
+          } else if (isFinite(hoveredTrackedBlock.x)) {
+            const {v} = hoveredTrackedBlock;
+            const objectApi = generatorElement.getObjectApi(v);
+
+            if (objectApi && objectApi.triggerBlockCallback) {
+              const {x, y, z} = hoveredTrackedBlock;
+              objectApi.triggerBlockCallback(_getObjectId(x, y, z), side);
             }
           }
         };
