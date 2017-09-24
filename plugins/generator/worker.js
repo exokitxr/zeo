@@ -71,6 +71,7 @@ const zeroVectorArray = zeroVector.toArray();
 
 const terrainDecorationsSymbol = Symbol();
 const objectsDecorationsSymbol = Symbol();
+const objectsCallbacksSymbol = Symbol();
 const lightsSymbol = Symbol();
 
 const _getLightsArrayIndex = (x, z) => x + z * 3;
@@ -457,7 +458,7 @@ const _retesselateObjects = chunk => {
     torchLightmaps: new Uint8Array(chunkData.positions.length / 3),
     blockfield: new Uint8Array(NUM_CELLS * NUM_CELLS_HEIGHT * NUM_CELLS),
   };
-  _undecorateObjectsChunk(chunk);
+  _undecorateObjectsChunkSoft(chunk);
 
   _freeAll();
 };
@@ -1308,6 +1309,11 @@ const _decorateObjectsChunk = (chunk, index, numPositions, numObjectIndices, num
     blockfield.unshadow();
     _freeAll();
 
+    chunk[objectsDecorationsSymbol] = () => {
+      objectsMapChunkMeshes[baseIndex] = 0;
+    };
+  }
+  if (!chunk[objectsCallbacksSymbol]) {
     chunk.forEachObject((n, matrix, value, objectIndex) => { // XXX can optimize this with some kind of index
       const entry = objectApis[n];
       if (entry && entry.added) {
@@ -1327,9 +1333,7 @@ const _decorateObjectsChunk = (chunk, index, numPositions, numObjectIndices, num
       }
     });
 
-    chunk[objectsDecorationsSymbol] = () => {
-      objectsMapChunkMeshes[baseIndex] = 0;
-
+    chunk[objectsCallbacksSymbol] = () => {
       chunk.forEachObject((n, matrix, value, objectIndex) => {
         const entry = objectApis[n];
         if (entry && entry.removed) {
@@ -1352,6 +1356,16 @@ const _decorateObjectsChunk = (chunk, index, numPositions, numObjectIndices, num
   }
 };
 const _undecorateObjectsChunk = chunk => {
+  if (chunk[objectsDecorationsSymbol]) {
+    chunk[objectsDecorationsSymbol]();
+    chunk[objectsDecorationsSymbol] = null;
+  }
+  if (chunk[objectsCallbacksSymbol]) {
+    chunk[objectsCallbacksSymbol]();
+    chunk[objectsCallbacksSymbol] = null;
+  }
+};
+const _undecorateObjectsChunkSoft = chunk => {
   if (chunk[objectsDecorationsSymbol]) {
     chunk[objectsDecorationsSymbol]();
     chunk[objectsDecorationsSymbol] = null;
