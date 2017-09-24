@@ -258,8 +258,6 @@ class Craft {
     const _getRecipeOutput = input => {
       const hash = _hashRecipeInput(input);
       const entry = recipes[hash];
-console.log('get recipe output', input, hash, entry); // XXX
-window.recipes = recipes;
       return entry ? entry[0] : null;
     };
 
