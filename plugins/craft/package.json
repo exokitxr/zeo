@@ -3,5 +3,7 @@
   "description": "Provides a crafting system for the zeo core.",
   "version": "0.0.1",
   "client": "client.js",
-  "dependencies": {}
+  "dependencies": {
+    "matrix-rotate": "0.0.2"
+  }
 }

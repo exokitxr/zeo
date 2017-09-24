@@ -1,3 +1,5 @@
+const matrixRotate = require('matrix-rotate');
+
 const SIDES = ['left', 'right'];
 const DIRECTIONS = [
   [-1, -1, -1],
@@ -208,6 +210,16 @@ class Craft {
         for (let y = 0; y < (gridWidth - height + 1); y++) {
           const fullInput = _makeNullInput(gridWidth, gridWidth);
           _drawInput(fullInput, gridWidth, gridWidth, input, x, y, width, height);
+
+          result.push(fullInput.slice());
+
+          matrixRotate(fullInput);
+          result.push(fullInput.slice());
+
+          matrixRotate(fullInput);
+          result.push(fullInput.slice());
+
+          matrixRotate(fullInput);
           result.push(fullInput);
         }
       }
