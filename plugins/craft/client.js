@@ -166,20 +166,30 @@ class Craft {
 
       return gridGeometry;
     })();
-    const _release = ({grabbable, side}) => {
-      const {gamepads} = pose.getStatus();
-      const gamepad = gamepads[side];
-      const {worldPosition: controllerPosition} = gamepad;
+    const _release = e => {
+      const {live} = e;
 
-      for (let i = 0; i < crafters.length; i++) {
-        const crafter = crafters[i];
-        const index = crafter.getHoveredIndex(controllerPosition);
+      if (live) {
+        const {grabbable, side} = e;
 
-        if (index !== -1) {
-          crafter.setGridIndex(index, grabbable);
+        const {gamepads} = pose.getStatus();
+        const gamepad = gamepads[side];
+        const {worldPosition: controllerPosition} = gamepad;
 
-          grabbable.setState(crafter.positions[index], zeroQuaternion, oneVector);
-          grabbable.disablePhysics();
+        for (let i = 0; i < crafters.length; i++) {
+          const crafter = crafters[i];
+          const index = crafter.getHoveredIndex(controllerPosition);
+
+          if (index !== -1) {
+            crafter.setGridIndex(index, grabbable);
+
+            grabbable.setState(crafter.positions[index], zeroQuaternion, oneVector);
+            grabbable.disablePhysics();
+
+            e.stopImmediatePropagation();
+
+            break;
+          }
         }
       }
     };

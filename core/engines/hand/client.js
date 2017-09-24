@@ -91,6 +91,10 @@ class Hand {
                   userId,
                   side,
                   grabbable,
+                  live: true,
+                  stopImmediatePropagation() {
+                    e.live = false;
+                  },
                 };
                 grabbable.emit('release', e);
                 handApi.emit('release', e);
@@ -235,6 +239,10 @@ class Hand {
                 userId,
                 side,
                 grabbable: this,
+                live: true,
+                stopImmediatePropagation() {
+                  e.live = false;
+                },
               };
               this.emit('release', e);
               handApi.emit('release', e);

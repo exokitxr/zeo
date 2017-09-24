@@ -310,17 +310,22 @@ class Wallet {
                   break;
                 }
                 case 'release': {
-                  const {userId, side} = e;
+                  const {userId, side, live, stopImmediatePropagation} = e;
 
                   hoverStates[side].worldGrabAsset = null;
 
-                  super.emit(t, {
+                  const e2 = {
                     userId,
                     side,
                     item: this,
-                  });
+                    live,
+                    stopImmediatePropagation,
+                  };
+                  super.emit(t, e2);
 
-                  _checkGripup(side, this);
+                  if (e2.live) {
+                    _checkGripup(e2);
+                  }
 
                   break;
                 }
@@ -1042,11 +1047,14 @@ class Wallet {
             return false;
           }
         };
-        const _checkGripup = (side, assetInstance) => {
-          const {position} = assetInstance;
+        const _checkGripup = e => {
+          const {item} = e;
+          const {position} = item;
 
           if (_isInBody(position)) {
-            _storeItem(assetInstance);
+            _storeItem(item);
+
+            e.stopImmediatePropagation();
           }
         };
         const _gripdown = e => {
