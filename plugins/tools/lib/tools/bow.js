@@ -16,33 +16,59 @@ const bow = ({recipes, data}) => {
   const {THREE, scene} = three;
   const {arrowGeometrySpec} = data;
 
-  const localTransformPositionVector = new THREE.Vector3(0.015/2 * 3, 0, 0.015 * 4 * 3);
-  const localTransformRotationQuaterion = new THREE.Quaternion().setFromAxisAngle(
-    new THREE.Vector3(0, 0, 1),
-    Math.PI / 4
-  ).premultiply(new THREE.Quaternion().setFromUnitVectors(
-    new THREE.Vector3(0, 0, -1),
-    new THREE.Vector3(1, 0, 0)
-  ));
-  const localTransformScaleVector = new THREE.Vector3(3, 3, 3);
-  const localVector = new THREE.Vector3();
-  const localVector2 = new THREE.Vector3();
-  const localQuaternion = new THREE.Quaternion();
-  const localMatrix = new THREE.Matrix4();
-  const localRay = new THREE.Ray();
   const zeroVector = new THREE.Vector3();
   const oneVector = new THREE.Vector3(1, 1, 1);
   const forwardVector = new THREE.Vector3(0, 0, -1);
   const upVector = new THREE.Vector3(0, 1, 0);
   const zeroQuaternion = new THREE.Quaternion();
   const forwardQuaternion = new THREE.Quaternion().setFromUnitVectors(upVector, forwardVector);
+  const localTransformPositionVectors = {
+    keyboard: new THREE.Vector3(0.015/2 * 3, 0, 0.015 * 4 * 3),
+    hmd: new THREE.Vector3(0.015/2 * 3, 0, 0),
+  };
+  const localTransformRotationQuaterions = {
+    keyboard: new THREE.Quaternion().setFromUnitVectors(
+      new THREE.Vector3(-1, 0, 0),
+      new THREE.Vector3(0, 0, -1)
+    ).premultiply(
+      new THREE.Quaternion().setFromAxisAngle(
+        new THREE.Vector3(1, 0, 0),
+        Math.PI / 4
+      )
+    ),
+    hmd: new THREE.Quaternion().setFromAxisAngle(
+      new THREE.Vector3(0, 0, 1),
+      Math.PI / 4
+    ).premultiply(new THREE.Quaternion().setFromUnitVectors(
+      new THREE.Vector3(0, 0, -1),
+      new THREE.Vector3(1, 0, 0)
+    )),
+  };
+  const localStringPositionVectors = {
+    keyboard: new THREE.Vector3(0, 0.015 * 12, 0.015 * 2),
+    hmd: new THREE.Vector3(0, 0.015 * 2, 0),
+  };
+  const localStringRotationQuaterions = {
+    keyboard: zeroQuaternion,
+    hmd: new THREE.Quaternion().setFromUnitVectors(
+      new THREE.Vector3(0, 0, 1),
+      new THREE.Vector3(0, 1, 0)
+    ),
+  };
+  const localTransformScaleVector = new THREE.Vector3(3, 3, 3);
+  const localVector = new THREE.Vector3();
+  const localVector2 = new THREE.Vector3();
+  const localQuaternion = new THREE.Quaternion();
+  const localMatrix = new THREE.Matrix4();
+  const localRay = new THREE.Ray();
+
   const stringGeometry = (() => {
     const geometry = new THREE.BoxBufferGeometry(0.015, 1, 0.015, 1, 2, 1)
-      .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
+      /* .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
         new THREE.Vector3(0, 1, 0),
         new THREE.Vector3(0, 0, -1)
-      )))
-      .applyMatrix(new THREE.Matrix4().makeScale(3, 3, 3 * 0.275));
+      ))) */
+      .applyMatrix(new THREE.Matrix4().makeScale(3, 3 * 0.275, 3));
     geometry.addAttribute('color', new THREE.BufferAttribute(new Float32Array(geometry.getAttribute('position').array.length), 3));
     return geometry;
   })();
@@ -139,13 +165,13 @@ const bow = ({recipes, data}) => {
                 localVector.copy(upVector)
                   .applyQuaternion(
                     localQuaternion.copy(stringMesh.quaternion)
-                      .multiply(forwardQuaternion)
+                      // .multiply(forwardQuaternion)
                   )
               ));
             } else {
               arrowMesh.position.copy(stringMesh.position);
               arrowMesh.quaternion.copy(stringMesh.quaternion)
-                .multiply(forwardQuaternion);
+                // .multiply(forwardQuaternion);
             }
             arrowMesh.updateMatrixWorld();
           };
@@ -154,7 +180,7 @@ const bow = ({recipes, data}) => {
         };
 
         const _grab = e => {
-          grabbable.setLocalTransform(localTransformPositionVector, localTransformRotationQuaterion, localTransformScaleVector);
+          grabbable.setLocalTransform(localTransformPositionVectors[pose.getVrMode()], localTransformRotationQuaterions[pose.getVrMode()], localTransformScaleVector);
           stringMesh.visible = true;
         };
         grabbable.on('grab', _grab);
@@ -220,6 +246,36 @@ const bow = ({recipes, data}) => {
         input.on('gripup', _gripup, {
           priority: 1,
         });
+        const _triggerdown = e => {
+          const {side} = e;
+
+          if (pose.getVrMode() === 'keyboard' && !nockedArrowMesh) {
+            nockedArrowMesh = _makeArrowMesh();
+            scene.add(nockedArrowMesh);
+          }
+        };
+        input.on('triggerdown', _triggerdown, {
+          priority: 1,
+        });
+        const _triggerup = e => {
+          const {side} = e;
+
+          if (pose.getVrMode() === 'keyboard' && nockedArrowMesh) {
+            const arrow = nockedArrowMesh;
+            arrows.push(arrow);
+
+            const now = Date.now();
+            arrow.startTime = now;
+            arrow.lastTime = now;
+            arrow.velocity.set(0, 0, -ARROW_SPEED * 0.3)
+              .applyQuaternion(arrow.quaternion);
+
+            nockedArrowMesh = null;
+          }
+        };
+        input.on('triggerup', _triggerup, {
+          priority: 1,
+        });
 
         let lastPulling = false;
         const _update = () => {
@@ -229,10 +285,15 @@ const bow = ({recipes, data}) => {
             if (grabbable.isGrabbed()) {
               const side = grabbable.getGrabberSide();
               const gamepad = gamepads[side];
-              const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
-              stringMesh.position.copy(controllerPosition)
+              // const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
+              stringMesh.position.copy(grabbable.position)
+                .add(localVector.copy(localStringPositionVectors[pose.getVrMode()]).applyQuaternion(grabbable.rotation));
+                // .add(localVector.set(0, 1, 0).applyQuaternion(grabbable.rotation));
+              stringMesh.quaternion.copy(grabbable.rotation)
+                .multiply(localStringRotationQuaterions[pose.getVrMode()]);
+              /* stringMesh.position.copy(controllerPosition)
                 .add(localVector.set(0, 0.015 * 4.6 * 3, 0).applyQuaternion(controllerRotation));
-              stringMesh.quaternion.copy(controllerRotation);
+              stringMesh.quaternion.copy(controllerRotation); */
               stringMesh.updateMatrixWorld();
             }
           };
