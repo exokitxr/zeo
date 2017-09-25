@@ -755,10 +755,9 @@ class Generator {
               const m = JSON.parse(msg);
               const {method} = m;
 
-              if (method === 'subVoxel') {
+              if (method === 'mutateVoxel') {
                 const {id, args} = m;
-                const {x, y, z} = args;
-                const v = 1;
+                const {x, y, z, v} = args;
 
                 const regeneratePromises = [];
                 const seenIndex = {};
@@ -810,9 +809,9 @@ class Generator {
                     }));
 
                     _broadcast({
-                      type: 'subVoxel',
+                      type: 'mutateVoxel',
                       args,
-                      result: {x, y, z},
+                      result: {x, y, z, v},
                     });
                   });
               } else if (method === 'addObject') {

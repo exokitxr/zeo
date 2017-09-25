@@ -953,7 +953,9 @@ connection.on('message', e => {
         });
       }
     }
-  } else if (type === 'subVoxel') {
+  } else if (type === 'mutateVoxel') {
+    const {args: {x, y, z, v}} = m;
+
     const seenChunks = [];
     for (let i = 0; i < DIRECTIONS.length; i++) {
       const [dx, dz] = DIRECTIONS[i];
@@ -967,7 +969,6 @@ connection.on('message', e => {
 
         const lx = x - (ox * NUM_CELLS);
         const lz = z - (oz * NUM_CELLS);
-        const v = 1;
         const newEther = Float32Array.from([lx, y, lz, v]);
 
         _retesselateTerrain(oldChunk, newEther);
@@ -993,15 +994,16 @@ connection.on('message', e => {
     console.warn('generator worker got invalid connection message', m);
   }
 });
-connection.subVoxel = (x, y, z, cb) => {
+connection.mutateVoxel = (x, y, z, v, cb) => {
   const id = _makeId();
   connection.send(JSON.stringify({
-    method: 'subVoxel',
+    method: 'mutateVoxel',
     id,
     args: {
       x,
       y,
       z,
+      v,
     },
   }));
   queues[id] = cb;
@@ -1925,11 +1927,11 @@ self.onmessage = e => {
       }, [heightfield.buffer]);
       break;
     } */
-    case 'subVoxel': {
+    case 'mutateVoxel': {
       const {id, args} = data;
-      const {position: [x, y, z]} = args;
+      const {position: [x, y, z, v]} = args;
 
-      connection.subVoxel(x, y, z, () => {});
+      connection.mutateVoxel(x, y, z, v, () => {});
 
       const seenChunks = [];
       for (let i = 0; i < DIRECTIONS.length; i++) {
@@ -1944,7 +1946,6 @@ self.onmessage = e => {
 
           const lx = x - (ox * NUM_CELLS);
           const lz = z - (oz * NUM_CELLS);
-          const v = 1;
           const newEther = Float32Array.from([lx, y, lz, v]);
 
           _retesselateTerrain(oldChunk, newEther);

@@ -1,349 +1,148 @@
-const protocolUtils = require('../utils/protocol-utils');
+const NUM_CELLS_HEIGHT = 128;
+const GENERATOR_PLUGIN = 'plugins-generator';
 
-const RESOLUTION = 32;
-const BUFFER_SIZE = 1000 * 1024;
-const DIRECTIONS = (() => {
-  const result = [];
-  for (let x = -1; x <= 1; x++) {
-    if (x !== 0) {
-      for (let y = -1; y <= 1; y++) {
-        if (y !== 0) {
-          for (let z = -1; z <= 1; z++) {
-            if (z !== 0) {
-              result.push([x, y, z]);
-            }
-          }
-        }
-      }
-    }
-  }
-  return result;
-})();
 const dataSymbol = Symbol();
 
-const hammer = ({recipes}) => {
-  const {three, pose, input, render, teleport, items} = zeo;
+const hammer = ({recipes, data}) => {
+  const {three, pose, input, render, elements, items, player, teleport, utils: {geometry: geometryUtils, sprite: spriteUtils}} = zeo;
   const {THREE, scene, camera} = three;
 
+  const zeroVector = new THREE.Vector3();
+  const oneVector = new THREE.Vector3(1, 1, 1);
   const forwardVector = new THREE.Vector3(0, 0, -1);
   const upVector = new THREE.Vector3(0, 1, 0);
-  const dotMeshBaseQuaternion = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 8, 0, 0, camera.rotation.order));
+  const zeroQuaternion = new THREE.Quaternion();
+  const forwardQuaternion = new THREE.Quaternion().setFromUnitVectors(upVector, forwardVector);
+  const grabbableQuaternion = new THREE.Quaternion().setFromAxisAngle(
+    new THREE.Vector3(0, 0, 1),
+    Math.PI / 4
+  ).premultiply(new THREE.Quaternion().setFromUnitVectors(
+    new THREE.Vector3(0, 0, -1),
+    new THREE.Vector3(1, 0, 0)
+  ));
+  const localTransformScaleVector = new THREE.Vector3(3, 3, 3);
+  const localVector = new THREE.Vector3();
+  const localVector2 = new THREE.Vector3();
+  const localQuaternion = new THREE.Quaternion();
+  const localMatrix = new THREE.Matrix4();
+  const localRay = new THREE.Ray();
 
-  const polygonMeshMaterial = new THREE.MeshPhongMaterial({
-    color: 0x9E9E9E,
-    shininess: 0,
-    shading: THREE.FlatShading,
+  const dotMeshMaterial = new THREE.MeshBasicMaterial({
+    color: 0x2196F3,
+    // shininess: 0,
+    // shading: THREE.FlatShading,
   });
 
-  let worker = null;
-  const _initializeWorker = () => {
-    worker = new Worker('archae/plugins/_plugins_tools/build/worker.js');
-    const queue = [];
-    worker.requestMesh = (x, y, z, points, resultBuffer) => new Promise((accept, reject) => {
-      worker.postMessage({
-        x,
-        y,
-        z,
-        points,
-        resultBuffer,
-      }, [resultBuffer]);
-      queue.push(data => {
-        accept(data);
-      });
-    })
-      .then(({resultBuffer}) => {
-        const {positions, unindexedPositions, normals, indices} = protocolUtils.parseGeometry(resultBuffer);
-        return {resultBuffer, positions, unindexedPositions, normals, indices};
-      });
-    worker.onmessage = e => {
-      const {data} = e;
-      const cb = queue.shift();
-      cb(data);
-    };
-  };
+  return () => elements.requestElement(GENERATOR_PLUGIN)
+    .then(generatorElement => {
+      const hammerApi = {
+        asset: 'ITEM.HAMMER',
+        itemAddedCallback(grabbable) {
+          const dotMesh = (() => {
+            const geometry = new THREE.ConeBufferGeometry(0.5, 0.5, 3, 1);
+            const material = dotMeshMaterial;
 
-  return () => {
-    const hammerApi = {
-      asset: 'ITEM.HAMMER',
-      itemAddedCallback(grabbable) {
-        _initializeWorker();
-
-        const polygonMeshes = {};
-
-        const _makePolygonMesh = (ox, oy, oz) => {
-          const geometry = new THREE.BufferGeometry();
-          geometry.boundingSphere = new THREE.Sphere(
-            new THREE.Vector3((ox + 0.5) * RESOLUTION, (oy + 0.5) * RESOLUTION, (oz + 0.5) * RESOLUTION),
-            Math.sqrt(RESOLUTION * RESOLUTION * 3)
-          );
-
-          const material = polygonMeshMaterial;
-
-          const mesh = new THREE.Mesh(geometry, material);
-
-          const buffers = [
-            new ArrayBuffer(BUFFER_SIZE),
-            new ArrayBuffer(BUFFER_SIZE),
-          ];
-          let bufferPage = 0;
-          let refreshPromise = null;
-          let queued = false;
-          let teleportMesh = null;
-
-          const points = new Float32Array((RESOLUTION + 1) * (RESOLUTION + 1) * (RESOLUTION + 1));
-          mesh.points = points;
-          mesh.update = () => {
-            const _recurse = () => {
-              if (!refreshPromise) {
-                const buffer = buffers[bufferPage];
-                refreshPromise = worker.requestMesh(ox, oy, oz, points, buffer);
-                refreshPromise
-                  .then(({resultBuffer, positions, unindexedPositions, normals, indices}) => {
-                    geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-                    geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
-                    geometry.setIndex(new THREE.BufferAttribute(indices, 1));
-
-                    if (!mesh.visible) {
-                      mesh.visible = true;
-                    }
-
-                    buffers[bufferPage] = resultBuffer;
-                    bufferPage = bufferPage === 0 ? 1 : 0;
-                    refreshPromise = null;
-
-                    if (teleportMesh) {
-                      teleport.removeTarget(teleportMesh);
-                      teleportMesh.destroy();
-                    }
-                    teleportMesh = (() => {
-                      const geometry = new THREE.BufferGeometry();
-                      geometry.addAttribute('position', new THREE.BufferAttribute(unindexedPositions, 3));
-                      const material = polygonMeshMaterial;
-                      const mesh = new THREE.Mesh(geometry, material);
-                      mesh.destroy = () => {
-                        geometry.dispose();
-                      };
-                      return mesh;
-                    })();
-                    teleport.addTarget(teleportMesh, { // XXX re-add support for this
-                      flat: true,
-                    });
-
-                    if (queued) {
-                      queued = false;
-
-                      _recurse();
-                    }
-                  }).catch(err => {
-                    console.warn(err);
-
-                    refreshPromise = null;
-                  });
-              } else {
-                queued = true;
-              }
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.visible = false;
+            mesh.destroy = () => {
+              geometry.dispose();
             };
-            _recurse();
+
+            return mesh;
+          })();
+          scene.add(dotMesh);
+
+          const _grab = e => {
+            grabbable.setLocalTransform(zeroVector, grabbableQuaternion, oneVector);
+            dotMesh.visible = true;
           };
-          mesh.destroy = () => {
-            geometry.dispose();
+          grabbable.on('grab', _grab);
+          const _release = e => {
+            grabbable.setLocalTransform(zeroVector, zeroQuaternion, oneVector);
+            dotMesh.visible = false;
           };
+          grabbable.on('release', _release);
 
-          mesh.visible = false;
-
-          return mesh;
-        };
-
-        const _logPoint = p => {
-          const polygonMeshesToUpdate = [];
-
-          const baseValue = Math.sqrt(Math.pow(1.25, 2) * 3);
-          for (let dz = -1; dz <= 1; dz++) {
-            for (let dy = -1; dy <= 1; dy++) {
-              for (let dx = -1; dx <= 1; dx++) {
-                const x = Math.floor(p.x + dx);
-                const y = Math.floor(p.y + dy);
-                const z = Math.floor(p.z + dz);
-                const v = Math.max(baseValue - Math.sqrt(dx*dx + dy*dy + dz*dz), 0);
-
-                const pointPolygonMeshesToUpdate = [];
-
-                for (let i = 0; i < DIRECTIONS.length; i++) {
-                  const direction = DIRECTIONS[i];
-                  const [ex, ey, ez] = direction;
-
-                  const lx = x + ex;
-                  const ly = y + ey;
-                  const lz = z + ez;
-
-                  const ox = Math.floor(lx / RESOLUTION);
-                  const oy = Math.floor(ly / RESOLUTION);
-                  const oz = Math.floor(lz / RESOLUTION);
-
-                  const rx = x - (ox * RESOLUTION);
-                  const ry = y - (oy * RESOLUTION);
-                  const rz = z - (oz * RESOLUTION);
-
-                  if (rx >= 0 && rx <= RESOLUTION && ry >= 0 && ry <= RESOLUTION && rz >= 0 && rz <= RESOLUTION) {
-                    const meshIndex = ox + ':' + oy + ':' + oz;
-                    let polygonMesh = polygonMeshes[meshIndex];
-                    if (!polygonMesh) {
-                      polygonMesh = _makePolygonMesh(ox, oy, oz);
-                      scene.add(polygonMesh);
-                      polygonMeshes[meshIndex] = polygonMesh;
-                    }
-                    if (!pointPolygonMeshesToUpdate.includes(polygonMesh)) {
-                      const {points} = polygonMesh;
-                      const pointIndex = rx + (ry * (RESOLUTION + 1)) + (rz * (RESOLUTION + 1) * (RESOLUTION + 1));
-                      points[pointIndex] = Math.max(v, points[pointIndex]);
-
-                      pointPolygonMeshesToUpdate.push(polygonMesh);
-                    }
-                  }
-                }
-                polygonMeshesToUpdate.push.apply(polygonMeshesToUpdate, pointPolygonMeshesToUpdate);
-              }
-            }
-          }
-
-          if (polygonMeshesToUpdate.length > 0) {
-            for (let i = 0; i < polygonMeshesToUpdate.length; i++) {
-              const polygonMesh = polygonMeshesToUpdate[i];
-              polygonMesh.update();
-            }
-          }
-        };
-
-        const dotMesh = (() => {
-          const geometry = new THREE.ConeBufferGeometry(0.5, 0.5, 3, 1);
-          const material = polygonMeshMaterial;
-
-          const mesh = new THREE.Mesh(geometry, material);
-          mesh.visible = false;
-
-          mesh.destroy = () => {
-            geometry.dispose();
-          };
-
-          return mesh;
-        })();
-        scene.add(dotMesh);
-
-        let grabbed = false;
-        let drawing = false;
-        const _triggerdown = e => {
-          if (grabbed) {
-            drawing = true;
-
-            e.stopImmediatePropagation();
-          }
-        };
-        input.on('triggerdown', _triggerdown);
-        const _triggerup = e => {
-          if (drawing) {
-            drawing = false;
-
-            e.stopImmediatePropagation();
-          }
-        };
-        input.on('triggerup', _triggerup);
-        const _grab = e => {
-          grabbed = true;
-
-          dotMesh.visible = true;
-        };
-        grabbable.on('grab', _grab);
-        const _release = e => {
-          grabbed = false;
-          drawing = false;
-
-          dotMesh.visible = false;
-        };
-        grabbable.on('release', _release);
-
-        const _update = () => {
-          const _updateDotMesh = () => {
+          const _triggerdown = e => {
             if (dotMesh.visible) {
-              const grabbablePosition = new THREE.Vector3().fromArray(grabbable.position);
-              const grabbableRotation = new THREE.Quaternion().fromArray(grabbable.rotation);
-              const grabbableScale = new THREE.Vector3(1, 1, 1).fromArray(grabbable.scale);
+              const ax = Math.round(dotMesh.position.x);
+              const ay = Math.min(Math.max(Math.round(dotMesh.position.y), 0), NUM_CELLS_HEIGHT - 1);
+              const az = Math.round(dotMesh.position.z);
 
-              const position = grabbablePosition.clone()
+              generatorElement.mutateVoxel(ax, ay, az, -2);
+
+              e.stopImmediatePropagation();
+            }
+          };
+          input.on('triggerdown', _triggerdown, {
+            priority: -1,
+          });
+
+          const _update = () => {
+            const {gamepads} = pose.getStatus();
+
+            if (grabbable.isGrabbed()) {
+              const side = grabbable.getGrabberSide();
+              const gamepad = gamepads[side];
+              const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
+
+              dotMesh.position.copy(controllerPosition)
                 .add(
-                  forwardVector.clone()
+                  localVector.copy(forwardVector)
                     .multiplyScalar(5)
-                    .applyQuaternion(grabbableRotation)
+                    .applyQuaternion(controllerRotation)
                 );
-              dotMesh.position.copy(position);
-              dotMesh.quaternion.copy(grabbableRotation.clone().multiply(dotMeshBaseQuaternion));
+              dotMesh.quaternion.copy(controllerRotation);
               dotMesh.updateMatrixWorld();
             }
           };
-          const _draw = () => {
-            if (drawing) {
-              const {position} = dotMesh;
-              _logPoint(position);
-            }
+          render.on('update', _update);
+
+          grabbable[dataSymbol] = {
+            cleanup: () => {
+              scene.remove(dotMesh);
+
+              grabbable.removeListener('grab', _grab);
+              grabbable.removeListener('release', _release);
+
+              input.removeListener(_triggerdown, 'triggerdown');
+
+              render.removeListener('update', _update);
+            },
           };
-
-          _updateDotMesh();
-          _draw();
-        };
-        render.on('update', _update);
-
-        const _cleanup = () => {
-          for (const k in polygonMeshes) {
-            const polygonMesh = polygonMeshes[k];
-            scene.remove(polygonMesh);
-            polygonMesh.destroy();
-          }
-
-          scene.remove(dotMesh);
+        },
+        itemRemovedCallback(grabbable) {
           dotMesh.destroy();
 
-          input.removeListener('triggerdown', _triggerdown);
-          input.removeListener('triggerup', _triggerup);
+          const {[dataSymbol]: {cleanup}} = grabbable;
+          cleanup();
 
-          grabbable.removeListener('grab', _grab);
-          grabbable.removeListener('release', _release);
+          delete grabbable[dataSymbol];
+        },
+      };
+      items.registerItem(this, hammerApi);
 
-          render.removeListener('update', _update);
-        };
+      const hammerRecipe = {
+        output: 'ITEM.HAMMER',
+        width: 2,
+        height: 3,
+        input: [
+          'ITEM.STONE', 'ITEM.STONE',
+          null, 'ITEM.WOOD',
+          null, 'ITEM.WOOD',
+        ],
+      };
+      recipes.register(hammerRecipe);
 
-        grabbable[dataSymbol] = {
-          cleanup: _cleanup,
-        };
-      },
-      itemRemovedCallback(grabbable) {
-        const {[dataSymbol]: {cleanup}} = grabbable;
-        cleanup();
+      return () => {
+        dotMeshMaterial.dispose();
 
-        delete grabbable[dataSymbol];
-      },
-    };
-    items.registerItem(this, hammerApi);
+        elements.destroyListener(elementListener);
 
-    const hammerRecipe = {
-      output: 'ITEM.HAMMER',
-      width: 2,
-      height: 3,
-      input: [
-        'ITEM.STONE', 'ITEM.STONE',
-        null, 'ITEM.WOOD',
-        null, 'ITEM.WOOD',
-      ],
-    };
-    recipes.register(hammerRecipe);
-
-    return () => {
-      items.unregisterItem(this, hammerApi);
-      recipes.unregister(hammerRecipe);
-
-      if (worker !== null) {
-        worker.terminate();
-      }
-    };
-  };
+        items.unregisterItem(this, hammerApi);
+        recipes.unregister(hammerRecipe);
+      };
+    });
 };
 
 module.exports = hammer;

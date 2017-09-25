@@ -20,7 +20,6 @@ const pickaxe = ({recipes, data}) => {
     new THREE.Vector3(0, 0, -1),
     new THREE.Vector3(1, 0, 0)
   ));
-  // const dotMeshBaseQuaternion = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 8, 0, 0, camera.rotation.order));
   const localTransformScaleVector = new THREE.Vector3(3, 3, 3);
   const localVector = new THREE.Vector3();
   const localVector2 = new THREE.Vector3();
@@ -40,7 +39,7 @@ const pickaxe = ({recipes, data}) => {
         asset: 'ITEM.PICKAXE',
         itemAddedCallback(grabbable) {
           const dotMesh = (() => {
-            const geometry = new THREE.ConeBufferGeometry(0.1, 0.1, 3, 1);
+            const geometry = new THREE.ConeBufferGeometry(0.5, 0.5, 3, 1);
             const material = dotMeshMaterial;
 
             const mesh = new THREE.Mesh(geometry, material);
@@ -70,7 +69,7 @@ const pickaxe = ({recipes, data}) => {
               const ay = Math.min(Math.max(Math.round(dotMesh.position.y), 0), NUM_CELLS_HEIGHT - 1);
               const az = Math.round(dotMesh.position.z);
 
-              generatorElement.subVoxel(ax, ay, az);
+              generatorElement.mutateVoxel(ax, ay, az, 1);
 
               e.stopImmediatePropagation();
             }
@@ -90,6 +89,7 @@ const pickaxe = ({recipes, data}) => {
               dotMesh.position.copy(controllerPosition)
                 .add(
                   localVector.copy(forwardVector)
+                    .multiplyScalar(5)
                     .applyQuaternion(controllerRotation)
                 );
               dotMesh.quaternion.copy(controllerRotation);

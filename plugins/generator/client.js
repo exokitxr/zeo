@@ -390,13 +390,13 @@ class Generator {
         cb(newBodyObjectBuffer);
       };
     };
-    worker.requestSubVoxel = (x, y, z) => {
+    worker.requestMutateVoxel = (x, y, z, v) => {
       const id = _makeId();
       worker.postMessage({
-        type: 'subVoxel',
+        type: 'mutateVoxel',
         id,
         args: {
-          position: [x, y, z],
+          position: [x, y, z, v],
         },
       });
     };
@@ -541,8 +541,11 @@ class Generator {
             cb(protocolUtils.parseWorker(buffer));
           });
         };
-        generatorElement.subVoxel = (x, y, z) => {
-          worker.requestSubVoxel(x, y, z);
+        generatorElement.addVoxel = (x, y, z) => {
+          worker.requestAddVoxel(x, y, z);
+        };
+        generatorElement.mutateVoxel = (x, y, z, v) => {
+          worker.requestMutateVoxel(x, y, z, v);
         };
         generatorElement.requestAddObject = (name, position, rotation, value) => {
           worker.requestAddObject(name, position, rotation, value);
