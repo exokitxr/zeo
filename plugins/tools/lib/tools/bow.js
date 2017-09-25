@@ -12,7 +12,7 @@ const ARROW_LENGTH = 0.5;
 const dataSymbol = Symbol();
 
 const bow = ({recipes, data}) => {
-  const {three, pose, input, render, elements, items, player, teleport, utils: {geometry: geometryUtils, sprite: spriteUtils}} = zeo;
+  const {three, pose, input, render, elements, items, player, teleport, stck, utils: {geometry: geometryUtils, sprite: spriteUtils}} = zeo;
   const {THREE, scene} = three;
   const {arrowGeometrySpec} = data;
 
@@ -175,6 +175,15 @@ const bow = ({recipes, data}) => {
             }
             arrowMesh.updateMatrixWorld();
           };
+          arrowMesh.checkCollision = _debounce(next => {
+            stck.requestCheck(arrowMesh.position, arrowMesh.quaternion, collided => {
+              if (collided) {
+                arrowMesh.velocity.copy(zeroVector);
+              }
+
+              next();
+            });
+          });
 
           return arrowMesh;
         };
@@ -344,45 +353,49 @@ const bow = ({recipes, data}) => {
                 const timeSinceStart = now - arrow.startTime;
 
                 if (timeSinceStart < ARROW_TTL) {
-                  const _hitNpc = () => {
-                    if (npcElement) {
-                      localVector.copy(arrow.velocity).normalize();
-                      localRay.set(arrow.position, arrow.velocity);
-                      const hitNpc = npcElement.getHitNpc(localRay, ARROW_LENGTH);
+                  if (!arrow.velocity.equals(zeroVector)) {
+                    const _hitNpc = () => {
+                      if (npcElement) {
+                        localVector.copy(arrow.velocity).normalize();
+                        localRay.set(arrow.position, arrow.velocity);
+                        const hitNpc = npcElement.getHitNpc(localRay, ARROW_LENGTH);
 
-                      if (hitNpc) {
-                        hitNpc.attack();
+                        if (hitNpc) {
+                          hitNpc.attack();
 
-                        removedArrows.push(arrow);
+                          removedArrows.push(arrow);
 
-                        return true;
+                          return true;
+                        } else {
+                          return false;
+                        }
                       } else {
                         return false;
                       }
-                    } else {
+                    };
+                    const _advanceArrow = () => {
+                      const {velocity} = arrow;
+                      const timeDiff = now - arrow.lastTime;
+                      arrow.position.add(localVector.copy(velocity).multiplyScalar(timeDiff));
+                      arrow.quaternion.setFromRotationMatrix(localMatrix.lookAt(
+                        arrow.position,
+                        localVector.copy(arrow.position)
+                          .add(velocity),
+                        upVector
+                      ));
+                      arrow.updateMatrixWorld();
+
+                      velocity.y = Math.max(velocity.y + (ARROW_GRAVITY * timeDiff), ARROW_TERMINAL_VELOCITY);
+
+                      arrow.lastTime = now;
+
                       return false;
+                    };
+
+                    if (!(_hitNpc() || _advanceArrow())) {
+                      arrow.checkCollision();
                     }
-                  };
-                  const _advanceArrow = () => {
-                    const {velocity} = arrow;
-                    const timeDiff = now - arrow.lastTime;
-                    arrow.position.add(localVector.copy(velocity).multiplyScalar(timeDiff));
-                    arrow.quaternion.setFromRotationMatrix(localMatrix.lookAt(
-                      arrow.position,
-                      localVector.copy(arrow.position)
-                        .add(velocity),
-                      upVector
-                    ));
-                    arrow.updateMatrixWorld();
-
-                    velocity.y = Math.max(velocity.y + (ARROW_GRAVITY * timeDiff), ARROW_TERMINAL_VELOCITY);
-
-                    arrow.lastTime = now;
-
-                    return true;
-                  };
-
-                  _hitNpc() || _advanceArrow();
+                  }
                 } else {
                   removedArrows.push(arrow);
                 }
@@ -448,6 +461,29 @@ const bow = ({recipes, data}) => {
       recipes.unregister(bowRecipe);
     };
   };
+};
+const _debounce = fn => {
+  let running = false;
+  let queued = false;
+
+  const _go = () => {
+    if (!running) {
+      running = true;
+
+      fn(() => {
+        running = false;
+
+        if (queued) {
+          queued = false;
+
+          _go();
+        }
+      });
+    } else {
+      queued = true;
+    }
+  };
+  return _go;
 };
 
 module.exports = bow;

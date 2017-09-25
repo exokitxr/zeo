@@ -80,6 +80,16 @@ class Stck {
             args: [n, data],
           });
         };
+        worker.requestCheck = (position, rotation, cb) => {
+          const id = _makeId();
+          worker.postMessage({
+            method: 'check',
+            args: [id, position, rotation],
+          });
+          queues[id] = data => {
+            cb(protocolUtils.parseCheck(data, 0));
+          };
+        };
         worker.requestTeleport = (position, rotation, cb) => {
           const id = _makeId();
           worker.postMessage({
@@ -87,7 +97,7 @@ class Stck {
             args: [id, position, rotation],
           });
           queues[id] = data => {
-            cb(protocolUtils.parseResponse(localVector, data, 0));
+            cb(protocolUtils.parseTeleport(localVector, data, 0));
           };
         };
         worker.onmessage = e => {
@@ -211,6 +221,9 @@ class Stck {
             });
 
             return body;
+          },
+          requestCheck(position, rotation, cb) {
+            worker.requestCheck(position.toArray(), rotation.toArray(), cb);
           },
           requestTeleport(position, rotation, cb) {
             worker.requestTeleport(position.toArray(), rotation.toArray(), cb);

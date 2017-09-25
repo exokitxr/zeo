@@ -780,6 +780,10 @@ class Zeo {
                       }
 
                       class ZeoStckApi {
+                        requestCheck() {
+                          return stck.requestCheck.apply(stck, arguments);
+                        }
+
                         makeDynamicBoxBody() {
                           return stck.makeDynamicBoxBody.apply(stck, arguments);
                         }

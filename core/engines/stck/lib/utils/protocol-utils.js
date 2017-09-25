@@ -15,11 +15,11 @@ const parseUpdate = (position, rotation, scale, velocity, buffer, byteOffset = 0
   scale.fromArray(array, 7);
   velocity.fromArray(array, 10);
 };
-const parseResponse = (teleportPosition, buffer, byteOffset) => new Float32Array(buffer, byteOffset + 4 * 2, 1)[0] ?
+const parseCheck = (buffer, byteOffset) => Boolean(new Uint32Array(buffer, byteOffset + 4 * 2, 1)[0]);
+const parseTeleport = (teleportPosition, buffer, byteOffset) => new Uint32Array(buffer, byteOffset + 4 * 2, 1)[0] ?
   teleportPosition.fromArray(new Float32Array(buffer, byteOffset + 4 * 3, 3))
 :
   null;
-
 
 const stringifyUpdate = (n, position, rotation, scale, velocity, buffer, byteOffset) => {
   if (buffer === undefined || byteOffset === undefined) {
@@ -65,7 +65,22 @@ const stringifyCollide = (n, buffer, byteOffset) => {
 
   return buffer;
 };
-const stringifyResponse = (id, targetPosition, buffer, byteOffset) => {
+const stringifyCheck = (id, result, buffer, byteOffset) => {
+  if (buffer === undefined || byteOffset === undefined) {
+    buffer = new ArrayBuffer(BUFFER_SIZE);
+    byteOffset = 0;
+  }
+
+  new Uint32Array(buffer, byteOffset, 1)[0] = TYPE_RESPONSE;
+  byteOffset += 4;
+  new Int32Array(buffer, byteOffset, 1)[0] = id;
+  byteOffset += 4;
+  new Uint32Array(buffer, byteOffset, 1)[0] = +result;
+  byteOffset += 4;
+
+  return buffer;
+};
+const stringifyTeleport = (id, targetPosition, buffer, byteOffset) => {
   if (buffer === undefined || byteOffset === undefined) {
     buffer = new ArrayBuffer(BUFFER_SIZE);
     byteOffset = 0;
@@ -99,8 +114,10 @@ module.exports = {
   parseN,
   parseType,
   parseUpdate,
-  parseResponse,
+  parseCheck,
+  parseTeleport,
   stringifyUpdate,
   stringifyCollide,
-  stringifyResponse,
+  stringifyCheck,
+  stringifyTeleport,
 };

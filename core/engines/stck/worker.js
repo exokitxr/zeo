@@ -275,7 +275,7 @@ this._cleanup = () => {
 
 const TELEPORT_GRAVITY = GRAVITY * 1000 / 50000;
 const _getTeleportTarget = (position, rotation) => {
-  const velocity = localVector2.copy(forwardVector) // cannot be localVector since it's an argument
+  const velocity = localVector2.copy(forwardVector) // can't use localVector since it's an argument
     .applyQuaternion(rotation)
     .multiplyScalar(0.05);
   for (let i = 0; i < 1000; i++) {
@@ -286,6 +286,18 @@ const _getTeleportTarget = (position, rotation) => {
     velocity.y += TELEPORT_GRAVITY;
   }
   return null;
+};
+const _getCheckResult = (position, rotation) => {
+  const velocity = localVector2.copy(forwardVector) // can't use localVector since it's an argument
+    .applyQuaternion(rotation)
+    .multiplyScalar(0.1);
+  for (let i = 0; i < 10; i++) {
+    position.add(velocity);
+    if (_checkCollision(position)) {
+      return true;
+    }
+  }
+  return false;
 };
 
 self.onmessage = e => {
@@ -400,12 +412,20 @@ self.onmessage = e => {
 
       break;
     }
+    case 'check': {
+      const {args} = data;
+      const [id, positionArray, rotationArray] = args;
+
+      protocolUtils.stringifyCheck(id, _getCheckResult(localVector.fromArray(positionArray), localQuaternion.fromArray(rotationArray)), buffer, 0);
+      postMessage(buffer);
+
+      break;
+    }
     case 'teleport': {
       const {args} = data;
       const [id, positionArray, rotationArray] = args;
 
-      const teleportTarget = _getTeleportTarget(localVector.fromArray(positionArray), localQuaternion.fromArray(rotationArray));
-      protocolUtils.stringifyResponse(id, teleportTarget, buffer, 0);
+      protocolUtils.stringifyTeleport(id, _getTeleportTarget(localVector.fromArray(positionArray), localQuaternion.fromArray(rotationArray)), buffer, 0);
       postMessage(buffer);
 
       break;
