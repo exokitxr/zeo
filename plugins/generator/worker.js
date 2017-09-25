@@ -923,7 +923,7 @@ connection.on('message', e => {
       if (objectApi && objectApi.set) {
         postMessage({
           type: 'blockSet',
-          args: [v, ox * NUM_CELLS + x, y, oz * NUM_CELLS + z],
+          args: [v, x, y, z],
         });
       }
     }
@@ -949,7 +949,7 @@ connection.on('message', e => {
       if (objectApi && objectApi.clear) {
         postMessage({
           type: 'blockCleared',
-          args: [n, ox * NUM_CELLS + x, y, oz * NUM_CELLS + z],
+          args: [n, x, y, z],
         });
       }
     }
@@ -1755,7 +1755,7 @@ self.onmessage = e => {
         if (objectApi && objectApi.set) {
           postMessage({
             type: 'blockSet',
-            args: [v, ox * NUM_CELLS + x, y, oz * NUM_CELLS + z],
+            args: [v, x, y, z],
           });
         }
       }
@@ -1785,7 +1785,7 @@ self.onmessage = e => {
         if (objectApi && objectApi.clear) {
           postMessage({
             type: 'blockCleared',
-            args: [n, ox * NUM_CELLS + x, y, oz * NUM_CELLS + z],
+            args: [n, x, y, z],
           });
         }
       }
