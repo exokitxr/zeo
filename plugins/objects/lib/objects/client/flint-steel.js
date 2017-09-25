@@ -144,6 +144,17 @@ const flintSteel = objectApi => {
       };
       items.registerItem(this, flintSteelItemApi);
 
+      const flintSteelRecipe = {
+        output: 'ITEM.FLINTSTEEL',
+        width: 1,
+        height: 2,
+        input: [
+          'ITEM.COAL',
+          'ITEM.WOOD',
+        ],
+      };
+      objectApi.registerRecipe(this, flintSteelRecipe);
+
       const _update = () => {
         for (let i = 0; i < sparkMeshes.length; i++) {
           sparkMeshes[i].update();
@@ -155,6 +166,8 @@ const flintSteel = objectApi => {
         spriteUtils.releaseSpriteGeometry(sparkGeometrySpec);
 
         items.unregisterItem(this, flintSteelItemApi);
+        objectApi.unregisterRecipe(this, flintSteelRecipe);
+
         render.removeListener('update', _update);
       };
     });
