@@ -411,6 +411,8 @@ const bow = ({recipes, data}) => {
 
             input.removeListener('gripdown', _gripdown);
             input.removeListener('gripup', _gripup);
+            input.removeListener('triggerdown', _triggerdown);
+            input.removeListener('triggerup', _triggerup);
 
             render.removeListener('update', _update);
           },
