@@ -92,14 +92,15 @@ class Tools {
                   arrowGeometrySpec,
                 };
                 const tools = toolsLib({recipes, data});
-                const cleanups = tools.map(makeItem => makeItem());
-
-                this._cleanup = () => {
-                  for (let i = 0; i < cleanups.length; i++) {
-                    const cleanup = cleanups[i];
-                    cleanup();
-                  }
-                };
+                return Promise.all(tools.map(makeItem => makeItem()))
+                  .then(cleanups => {
+                    this._cleanup = () => {
+                      for (let i = 0; i < cleanups.length; i++) {
+                        const cleanup = cleanups[i];
+                        cleanup();
+                      }
+                    };
+                  });
               }
             });
         }

@@ -737,75 +737,6 @@ class Heightfield {
               }
             };
 
-            const _requestSubVoxel = (x, y, z) => {
-              generatorElement.subVoxel(x, y, z);
-            };
-            /* const _requestSubVoxel = (() => {
-              let running = false;
-              const queue = [];
-              const nextSubVoxel = () => {
-                running = false;
-
-                if (queue.length > 0) {
-                  const {x, y, z} = queue.shift();
-                  _recurse(x, y, z);
-                }
-              };
-
-              const _recurse = (x, y, z) => {
-                if (!running) {
-                  running = true;
-
-                  const ox = Math.floor(x / NUM_CELLS);
-                  const oz = Math.floor(z / NUM_CELLS);
-
-                  const gslots = {};
-                  for (let dz = -1; dz <= 1; dz++) {
-                    for (let dx = -1; dx <= 1; dx++) {
-                      const index = _getChunkIndex(ox + dx, oz + dz);
-                      const mapChunkMesh = mapChunkMeshes[index];
-                      if (mapChunkMesh) {
-                        gslots[index] = {
-                          index: mapChunkMesh.index,
-                          numPositions: mapChunkMesh.numPositions,
-                          numIndices: mapChunkMesh.numIndices,
-                        };
-                      }
-                    }
-                  }
-                  generatorElement.requestSubVoxel(x, y, z, gslots, buffer => {
-                    // XXX re-render here
-                    let byteOffset = 0;
-                    const numChunks = new Uint32Array(buffer, byteOffset, 1);
-                    byteOffset += 4;
-
-                    for (let i = 0; i < numChunks; i++) {
-                      const chunkHeader1 = new Int32Array(buffer, byteOffset, 2);
-                      const x = chunkHeader1[0];
-                      const z = chunkHeader1[1];
-                      byteOffset += 4 * 2;
-
-                      const chunkLength = new Uint32Array(buffer, byteOffset, 1)[0];
-                      byteOffset += 4;
-
-                      const chunkBuffer = new Uint8Array(buffer, byteOffset, chunkLength);
-                      byteOffset += chunkLength;
-
-                      const trackedMapChunkMeshes = mapChunkMeshes[_getChunkIndex(x, z)];
-                      if (trackedMapChunkMeshes) {
-                        trackedMapChunkMeshes.update(protocolUtils.parseRenderChunk(chunkBuffer.buffer, chunkBuffer.byteOffset));
-                      }
-                    }
-
-                    nextSubVoxel();
-                  });
-                } else {
-                  queue.push({x, y, z});
-                }
-              };
-              return _recurse;
-            })(); */
-
             const a = new THREE.Vector3();
             const b = new THREE.Vector3();
             const c = new THREE.Vector3();
@@ -967,7 +898,7 @@ class Heightfield {
             };
             elements.registerEntity(this, heightfieldEntity);
 
-            const _triggerdown = e => {
+            /* const _triggerdown = e => {
               const {side} = e;
               const {hmd, gamepads} = pose.getStatus();
               const {worldPosition: hmdPosition} = hmd;
@@ -997,7 +928,7 @@ class Heightfield {
                   hmdPosition.y - 1.5
                 );
                 if (ly !== -1024) {
-                  _requestSubVoxel(Math.round(lx), Math.round(ly), Math.round(lz));
+                  generatorElement.subVoxel(Math.round(lx), Math.round(ly), Math.round(lz));
 
                   e.stopImmediatePropagation();
                 }
@@ -1005,7 +936,7 @@ class Heightfield {
             };
             input.on('triggerdown', _triggerdown, {
               priority: -1,
-            });
+            }); */
 
             const _requestCull = (hmdPosition, projectionMatrix, matrixWorldInverse, cb) => {
               generatorElement.requestTerrainCull(hmdPosition, projectionMatrix, matrixWorldInverse, cb);
