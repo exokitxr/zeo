@@ -5,7 +5,8 @@ const fs = require('fs');
 
 const animalLib = require('animal-js');
 
-const NUM_CELLS = 32;
+const NUM_CELLS = 16;
+const GENERATOR_PLUGIN = 'plugins-generator';
 
 class Mobs {
   constructor(archae) {
@@ -15,15 +16,15 @@ class Mobs {
   mount() {
     const {_archae: archae} = this;
     const {express, app, ws, wss} = archae.getCore();
-    const {three, utils: {js: {mod}}} = zeo;
+    const {three, elements, utils: {js: {mod}}} = zeo;
     const {THREE} = three;
 
     const animal = animalLib(THREE);
 
     const upVector = new THREE.Vector3(0, 1, 0);
-    const forwardVector = new THREE.Vector3(0, 0, -1);
     const backVector = new THREE.Vector3(0, 0, 1);
     const zeroQuaternion = new THREE.Quaternion();
+    const localVector = new THREE.Vector3();
 
     const _readdir = p => new Promise((accept, reject) => {
       fs.readdir(p, (err, files) => {
@@ -36,9 +37,15 @@ class Mobs {
     });
     const _getTrackedChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
 
-    return _readdir(path.join(__dirname, 'lib', 'npc', 'img'))
-      .then(npcImgFiles => npcImgFiles.map(npcImgFile => npcImgFile.replace(/\.png$/, '')))
-      .then(npcs => {
+    return Promise.all([
+      elements.requestElement(GENERATOR_PLUGIN),
+      _readdir(path.join(__dirname, 'lib', 'npc', 'img'))
+        .then(npcImgFiles => npcImgFiles.map(npcImgFile => npcImgFile.replace(/\.png$/, '')))
+    ])
+      .then(([
+        generatorElement,
+        npcs,
+      ]) => {
         const mobNpcImgStatic = express.static(path.join(__dirname, 'lib', 'npc', 'img'));
         function serveMobNpcImg(req, res, next) {
           // const file = files[Math.floor((murmur(req.url) / 0xFFFFFFFF) * files.length)];
@@ -100,15 +107,15 @@ class Mobs {
             const distance = 2 + Math.random() * 10;
             const positionEnd = position.clone()
               .add(
-                new THREE.Vector3(
+                localVector.set(
                   -0.5 + Math.random(),
                   0,
                   -0.5 + Math.random(),
                 ).normalize().multiplyScalar(distance)
               );
-            const rotationEnd = new THREE.Quaternion().setFromUnitVectors(
-              forwardVector,
-              positionEnd.clone().sub(position).normalize()
+            positionEnd.y = generatorElement.getElevation(positionEnd.x, positionEnd.z);
+            const rotationEnd = new THREE.Quaternion().setFromRotationMatrix(
+              new THREE.Matrix4().lookAt(position, positionEnd, upVector)
             );
             const headRotationEnd = new THREE.Quaternion().setFromEuler(new THREE.Euler(
               (-0.5 + Math.random()) * 2 * Math.PI/4,
@@ -234,7 +241,7 @@ class Mobs {
 
                 const ax = (ox * NUM_CELLS) + dx;
                 const az = (oz * NUM_CELLS) + dz;
-                const position = new THREE.Vector3(ax, 0, az);
+                const position = new THREE.Vector3(ax, generatorElement.getElevation(ax, az), az);
                 const rotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, Math.random() * Math.PI * 2, 0, 'YXZ'));
                 const headRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(
                   (-0.5 + Math.random()) * 2 * Math.PI/4,

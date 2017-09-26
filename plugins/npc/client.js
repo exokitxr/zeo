@@ -1,6 +1,7 @@
+const GENERATOR_PLUGIN = 'plugins-generator';
+
 const animalLib = require('animal-js');
 
-const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
 const dataSymbol = Symbol();
 
 class Mobs {
@@ -14,6 +15,7 @@ class Mobs {
 
     const upVector = new THREE.Vector3(0, 1, 0);
     const zeroQuaternion = new THREE.Quaternion();
+    const localVector = new THREE.Vector3();
 
     let live = true;
     this._cleanup = () => {
@@ -21,6 +23,7 @@ class Mobs {
     };
 
     return Promise.all([
+      elements.requestElement(GENERATOR_PLUGIN),
       animal.requestModelSpecs({
         imgUrlPrefix: '/archae/mobs/animal/img/',
         modelUrlPrefix: '/archae/mobs/animal/models/',
@@ -28,6 +31,7 @@ class Mobs {
       sound.requestSfx('archae/mobs/sfx/hurt1.ogg'),
     ])
       .then(([
+        generatorElement,
         animalModelSpecs,
         hurtSfx,
       ]) => {
@@ -37,9 +41,8 @@ class Mobs {
               const meshes = {};
 
               const headRotation = new THREE.Quaternion();
-              const _updateMesh = (id, mesh, animation, hit, uniforms, now, heightfieldElement) => {
+              const _updateMesh = (id, mesh, animation, hit, uniforms, now) => {
                 _updateAnimation(id, mesh, animation, uniforms, now);
-                _updateElevation(mesh, heightfieldElement);
                 _updateHit(mesh, hit, uniforms, now);
 
                 mesh.updateMatrixWorld();
@@ -55,7 +58,6 @@ class Mobs {
 
                     mesh.position.copy(positionStart)
                       .lerp(positionEnd, positionFactor);
-                    mesh.offset.set(0, 0, 0);
                     mesh.quaternion.copy(rotationStart)
                       .slerp(rotationEnd, rotationFactor);
 
@@ -76,11 +78,12 @@ class Mobs {
                     const headRotationFactor = Math.pow(Math.min((now - startTime) / (duration / 8), 1), 0.5);
 
                     mesh.position.copy(positionStart)
-                      .lerp(positionEnd, positionFactor);
-                    mesh.offset
-                      .set(0, 1, 0)
-                      .multiplyScalar(
-                        -Math.pow(((positionFactor - 0.5) * 2), 2) + 1
+                      .lerp(positionEnd, positionFactor)
+                      .add(
+                        localVector.set(0, 1, 0)
+                          .multiplyScalar(
+                            -Math.pow(((positionFactor - 0.5) * 2), 2) + 1
+                          )
                       );
                     mesh.quaternion.copy(rotationStart)
                       .slerp(rotationEnd, rotationFactor);
@@ -99,17 +102,17 @@ class Mobs {
                       const rotationFactor = Math.pow(v * 2, 0.5);
 
                       mesh.position.copy(positionStart)
-                        .lerp(positionEnd, positionFactor);
-                      mesh.offset
-                        .set(0, 1, 0)
-                        .multiplyScalar(
-                          -Math.pow(((positionFactor - 0.5) * 2), 2) + 1
+                        .lerp(positionEnd, positionFactor)
+                        .add(
+                          localVector.set(0, 1, 0)
+                            .multiplyScalar(
+                              -Math.pow(((positionFactor - 0.5) * 2), 2) + 1
+                            )
                         );
                       mesh.quaternion.copy(rotationStart)
                         .slerp(rotationEnd, rotationFactor);
                     } else {
                       mesh.position.copy(positionEnd);
-                      mesh.offset.set(0, 0, 0);
                       mesh.quaternion.copy(rotationEnd);
                     }
 
@@ -123,13 +126,6 @@ class Mobs {
                     }
                   }
                 }
-              };
-              const _updateElevation = (mesh, heightfieldElement) => {
-                if (heightfieldElement && heightfieldElement.getElevation) {
-                  mesh.position.y = heightfieldElement.getElevation(mesh.position.x, mesh.position.z);
-                }
-
-                mesh.position.add(mesh.offset);
               };
               const _updateHit = (mesh, hit, uniforms, now) => {
                 if (hit) {
@@ -203,8 +199,8 @@ class Mobs {
                     return null;
                   }
                 })();
-                mesh.update = (now, heightfieldElement) => {
-                  _updateMesh(id, mesh, mesh.animation, mesh.hit, uniforms, now, heightfieldElement);
+                mesh.update = now => {
+                  _updateMesh(id, mesh, mesh.animation, mesh.hit, uniforms, now);
                 };
 
                 mesh.onBeforeRender = (function(onBeforeRender) {
@@ -323,46 +319,33 @@ class Mobs {
               };
               input.on('gripdown', _gripdown); */
 
+              const _add = chunk => {
+                connection.send(JSON.stringify({
+                  method: 'addChunk',
+                  args: [chunk.x, chunk.z],
+                }));
+              };
+              generatorElement.on('add', _add);
+              const _remove = chunk => {
+                connection.send(JSON.stringify({
+                  method: 'removeChunk',
+                  args: [chunk.x, chunk.z],
+                }));
+              };
+              generatorElement.on('remove', _remove);
+              generatorElement.forEachChunk(chunk => {
+                _add(chunk);
+              });
+
               const _update = () => {
                 const _updateMeshes = () => {
                   const now = Date.now();
-                  const heightfieldElement = elements.getEntitiesElement().querySelector(HEIGHTFIELD_PLUGIN);
-
                   for (const id in meshes) {
-                    const mesh = meshes[id];
-                    mesh.update(now, heightfieldElement);
-                  }
-                };
-                const _updateMobChunks = () => {
-                  const {hmd} = pose.getStatus();
-                  const {worldPosition: hmdPosition} = hmd;
-                  const {added, removed} = chunker.update(hmdPosition.x, hmdPosition.z);
-
-                  for (let i = 0; i < added.length; i++) {
-                    const chunk = added[i];
-                    const {x, z} = chunk;
-                    const e = {
-                      method: 'addChunk',
-                      args: [x, z],
-                    };
-                    const es = JSON.stringify(e);
-                    connection.send(es);
-                  }
-
-                  for (let i = 0; i < removed.length; i++) {
-                    const chunk = removed[i];
-                    const {x, z} = chunk;
-                    const e = {
-                      method: 'removeChunk',
-                      args: [x, z],
-                    };
-                    const es = JSON.stringify(e);
-                    connection.send(es);
+                    meshes[id].update(now);
                   }
                 };
 
                 _updateMeshes();
-                _updateMobChunks();
               };
               render.on('update', _update);
 
