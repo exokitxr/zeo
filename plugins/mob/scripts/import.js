@@ -118,6 +118,17 @@ for (let i = 0; i < positions.length / 3; i++) {
   }
 }
 
+const size = (() => {
+  const geometry = new THREE.BufferGeometry();
+  geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geometry.computeBoundingBox();
+  return Float32Array.from([
+    geometry.boundingBox.max.x - geometry.boundingBox.min.x,
+    geometry.boundingBox.max.y - geometry.boundingBox.min.y,
+    geometry.boundingBox.max.z - geometry.boundingBox.min.z
+  ]);
+})();
+
 let buffer = Uint32Array.from([positions.length]);
 process.stdout.write(new Buffer(buffer.buffer, buffer.byteOffset, buffer.byteLength));
 buffer = Uint32Array.from([uvs.length]);
@@ -134,3 +145,4 @@ process.stdout.write(new Buffer(uvs.buffer, uvs.byteOffset, uvs.byteLength));
 process.stdout.write(new Buffer(indices.buffer, indices.byteOffset, indices.byteLength));
 process.stdout.write(new Buffer(boneIndices.buffer, boneIndices.byteOffset, boneIndices.byteLength));
 process.stdout.write(new Buffer(dys.buffer, dys.byteOffset, dys.byteLength));
+process.stdout.write(new Buffer(size.buffer, size.byteOffset, size.byteLength));
