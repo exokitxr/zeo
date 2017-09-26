@@ -233,7 +233,7 @@ const _getPlugins = ({core = false, def = false} = {}) => {
     :
       []
     ).concat(
-      def ? _readTagsJsonModules(config.dirname + '/defaults/data/world/tags.json') : []
+      def ? _readTagsJsonModules(config.dirname + '/defaults/world/tags.json') : []
     )
   )
     .then(files => _filterDirectories(_flatten(files)))
