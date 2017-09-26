@@ -119,7 +119,7 @@ class Mobs {
             );
             const headRotationEnd = new THREE.Quaternion().setFromEuler(new THREE.Euler(
               (-0.5 + Math.random()) * 2 * Math.PI/4,
-              (-0.5 + Math.random()) * 2 * Math.PI/2,
+              (-0.5 + Math.random()) * 2 * Math.PI/4,
               0,
               'YXZ'
             ));
@@ -225,35 +225,40 @@ class Mobs {
             this.oz = oz;
 
             const mobs = (() => {
-              const numNpcs = Math.floor(1 + Math.random() * (2 + 1));
-              const result = Array(numNpcs);
-              for (let i = 0; i < numNpcs; i++) {
-                const id = _makeId();
+              const hasNpcs = Math.random() < 0.2;
+              if (hasNpcs) {
+                const numNpcs = Math.floor(1 + Math.random() * (2 + 1));
+                const result = Array(numNpcs);
+                for (let i = 0; i < numNpcs; i++) {
+                  const id = _makeId();
 
-                const type = Math.random() < 0.25 ? 'npc' : 'animal';
-                const skinName = type === 'npc' ?
-                  npcs[Math.floor(Math.random() * npcs.length)]
-                :
-                  animal.ANIMALS[Math.floor(Math.random() * animal.ANIMALS.length)];
+                  const type = Math.random() < 0.25 ? 'npc' : 'animal';
+                  const skinName = type === 'npc' ?
+                    npcs[Math.floor(Math.random() * npcs.length)]
+                  :
+                    animal.ANIMALS[Math.floor(Math.random() * animal.ANIMALS.length)];
 
-                const dx = Math.random() * NUM_CELLS;
-                const dz = Math.random() * NUM_CELLS;
+                  const dx = Math.random() * NUM_CELLS;
+                  const dz = Math.random() * NUM_CELLS;
 
-                const ax = (ox * NUM_CELLS) + dx;
-                const az = (oz * NUM_CELLS) + dz;
-                const position = new THREE.Vector3(ax, generatorElement.getElevation(ax, az), az);
-                const rotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, Math.random() * Math.PI * 2, 0, 'YXZ'));
-                const headRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(
-                  (-0.5 + Math.random()) * 2 * Math.PI/4,
-                  (-0.5 + Math.random()) * 2 * Math.PI/2,
-                  0,
-                  'YXZ'
-                ));
+                  const ax = (ox * NUM_CELLS) + dx;
+                  const az = (oz * NUM_CELLS) + dz;
+                  const position = new THREE.Vector3(ax, generatorElement.getElevation(ax, az), az);
+                  const rotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, Math.random() * Math.PI * 2, 0, 'YXZ'));
+                  const headRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(
+                    (-0.5 + Math.random()) * 2 * Math.PI/4,
+                    (-0.5 + Math.random()) * 2 * Math.PI/2,
+                    0,
+                    'YXZ'
+                  ));
 
-                const mob = new Mob(id, type, skinName, position, rotation, headRotation, 100);
-                result[i] = mob;
+                  const mob = new Mob(id, type, skinName, position, rotation, headRotation, 100);
+                  result[i] = mob;
+                }
+                return result;
+              } else {
+                return [];
               }
-              return result;
             })();
             this.mobs = mobs;
 
