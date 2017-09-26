@@ -25,10 +25,40 @@ class Zoo {
       },
       vertexShader: `\
         #define PI 3.1415926535897932384626433832795
+        uniform vec4 headRotation;
+        uniform float theta;
+        attribute float skinIndex;
+        attribute vec3 dy;
         varying vec3 vViewPosition;
         varying vec2 vUv;
+        vec3 applyQuaternion(vec3 vec, vec4 quat) {
+          return vec + 2.0 * cross( cross( vec, quat.xyz ) + quat.w * vec, quat.xyz );
+        }
+        mat4 rotationMatrix(vec3 axis, float angle) {
+            axis = normalize(axis);
+            float s = sin(angle);
+            float c = cos(angle);
+            float oc = 1.0 - c;
+
+            return mat4(oc * axis.x * axis.x + c,           oc * axis.x * axis.y - axis.z * s,  oc * axis.z * axis.x + axis.y * s,  0.0,
+                        oc * axis.x * axis.y + axis.z * s,  oc * axis.y * axis.y + c,           oc * axis.y * axis.z - axis.x * s,  0.0,
+                        oc * axis.z * axis.x - axis.y * s,  oc * axis.y * axis.z + axis.x * s,  oc * axis.z * axis.z + c,           0.0,
+                        0.0,                                0.0,                                0.0,                                1.0);
+        }
+        vec3 rotateAxisAngle(vec3 v, vec3 axis, float angle) {
+          mat4 m = rotationMatrix(axis, angle);
+          return (m * vec4(v, 1.0)).xyz;
+        }
         void main() {
-          vec4 mvPosition = modelViewMatrix * vec4( position.xyz, 1.0 );
+          vec3 pos = position.xyz;
+          if (skinIndex == 0.0) {
+            pos = pos - dy + applyQuaternion(dy, headRotation);
+          } else if (skinIndex == 1.0 || skinIndex == 4.0) {
+            pos = pos - dy + rotateAxisAngle(dy, vec3(1.0, 0.0, 0.0), -theta);
+          } else if (skinIndex == 2.0 || skinIndex == 3.0) {
+            pos = pos - dy + rotateAxisAngle(dy, vec3(1.0, 0.0, 0.0), theta);
+          }
+          vec4 mvPosition = modelViewMatrix * vec4( pos, 1.0 );
           gl_Position = projectionMatrix * mvPosition;
           vViewPosition = position.xyz;
           vUv = uv;
@@ -49,7 +79,7 @@ class Zoo {
           vec3 normal = normalize( cross( fdx, fdy ) );
           float dotNL = saturate( dot( normal, normalize(vViewPosition)) );
 
-          gl_FragColor = vec4(diffuseColor.rgb * (0.3 + (dotNL * 1.5) * 0.7), 1.0);
+          gl_FragColor = vec4(diffuseColor.rgb * (0.5 + (dotNL * 2.0) * 0.5), 1.0);
         }
       `
     };
@@ -107,7 +137,8 @@ class Zoo {
         const numPositions = header[index++];
         const numUvs = header[index++];
         const numIndices = header[index++];
-        const numBoneIndices = header[index++];
+        const numSkinIndices = header[index++];
+        const numDys = header[index++];
         byteOffset += index * 4;
 
         const positions = new Float32Array(arrayBuffer, byteOffset, numPositions);
@@ -119,10 +150,18 @@ class Zoo {
         const indices = new Uint16Array(arrayBuffer, byteOffset, numIndices);
         byteOffset += numIndices * 2;
 
+        const skinIndices = new Float32Array(arrayBuffer, byteOffset, numSkinIndices);
+        byteOffset += numSkinIndices * 4;
+
+        const dys = new Float32Array(arrayBuffer, byteOffset, numDys);
+        byteOffset += numDys * 4;
+
         return {
           positions,
           uvs,
           indices,
+          skinIndices,
+          dys,
         };
       });
 
@@ -139,11 +178,13 @@ class Zoo {
       }));
     const _makeAnimalMesh = animalMeshData => {
       const {img, model} = animalMeshData;
-      const {positions, uvs, indices} = model;
+      const {positions, uvs, indices, skinIndices, dys} = model;
 
       const geometry = new THREE.BufferGeometry();
       geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
       geometry.addAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+      geometry.addAttribute('skinIndex', new THREE.BufferAttribute(skinIndices, 1));
+      geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 3));
       geometry.setIndex(new THREE.BufferAttribute(indices, 1));
 
       const texture = new THREE.Texture(
@@ -166,8 +207,9 @@ class Zoo {
       const angleRate = 1.5 * 1000;
       const startOffset = Math.floor(Math.random() * angleRate);
       const headRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(
-        (-0.5 + Math.random()) * 2 * Math.PI/4,
-        (-0.5 + Math.random()) * 2 * Math.PI/2,
+        Math.PI/6, // (-0.5 + Math.random()) * 2 * Math.PI/4,
+        // (-0.5 + Math.random()) * 2 * Math.PI/2,
+        Math.PI/4,
         0,
         'YXZ'
       ));

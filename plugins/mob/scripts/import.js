@@ -11,15 +11,10 @@ const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
 
 const positions = new Float32Array(j.geometries[0].data.attributes.position.array);
-/* for (let i = 0; i < positions.length / 3; i++) {
-  const temp = positions[i * 3 + 1];
-  positions[i * 3 + 1] = positions[i * 3 + 2];
-  positions[i * 3 + 2] = temp;
-} */
 const uvs = new Float32Array(j.geometries[0].data.attributes.uv.array);
 const indices = new Uint16Array(j.geometries[0].data.index.array);
 
-const boneIndices = new Int16Array(positions.length / 3);
+const boneIndices = new Float32Array(positions.length / 3);
 const boneLines = s.split('\n').map(l => {
   const match = l.match(/^(\S+) <Vector \((.+), (.+), (.+)\)> <Vector \((.+), (.+), (.+)\)>$/);
   if (match) {
@@ -43,7 +38,7 @@ const _getNearestBoneName = p => {
   for (let i = 0; i < boneLines.length; i++) {
     const boneLine = boneLines[i];
     const distance = boneLine.closestPointToPoint(p, true, localVector2).distanceTo(p);
-    if (distance <= bestDistance) {
+    if (distance <= 0.7 && distance < bestDistance) {
       bestDistance = distance;
       bestName = boneLine.name;
     }
@@ -52,38 +47,76 @@ const _getNearestBoneName = p => {
 };
 for (let i = 0; i < positions.length / 3; i++) {
   const boneName = _getNearestBoneName(localVector.fromArray(positions, i * 3));
-  if (boneName === 'Thigh.l' || boneName === 'Leg.l') {
+  if (boneName === 'Head' || boneName === 'Neck') {
     boneIndices[i] = 0;
-  } else if (boneName === 'Thigh.r' || boneName === 'Leg.r') {
+  } else if (boneName === 'Thigh.l' || boneName === 'Leg.l') {
     boneIndices[i] = 1;
+  } else if (boneName === 'Thigh.r' || boneName === 'Leg.r') {
+    boneIndices[i] = 2;
+  } else if (boneName === 'Shoulderjoint.l' || boneName === 'Hand.l') {
+    boneIndices[i] = 3;
+  } else if (boneName === 'Shoulderjoint.r' || boneName === 'Hand.r') {
+    boneIndices[i] = 4;
   } else {
     boneIndices[i] = -1;
   }
 }
 
-/* const _getBoneLines = name => {
-  const result = [];
-  const queue = [bones.find(bone => bone.name === name)];
-  while (queue.length > 0) {
-    const bone = queue.shift();
-    const boneIndex = bones.indexOf(bone);
-    const nextBones = bones.filter(nextBone => nextBone.parent === boneIndex);
-    const line = 
-    boneIndices[bones.indexOf(bone)] = true;
+const dys = new Float32Array(positions.length);
+const _getBackBone = boneIndex => {
+  const result = new THREE.Vector3(-Infinity, -Infinity, -Infinity);
+  for (let i = 0; i < positions.length / 3; i++) {
+    if (boneIndices[i] === boneIndex && positions[i * 3 + 2] > result.z) {
+      result.fromArray(positions, i * 3);
+    }
   }
-  return boneIndices;
+  return result;
 };
-const leftThighIndices = _findBoneIndices('Thigh.l');
-const rightThighIndices = _findBoneIndices('Thigh.r');
-const limbSkinIndices = Int16Array.from(skinIndices.map(skinIndex => {
-  if (leftLegIndices[skinIndex]) {
-    return 0;
-  } else if (rightLegIndices[skinIndex]) {
-    return 1;
-  } else {
-    return -1;
+const _getTopBone = boneIndex => {
+  const result = new THREE.Vector3(-Infinity, -Infinity, -Infinity);
+  for (let i = 0; i < positions.length / 3; i++) {
+    if (boneIndices[i] === boneIndex && positions[i * 3 + 1] > result.y) {
+      result.fromArray(positions, i * 3);
+    }
   }
-})); */
+  return result;
+};
+const headBackBone = _getBackBone(0);
+const leftLegTopBone = _getTopBone(1);
+const rightLegTopBone = _getTopBone(2);
+const leftArmTopBone = _getTopBone(3);
+const rightArmTopBone = _getTopBone(4);
+for (let i = 0; i < positions.length / 3; i++) {
+  const boneIndex = boneIndices[i];
+  if (boneIndex === 0) {
+    localVector.fromArray(positions, i * 3).sub(headBackBone);
+    dys[i * 3 + 0] = localVector.x;
+    dys[i * 3 + 1] = localVector.y;
+    dys[i * 3 + 2] = localVector.z;
+  } else if (boneIndex === 1) {
+    localVector.fromArray(positions, i * 3).sub(leftLegTopBone);
+    dys[i * 3 + 0] = localVector.x;
+    dys[i * 3 + 1] = localVector.y;
+    dys[i * 3 + 2] = localVector.z;
+  } else if (boneIndex === 2) {
+    localVector.fromArray(positions, i * 3).sub(rightLegTopBone);
+    dys[i * 3 + 0] = localVector.x;
+    dys[i * 3 + 1] = localVector.y;
+    dys[i * 3 + 2] = localVector.z;
+  } else if (boneIndex === 3) {
+    localVector.fromArray(positions, i * 3).sub(leftArmTopBone);
+    dys[i * 3 + 0] = localVector.x;
+    dys[i * 3 + 1] = localVector.y;
+    dys[i * 3 + 2] = localVector.z;
+  } else if (boneIndex === 4) {
+    localVector.fromArray(positions, i * 3).sub(rightArmTopBone);
+    dys[i * 3 + 0] = localVector.x;
+    dys[i * 3 + 1] = localVector.y;
+    dys[i * 3 + 2] = localVector.z;
+  } else {
+    // nothing
+  }
+}
 
 let buffer = Uint32Array.from([positions.length]);
 process.stdout.write(new Buffer(buffer.buffer, buffer.byteOffset, buffer.byteLength));
@@ -93,8 +126,11 @@ buffer = Uint32Array.from([indices.length]);
 process.stdout.write(new Buffer(buffer.buffer, buffer.byteOffset, buffer.byteLength));
 buffer = Uint32Array.from([boneIndices.length]);
 process.stdout.write(new Buffer(buffer.buffer, buffer.byteOffset, buffer.byteLength));
+buffer = Uint32Array.from([dys.length]);
+process.stdout.write(new Buffer(buffer.buffer, buffer.byteOffset, buffer.byteLength));
 
 process.stdout.write(new Buffer(positions.buffer, positions.byteOffset, positions.byteLength));
 process.stdout.write(new Buffer(uvs.buffer, uvs.byteOffset, uvs.byteLength));
 process.stdout.write(new Buffer(indices.buffer, indices.byteOffset, indices.byteLength));
 process.stdout.write(new Buffer(boneIndices.buffer, boneIndices.byteOffset, boneIndices.byteLength));
+process.stdout.write(new Buffer(dys.buffer, dys.byteOffset, dys.byteLength));
