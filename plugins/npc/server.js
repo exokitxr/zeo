@@ -75,6 +75,14 @@ class Mobs {
 
         const trackedChunks = {};
         const trackedMobs = {};
+        const _forEachMobInChunk = (trackedChunk, fn) => {
+          for (const id in trackedMobs) {
+            const mob = trackedMobs[id];
+            if (Math.floor(mob.position.x / NUM_CELLS) === trackedChunk.ox && Math.floor(mob.position.z / NUM_CELLS) === trackedChunk.oz) {
+              fn(mob);
+            }
+          }
+        };
         
         class Mob extends EventEmitter {
           constructor(id, type, skinName, position, rotation, headRotation, health) {
@@ -114,37 +122,65 @@ class Mobs {
                 ).normalize().multiplyScalar(distance)
               );
             positionEnd.y = generatorElement.getElevation(positionEnd.x, positionEnd.z);
-            const rotationEnd = new THREE.Quaternion().setFromRotationMatrix(
-              new THREE.Matrix4().lookAt(position, positionEnd, upVector)
-            );
-            const headRotationEnd = new THREE.Quaternion().setFromEuler(new THREE.Euler(
-              (-0.5 + Math.random()) * 2 * Math.PI/4,
-              (-0.5 + Math.random()) * 2 * Math.PI/4,
-              0,
-              'YXZ'
-            ));
-            const speed = (0.5 + Math.random() * 1.5) / 1000;
-            const duration = distance / speed;
 
-            const animation = {
-              mode: 'walk',
-              positionStart: position,
-              positionEnd: positionEnd,
-              rotationStart: rotation,
-              rotationEnd: rotationEnd,
-              headRotationStart: headRotation,
-              headRotationEnd: headRotationEnd,
-              duration: duration,
-            };
-            this.emit('animation', animation);
+            _forEachConnectionTransplant(position, positionEnd, c => { // transplant connection views
+              const {id, type, skinName, position, rotation, headRotation} = this;
+              c.send(JSON.stringify({
+                type: 'mobAdd',
+                id,
+                spec: {
+                  type: type,
+                  skinName: skinName,
+                  position: position.toArray(),
+                  rotation: rotation.toArray(),
+                  headRotation: headRotation.toArray(),
+                },
+              }));
+            }, c => {
+              const {id} = this;
+              c.send(JSON.stringify({
+                type: 'mobRemove',
+                id,
+              }));
+            });
 
-            this.position = positionEnd;
-            this.rotation = rotationEnd;
-            this.headRotation = headRotationEnd;
+            if (trackedChunks[_getTrackedChunkIndex(Math.floor(positionEnd.x / NUM_CELLS), Math.floor(positionEnd.z / NUM_CELLS))]) { // if mob is still viewed
+              const rotationEnd = new THREE.Quaternion().setFromRotationMatrix(
+                new THREE.Matrix4().lookAt(position, positionEnd, upVector)
+              );
+              const headRotationEnd = new THREE.Quaternion().setFromEuler(new THREE.Euler(
+                (-0.5 + Math.random()) * 2 * Math.PI/4,
+                (-0.5 + Math.random()) * 2 * Math.PI/4,
+                0,
+                'YXZ'
+              ));
+              const speed = (0.5 + Math.random() * 1.5) / 1000;
+              const duration = distance / speed;
 
-            this.timeout = setTimeout(() => {
-              this.wait();
-            }, duration);
+              this.position = positionEnd;
+              this.rotation = rotationEnd;
+              this.headRotation = headRotationEnd;
+
+              const animation = {
+                mode: 'walk',
+                positionStart: position,
+                positionEnd: positionEnd,
+                rotationStart: rotation,
+                rotationEnd: rotationEnd,
+                headRotationStart: headRotation,
+                headRotationEnd: headRotationEnd,
+                duration: duration,
+              };
+              this.emit('animation', animation);
+
+              this.timeout = setTimeout(() => {
+                this.wait();
+              }, duration);
+            } else {
+              this.position = positionEnd;
+
+              this.destroy();
+            }
           }
 
           hit(position, direction, damage) {
@@ -214,6 +250,8 @@ class Mobs {
           }
 
           destroy() {
+            this.emit('destroy');
+
             clearTimeout(this.timeout);
           }
         }
@@ -224,49 +262,106 @@ class Mobs {
             this.ox = ox;
             this.oz = oz;
 
-            const mobs = (() => {
-              const hasNpcs = Math.random() < 0.2;
-              if (hasNpcs) {
-                const numNpcs = Math.floor(1 + Math.random() * (2 + 1));
-                const result = Array(numNpcs);
-                for (let i = 0; i < numNpcs; i++) {
-                  const id = _makeId();
-
-                  const type = Math.random() < 0.25 ? 'npc' : 'animal';
-                  const skinName = type === 'npc' ?
-                    npcs[Math.floor(Math.random() * npcs.length)]
-                  :
-                    animal.ANIMALS[Math.floor(Math.random() * animal.ANIMALS.length)];
-
-                  const dx = Math.random() * NUM_CELLS;
-                  const dz = Math.random() * NUM_CELLS;
-
-                  const ax = (ox * NUM_CELLS) + dx;
-                  const az = (oz * NUM_CELLS) + dz;
-                  const position = new THREE.Vector3(ax, generatorElement.getElevation(ax, az), az);
-                  const rotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, Math.random() * Math.PI * 2, 0, 'YXZ'));
-                  const headRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(
-                    (-0.5 + Math.random()) * 2 * Math.PI/4,
-                    (-0.5 + Math.random()) * 2 * Math.PI/2,
-                    0,
-                    'YXZ'
-                  ));
-
-                  const mob = new Mob(id, type, skinName, position, rotation, headRotation, 100);
-                  result[i] = mob;
-                }
-                return result;
-              } else {
-                return [];
-              }
-            })();
-            this.mobs = mobs;
-
             this.refCount = 0;
           }
 
+          generateMobs() {
+            const hasNpcs = Math.random() < 0.2;
+            if (hasNpcs) {
+              const numNpcs = Math.floor(1 + Math.random() * (2 + 1));
+              for (let i = 0; i < numNpcs; i++) {
+                const id = _makeId();
+
+                const type = Math.random() < 0.25 ? 'npc' : 'animal';
+                const skinName = type === 'npc' ?
+                  npcs[Math.floor(Math.random() * npcs.length)]
+                :
+                  animal.ANIMALS[Math.floor(Math.random() * animal.ANIMALS.length)];
+
+                const dx = Math.random() * NUM_CELLS;
+                const dz = Math.random() * NUM_CELLS;
+
+                const ax = (this.ox * NUM_CELLS) + dx;
+                const az = (this.oz * NUM_CELLS) + dz;
+                const position = new THREE.Vector3(ax, generatorElement.getElevation(ax, az), az);
+                const rotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, Math.random() * Math.PI * 2, 0, 'YXZ'));
+                const headRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(
+                  (-0.5 + Math.random()) * 2 * Math.PI/4,
+                  (-0.5 + Math.random()) * 2 * Math.PI/2,
+                  0,
+                  'YXZ'
+                ));
+
+                const mob = new Mob(id, type, skinName, position, rotation, headRotation, 100);
+                mob.on('animation', animation => {
+                  _forEachBoundConnection(mob, c => {
+                    if (c.readyState === ws.OPEN) {
+                      const {mode, positionStart, positionEnd, rotationStart, rotationEnd, headRotationStart, headRotationEnd, duration} = animation;
+                      c.send(JSON.stringify({
+                        type: 'mobAnimation',
+                        id,
+                        animation: {
+                          mode,
+                          positionStart: positionStart.toArray(),
+                          positionEnd: positionEnd.toArray(),
+                          rotationStart: rotationStart.toArray(),
+                          rotationEnd: rotationEnd.toArray(),
+                          headRotationStart: headRotationStart.toArray(),
+                          headRotationEnd: headRotationEnd.toArray(),
+                          duration,
+                        },
+                      }));
+                    }
+                  });
+                });
+                mob.on('destroy', () => {
+                  _forEachBoundConnection(mob, c => {
+                    if (c.readyState === ws.OPEN) {
+                      c.send(JSON.stringify({
+                        type: 'mobRemove',
+                        id,
+                      }));
+                    }
+                  });
+
+                  delete trackedMobs[id];
+                });
+                mob.on('die', () => {
+                  delete trackedMobs[id];
+                });
+                trackedMobs[id] = mob;
+
+                let found1 = false;
+                let found2 = false;
+                _forEachBoundConnection(mob, c => {
+                  found1 = true;
+                  if (c.readyState === ws.OPEN) {
+                    found2 = true;
+                    const {id, type, skinName, position, rotation, headRotation} = mob;
+                    c.send(JSON.stringify({
+                      type: 'mobAdd',
+                      id,
+                      spec: {
+                        type: type,
+                        skinName: skinName,
+                        position: position.toArray(),
+                        rotation: rotation.toArray(),
+                        headRotation: headRotation.toArray(),
+                      },
+                    }));
+                  }
+                });
+                if (!found2) {
+                  throw new Error('add new mob with no target');
+                }
+              }
+            }
+          }
+
           addRef() {
-            this.refCount++;
+            if (++this.refCount === 1) {
+              this.generateMobs();
+            }
           }
 
           removeRef() {
@@ -276,17 +371,42 @@ class Mobs {
           }
 
           destroy() {
-            const {mobs} = this;
-            for (let i = 0; i < mobs.length; i++) {
-              const mob = mobs[i];
-              mob.destroy();
-            }
-
             this.emit('destroy');
           }
         }
 
         const connections = [];
+        const _forEachBoundConnection = (mob, fn) => {
+          const index = _getTrackedChunkIndex(Math.floor(mob.position.x / NUM_CELLS), Math.floor(mob.position.z / NUM_CELLS));
+          for (let i = 0; i < connections.length; i++) {
+            const connection = connections[i];
+            if (connection.localTrackedChunks[index]) {
+              fn(connection);
+            }
+          }
+        };
+        const _forEachConnectionTransplant = (startPosition, endPosition, addFn, removeFn) => {
+          const sox = Math.floor(startPosition.x / NUM_CELLS);
+          const soz = Math.floor(startPosition.z / NUM_CELLS);
+          const startIndex = _getTrackedChunkIndex(sox, soz);
+
+          const eox = Math.floor(endPosition.x / NUM_CELLS);
+          const eoz = Math.floor(endPosition.z / NUM_CELLS);
+          const endIndex = _getTrackedChunkIndex(eox, eoz);
+
+          if (startIndex !== endIndex) {
+            for (let i = 0; i < connections.length; i++) {
+              const connection = connections[i];
+              const hadStart = Boolean(connection.localTrackedChunks[startIndex]);
+              const hadEnd = Boolean(connection.localTrackedChunks[endIndex]);
+              if (!hadStart && hadEnd) {
+                addFn(connection);
+              } else if (hadStart && !hadEnd) {
+                removeFn(connection);
+              }
+            }
+          }
+        };
 
         const _connection = c => {
           const {url} = c.upgradeReq;
@@ -311,99 +431,16 @@ class Mobs {
                     trackedChunk = new TrackedChunk(ox, oz);
                     trackedChunks[index] = trackedChunk;
                     trackedChunk.on('destroy', () => {
-                      delete trackedChunks[index];
-
-                      const {mobs} = trackedChunk;
-                      for (let i = 0; i < mobs.length; i++) {
-                        const mob = mobs[i];
-                        const {id} = mob;
-                        delete trackedMobs[id];
-                      }
-                    });
-
-                    const {mobs} = trackedChunk;
-                    for (let i = 0; i < mobs.length; i++) {
-                      const mob = mobs[i];
-                      const {id} = mob;
-                      trackedMobs[id] = mob;
-
-                      mob.on('die', () => {
-                        mobs.splice(mobs.indexOf(mob), 1);
-                        delete trackedMobs[id];
-                      });
-                    }
-                  }
-
-                  const {mobs} = trackedChunk;
-                  const  mobCleanups = Array(mobs.length);
-                  for (let i = 0; i < mobs.length; i++) {
-                    const mob = mobs[i];
-                    const {id, type, skinName, position, rotation, headRotation} = mob;
-
-                    c.send(JSON.stringify({
-                      type: 'mobAdd',
-                      id,
-                      spec: {
-                        type: type,
-                        skinName: skinName,
-                        position: position.toArray(),
-                        rotation: rotation.toArray(),
-                        headRotation: headRotation.toArray(),
-                      },
-                    }));
-
-                    const _animation = animation => {
-                      if (c.readyState === ws.OPEN) {
-                        const {mode, positionStart, positionEnd, rotationStart, rotationEnd, headRotationStart, headRotationEnd, duration} = animation;
-                        c.send(JSON.stringify({
-                          type: 'mobAnimation',
-                          id,
-                          animation: {
-                            mode,
-                            positionStart: positionStart.toArray(),
-                            positionEnd: positionEnd.toArray(),
-                            rotationStart: rotationStart.toArray(),
-                            rotationEnd: rotationEnd.toArray(),
-                            headRotationStart: headRotationStart.toArray(),
-                            headRotationEnd: headRotationEnd.toArray(),
-                            duration,
-                          },
-                        }));
-                      }
-                    };
-                    mob.on('animation', _animation);
-                    const _die = () => {
-                      live = false;
-                    };
-                    mob.on('die', _die);
-
-                    let live = true;
-                    const mobCleanup = () => {
-                      if (live) {
-                        if (c.readyState === ws.OPEN) {
-                          const e = {
-                            type: 'mobRemove',
-                            id,
-                          };
-                          const es = JSON.stringify(e);
-                          c.send(es);
+                      for (const index in trackedMobs) {
+                        const mob = trackedMobs[index];
+                        if (Math.floor(mob.position.x / NUM_CELLS) === trackedChunk.ox && Math.floor(mob.position.z / NUM_CELLS) === trackedChunk.oz) {
+                          mob.destroy();
                         }
-
-                        mob.removeListener('animation', _animation);
-                        mob.removeListener('die', _die);
-
-                        live = false;
                       }
-                    };
-                    mobCleanups[i] = mobCleanup;
-                  }
 
-                  trackedChunk[localCleanupSymbol] = () => {
-                    for (let i = 0; i < mobCleanups.length; i++) {
-                      const mobCleanup = mobCleanups[i];
-                      mobCleanup();
-                    }
-                  };
+                      delete trackedChunks[index];
+                    });
+                  }
 
                   localTrackedChunks[index] = trackedChunk;
                   trackedChunk.addRef();
@@ -413,8 +450,16 @@ class Mobs {
                   const index = _getTrackedChunkIndex(ox, oz);
                   const trackedChunk = localTrackedChunks[index];
                   if (trackedChunk) {
-                    trackedChunk[localCleanupSymbol]();
                     delete localTrackedChunks[index];
+
+                    _forEachMobInChunk(trackedChunk, mob => {
+                      const {id} = mob;
+                      c.send(JSON.stringify({
+                        type: 'mobRemove',
+                        id,
+                      }));
+                    });
+
                     trackedChunk.removeRef();
                   }
                 } else if (method === 'attackMob') {
@@ -438,7 +483,6 @@ class Mobs {
             c.on('close', () => {
               for (const index in localTrackedChunks) {
                 const trackedChunk = localTrackedChunks[index];
-                trackedChunk[localCleanupSymbol]();
                 trackedChunk.removeRef();
               }
 
