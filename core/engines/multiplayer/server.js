@@ -175,7 +175,7 @@ class Multiplayer {
                         status.metadata.menu.position,
                         status.metadata.menu.rotation,
                         status.metadata.menu.scale,
-                        buffer,
+                        o.buffer,
                         0
                       );
 
