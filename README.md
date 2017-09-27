@@ -47,6 +47,10 @@ docker run -p 8000:8000 modulesio/zeo
 
 _Coming soon_ 🦄
 
+## Controls
+
+![Controls](/public/img/controls.png)
+
 ## Plugins
 
 - Procedural terrain w/ marching cubes
