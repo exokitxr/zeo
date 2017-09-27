@@ -194,6 +194,17 @@
       "tagName": "plugins-tools",
       "attributes": {},
       "metadata": {}
+    },
+    "u3xub": {
+      "type": "npc",
+      "id": "u3xuc",
+      "name": "/plugins/npc",
+      "displayName": "npc",
+      "version": "0.0.1",
+      "module": "/plugins/npc",
+      "tagName": "plugins-npc",
+      "attributes": {},
+      "metadata": {}
     }
   }
 }
