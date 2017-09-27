@@ -16,7 +16,7 @@ class Mobs {
   mount() {
     const {_archae: archae} = this;
     const {express, app, ws, wss} = archae.getCore();
-    const {three, elements, utils: {js: {mod}}} = zeo;
+    const {three, elements, multiplayer, utils: {js: {mod}}} = zeo;
     const {THREE} = three;
 
     const animal = animalLib(THREE);
@@ -97,6 +97,8 @@ class Mobs {
             this.health = health;
 
             this.timeout = null;
+            this.animation = null;
+            this.animationStartTime = 0;
 
             this.wait();
           }
@@ -157,10 +159,6 @@ class Mobs {
               const speed = (0.5 + Math.random() * 1.5) / 1000;
               const duration = distance / speed;
 
-              this.position = positionEnd;
-              this.rotation = rotationEnd;
-              this.headRotation = headRotationEnd;
-
               const animation = {
                 mode: 'walk',
                 positionStart: position,
@@ -171,9 +169,17 @@ class Mobs {
                 headRotationEnd: headRotationEnd,
                 duration: duration,
               };
+              this.animation = animation;
+              this.animationStartTime = Date.now();
               this.emit('animation', animation);
 
+              this.position = positionEnd;
+              this.rotation = rotationEnd;
+              this.headRotation = headRotationEnd;
+
               this.timeout = setTimeout(() => {
+                this.animation = null;
+
                 this.wait();
               }, duration);
             } else {
@@ -208,6 +214,8 @@ class Mobs {
                 headRotationEnd: headRotationEnd,
                 duration: duration,
               };
+              this.animation = animation;
+              this.animationStartTime = Date.now();
               this.emit('animation', animation);
 
               this.position = positionEnd;
@@ -216,6 +224,8 @@ class Mobs {
               this.health = health;
 
               this.timeout = setTimeout(() => {
+                this.animation = null;
+
                 this.wait();
               }, duration);
             } else {
@@ -243,6 +253,7 @@ class Mobs {
                 headRotationEnd: headRotationEnd,
                 duration: duration,
               };
+              this.animation = animation;
               this.emit('animation', animation);
 
               this.emit('die');
@@ -377,7 +388,8 @@ class Mobs {
 
         const connections = [];
         const _forEachBoundConnection = (mob, fn) => {
-          const index = _getTrackedChunkIndex(Math.floor(mob.position.x / NUM_CELLS), Math.floor(mob.position.z / NUM_CELLS));
+          const position = mob.animation ? mob.animation.positionEnd : mob.position;
+          const index = _getTrackedChunkIndex(Math.floor(position.x / NUM_CELLS), Math.floor(position.z / NUM_CELLS));
           for (let i = 0; i < connections.length; i++) {
             const connection = connections[i];
             if (connection.localTrackedChunks[index]) {
@@ -494,6 +506,87 @@ class Mobs {
         };
         wss.on('connection', _connection);
 
+        const _updateAi = mob => {
+          for (const status of multiplayer.getPlayerStatuses().values()) {
+            const {hmd} = status;
+            const {position: hmdPosition} = hmd;
+
+            const position = mob.animation ?
+              mob.animation.positionStart.clone().lerp(mob.animation.positionEnd, Math.min(Math.max((Date.now() - mob.animationStartTime) / mob.animation.duration, 0), 1))
+            :
+              mob.position.clone();
+            if (position.distanceTo(hmdPosition) < 5) {
+              const rotation = mob.animation ?
+                mob.animation.rotationStart.clone().slerp(mob.animation.rotationEnd, Math.min((Date.now() - mob.animationStartTime) / mob.animation.duration, 1))
+              :
+                mob.rotation.clone();
+              const hmdPositionXZ = new THREE.Vector3(hmdPosition.x, 0, hmdPosition.z);
+              const positionEnd = hmdPositionXZ.clone().add(
+                new THREE.Vector3(position.x, 0, position.z).sub(hmdPositionXZ).normalize()
+              );
+              positionEnd.y = generatorElement.getElevation(positionEnd.x, positionEnd.z);
+              const rotationEnd = new THREE.Quaternion().setFromRotationMatrix(
+                new THREE.Matrix4().lookAt(
+                  new THREE.Vector3(positionEnd.x, 0, positionEnd.z),
+                  new THREE.Vector3(hmdPosition.x, 0, hmdPosition.z),
+                  upVector
+                )
+              );
+              const headRotation = mob.animation ?
+                mob.animation.headRotationStart.clone().slerp(mob.animation.headRotationEnd, Math.min((Date.now() - mob.animationStartTime) / mob.animation.duration, 1))
+              :
+                mob.headRotation.clone();
+              const headRotationEnd = new THREE.Quaternion().setFromRotationMatrix(
+                new THREE.Matrix4().lookAt(
+                  new THREE.Vector3(positionEnd.x, positionEnd.y + 1, positionEnd.z), // XXX use the model bounding box to estimate the head offset
+                  hmdPosition,
+                  upVector
+                )
+              ).premultiply(rotationEnd.clone().inverse()).inverse();
+              const distance = position.distanceTo(positionEnd);
+              const speed = (0.5 + Math.random() * 1.5) / 1000;
+              const duration = (distance / speed) + 100;
+
+              const animation = {
+                mode: 'walk',
+                positionStart: position,
+                positionEnd: positionEnd,
+                rotationStart: rotation,
+                rotationEnd: rotationEnd,
+                headRotationStart: headRotation,
+                headRotationEnd: headRotationEnd,
+                duration: duration,
+              };
+              mob.animation = animation;
+              mob.animationStartTime = Date.now();
+              mob.emit('animation', animation);
+
+              mob.position = positionEnd;
+              mob.rotation = rotationEnd;
+              mob.headRotation = headRotationEnd;
+
+              if (mob.timeout) {
+                clearTimeout(mob.timeout);
+              }
+              mob.timeout = setTimeout(() => {
+                mob.timeout = null;
+
+                if (!_updateAi(mob)) {
+                  mob.wait();
+                }
+              }, duration);
+
+              return true;
+            }
+          }
+          return false;
+        };
+        const aiInterval = setInterval(() => {
+          for (const id in trackedMobs) {
+            _updateAi(trackedMobs[id]);
+          }
+        }, 1000);
+
         this._cleanup = () => {
           function removeMiddlewares(route, i, routes) {
             if (route.handle.name === 'serveMobNpcImg' || route.handle.name === 'serveMobAnimalImg' || route.handle.name === 'serveMobSfx') {
@@ -506,6 +599,8 @@ class Mobs {
           app._router.stack.forEach(removeMiddlewares);
 
           wss.removeListener('connection', _connection);
+
+          clearInterval(aiInterval);
         };
       });
   }
