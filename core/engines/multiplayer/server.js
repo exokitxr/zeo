@@ -176,7 +176,7 @@ class Multiplayer {
                         status.metadata.menu.rotation,
                         status.metadata.menu.scale,
                         o.buffer,
-                        0
+                        o.byteOffset
                       );
 
                       for (let i = 0; i < connections.length; i++) {
