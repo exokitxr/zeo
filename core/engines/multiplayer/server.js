@@ -252,7 +252,12 @@ class Multiplayer {
           delete transient.multiplayer;
         };
 
-        const multiplayerApi = new EventEmitter();
+        class MultiplayerApi extends EventEmitter {
+          getPlayerStatuses() {
+            return statuses;
+          }
+        }
+        const multiplayerApi = new MultiplayerApi();
         return multiplayerApi;
       }
     });

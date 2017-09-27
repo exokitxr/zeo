@@ -19,6 +19,7 @@ class Zeo {
       '/core/engines/three',
       '/core/engines/tags',
       '/core/engines/world',
+      '/core/engines/multiplayer',
       '/core/engines/fs',
       '/core/utils/js-utils',
       '/core/utils/hash-utils',
@@ -29,6 +30,7 @@ class Zeo {
         three,
         tags,
         world,
+        multiplayer,
         fs,
         jsUtils,
         hashUtils,
@@ -66,6 +68,12 @@ class Zeo {
             }
           }
 
+          class ZeoMultiplayerApi {
+            getPlayerStatuses() {
+              return multiplayer.getPlayerStatuses();
+            }
+          }
+
           class ZeoFsApi {
             makeFile(id, pathname) {
               return fs.makeFile(id, pathname);
@@ -87,6 +95,7 @@ class Zeo {
               this.elements = new ZeoElementsApi();
               this.world = new ZeoWorldApi();
               this.fs = new ZeoFsApi();
+              this.multiplayer = new ZeoMultiplayerApi();
               this.utils = new ZeoUtilsApi();
             }
           }
