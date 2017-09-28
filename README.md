@@ -61,6 +61,21 @@ _Coming soon_ 🦄
 - Console emulation via RetroArch
 - Tons more
 
+## Trouble Shooting
+
+#### On Mac
+Make sure that you have [Xcode and `Command Line Tools`](https://github.com/nodejs/node-gyp#on-mac-os-x) installed. Also, make sure that `node-gyp` is configured with both of those.
+
+---
+
+If you run into problems here are some steps that you can go through:
+- Make sure that you are running with root (`sudo`)
+-  Delete `node_modules` and re-install [`node-gyp`](https://github.com/nodejs/node-gyp)
+- `sudo xcode-select -s /Applications/Xcode.app/Contents/Developer`
+- Make **sure** that Command Line Tools are installed `xcode-select --install`
+- Make **sure** that gcc is installed
+- Make sure that `~/.node-gyp/<version>/include/node/config.gypi` is correct (correct Xcode version, ect)
+
 ## Contact
 
 [Slack](zeovr.slack.com) • [Wiki](zeovr.wikia.com) • [Twitter](https://twitter.com/modulesio) • [Email](mailto:a@modules.io)
