@@ -20,12 +20,7 @@ const hammer = ({recipes, data}) => {
     new THREE.Vector3(0, 0, -1),
     new THREE.Vector3(1, 0, 0)
   ));
-  const localTransformScaleVector = new THREE.Vector3(3, 3, 3);
   const localVector = new THREE.Vector3();
-  const localVector2 = new THREE.Vector3();
-  const localQuaternion = new THREE.Quaternion();
-  const localMatrix = new THREE.Matrix4();
-  const localRay = new THREE.Ray();
 
   const dotMeshMaterial = new THREE.MeshBasicMaterial({
     color: 0x2196F3,
