@@ -185,7 +185,7 @@
       "metadata": {}
     },
     "u3xub": {
-      "type": "tools",
+      "type": "entity",
       "id": "u3xub",
       "name": "/plugins/tools",
       "displayName": "tools",
