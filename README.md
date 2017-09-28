@@ -61,9 +61,9 @@ _Coming soon_ 🦄
 - Console emulation via RetroArch
 - Tons more
 
-## Trouble shooting
+## Trouble Shooting
 
-#### On mac
+#### On Mac
 Make sure that you have [Xcode and `Command Line Tools`](https://github.com/nodejs/node-gyp#on-mac-os-x) installed. Also, make sure that `node-gyp` is configured with both of those.
 
 ---
