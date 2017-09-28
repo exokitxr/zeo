@@ -154,7 +154,6 @@ class Hand {
             localPosition = new THREE.Vector3(),
             localRotation = new THREE.Quaternion(),
             localScale = new THREE.Vector3(1, 1, 1),
-            isGrabbable = p => p.distanceTo(this.position) < GRAB_DISTANCE
           ) {
             super();
 
@@ -165,7 +164,6 @@ class Hand {
             this.localPosition = localPosition;
             this.localRotation = localRotation;
             this.localScale = localScale;
-            this.isGrabbable = isGrabbable;
 
             this.userId = null;
             this.side = null;
@@ -181,6 +179,10 @@ class Hand {
 
           getGrabberSide() {
             return this.side;
+          }
+
+          distanceTo(p) {
+            return this.position.distanceTo(p);
           }
 
           add() {
@@ -345,14 +347,18 @@ class Hand {
           const {worldPosition: controllerPosition} = gamepad;
           const grabState = grabStates[side];
 
+          let bestDistance = Infinity;
+          let bestGrabbable = null;
           for (const n in grabbables) {
             const grabbable = grabbables[n];
 
-            if (grabbable.isGrabbable(controllerPosition)) {
-              return grabbable;
+            const distance = grabbable.distanceTo(controllerPosition);
+            if (distance < GRAB_DISTANCE && distance < bestDistance) {
+              bestDistance = distance;
+              bestGrabbable = grabbable;
             }
           }
-          return null;
+          return bestGrabbable;
         };
 
         const _gripdown = e => {
