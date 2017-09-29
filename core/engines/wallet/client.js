@@ -1,3 +1,4 @@
+import strgLib from 'strg';
 import {
   WIDTH,
   HEIGHT,
@@ -42,6 +43,7 @@ const ASSET_SHADER = {
   ].join("\n")
 };
 const SIDES = ['left', 'right'];
+const STRG_URL = 'https://cdn.rawgit.com/modulesio/strg/486ed70c/iframe.html'
 
 class Wallet {
   constructor(archae) {
@@ -51,6 +53,37 @@ class Wallet {
   mount() {
     const {_archae: archae} = this;
     const {metadata: {site: {url: siteUrl}, vrid: {url: vridUrl}}} = archae;
+
+    const strg = strgLib(STRG_URL);
+    const _addStrgAsset = (asset, quantity) => strg.get('assets')
+      .then(assets => {
+        assets = assets || [];
+        let assetSpec = assets.find(assetSpec => assetSpec.asset === asset);
+        if (!assetSpec) {
+          assetSpec = {
+            id: asset,
+            asset,
+            quantity: 0,
+          };
+          assets.push(assetSpec);
+        }
+        assetSpec.quantity += quantity;
+
+        return strg.set('assets', assets);
+      });
+    const _removeStrgAsset = (asset, quantity) => strg.get('assets')
+      .then(assets => {
+        assets = assets || [];
+        const assetSpecIndex = assets.findIndex(assetSpec => assetSpec.asset === asset);
+        if (assetSpecIndex !== -1) {
+          const assetSpec = assets[assetSpecIndex];
+          assetSpec.quantity--;
+          if (assetSpec.quantity === 0) {
+            assets.splice(assetSpecIndex, 1);
+          }
+        }
+        return strg.set('assets', assets);
+      });
 
     const cleanups = [];
     this._cleanup = () => {
@@ -639,7 +672,7 @@ class Wallet {
             });
           }
         };
-        const _requestAssets = () => fetch(`${vridUrl}/id/api/assets`, {
+        /* const _requestAssets = () => fetch(`${vridUrl}/id/api/assets`, {
           credentials: 'include',
         })
           .then(_resJson);
@@ -647,7 +680,11 @@ class Wallet {
           credentials: 'include',
         })
           .then(_resJson)
-          .then(equipments => equipments !== null ? equipments : _makeArray(4))
+          .then(equipments => equipments !== null ? equipments : _makeArray(4)); */
+        const _requestAssets = () => strg.get('assets')
+          .then(assets => assets || []);
+        const _requestEquipments = () => strg.get('equipments')
+          .then(equipments => equipments || _makeArray(4))
           .then(equipments => equipments.map((asset, i) => ({id: `equipment:${i}`, asset: asset})));
         const _refreshAssets = () => Promise.all([
           _requestAssets(),
@@ -711,7 +748,7 @@ class Wallet {
         const _saveEquipments = _debounce(next => {
           const equipments = walletState.equipments.map(({asset}) => asset);
 
-          fetch(`${vridUrl}/id/api/cookie/equipment`, {
+          /* fetch(`${vridUrl}/id/api/cookie/equipment`, {
             method: 'POST',
             headers: (() => {
               const headers = new Headers();
@@ -721,7 +758,9 @@ class Wallet {
             body: JSON.stringify(equipments),
             credentials: 'include',
           })
-            .then(_resBlob)
+            .then(_resBlob); */
+
+          strg.set('equipments', equipments)
             .then(() => {
               next();
             })
@@ -954,7 +993,7 @@ class Wallet {
           const address = bootstrap.getAddress();
           const quantity = 1;
           const {assets: oldAssets} = walletState;
-          vridUtils.requestCreateDrop(address, asset, quantity)
+          _removeStrgAsset(asset, quantity)
             .then(() => {
               const {assets: newAssets} = walletState;
 
@@ -1001,7 +1040,7 @@ class Wallet {
             const address = bootstrap.getAddress();
             const quantity = 1;
             const {assets: oldAssets} = walletState;
-            vridUtils.requestCreateGet(address, value, quantity)
+            _addStrgAsset(value, quantity)
               .then(() => {
                 const {assets: newAssets} = walletState;
 
