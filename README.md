@@ -61,20 +61,22 @@ _Coming soon_ 🦄
 - Console emulation via RetroArch
 - Tons more
 
-## Trouble Shooting
+## Troubleshooting
 
-#### On Mac
-Make sure that you have [Xcode and `Command Line Tools`](https://github.com/nodejs/node-gyp#on-mac-os-x) installed. Also, make sure that `node-gyp` is configured with both of those.
+#### General
 
----
+Windows, OSX, and Linux are supported. `node 8+` is required, but included if you use Docker or the Windows builds.
 
-If you run into problems here are some steps that you can go through:
-- Make sure that you are running with root (`sudo`)
--  Delete `node_modules` and re-install [`node-gyp`](https://github.com/nodejs/node-gyp)
-- `sudo xcode-select -s /Applications/Xcode.app/Contents/Developer`
-- Make **sure** that Command Line Tools are installed `xcode-select --install`
-- Make **sure** that gcc is installed
-- Make sure that `~/.node-gyp/<version>/include/node/config.gypi` is correct (correct Xcode version, ect)
+This project uses native modules, so if you're using `node` you'll need build tools and [`node-gyp`](https://github.com/nodejs/node-gyp) configured or else you'll get an error on `npm install`.
+
+#### OSX
+
+- Make sure you have [Xcode and `Command Line Tools`](https://github.com/nodejs/node-gyp#on-mac-os-x)
+- Check that _node-gyp_ is in the `PATH`: `node-gyp`
+- Check that _Command Line Tools_ are installed: `xcode-select --install`
+- Check that _gcc_ is installed: `gcc`
+- Point `xcode-select` to the developer directory: `sudo xcode-select -s /Applications/Xcode.app/Contents/Developer`
+- Make sure that `~/.node-gyp/<version>/include/node/config.gypi` is correct (correct Xcode version, etc.)
 
 ## Contact
 
