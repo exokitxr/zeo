@@ -59,7 +59,7 @@ class VoiceChat {
 
       let match;
       if (match = url.match(/\/archae\/voicechatWs\?id=(.+)$/)) {
-        const peerId = decodeURIComponent(match[1]);
+        const peerId = parseInt(decodeURIComponent(match[1]), 10);
 
         c.peerId = peerId;
         c.on('message', (msg, flags) => {
