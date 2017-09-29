@@ -6,8 +6,8 @@ class Stage {
   }
 
   mount() {
-    const {_archae: archae} = this;
-    const {express, app} = archae.getCore();
+    const { _archae: archae } = this;
+    const { express, app } = archae.getCore();
 
     const stageImgStatic = express.static(path.join(__dirname, 'img'));
     function serveStageImg(req, res, next) {
@@ -17,9 +17,7 @@ class Stage {
 
     this._cleanup = () => {
       function removeMiddlewares(route, i, routes) {
-        if (
-          route.handle.name === 'serveStageImg'
-        ) {
+        if (route.handle.name === 'serveStageImg') {
           routes.splice(i, 1);
         }
         if (route.route) {

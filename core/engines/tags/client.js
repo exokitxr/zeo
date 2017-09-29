@@ -11,7 +11,6 @@ import {
   DETAILS_HEIGHT,
   MENU_WIDTH,
   MENU_HEIGHT,
-
   WORLD_WIDTH,
   WORLD_HEIGHT,
   WORLD_DEPTH,
@@ -42,7 +41,7 @@ class Tags {
   }
 
   mount() {
-    const {_archae: archae} = this;
+    const { _archae: archae } = this;
 
     const cleanups = [];
     this._cleanup = () => {
@@ -58,514 +57,599 @@ class Tags {
       live = false;
     });
 
-    return archae.requestPlugins([
-      '/core/engines/bootstrap',
-      '/core/engines/three',
-      '/core/engines/input',
-      '/core/engines/webvr',
-      '/core/engines/cyborg',
-      '/core/engines/biolumi',
-      '/core/engines/keyboard',
-      '/core/engines/loader',
-      // '/core/engines/fs',
-      '/core/engines/somnifer',
-      '/core/engines/rend',
-      '/core/utils/js-utils',
-      '/core/utils/type-utils',
-      '/core/utils/geometry-utils',
-      '/core/utils/image-utils',
-      '/core/utils/creature-utils',
-    ])
-      .then(([
-        bootstrap,
-        three,
-        input,
-        webvr,
-        cyborg,
-        biolumi,
-        keyboard,
-        loader,
-        // fs,
-        somnifer,
-        rend,
-        jsUtils,
-        typeUtils,
-        geometryUtils,
-        imageUtils,
-        creatureUtils,
-      ]) => {
-        if (live) {
-          const {THREE, scene, camera} = three;
-          const {events} = jsUtils;
-          const {EventEmitter} = events;
+    return archae
+      .requestPlugins([
+        '/core/engines/bootstrap',
+        '/core/engines/three',
+        '/core/engines/input',
+        '/core/engines/webvr',
+        '/core/engines/cyborg',
+        '/core/engines/biolumi',
+        '/core/engines/keyboard',
+        '/core/engines/loader',
+        // '/core/engines/fs',
+        '/core/engines/somnifer',
+        '/core/engines/rend',
+        '/core/utils/js-utils',
+        '/core/utils/type-utils',
+        '/core/utils/geometry-utils',
+        '/core/utils/image-utils',
+        '/core/utils/creature-utils',
+      ])
+      .then(
+        (
+          [
+            bootstrap,
+            three,
+            input,
+            webvr,
+            cyborg,
+            biolumi,
+            keyboard,
+            loader,
+            // fs,
+            somnifer,
+            rend,
+            jsUtils,
+            typeUtils,
+            geometryUtils,
+            imageUtils,
+            creatureUtils,
+          ]
+        ) => {
+          if (live) {
+            const { THREE, scene, camera } = three;
+            const { events } = jsUtils;
+            const { EventEmitter } = events;
 
-          const upVector = new THREE.Vector3(0, 1, 0);
-          const lineGeometry = geometryUtils.unindexBufferGeometry(new THREE.BoxBufferGeometry(1, 1, 1));
+            const upVector = new THREE.Vector3(0, 1, 0);
+            const lineGeometry = geometryUtils.unindexBufferGeometry(
+              new THREE.BoxBufferGeometry(1, 1, 1)
+            );
 
-          const nubbinMaterial = new THREE.MeshBasicMaterial({
-            color: 0xCCCCCC,
-          });
-          cleanups.push(() => {
-            nubbinMaterial.dispose();
-          });
-          const scalerMaterial = new THREE.MeshBasicMaterial({
-            color: 0xFFFF00,
-          });
-          cleanups.push(() => {
-            scalerMaterial.dispose();
-          });
+            const nubbinMaterial = new THREE.MeshBasicMaterial({
+              color: 0xcccccc,
+            });
+            cleanups.push(() => {
+              nubbinMaterial.dispose();
+            });
+            const scalerMaterial = new THREE.MeshBasicMaterial({
+              color: 0xffff00,
+            });
+            cleanups.push(() => {
+              scalerMaterial.dispose();
+            });
 
-          const transparentImg = biolumi.getTransparentImg();
+            const transparentImg = biolumi.getTransparentImg();
 
-          const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
-          const _decomposeMatrix = matrix => {
-            const position = new THREE.Vector3();
-            const rotation = new THREE.Quaternion();
-            const scale = new THREE.Vector3();
-            matrix.decompose(position, rotation, scale);
-            return {position, rotation, scale};
-          };
-          const _getWorldPosition = object => new THREE.Vector3().setFromMatrixPosition(object.matrixWorld);
+            const _decomposeObjectMatrixWorld = object =>
+              _decomposeMatrix(object.matrixWorld);
+            const _decomposeMatrix = matrix => {
+              const position = new THREE.Vector3();
+              const rotation = new THREE.Quaternion();
+              const scale = new THREE.Vector3();
+              matrix.decompose(position, rotation, scale);
+              return { position, rotation, scale };
+            };
+            const _getWorldPosition = object =>
+              new THREE.Vector3().setFromMatrixPosition(object.matrixWorld);
 
-          const lineMaterial = new THREE.MeshBasicMaterial({
-            color: 0x000000,
-            transparent: true,
-            opacity: 0.5,
-          });
+            const lineMaterial = new THREE.MeshBasicMaterial({
+              color: 0x000000,
+              transparent: true,
+              opacity: 0.5,
+            });
 
-          const subcontentFontSpec = {
-            fonts: biolumi.getFonts(),
-            fontSize: 24,
-            lineHeight: 1.4,
-            fontWeight: biolumi.getFontWeight(),
-            fontStyle: biolumi.getFontStyle(),
-          };
+            const subcontentFontSpec = {
+              fonts: biolumi.getFonts(),
+              fontSize: 24,
+              lineHeight: 1.4,
+              fontWeight: biolumi.getFontWeight(),
+              fontStyle: biolumi.getFontStyle(),
+            };
 
-          const modulesMutex = new MultiMutex();
-          const modules = new Map();
-          class ModuleTracker {
-            constructor() {
-              this.refCount = 0;
+            const modulesMutex = new MultiMutex();
+            const modules = new Map();
+            class ModuleTracker {
+              constructor() {
+                this.refCount = 0;
+              }
             }
-          }
-          const _addModule = name => {
-            return modulesMutex.lock(name)
-              .then(unlock => new Promise((accept, reject) => {
-                const entry = modules.get(name);
+            const _addModule = name => {
+              return modulesMutex.lock(name).then(
+                unlock =>
+                  new Promise((accept, reject) => {
+                    const entry = modules.get(name);
 
-                if (entry) {
-                  entry.refCount++;
-
-                  accept(true);
-
-                  unlock();
-                } else {
-                  loader.requestPlugin(name)
-                    .then(pluginInstance => {
-                      const entry = new ModuleTracker();
+                    if (entry) {
                       entry.refCount++;
 
-                      modules.set(name, entry);
-
-                      accept(false);
+                      accept(true);
 
                       unlock();
-                    })
-                    .catch(err => {
-                      reject(err);
+                    } else {
+                      loader
+                        .requestPlugin(name)
+                        .then(pluginInstance => {
+                          const entry = new ModuleTracker();
+                          entry.refCount++;
 
-                      unlock();
-                    });
-                }
-              }));
-          };
-          const _removeModule = name => {
-            return modulesMutex.lock(name)
-              .then(unlock => new Promise((accept, reject) => {
-                const entry = modules.get(name);
+                          modules.set(name, entry);
 
-                if (entry.refCount === 1) {
-                  loader.removePlugin(name)
-                    .then(() => {
-                      modules.delete(name);
+                          accept(false);
+
+                          unlock();
+                        })
+                        .catch(err => {
+                          reject(err);
+
+                          unlock();
+                        });
+                    }
+                  })
+              );
+            };
+            const _removeModule = name => {
+              return modulesMutex.lock(name).then(
+                unlock =>
+                  new Promise((accept, reject) => {
+                    const entry = modules.get(name);
+
+                    if (entry.refCount === 1) {
+                      loader
+                        .removePlugin(name)
+                        .then(() => {
+                          modules.delete(name);
+
+                          accept();
+
+                          unlock();
+                        })
+                        .catch(err => {
+                          reject(err);
+
+                          unlock();
+                        });
+                    } else {
+                      entry.refCount--;
 
                       accept();
 
                       unlock();
-                    })
-                    .catch(err => {
-                      reject(err);
+                    }
+                  })
+              );
+            };
 
-                      unlock();
-                    });
-                } else {
-                  entry.refCount--;
+            const rootWorldElement = document.createElement('world');
+            rootWorldElement.style.cssText = 'display: none !important;';
+            document.body.appendChild(rootWorldElement);
 
-                  accept();
+            const _addEntityCallback = (componentApi, entityElement) => {
+              let { _numComponents: numComponents } = entityElement;
 
-                  unlock();
+              if (numComponents === undefined) {
+                numComponents = 0;
+              }
+              numComponents++;
+              entityElement._numComponents = numComponents;
+
+              componentApi.entityAddedCallback(entityElement);
+
+              if (numComponents === 1) {
+                tagsApi.emit('elementAdded', entityElement);
+              }
+            };
+            const _entityValueChangedCallbacks = (
+              componentApi,
+              entityElement,
+              entityAttributes
+            ) => {
+              const { attributes: componentAttributes = {} } = componentApi;
+
+              for (const componentAttributeName in componentAttributes) {
+                const componentAttribute =
+                  componentAttributes[componentAttributeName];
+                const { type: attributeType } = componentAttribute;
+                const entityAttribute =
+                  entityAttributes[componentAttributeName] || {};
+                const { value: attributeValueJson } = entityAttribute;
+
+                if (attributeValueJson !== undefined) {
+                  const oldValue = null;
+                  const newValue = attributeValueJson;
+
+                  componentApi.entityAttributeValueChangedCallback(
+                    entityElement,
+                    componentAttributeName,
+                    oldValue,
+                    newValue
+                  );
+
+                  const { item } = entityElement;
+                  const { id: entityId } = item;
+                  tagsApi.emit('attributeValueChanged', {
+                    entityId: entityId,
+                    attributeName: componentAttributeName,
+                    type: attributeType,
+                    oldValue: oldValue,
+                    newValue: newValue,
+                  });
                 }
-              }));
-          };
+              }
+            };
+            const _removeEntityCallback = (componentApi, entityElement) => {
+              let { _numComponents: numComponents } = entityElement;
 
-          const rootWorldElement = document.createElement('world');
-          rootWorldElement.style.cssText = 'display: none !important;';
-          document.body.appendChild(rootWorldElement);
+              numComponents--;
+              entityElement._numComponents = numComponents;
 
-          const _addEntityCallback = (componentApi, entityElement) => {
-            let {_numComponents: numComponents} = entityElement;
+              componentApi.entityRemovedCallback(entityElement);
 
-            if (numComponents === undefined) {
-              numComponents = 0;
-            }
-            numComponents++;
-            entityElement._numComponents = numComponents;
+              if (numComponents === 0) {
+                tagsApi.emit('elementRemoved', entityElement);
+              }
+            };
 
-            componentApi.entityAddedCallback(entityElement);
+            const _getElementJsonAttributes = element => {
+              const result = {};
 
-            if (numComponents === 1) {
-              tagsApi.emit('elementAdded', entityElement);
-            }
-          };
-          const _entityValueChangedCallbacks = (componentApi, entityElement, entityAttributes) => {
-            const {attributes: componentAttributes = {}} = componentApi;
+              const { attributes } = element;
+              for (let i = 0; i < attributes.length; i++) {
+                const attribute = attributes[i];
+                const { name, value: valueString } = attribute;
+                const value = _parseAttribute(valueString);
 
-            for (const componentAttributeName in componentAttributes) {
-              const componentAttribute = componentAttributes[componentAttributeName];
-              const {type: attributeType} = componentAttribute;
-              const entityAttribute = entityAttributes[componentAttributeName] || {};
-              const {value: attributeValueJson} = entityAttribute;
+                result[name] = {
+                  value: value,
+                };
+              }
 
-              if (attributeValueJson !== undefined) {
-                const oldValue = null;
-                const newValue = attributeValueJson;
-
-                componentApi.entityAttributeValueChangedCallback(entityElement, componentAttributeName, oldValue, newValue);
-
-                const {item} = entityElement;
-                const {id: entityId} = item;
-                tagsApi.emit('attributeValueChanged', {
-                  entityId: entityId,
-                  attributeName: componentAttributeName,
-                  type: attributeType,
-                  oldValue: oldValue,
-                  newValue: newValue,
+              return result;
+            };
+            const _parseAttribute = attributeString => {
+              if (attributeString !== null) {
+                return _jsonParse(attributeString);
+              } else {
+                return undefined;
+              }
+            };
+            const _stringifyAttribute = attributeValue => {
+              if (attributeValue !== undefined) {
+                return JSON.stringify(attributeValue);
+              } else {
+                return '';
+              }
+            };
+            const _someList = (list, predicate) => {
+              for (let i = 0; i < list.length; i++) {
+                const e = list[i];
+                if (predicate(e)) {
+                  return true;
+                }
+              }
+              return false;
+            };
+            const _addEntity = (module, element) => {
+              const { item: initialEntityItem } = element;
+              const entityAttributes = _getElementJsonAttributes(element);
+              if (!initialEntityItem) {
+                // element added manually
+                const tagName = element.tagName.toLowerCase();
+                tagsApi.emit('mutateAddEntity', {
+                  element: element,
+                  tagName: tagName,
+                  attributes: entityAttributes,
                 });
               }
-            }
-          };
-          const _removeEntityCallback = (componentApi, entityElement) => {
-            let {_numComponents: numComponents} = entityElement;
 
-            numComponents--;
-            entityElement._numComponents = numComponents;
+              const { item } = element;
+              item.instancing = true;
 
-            componentApi.entityRemovedCallback(entityElement);
-
-            if (numComponents === 0) {
-              tagsApi.emit('elementRemoved', entityElement);
-            }
-          };
-
-          const _getElementJsonAttributes = element => {
-            const result = {};
-
-            const {attributes} = element;
-            for (let i = 0; i < attributes.length; i++) {
-              const attribute = attributes[i];
-              const {name, value: valueString} = attribute;
-              const value = _parseAttribute(valueString);
-
-              result[name] = {
-                value: value,
-              };
-            }
-
-            return result;
-          };
-          const _parseAttribute = attributeString => {
-            if (attributeString !== null) {
-              return _jsonParse(attributeString);
-            } else {
-              return undefined;
-            }
-          };
-          const _stringifyAttribute = attributeValue => {
-            if (attributeValue !== undefined) {
-              return JSON.stringify(attributeValue);
-            } else {
-              return '';
-            }
-          };
-          const _someList = (list, predicate) => {
-            for (let i = 0; i < list.length; i++) {
-              const e = list[i];
-              if (predicate(e)) {
-                return true;
-              }
-            }
-            return false;
-          };
-          const _addEntity = (module, element) => {
-            const {item: initialEntityItem} = element;
-            const entityAttributes = _getElementJsonAttributes(element);
-            if (!initialEntityItem) { // element added manually
-              const tagName = element.tagName.toLowerCase();
-              tagsApi.emit('mutateAddEntity', {
-                element: element,
-                tagName: tagName,
-                attributes: entityAttributes,
-              });
-            }
-
-            const {item} = element;
-            item.instancing = true;
-
-            _addModule(module)
-              .then(existed => {
-                if (existed) {
-                  const componentApis = tagComponentApis[module] || [];
-
-                  for (let i = 0; i < componentApis.length; i++) {
-                    const componentApi = componentApis[i];
-
-                    _addEntityCallback(componentApi, element);
-                    _entityValueChangedCallbacks(componentApi, element, entityAttributes);
-                  }
-                }
-
-                item.instancing = false;
-              })
-              .catch(err => {
-                console.warn(err);
-              });
-          };
-          const _removeEntity = (module, element) => {
-            const {item: initialEntityItem} = element;
-            if (initialEntityItem) { // element removed manually
-              const {id: entityId} = initialEntityItem;
-              tagsApi.emit('mutateRemoveEntity', {
-                id: entityId,
-              });
-            }
-
-            const componentApis = tagComponentApis[module];
-            for (let i = 0; i < componentApis.length; i++) {
-              const componentApi = componentApis[i];
-              _removeEntityCallback(componentApi, element);
-            }
-
-            _removeModule(module)
-              .then(() => {
-                if (element.getAttribute('module') === module) {
-                  // nothing
-                }
-              })
-              .catch(err => {
-                console.warn(err);
-              });
-          };
-
-          const rootEntitiesElement = document.createElement('entities');
-          rootWorldElement.appendChild(rootEntitiesElement);
-          const entityMutationIgnores = [];
-          const rootEntitiesObserver = new MutationObserver(mutations => {
-            for (let i = 0; i < mutations.length; i++) {
-              const mutation = mutations[i];
-              const {type} = mutation;
-
-              if (type === 'childList') {
-                const {addedNodes} = mutation;
-                for (let j = 0; j < addedNodes.length; j++) {
-                  const addedNode = addedNodes[j];
-
-                  if (addedNode.nodeType === Node.ELEMENT_NODE && _someList(addedNode.attributes, a => a.name === 'module' && Boolean(a.value))) {
-                    const entityElement = addedNode;
-                    const module = entityElement.getAttribute('module');
-                    _addEntity(module, entityElement);
-                  }
-                }
-
-                const {removedNodes} = mutation;
-                for (let k = 0; k < removedNodes.length; k++) {
-                  const removedNode = removedNodes[k];
-
-                  if (removedNode.nodeType === Node.ELEMENT_NODE && _someList(removedNode.attributes, a => a.name === 'module' && Boolean(a.value))) {
-                    const entityElement = removedNode;
-                    const module = entityElement.getAttribute('module');
-                    _removeEntity(module, entityElement);
-                  }
-                }
-              } else if (type === 'attributes') {
-                const {target} = mutation;
-
-                if (target.nodeType === Node.ELEMENT_NODE) {
-                  const entityElement = target;
-                  const {attributeName, oldValue: oldValueString} = mutation;
-                  const newValueString = entityElement.getAttribute(attributeName);
-
-                  if (attributeName === 'module') {
-                    if (oldValueString !== null) {
-                      const module = oldValueString;
-                      _removeEntity(module, entityElement);
-                    }
-                    if (newValueString !== null) {
-                      const module = newValueString;
-                      _addEntity(module, entityElement);
-                    }
-                  } else {
-                    const oldValueJson = _parseAttribute(oldValueString);
-                    const newValueJson = _parseAttribute(newValueString);
-
-                    const {item: entityItem} = entityElement;
-                    const {id: entityId} = entityItem;
-                    if (!entityMutationIgnores.some(({type, args: [id, name, value]}) =>
-                      type === 'setAttribute' &&
-                      id === entityId &&
-                      name === attributeName &&
-                      deepEqual(value, newValueJson)
-                    )) {
-                      tagsApi.emit('mutateSetAttribute', {
-                        id: entityId,
-                        name: attributeName,
-                        value: newValueJson,
-                      });
-                    }
-
-                    const {module} = entityItem;
+              _addModule(module)
+                .then(existed => {
+                  if (existed) {
                     const componentApis = tagComponentApis[module] || [];
+
                     for (let i = 0; i < componentApis.length; i++) {
                       const componentApi = componentApis[i];
-                      const {attributes: componentAttributes = []} = componentApi;
-                      const componentAttribute = componentAttributes[attributeName];
 
-                      if (componentAttribute !== undefined) {
-                        const {type: attributeType} = componentAttribute;
-                        const oldAttributeValue = oldValueJson;
-                        const newAttributeValue = newValueJson;
+                      _addEntityCallback(componentApi, element);
+                      _entityValueChangedCallbacks(
+                        componentApi,
+                        element,
+                        entityAttributes
+                      );
+                    }
+                  }
 
-                        componentApi.entityAttributeValueChangedCallback(entityElement, attributeName, oldAttributeValue, newAttributeValue);
+                  item.instancing = false;
+                })
+                .catch(err => {
+                  console.warn(err);
+                });
+            };
+            const _removeEntity = (module, element) => {
+              const { item: initialEntityItem } = element;
+              if (initialEntityItem) {
+                // element removed manually
+                const { id: entityId } = initialEntityItem;
+                tagsApi.emit('mutateRemoveEntity', {
+                  id: entityId,
+                });
+              }
 
-                        tagsApi.emit('attributeValueChanged', {
-                          entityId: entityId,
-                          attributeName: attributeName,
-                          type: attributeType,
-                          oldValue: oldAttributeValue,
-                          newValue: newAttributeValue,
+              const componentApis = tagComponentApis[module];
+              for (let i = 0; i < componentApis.length; i++) {
+                const componentApi = componentApis[i];
+                _removeEntityCallback(componentApi, element);
+              }
+
+              _removeModule(module)
+                .then(() => {
+                  if (element.getAttribute('module') === module) {
+                    // nothing
+                  }
+                })
+                .catch(err => {
+                  console.warn(err);
+                });
+            };
+
+            const rootEntitiesElement = document.createElement('entities');
+            rootWorldElement.appendChild(rootEntitiesElement);
+            const entityMutationIgnores = [];
+            const rootEntitiesObserver = new MutationObserver(mutations => {
+              for (let i = 0; i < mutations.length; i++) {
+                const mutation = mutations[i];
+                const { type } = mutation;
+
+                if (type === 'childList') {
+                  const { addedNodes } = mutation;
+                  for (let j = 0; j < addedNodes.length; j++) {
+                    const addedNode = addedNodes[j];
+
+                    if (
+                      addedNode.nodeType === Node.ELEMENT_NODE &&
+                      _someList(
+                        addedNode.attributes,
+                        a => a.name === 'module' && Boolean(a.value)
+                      )
+                    ) {
+                      const entityElement = addedNode;
+                      const module = entityElement.getAttribute('module');
+                      _addEntity(module, entityElement);
+                    }
+                  }
+
+                  const { removedNodes } = mutation;
+                  for (let k = 0; k < removedNodes.length; k++) {
+                    const removedNode = removedNodes[k];
+
+                    if (
+                      removedNode.nodeType === Node.ELEMENT_NODE &&
+                      _someList(
+                        removedNode.attributes,
+                        a => a.name === 'module' && Boolean(a.value)
+                      )
+                    ) {
+                      const entityElement = removedNode;
+                      const module = entityElement.getAttribute('module');
+                      _removeEntity(module, entityElement);
+                    }
+                  }
+                } else if (type === 'attributes') {
+                  const { target } = mutation;
+
+                  if (target.nodeType === Node.ELEMENT_NODE) {
+                    const entityElement = target;
+                    const {
+                      attributeName,
+                      oldValue: oldValueString,
+                    } = mutation;
+                    const newValueString = entityElement.getAttribute(
+                      attributeName
+                    );
+
+                    if (attributeName === 'module') {
+                      if (oldValueString !== null) {
+                        const module = oldValueString;
+                        _removeEntity(module, entityElement);
+                      }
+                      if (newValueString !== null) {
+                        const module = newValueString;
+                        _addEntity(module, entityElement);
+                      }
+                    } else {
+                      const oldValueJson = _parseAttribute(oldValueString);
+                      const newValueJson = _parseAttribute(newValueString);
+
+                      const { item: entityItem } = entityElement;
+                      const { id: entityId } = entityItem;
+                      if (
+                        !entityMutationIgnores.some(
+                          ({ type, args: [id, name, value] }) =>
+                            type === 'setAttribute' &&
+                            id === entityId &&
+                            name === attributeName &&
+                            deepEqual(value, newValueJson)
+                        )
+                      ) {
+                        tagsApi.emit('mutateSetAttribute', {
+                          id: entityId,
+                          name: attributeName,
+                          value: newValueJson,
                         });
                       }
-                    }
 
-                    const {attributes: entityAttributes} = entityItem;
-                    if (newValueString !== null) {
-                      entityAttributes[attributeName] = {
-                        value: newValueJson,
-                      };
-                    } else {
-                      delete entityAttributes[attributeName];
+                      const { module } = entityItem;
+                      const componentApis = tagComponentApis[module] || [];
+                      for (let i = 0; i < componentApis.length; i++) {
+                        const componentApi = componentApis[i];
+                        const {
+                          attributes: componentAttributes = [],
+                        } = componentApi;
+                        const componentAttribute =
+                          componentAttributes[attributeName];
+
+                        if (componentAttribute !== undefined) {
+                          const { type: attributeType } = componentAttribute;
+                          const oldAttributeValue = oldValueJson;
+                          const newAttributeValue = newValueJson;
+
+                          componentApi.entityAttributeValueChangedCallback(
+                            entityElement,
+                            attributeName,
+                            oldAttributeValue,
+                            newAttributeValue
+                          );
+
+                          tagsApi.emit('attributeValueChanged', {
+                            entityId: entityId,
+                            attributeName: attributeName,
+                            type: attributeType,
+                            oldValue: oldAttributeValue,
+                            newValue: newAttributeValue,
+                          });
+                        }
+                      }
+
+                      const { attributes: entityAttributes } = entityItem;
+                      if (newValueString !== null) {
+                        entityAttributes[attributeName] = {
+                          value: newValueJson,
+                        };
+                      } else {
+                        delete entityAttributes[attributeName];
+                      }
                     }
                   }
                 }
               }
-            }
 
-            entityMutationIgnores.length = 0;
-          });
-          rootEntitiesObserver.observe(rootEntitiesElement, {
-            childList: true,
-            attributes: true,
-            // characterData: true,
-            subtree: true,
-            attributeOldValue: true,
-            // characterDataOldValue: true,
-          });
+              entityMutationIgnores.length = 0;
+            });
+            rootEntitiesObserver.observe(rootEntitiesElement, {
+              childList: true,
+              attributes: true,
+              // characterData: true,
+              subtree: true,
+              attributeOldValue: true,
+              // characterDataOldValue: true,
+            });
 
-          const linesMesh = (() => {
-            const maxNumLines = 100;
-            const numBoxPoints = 36;
+            const linesMesh = (() => {
+              const maxNumLines = 100;
+              const numBoxPoints = 36;
 
-            const geometry = (() => {
-              const geometry = new THREE.BufferGeometry();
-              geometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array(maxNumLines * numBoxPoints * 3), 3));
-              geometry.setDrawRange(0, 0);
-              return geometry;
-            })();
-            const material = lineMaterial;
-
-            const mesh = new THREE.Mesh(geometry, material);
-            mesh.frustumCulled = false;
-            mesh.visible = false;
-
-            class Line {
-              constructor() {
-                this.start = null;
-                this.end = null;
-              }
-
-              set(start, end) {
-                this.start = start;
-                this.end = end;
-              }
-            }
-
-            const lines = [];
-            mesh.addLine = () => {
-              const line = new Line();
-              lines.push(line);
-              return line;
-            };
-            mesh.removeLine = line => {
-              lines.splice(lines.indexOf(line), 1);
-            };
-            mesh.render = () => {
-              const positionsAttribute = geometry.getAttribute('position');
-              const {array: positions} = positionsAttribute;
-
-              for (let i = 0; i < lines.length; i++) {
-                const line = lines[i];
-                const {start, end} = line;
-                const startPosition = _getWorldPosition(start);
-                const endPosition = _getWorldPosition(end);
-                const midpoint = startPosition.clone().add(endPosition).divideScalar(2);
-                const diffVector = endPosition.clone().sub(startPosition);
-                const diffVectorLength = diffVector.length();
-                const quaternion = new THREE.Quaternion().setFromUnitVectors(
-                  upVector,
-                  diffVector.clone().divideScalar(diffVectorLength)
+              const geometry = (() => {
+                const geometry = new THREE.BufferGeometry();
+                geometry.addAttribute(
+                  'position',
+                  new THREE.BufferAttribute(
+                    new Float32Array(maxNumLines * numBoxPoints * 3),
+                    3
+                  )
                 );
+                geometry.setDrawRange(0, 0);
+                return geometry;
+              })();
+              const material = lineMaterial;
 
-                const localLineGeometry = lineGeometry.clone()
-                  .applyMatrix(new THREE.Matrix4().makeScale(0.002, diffVectorLength, 0.002))
-                  .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(quaternion))
-                  .applyMatrix(new THREE.Matrix4().makeTranslation(midpoint.x, midpoint.y, midpoint.z));
-                const localPositions = localLineGeometry.getAttribute('position').array;
-                const baseIndex = i * numBoxPoints * 3;
-                positions.set(localPositions, baseIndex);
+              const mesh = new THREE.Mesh(geometry, material);
+              mesh.frustumCulled = false;
+              mesh.visible = false;
+
+              class Line {
+                constructor() {
+                  this.start = null;
+                  this.end = null;
+                }
+
+                set(start, end) {
+                  this.start = start;
+                  this.end = end;
+                }
               }
-              positionsAttribute.needsUpdate = true;
 
-              geometry.setDrawRange(0, lines.length * numBoxPoints);
+              const lines = [];
+              mesh.addLine = () => {
+                const line = new Line();
+                lines.push(line);
+                return line;
+              };
+              mesh.removeLine = line => {
+                lines.splice(lines.indexOf(line), 1);
+              };
+              mesh.render = () => {
+                const positionsAttribute = geometry.getAttribute('position');
+                const { array: positions } = positionsAttribute;
+
+                for (let i = 0; i < lines.length; i++) {
+                  const line = lines[i];
+                  const { start, end } = line;
+                  const startPosition = _getWorldPosition(start);
+                  const endPosition = _getWorldPosition(end);
+                  const midpoint = startPosition
+                    .clone()
+                    .add(endPosition)
+                    .divideScalar(2);
+                  const diffVector = endPosition.clone().sub(startPosition);
+                  const diffVectorLength = diffVector.length();
+                  const quaternion = new THREE.Quaternion().setFromUnitVectors(
+                    upVector,
+                    diffVector.clone().divideScalar(diffVectorLength)
+                  );
+
+                  const localLineGeometry = lineGeometry
+                    .clone()
+                    .applyMatrix(
+                      new THREE.Matrix4().makeScale(
+                        0.002,
+                        diffVectorLength,
+                        0.002
+                      )
+                    )
+                    .applyMatrix(
+                      new THREE.Matrix4().makeRotationFromQuaternion(quaternion)
+                    )
+                    .applyMatrix(
+                      new THREE.Matrix4().makeTranslation(
+                        midpoint.x,
+                        midpoint.y,
+                        midpoint.z
+                      )
+                    );
+                  const localPositions = localLineGeometry.getAttribute(
+                    'position'
+                  ).array;
+                  const baseIndex = i * numBoxPoints * 3;
+                  positions.set(localPositions, baseIndex);
+                }
+                positionsAttribute.needsUpdate = true;
+
+                geometry.setDrawRange(0, lines.length * numBoxPoints);
+              };
+
+              return mesh;
+            })();
+            // scene.add(linesMesh);
+            rend.registerAuxObject('tagsLinesMesh', linesMesh);
+
+            const detailsState = {
+              inputText: '',
+              inputIndex: 0,
+              inputValue: 0,
+              transforms: [],
+              page: 0,
+            };
+            const focusState = {
+              keyboardFocusState: null,
             };
 
-            return mesh;
-          })();
-          // scene.add(linesMesh);
-          rend.registerAuxObject('tagsLinesMesh', linesMesh);
+            const localUpdates = [];
 
-          const detailsState = {
-            inputText: '',
-            inputIndex: 0,
-            inputValue: 0,
-            transforms: [],
-            page: 0,
-          };
-          const focusState = {
-            keyboardFocusState: null,
-          };
-
-          const localUpdates = [];
-
-          /* const _getItemPreviewMode = item => fs.getFileMode(item.mimeType);
+            /* const _getItemPreviewMode = item => fs.getFileMode(item.mimeType);
           const _requestFileItemImageMesh = item => new Promise((accept, reject) => {
             const geometry = new THREE.PlaneBufferGeometry(0.2, 0.2);
             const material = (() => {
@@ -742,65 +826,67 @@ class Tags {
           const _requestFileItemModelMesh = item => fs.makeFile('fs/' + item.id + item.name)
             .read({type: 'model'}); */
 
-          const _trigger = e => {
-            const {side} = e;
+            const _trigger = e => {
+              const { side } = e;
 
-            const _doClickAux = () => {
-              const hoverState = rend.getHoverState(side);
-              const {intersectionPoint} = hoverState;
+              const _doClickAux = () => {
+                const hoverState = rend.getHoverState(side);
+                const { intersectionPoint } = hoverState;
 
-              if (intersectionPoint) {
-                const {anchor} = hoverState;
-                const onclick = (anchor && anchor.onclick) || '';
+                if (intersectionPoint) {
+                  const { anchor } = hoverState;
+                  const onclick = (anchor && anchor.onclick) || '';
 
-                let match;
-                if (match = onclick.match(/^entity:addAttribute:(.+)$/)) {
-                  const id = match[1];
+                  let match;
+                  if ((match = onclick.match(/^entity:addAttribute:(.+)$/))) {
+                    const id = match[1];
 
-                  const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
-                  const {item} = tagMesh;
-                  const {attributes} = item;
-                  const newAttributeName = (() => {
-                    for (let i = 1;; i++) {
-                      const attributeName = 'attribute-' + i;
-                      if (!(attributeName in attributes)) {
-                        return attributeName;
+                    const tagMesh = tagMeshes.find(
+                      tagMesh => tagMesh.item.id === id
+                    );
+                    const { item } = tagMesh;
+                    const { attributes } = item;
+                    const newAttributeName = (() => {
+                      for (let i = 1; ; i++) {
+                        const attributeName = 'attribute-' + i;
+                        if (!(attributeName in attributes)) {
+                          return attributeName;
+                        }
                       }
-                    }
 
-                    return null;
-                  })();
+                      return null;
+                    })();
 
-                  tagsApi.emit('setAttribute', {
-                    id: id,
-                    name: newAttributeName,
-                    value: 'value',
-                  });
+                    tagsApi.emit('setAttribute', {
+                      id: id,
+                      name: newAttributeName,
+                      value: 'value',
+                    });
 
-                  e.stopImmediatePropagation();
+                    e.stopImmediatePropagation();
 
-                  return true;
-                } else if (match = onclick.match(/^tag:open:(.+)$/)) {
-                  const id = match[1];
+                    return true;
+                  } else if ((match = onclick.match(/^tag:open:(.+)$/))) {
+                    const id = match[1];
 
-                  tagsApi.emit('open', {
-                    id: id,
-                  });
+                    tagsApi.emit('open', {
+                      id: id,
+                    });
 
-                  e.stopImmediatePropagation();
+                    e.stopImmediatePropagation();
 
-                  return true;
-                } else if (match = onclick.match(/^tag:close:(.+)$/)) {
-                  const id = match[1];
+                    return true;
+                  } else if ((match = onclick.match(/^tag:close:(.+)$/))) {
+                    const id = match[1];
 
-                  tagsApi.emit('close', {
-                    id: id,
-                  });
+                    tagsApi.emit('close', {
+                      id: id,
+                    });
 
-                  e.stopImmediatePropagation();
+                    e.stopImmediatePropagation();
 
-                  return true;
-                /* } else if (match = onclick.match(/^tag:download:(.+)$/)) {
+                    return true;
+                    /* } else if (match = onclick.match(/^tag:download:(.+)$/)) {
                   const id = match[1];
 
                   const downloadEvent = {
@@ -809,213 +895,223 @@ class Tags {
                   tagsApi.emit('download', downloadEvent);
 
                   return true; */
-                } else if (match = onclick.match(/^attribute:remove:(.+?):(.+?)$/)) {
-                  const id = match[1];
-                  const name = match[2];
+                  } else if (
+                    (match = onclick.match(/^attribute:remove:(.+?):(.+?)$/))
+                  ) {
+                    const id = match[1];
+                    const name = match[2];
 
-                  tagsApi.emit('setAttribute', {
-                    id: id,
-                    name: name,
-                    value: undefined,
-                  });
-
-                  return true;
-                } else if (match = onclick.match(/^media:(play|pause|seek):(.+)$/)) {
-                  const action = match[1];
-                  const id = match[2];
-
-                  if (action === 'play') {
-                    tagsApi.emit('play', {
+                    tagsApi.emit('setAttribute', {
                       id: id,
+                      name: name,
+                      value: undefined,
                     });
-                  } else if (action === 'pause') {
-                    tagsApi.emit('pause', {
-                      id: id,
-                    });
-                  } else if (action === 'seek') {
-                    const tagMesh = tagMeshes.find(tagMesh => tagMesh.item.id === id);
-                    const {item} = tagMesh;
 
-                    item.getMedia()
-                      .then(({media}) => {
-                        const {value} = hoverState;
+                    return true;
+                  } else if (
+                    (match = onclick.match(/^media:(play|pause|seek):(.+)$/))
+                  ) {
+                    const action = match[1];
+                    const id = match[2];
 
-                        tagsApi.emit('seek', {
-                          id: id,
-                          value: value,
-                        });
-                      })
-                      .catch(err => {
-                        console.warn(err);
+                    if (action === 'play') {
+                      tagsApi.emit('play', {
+                        id: id,
                       });
-                  }
+                    } else if (action === 'pause') {
+                      tagsApi.emit('pause', {
+                        id: id,
+                      });
+                    } else if (action === 'seek') {
+                      const tagMesh = tagMeshes.find(
+                        tagMesh => tagMesh.item.id === id
+                      );
+                      const { item } = tagMesh;
 
-                  return true;
+                      item
+                        .getMedia()
+                        .then(({ media }) => {
+                          const { value } = hoverState;
+
+                          tagsApi.emit('seek', {
+                            id: id,
+                            value: value,
+                          });
+                        })
+                        .catch(err => {
+                          console.warn(err);
+                        });
+                    }
+
+                    return true;
+                  } else {
+                    return false;
+                  }
                 } else {
                   return false;
                 }
-              } else {
-                return false;
+              };
+
+              if (_doClickAux()) {
+                e.stopImmediatePropagation();
               }
             };
+            input.on('trigger', _trigger);
 
-            if (_doClickAux()) {
-              e.stopImmediatePropagation();
-            }
-          };
-          input.on('trigger', _trigger);
+            const _update = () => {
+              const _updateLocal = () => {
+                for (let i = 0; i < localUpdates.length; i++) {
+                  const update = localUpdates[i];
+                  update();
+                }
+              };
 
-          const _update = () => {
-            const _updateLocal = () => {
-              for (let i = 0; i < localUpdates.length; i++) {
-                const update = localUpdates[i];
-                update();
-              }
+              _updateLocal();
             };
+            rend.on('update', _update);
 
-            _updateLocal();
-          };
-          rend.on('update', _update);
+            cleanups.push(() => {
+              for (let i = 0; i < tagMeshes.length; i++) {
+                const tagMesh = tagMeshes[i];
+                tagMesh.parent.remove(tagMesh);
+              }
+              scene.remove(linesMesh);
 
-          cleanups.push(() => {
-            for (let i = 0; i < tagMeshes.length; i++) {
-              const tagMesh = tagMeshes[i];
-              tagMesh.parent.remove(tagMesh);
-            }
-            scene.remove(linesMesh);
+              input.removeListener('trigger', _trigger);
+              rend.removeListener('update', _update);
+            });
 
-            input.removeListener('trigger', _trigger);
-            rend.removeListener('update', _update);
-          });
+            class Item extends EventEmitter {
+              constructor(
+                type,
+                id,
+                name,
+                displayName,
+                module,
+                description,
+                version,
+                versions,
+                readme,
+                tagName,
+                attributes,
+                mimeType,
+                quantity,
+                words,
+                open,
+                details,
+                paused,
+                value,
+                metadata // transient state: isStatic, exists
+              ) {
+                super();
 
-          class Item extends EventEmitter {
-            constructor(
-              type,
-              id,
-              name,
-              displayName,
-              module,
-              description,
-              version,
-              versions, // XXX need to fetch these from the backend every time instead of saving it to the tags json
-              readme,
-              tagName,
-              attributes,
-              mimeType,
-              quantity,
-              words,
-              open,
-              details,
-              paused,
-              value,
-              metadata // transient state: isStatic, exists
-            ) {
-              super();
+                this.type = type;
+                this.id = id;
+                this.name = name;
+                this.displayName = displayName;
+                this.module = module;
+                this.description = description;
+                this.version = version;
+                this.versions = versions;
+                this.readme = readme;
+                this.tagName = tagName;
+                this.attributes = attributes;
+                this.mimeType = mimeType;
+                this.quantity = quantity;
+                this.words = words;
+                this.open = open;
+                this.details = details;
+                this.paused = paused;
+                this.value = value;
+                this.metadata = metadata;
 
-              this.type = type;
-              this.id = id;
-              this.name = name;
-              this.displayName = displayName;
-              this.module = module;
-              this.description = description;
-              this.version = version;
-              this.versions = versions;
-              this.readme = readme;
-              this.tagName = tagName;
-              this.attributes = attributes;
-              this.mimeType = mimeType;
-              this.quantity = quantity;
-              this.words = words;
-              this.open = open;
-              this.details = details;
-              this.paused = paused;
-              this.value = value;
-              this.metadata = metadata;
+                // we use symbols so these keys don't show up in the JSON.stringify
+                this[itemInstanceSymbol] = null;
+                this[itemInstancingSymbol] = false;
+                this[itemPageSymbol] = 0;
+                this[itemPreviewSymbol] = false;
+                this[itemTempSymbol] = false;
+                this[itemMediaPromiseSymbol] = null;
+              } // XXX need to fetch these from the backend every time instead of saving it to the tags json
 
-              // we use symbols so these keys don't show up in the JSON.stringify
-              this[itemInstanceSymbol] = null;
-              this[itemInstancingSymbol] = false;
-              this[itemPageSymbol] = 0;
-              this[itemPreviewSymbol] = false;
-              this[itemTempSymbol] = false;
-              this[itemMediaPromiseSymbol] = null;
-            }
+              get instance() {
+                return this[itemInstanceSymbol];
+              }
+              set instance(instance) {
+                this[itemInstanceSymbol] = instance;
+              }
+              get instancing() {
+                return this[itemInstancingSymbol];
+              }
+              set instancing(instancing) {
+                this[itemInstancingSymbol] = instancing;
+              }
+              get page() {
+                return this[itemPageSymbol];
+              }
+              set page(page) {
+                this[itemPageSymbol] = page;
+              }
+              get selected() {
+                return this[itemSelectedSymbol];
+              }
+              set selected(selected) {
+                this[itemSelectedSymbol] = selected;
+              }
+              get preview() {
+                return this[itemPreviewSymbol];
+              }
+              set preview(preview) {
+                this[itemPreviewSymbol] = preview;
+              }
+              get temp() {
+                return this[itemTempSymbol];
+              }
+              set temp(temp) {
+                this[itemTempSymbol] = temp;
+              }
 
-            get instance() {
-              return this[itemInstanceSymbol];
-            }
-            set instance(instance) {
-              this[itemInstanceSymbol] = instance;
-            }
-            get instancing() {
-              return this[itemInstancingSymbol];
-            }
-            set instancing(instancing) {
-              this[itemInstancingSymbol] = instancing;
-            }
-            get page() {
-              return this[itemPageSymbol];
-            }
-            set page(page) {
-              this[itemPageSymbol] = page;
-            }
-            get selected() {
-              return this[itemSelectedSymbol];
-            }
-            set selected(selected) {
-              this[itemSelectedSymbol] = selected;
-            }
-            get preview() {
-              return this[itemPreviewSymbol];
-            }
-            set preview(preview) {
-              this[itemPreviewSymbol] = preview;
-            }
-            get temp() {
-              return this[itemTempSymbol];
-            }
-            set temp(temp) {
-              this[itemTempSymbol] = temp;
-            }
+              setAttribute(attributeName, newValue) {
+                const { type } = this;
 
-            setAttribute(attributeName, newValue) {
-              const {type} = this;
+                if (type === 'entity') {
+                  const { instance: entityElement } = this;
 
-              if (type === 'entity') {
-                const {instance: entityElement} = this;
+                  if (newValue !== undefined) {
+                    entityElement.setAttribute(
+                      attributeName,
+                      _stringifyAttribute(newValue)
+                    );
+                  } else {
+                    entityElement.removeAttribute(attributeName);
+                  }
+                } else if (type === 'asset') {
+                  const { attributes } = this;
 
-                if (newValue !== undefined) {
-                  entityElement.setAttribute(attributeName, _stringifyAttribute(newValue));
-                } else {
-                  entityElement.removeAttribute(attributeName);
-                }
-              } else if (type === 'asset') {
-                const {attributes} = this;
-
-                if (newValue !== undefined) {
-                  attributes[attributeName] = newValue;
-                } else {
-                  delete attributes[attributeName];
+                  if (newValue !== undefined) {
+                    attributes[attributeName] = newValue;
+                  } else {
+                    delete attributes[attributeName];
+                  }
                 }
               }
-            }
 
-            setData(value) {
-              this.data = value;
+              setData(value) {
+                this.data = value;
 
-              const {instance} = this;
-              if (instance) {
-                const entityElement = instance;
+                const { instance } = this;
+                if (instance) {
+                  const entityElement = instance;
 
-                if (value !== undefined) {
-                  entityElement.innerText = JSON.stringify(value, null, 2);
-                } else {
-                  entityElement.innerText = '';
+                  if (value !== undefined) {
+                    entityElement.innerText = JSON.stringify(value, null, 2);
+                  } else {
+                    entityElement.innerText = '';
+                  }
                 }
               }
-            }
 
-            /* getMedia() {
+              /* getMedia() {
               if (!this[itemMediaPromiseSymbol]) {
                 this[itemMediaPromiseSymbol] = new Promise((accept, reject) => {
                   const previewMesh = new THREE.Object3D();
@@ -1189,8 +1285,8 @@ class Tags {
               this.emit('update');
             } */
 
-            destroy() {
-              /* this.destroyMedia();
+              destroy() {
+                /* this.destroyMedia();
 
               const {type, temp} = this;
               if (type === 'file' && !temp) {
@@ -1222,229 +1318,260 @@ class Tags {
                   }
                 }
               } */
-            }
-          }
-
-          const tagMeshes = [];
-          const tagComponentApis = {}; // plugin name -> [ component api ]
-
-          const _getAttributeSpec = (module, attributeName) => {
-            const componentApis = tagComponentApis[module] || [];
-
-            for (let i = 0; i < componentApis.length; i++) {
-              const componentApi = componentApis[i];
-              const {attributes: componentAttributes = {}} = componentApi;
-              const componentAttribute = componentAttributes[attributeName];
-
-              if (componentAttribute) {
-                const attributeSpec = _shallowClone(componentAttribute);
-                attributeSpec.name = attributeName;
-                return attributeSpec;
               }
             }
 
-            return null;
-          };
-          const _getAttributeSpecs = module => {
-            const result = [];
+            const tagMeshes = [];
+            const tagComponentApis = {}; // plugin name -> [ component api ]
 
-            const componentApis = tagComponentApis[module] || [];
-            for (let i = 0; i < componentApis.length; i++) {
-              const componentApi = componentApis[i];
-              const {attributes: componentAttributes} = componentApi;
+            const _getAttributeSpec = (module, attributeName) => {
+              const componentApis = tagComponentApis[module] || [];
 
-              if (componentAttributes) {
-                for (const componentAttributeName in componentAttributes) {
-                  if (!result.some(attributeSpec => attributeSpec.name === componentAttributeName)) {
-                    const componentAttribute = componentAttributes[componentAttributeName];
+              for (let i = 0; i < componentApis.length; i++) {
+                const componentApi = componentApis[i];
+                const { attributes: componentAttributes = {} } = componentApi;
+                const componentAttribute = componentAttributes[attributeName];
 
-                    const attributeSpec = _shallowClone(componentAttribute);
-                    attributeSpec.name = componentAttributeName;
-                    result.push(attributeSpec);
-                  }
-                }
-              }
-            }
-
-            return result;
-          };
-          const _getAttributeSpecsMap = module => {
-            const result = {};
-
-            const componentApis = tagComponentApis[module] || [];
-            for (let i = 0; i < componentApis.length; i++) {
-              const componentApi = componentApis[i];
-              const {attributes: componentAttributes} = componentApi;
-
-              if (componentAttributes) {
-                for (const componentAttributeName in componentAttributes) {
-                  if (!result[componentAttributeName]) {
-                    const componentAttribute = componentAttributes[componentAttributeName];
-                    const attributeSpec = _shallowClone(componentAttribute);
-                    result[componentAttributeName] = attributeSpec;
-                  }
-                }
-              }
-            }
-
-            return result;
-          };
-
-          class TagsApi extends EventEmitter {
-            constructor() {
-              super();
-
-              this.setMaxListeners(100);
-            }
-
-            registerEntity(pluginInstance, componentApi) {
-              const normalizedComponentApi = menuUtils.normalizeComponentApi(componentApi);
-              componentApi[normalizedSymbol] = normalizedComponentApi;
-
-              const name = archae.getPath(pluginInstance);
-
-              let tagComponentApiComponents = tagComponentApis[name];
-              if (!tagComponentApiComponents) {
-                tagComponentApiComponents = [];
-                tagComponentApis[name] = tagComponentApiComponents;
-              }
-              tagComponentApiComponents.push(normalizedComponentApi);
-
-              const entityTags = tagMeshes.filter(({item}) => item.type === 'entity' && item.module === name);
-              for (let i = 0; i < entityTags.length; i++) {
-                const entityTag = entityTags[i];
-                const {item} = entityTag;
-                const {instance: entityElement} = item;
-
-                if (entityElement) {
-                  _addEntityCallback(normalizedComponentApi, entityElement);
-
-                   const entityAttributes = _getElementJsonAttributes(entityElement);
-                  _entityValueChangedCallbacks(normalizedComponentApi, entityElement, entityAttributes);
-                }
-              }
-            }
-
-            unregisterEntity(pluginInstance, componentApi) {
-              const {[normalizedSymbol]: normalizedComponentApi} = componentApi;
-
-              const name = archae.getPath(pluginInstance);
-
-              const entityTags = tagMeshes.filter(({item}) => item.type === 'entity' && item.module === name && !item.instancing);
-              for (let i = 0; i < entityTags.length; i++) {
-                const entityTag = entityTags[i];
-                const {item} = entityTag;
-                const {instance: entityElement} = item;
-
-                if (entityElement) {
-                  _removeEntityCallback(normalizedComponentApi, entityElement);
+                if (componentAttribute) {
+                  const attributeSpec = _shallowClone(componentAttribute);
+                  attributeSpec.name = attributeName;
+                  return attributeSpec;
                 }
               }
 
-              const tagComponentApiComponents = tagComponentApis[name];
-              tagComponentApiComponents.splice(tagComponentApiComponents.indexOf(normalizedComponentApi), 1);
-              if (tagComponentApiComponents.length === 0) {
-                delete tagComponentApis[name];
-              }
-            }
+              return null;
+            };
+            const _getAttributeSpecs = module => {
+              const result = [];
 
-            getTagMeshes() {
-              return tagMeshes;
-            }
+              const componentApis = tagComponentApis[module] || [];
+              for (let i = 0; i < componentApis.length; i++) {
+                const componentApi = componentApis[i];
+                const { attributes: componentAttributes } = componentApi;
 
-            getAttributeSpec(module, attributeName) {
-              return _getAttributeSpec(module, attributeName);
-            }
+                if (componentAttributes) {
+                  for (const componentAttributeName in componentAttributes) {
+                    if (
+                      !result.some(
+                        attributeSpec =>
+                          attributeSpec.name === componentAttributeName
+                      )
+                    ) {
+                      const componentAttribute =
+                        componentAttributes[componentAttributeName];
 
-            getAttributeSpecs(module) {
-              return _getAttributeSpecs(module);
-            }
-
-            getAttributeSpecsMap(module) {
-              return _getAttributeSpecsMap(module);
-            }
-
-            makeTag(itemSpec, {initialUpdate = true} = {}) {
-              const object = new THREE.Object3D();
-
-              const item = new Item(
-                itemSpec.type,
-                itemSpec.id,
-                itemSpec.name,
-                itemSpec.displayName,
-                itemSpec.module,
-                itemSpec.description,
-                itemSpec.version,
-                itemSpec.versions,
-                itemSpec.readme,
-                itemSpec.tagName, // XXX get rid of these
-                itemSpec.attributes,
-                itemSpec.mimeType,
-                itemSpec.quantity,
-                itemSpec.words,
-                itemSpec.open,
-                itemSpec.details,
-                itemSpec.paused,
-                itemSpec.value,
-                itemSpec.metadata
-              );
-              object.item = item;
-
-              if (itemSpec.type === 'entity' || itemSpec.type === 'asset') {
-                object.setAttribute = (attribute, value) => {
-                  item.setAttribute(attribute, value);
-                };
-              }
-              if (itemSpec.type === 'file') {
-                object.open = () => {
-                  const tagMesh = object;
-                  const {item} = tagMesh;
-                  item.open = true;
-
-                  if (item.type === 'file') {
-                    item.getMedia()
-                      .then(({previewMesh}) => {
-                        planeOpenMesh.add(previewMesh);
-                      })
-                      .catch(err => {
-                        console.warn(err);
-                      });
-                  }
-
-                  const {page} = planeOpenMesh;
-                  page.initialUpdate();
-                };
-                object.close = () => {
-                  const tagMesh = object;
-                  const {item} = tagMesh;
-                  item.open = false;
-
-                  if (item.type === 'file') {
-                    if (item.preview && item.preview.visible) {
-                      item.preview.visible = false;
+                      const attributeSpec = _shallowClone(componentAttribute);
+                      attributeSpec.name = componentAttributeName;
+                      result.push(attributeSpec);
                     }
                   }
-                };
-                object.play = () => {
-                  const tagMesh = object;
-                  const {item} = tagMesh;
+                }
+              }
 
-                  item.play();
-                };
-                object.pause = () => {
-                  const tagMesh = object;
-                  const {item} = tagMesh;
+              return result;
+            };
+            const _getAttributeSpecsMap = module => {
+              const result = {};
 
-                  item.pause();
-                };
-                object.seek = value => {
-                  const tagMesh = object;
-                  const {item} = tagMesh;
+              const componentApis = tagComponentApis[module] || [];
+              for (let i = 0; i < componentApis.length; i++) {
+                const componentApi = componentApis[i];
+                const { attributes: componentAttributes } = componentApi;
 
-                  item.seek(value);
-                };
+                if (componentAttributes) {
+                  for (const componentAttributeName in componentAttributes) {
+                    if (!result[componentAttributeName]) {
+                      const componentAttribute =
+                        componentAttributes[componentAttributeName];
+                      const attributeSpec = _shallowClone(componentAttribute);
+                      result[componentAttributeName] = attributeSpec;
+                    }
+                  }
+                }
+              }
 
-                /* if (item.open) {
+              return result;
+            };
+
+            class TagsApi extends EventEmitter {
+              constructor() {
+                super();
+
+                this.setMaxListeners(100);
+              }
+
+              registerEntity(pluginInstance, componentApi) {
+                const normalizedComponentApi = menuUtils.normalizeComponentApi(
+                  componentApi
+                );
+                componentApi[normalizedSymbol] = normalizedComponentApi;
+
+                const name = archae.getPath(pluginInstance);
+
+                let tagComponentApiComponents = tagComponentApis[name];
+                if (!tagComponentApiComponents) {
+                  tagComponentApiComponents = [];
+                  tagComponentApis[name] = tagComponentApiComponents;
+                }
+                tagComponentApiComponents.push(normalizedComponentApi);
+
+                const entityTags = tagMeshes.filter(
+                  ({ item }) => item.type === 'entity' && item.module === name
+                );
+                for (let i = 0; i < entityTags.length; i++) {
+                  const entityTag = entityTags[i];
+                  const { item } = entityTag;
+                  const { instance: entityElement } = item;
+
+                  if (entityElement) {
+                    _addEntityCallback(normalizedComponentApi, entityElement);
+
+                    const entityAttributes = _getElementJsonAttributes(
+                      entityElement
+                    );
+                    _entityValueChangedCallbacks(
+                      normalizedComponentApi,
+                      entityElement,
+                      entityAttributes
+                    );
+                  }
+                }
+              }
+
+              unregisterEntity(pluginInstance, componentApi) {
+                const {
+                  [normalizedSymbol]: normalizedComponentApi,
+                } = componentApi;
+
+                const name = archae.getPath(pluginInstance);
+
+                const entityTags = tagMeshes.filter(
+                  ({ item }) =>
+                    item.type === 'entity' &&
+                    item.module === name &&
+                    !item.instancing
+                );
+                for (let i = 0; i < entityTags.length; i++) {
+                  const entityTag = entityTags[i];
+                  const { item } = entityTag;
+                  const { instance: entityElement } = item;
+
+                  if (entityElement) {
+                    _removeEntityCallback(
+                      normalizedComponentApi,
+                      entityElement
+                    );
+                  }
+                }
+
+                const tagComponentApiComponents = tagComponentApis[name];
+                tagComponentApiComponents.splice(
+                  tagComponentApiComponents.indexOf(normalizedComponentApi),
+                  1
+                );
+                if (tagComponentApiComponents.length === 0) {
+                  delete tagComponentApis[name];
+                }
+              }
+
+              getTagMeshes() {
+                return tagMeshes;
+              }
+
+              getAttributeSpec(module, attributeName) {
+                return _getAttributeSpec(module, attributeName);
+              }
+
+              getAttributeSpecs(module) {
+                return _getAttributeSpecs(module);
+              }
+
+              getAttributeSpecsMap(module) {
+                return _getAttributeSpecsMap(module);
+              }
+
+              makeTag(itemSpec, { initialUpdate = true } = {}) {
+                const object = new THREE.Object3D();
+
+                const item = new Item(
+                  itemSpec.type,
+                  itemSpec.id,
+                  itemSpec.name,
+                  itemSpec.displayName,
+                  itemSpec.module,
+                  itemSpec.description,
+                  itemSpec.version,
+                  itemSpec.versions,
+                  itemSpec.readme,
+                  itemSpec.tagName, // XXX get rid of these
+                  itemSpec.attributes,
+                  itemSpec.mimeType,
+                  itemSpec.quantity,
+                  itemSpec.words,
+                  itemSpec.open,
+                  itemSpec.details,
+                  itemSpec.paused,
+                  itemSpec.value,
+                  itemSpec.metadata
+                );
+                object.item = item;
+
+                if (itemSpec.type === 'entity' || itemSpec.type === 'asset') {
+                  object.setAttribute = (attribute, value) => {
+                    item.setAttribute(attribute, value);
+                  };
+                }
+                if (itemSpec.type === 'file') {
+                  object.open = () => {
+                    const tagMesh = object;
+                    const { item } = tagMesh;
+                    item.open = true;
+
+                    if (item.type === 'file') {
+                      item
+                        .getMedia()
+                        .then(({ previewMesh }) => {
+                          planeOpenMesh.add(previewMesh);
+                        })
+                        .catch(err => {
+                          console.warn(err);
+                        });
+                    }
+
+                    const { page } = planeOpenMesh;
+                    page.initialUpdate();
+                  };
+                  object.close = () => {
+                    const tagMesh = object;
+                    const { item } = tagMesh;
+                    item.open = false;
+
+                    if (item.type === 'file') {
+                      if (item.preview && item.preview.visible) {
+                        item.preview.visible = false;
+                      }
+                    }
+                  };
+                  object.play = () => {
+                    const tagMesh = object;
+                    const { item } = tagMesh;
+
+                    item.play();
+                  };
+                  object.pause = () => {
+                    const tagMesh = object;
+                    const { item } = tagMesh;
+
+                    item.pause();
+                  };
+                  object.seek = value => {
+                    const tagMesh = object;
+                    const { item } = tagMesh;
+
+                    item.seek(value);
+                  };
+
+                  /* if (item.open) {
                   object.open();
                 }
                 if (item.value !== undefined) {
@@ -1453,165 +1580,182 @@ class Tags {
                 if (item.paused === false) {
                   object.play();
                 } */
-              }
-
-              object.destroy = () => {
-                const {item} = object;
-                item.destroy();
-              };
-
-              tagMeshes.push(object);
-
-              return object;
-            }
-
-            destroyTag(tagMesh) {
-              const index = tagMeshes.indexOf(tagMesh);
-
-              if (index !== -1) {
-                tagMesh.destroy();
-
-                tagMeshes.splice(index, 1);
-              }
-            }
-
-            mutateAddEntity(tagMesh) {
-              const {item} = tagMesh;
-              const {tagName: entityTagName, module: entityModule, version: entityVersion, attributes: entityAttributes} = item;
-              const entityElement = document.createElement(entityTagName);
-
-              const plugin = _getPlugin(entityModule, entityVersion);
-              entityElement.setAttribute('module', plugin);
-
-              for (const attributeName in entityAttributes) {
-                const attribute = entityAttributes[attributeName];
-                const {value: attributeValue} = attribute;
-                const attributeValueString = _stringifyAttribute(attributeValue);
-                entityElement.setAttribute(attributeName, attributeValueString);
-              }
-
-              entityElement.item = item;
-              item.instance = entityElement;
-
-              rootEntitiesElement.appendChild(entityElement);
-
-              return entityElement;
-            }
-
-            mutateRemoveEntity(tagMesh) {
-              const {item} = tagMesh;
-              const {instance: entityElement} = item;
-
-              entityElement.item = null;
-              item.instance = null;
-
-              if (entityElement.parentNode) {
-                entityElement.parentNode.removeChild(entityElement);
-              }
-
-              return entityElement;
-            }
-
-            getTagComponentApis(tag) {
-              return tagComponentApis[tag];
-            }
-
-            makeListener(selector) {
-              const listener = new EventEmitter();
-
-              const _elementAdded = entityElement => {
-                if (entityElement.matches(selector)) {
-                  listener.emit('add', entityElement);
                 }
-              };
-              this.on('elementAdded', _elementAdded);
-              const _elementRemoved = entityElement => {
-                if (entityElement.matches(selector)) {
-                  listener.emit('remove', entityElement);
+
+                object.destroy = () => {
+                  const { item } = object;
+                  item.destroy();
+                };
+
+                tagMeshes.push(object);
+
+                return object;
+              }
+
+              destroyTag(tagMesh) {
+                const index = tagMeshes.indexOf(tagMesh);
+
+                if (index !== -1) {
+                  tagMesh.destroy();
+
+                  tagMeshes.splice(index, 1);
                 }
-              };
-              this.on('elementRemoved', _elementRemoved);
+              }
 
-              const initialEntityElement = rootEntitiesElement.querySelector(selector);
-              let timeout = null;
-              if (initialEntityElement && ('_numComponents' in initialEntityElement) && initialEntityElement._numComponents > 0) {
-                timeout = setTimeout(() => {
-                  timeout = null;
+              mutateAddEntity(tagMesh) {
+                const { item } = tagMesh;
+                const {
+                  tagName: entityTagName,
+                  module: entityModule,
+                  version: entityVersion,
+                  attributes: entityAttributes,
+                } = item;
+                const entityElement = document.createElement(entityTagName);
 
-                  listener.emit('add', initialEntityElement);
+                const plugin = _getPlugin(entityModule, entityVersion);
+                entityElement.setAttribute('module', plugin);
+
+                for (const attributeName in entityAttributes) {
+                  const attribute = entityAttributes[attributeName];
+                  const { value: attributeValue } = attribute;
+                  const attributeValueString = _stringifyAttribute(
+                    attributeValue
+                  );
+                  entityElement.setAttribute(
+                    attributeName,
+                    attributeValueString
+                  );
+                }
+
+                entityElement.item = item;
+                item.instance = entityElement;
+
+                rootEntitiesElement.appendChild(entityElement);
+
+                return entityElement;
+              }
+
+              mutateRemoveEntity(tagMesh) {
+                const { item } = tagMesh;
+                const { instance: entityElement } = item;
+
+                entityElement.item = null;
+                item.instance = null;
+
+                if (entityElement.parentNode) {
+                  entityElement.parentNode.removeChild(entityElement);
+                }
+
+                return entityElement;
+              }
+
+              getTagComponentApis(tag) {
+                return tagComponentApis[tag];
+              }
+
+              makeListener(selector) {
+                const listener = new EventEmitter();
+
+                const _elementAdded = entityElement => {
+                  if (entityElement.matches(selector)) {
+                    listener.emit('add', entityElement);
+                  }
+                };
+                this.on('elementAdded', _elementAdded);
+                const _elementRemoved = entityElement => {
+                  if (entityElement.matches(selector)) {
+                    listener.emit('remove', entityElement);
+                  }
+                };
+                this.on('elementRemoved', _elementRemoved);
+
+                const initialEntityElement = rootEntitiesElement.querySelector(
+                  selector
+                );
+                let timeout = null;
+                if (
+                  initialEntityElement &&
+                  '_numComponents' in initialEntityElement &&
+                  initialEntityElement._numComponents > 0
+                ) {
+                  timeout = setTimeout(() => {
+                    timeout = null;
+
+                    listener.emit('add', initialEntityElement);
+                  });
+                }
+
+                listener.destroy = () => {
+                  this.removeListener('elementAdded', _elementAdded);
+                  this.removeListener('elementRemoved', _elementRemoved);
+
+                  if (timeout !== null) {
+                    clearTimeout(timeout);
+                  }
+                };
+
+                return listener;
+              }
+
+              destroyListener(listener) {
+                listener.destroy();
+              }
+
+              requestElement(selector, { timeout = 30 * 1000 } = {}) {
+                return new Promise((accept, reject) => {
+                  const element = rootEntitiesElement.querySelector(selector);
+                  if (element && element._numComponents > 0) {
+                    accept(element);
+                  } else {
+                    const _elementAdded = entityElement => {
+                      if (entityElement.matches(selector)) {
+                        clearTimeout(localTimeout);
+
+                        accept(entityElement);
+                      }
+                    };
+                    this.on('elementAdded', _elementAdded);
+
+                    const localTimeout = setTimeout(() => {
+                      this.removeListener('elementAdded', _elementAdded);
+
+                      const err = new Error('timeout out');
+                      err.code = 'ETIMEOUT';
+                      reject(err);
+                    }, timeout);
+                  }
                 });
               }
 
-              listener.destroy = () => {
-                this.removeListener('elementAdded', _elementAdded);
-                this.removeListener('elementRemoved', _elementRemoved);
+              getWorldElement() {
+                return rootWorldElement;
+              }
 
-                if (timeout !== null) {
-                  clearTimeout(timeout);
-                }
-              };
+              getEntitiesElement() {
+                return rootEntitiesElement;
+              }
 
-              return listener;
+              message(detail) {
+                const e = new CustomEvent('message', {
+                  detail: detail,
+                });
+                rootWorldElement.dispatchEvent(e);
+              }
+
+              ignoreEntityMutation(entityMutationIgnoreSpec) {
+                entityMutationIgnores.push(entityMutationIgnoreSpec);
+              }
+
+              updateLinesMesh() {
+                linesMesh.render();
+              }
             }
+            const tagsApi = new TagsApi();
 
-            destroyListener(listener) {
-              listener.destroy();
-            }
-
-            requestElement(selector, {timeout = 30 * 1000} = {}) {
-              return new Promise((accept, reject) => {
-                const element = rootEntitiesElement.querySelector(selector);
-                if (element && element._numComponents > 0) {
-                  accept(element);
-                } else {
-                  const _elementAdded = entityElement => {
-                    if (entityElement.matches(selector)) {
-                      clearTimeout(localTimeout);
-
-                      accept(entityElement);
-                    }
-                  };
-                  this.on('elementAdded', _elementAdded);
-
-                  const localTimeout = setTimeout(() => {
-                    this.removeListener('elementAdded', _elementAdded);
-
-                    const err = new Error('timeout out');
-                    err.code = 'ETIMEOUT';
-                    reject(err);
-                  }, timeout);
-                }
-              });
-            }
-
-            getWorldElement() {
-              return rootWorldElement;
-            }
-
-            getEntitiesElement() {
-              return rootEntitiesElement;
-            }
-
-            message(detail) {
-              const e = new CustomEvent('message', {
-                detail: detail,
-              });
-              rootWorldElement.dispatchEvent(e);
-            }
-
-            ignoreEntityMutation(entityMutationIgnoreSpec) {
-              entityMutationIgnores.push(entityMutationIgnoreSpec);
-            }
-
-            updateLinesMesh() {
-              linesMesh.render();
-            }
-          };
-          const tagsApi = new TagsApi();
-
-          return tagsApi;
+            return tagsApi;
+          }
         }
-      });
+      );
   }
 
   unmount() {
@@ -1643,8 +1787,12 @@ const _shallowClone = o => {
 
   return result;
 };
-const _makeId = () => Math.random().toString(36).substring(7);
+const _makeId = () =>
+  Math.random()
+    .toString(36)
+    .substring(7);
 const _clone = o => JSON.parse(JSON.stringify(o));
-const _getPlugin = (module, version) => /^\//.test(module) ? module : `${module}@${version}`;
+const _getPlugin = (module, version) =>
+  /^\//.test(module) ? module : `${module}@${version}`;
 
 module.exports = Tags;

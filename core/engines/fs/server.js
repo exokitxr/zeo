@@ -10,8 +10,8 @@ class Fs {
   }
 
   mount() {
-    const {_archae: archae} = this;
-    const {express, app, dirname, dataDirectory} = archae.getCore();
+    const { _archae: archae } = this;
+    const { express, app, dirname, dataDirectory } = archae.getCore();
 
     const cleanups = [];
     this._cleanup = () => {
@@ -26,59 +26,65 @@ class Fs {
     });
 
     const fsPath = path.join(dirname, dataDirectory, 'fs');
-    const _ensureDirectory = p => new Promise((accept, reject) => {
-      mkdirp(p, err => {
-        if (!err) {
-          accept();
-        } else {
-          reject(err);
-        }
+    const _ensureDirectory = p =>
+      new Promise((accept, reject) => {
+        mkdirp(p, err => {
+          if (!err) {
+            accept();
+          } else {
+            reject(err);
+          }
+        });
       });
-    });
 
-    return _ensureDirectory(fsPath)
-      .then(() => {
-        if (live) {
-          const fsStatic = express.static(fsPath);
-          function serveFsDownload(req, res, next) {
-            const fileName = req.params[0] === 'name' ? String(murmur(req.params[1])) : req.params[1];
-            req.url = '/' + fileName;
-            fsStatic(req, res, next);
-          }
-          app.get(/^\/archae\/fs\/(name|hash)\/([^\/]+)$/, serveFsDownload);
+    return _ensureDirectory(fsPath).then(() => {
+      if (live) {
+        const fsStatic = express.static(fsPath);
+        function serveFsDownload(req, res, next) {
+          const fileName =
+            req.params[0] === 'name'
+              ? String(murmur(req.params[1]))
+              : req.params[1];
+          req.url = '/' + fileName;
+          fsStatic(req, res, next);
+        }
+        app.get(/^\/archae\/fs\/(name|hash)\/([^\/]+)$/, serveFsDownload);
 
-          function serveFsUpload(req, res, next) {
-            const fileName = req.params[0] === 'name' ? String(murmur(req.params[1])) : req.params[1];
-            const ws = fs.createWriteStream(path.join(fsPath, fileName));
-            req.pipe(ws);
-            ws.on('finish', err => {
-              res.send();
-            });
-            ws.on('error', err => {
-              res.status(500);
-              res.json({
-                error: err.stack,
-              });
-            });
-          }
-          app.put(/^\/archae\/fs\/(name|hash)\/([^\/]+)$/, serveFsUpload);
-
-          cleanups.push(() => {
-            function removeMiddlewares(route, i, routes) {
-              if (
-                route.handle.name === 'serveFsDownload' ||
-                route.handle.name === 'serveFsUpload'
-              ) {
-                routes.splice(i, 1);
-              }
-              if (route.route) {
-                route.route.stack.forEach(removeMiddlewares);
-              }
-            }
-            app._router.stack.forEach(removeMiddlewares);
+        function serveFsUpload(req, res, next) {
+          const fileName =
+            req.params[0] === 'name'
+              ? String(murmur(req.params[1]))
+              : req.params[1];
+          const ws = fs.createWriteStream(path.join(fsPath, fileName));
+          req.pipe(ws);
+          ws.on('finish', err => {
+            res.send();
           });
+          ws.on('error', err => {
+            res.status(500);
+            res.json({
+              error: err.stack,
+            });
+          });
+        }
+        app.put(/^\/archae\/fs\/(name|hash)\/([^\/]+)$/, serveFsUpload);
 
-          /* class FsFile {
+        cleanups.push(() => {
+          function removeMiddlewares(route, i, routes) {
+            if (
+              route.handle.name === 'serveFsDownload' ||
+              route.handle.name === 'serveFsUpload'
+            ) {
+              routes.splice(i, 1);
+            }
+            if (route.route) {
+              route.route.stack.forEach(removeMiddlewares);
+            }
+          }
+          app._router.stack.forEach(removeMiddlewares);
+        });
+
+        /* class FsFile {
             constructor(dirname, pathname) {
               this.dirname = dirname;
               this.pathname = pathname;
@@ -127,8 +133,8 @@ class Fs {
           return {
             makeFile: _makeFile,
           }; */
-        }
-      });
+      }
+    });
   }
 
   unmount() {

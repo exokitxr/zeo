@@ -1,5 +1,5 @@
 const events = require('events');
-const {EventEmitter} = events;
+const { EventEmitter } = events;
 
 class VoiceChat {
   constructor(archae) {
@@ -7,8 +7,8 @@ class VoiceChat {
   }
 
   mount() {
-    const {_archae: archae} = this;
-    const {app, wss} = archae.getCore();
+    const { _archae: archae } = this;
+    const { app, wss } = archae.getCore();
 
     const connections = [];
     const audioBuffers = new Map();
@@ -55,10 +55,10 @@ class VoiceChat {
     };
 
     wss.on('connection', c => {
-      const {url} = c.upgradeReq;
+      const { url } = c.upgradeReq;
 
       let match;
-      if (match = url.match(/\/archae\/voicechatWs\?id=(.+)$/)) {
+      if ((match = url.match(/\/archae\/voicechatWs\?id=(.+)$/))) {
         const peerId = parseInt(decodeURIComponent(match[1]), 10);
 
         c.peerId = peerId;
@@ -67,7 +67,7 @@ class VoiceChat {
             const audioBuffer = _getAudioBuffer(c.peerId);
             audioBuffer.write(msg);
           } else {
-            console.warn('voicechat invalid message', {msg, flags});
+            console.warn('voicechat invalid message', { msg, flags });
           }
         });
         c.on('close', () => {

@@ -3,7 +3,6 @@ import {
   LABEL_HEIGHT,
   WORLD_LABEL_WIDTH,
   WORLD_LABEL_HEIGHT,
-
   MENU_WIDTH,
   MENU_HEIGHT,
   WORLD_MENU_WIDTH,
@@ -39,47 +38,45 @@ class Assets {
       live = false;
     };
 
-    const _requestJson = url => fetch(url, {
-      credentials: 'include',
-    })
-      .then(res => res.json());
-    const _requestImage = url => new Promise((accept, reject) => {
-      const img = new Image();
+    const _requestJson = url =>
+      fetch(url, {
+        credentials: 'include',
+      }).then(res => res.json());
+    const _requestImage = url =>
+      new Promise((accept, reject) => {
+        const img = new Image();
 
-      img.onload = () => {
-        _cleanup();
+        img.onload = () => {
+          _cleanup();
 
-        accept(img);
-      };
-      img.onerror = err => {
-        reject(err);
-      };
+          accept(img);
+        };
+        img.onerror = err => {
+          reject(err);
+        };
 
-      img.crossOrigin = true;
-      img.src = url;
+        img.crossOrigin = true;
+        img.src = url;
 
-      const _cleanup = () => {
-        img.oncanplay = null;
-        img.onerror = null;
-      };
-    });
-    const _requestSpritesheet = () => Promise.all([
-      _requestImage(imgPath + '/spritesheet.png'),
-      _requestJson(imgPath + '/sprites.json'),
-      _requestJson(imgPath + '/assets.json'),
-    ])
-      .then(([
-        img,
-        spriteCoords,
-        assetSprites,
-      ]) => {
+        const _cleanup = () => {
+          img.oncanplay = null;
+          img.onerror = null;
+        };
+      });
+    const _requestSpritesheet = () =>
+      Promise.all([
+        _requestImage(imgPath + '/spritesheet.png'),
+        _requestJson(imgPath + '/sprites.json'),
+        _requestJson(imgPath + '/assets.json'),
+      ]).then(([img, spriteCoords, assetSprites]) => {
         const canvas = document.createElement('canvas');
         canvas.width = img.width;
         canvas.height = img.height;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0);
         const spriteSize = 16;
-        canvas.getSpriteImageData = (x, y, w, h) => ctx.getImageData(x, y, spriteSize, spriteSize);
+        canvas.getSpriteImageData = (x, y, w, h) =>
+          ctx.getImageData(x, y, spriteSize, spriteSize);
 
         const spriteNames = Object.keys(spriteCoords);
 
@@ -90,8 +87,10 @@ class Assets {
           assetSprites,
         };
       });
-    const _requestSfx = () => Promise.all(SFX.map(sfx => sfxr.requestSfx(sfxPath + '/' + sfx + '.ogg')))
-      .then(audios => {
+    const _requestSfx = () =>
+      Promise.all(
+        SFX.map(sfx => sfxr.requestSfx(sfxPath + '/' + sfx + '.ogg'))
+      ).then(audios => {
         const result = {};
         for (let i = 0; i < SFX.length; i++) {
           result[SFX[i]] = audios[i];
@@ -111,78 +110,80 @@ class Assets {
       _requestSpritesheet(),
       _requestSfx(),
     ])
-      .then(([
-        plugins,
-        hmdModelJson,
-        controllerModelJson,
-        spritesheet,
-        sfx,
-      ]) => {
-        if (live) {
-          const [
-            three,
-            biolumi,
-            hashUtils,
-            creatureUtils,
-          ] = plugins;
-          const {THREE, camera} = three;
+      .then(
+        ([plugins, hmdModelJson, controllerModelJson, spritesheet, sfx]) => {
+          if (live) {
+            const [three, biolumi, hashUtils, creatureUtils] = plugins;
+            const { THREE, camera } = three;
 
-          const _requestJsonMesh = (modelJson, modelTexturePath) => new Promise((accept, reject) => {
-            const loader = new THREE.ObjectLoader();
-            loader.setTexturePath(modelTexturePath);
-            loader.parse(modelJson, accept);
-          });
-          const _requestHmdMesh = () => _requestJsonMesh(hmdModelJson, hmdModelPath.replace(/[^\/]+$/, ''))
-            .then(mesh => {
-              const object = new THREE.Object3D();
+            const _requestJsonMesh = (modelJson, modelTexturePath) =>
+              new Promise((accept, reject) => {
+                const loader = new THREE.ObjectLoader();
+                loader.setTexturePath(modelTexturePath);
+                loader.parse(modelJson, accept);
+              });
+            const _requestHmdMesh = () =>
+              _requestJsonMesh(
+                hmdModelJson,
+                hmdModelPath.replace(/[^\/]+$/, '')
+              ).then(mesh => {
+                const object = new THREE.Object3D();
 
-              mesh.scale.set(0.045, 0.045, 0.045);
-              mesh.rotation.order = camera.rotation.order;
-              mesh.rotation.y = Math.PI;
+                mesh.scale.set(0.045, 0.045, 0.045);
+                mesh.rotation.order = camera.rotation.order;
+                mesh.rotation.y = Math.PI;
 
-              object.add(mesh);
+                object.add(mesh);
 
-              return object;
-            });
-          const _requestControllerMesh = () => _requestJsonMesh(controllerModelJson, controllerModelPath.replace(/[^\/]+$/, ''));
+                return object;
+              });
+            const _requestControllerMesh = () =>
+              _requestJsonMesh(
+                controllerModelJson,
+                controllerModelPath.replace(/[^\/]+$/, '')
+              );
 
-          return Promise.all([
-            Promise.resolve(plugins),
-            _requestHmdMesh(),
-            _requestControllerMesh(),
-            Promise.resolve(spritesheet),
-            Promise.resolve(sfx),
-          ]);
+            return Promise.all([
+              Promise.resolve(plugins),
+              _requestHmdMesh(),
+              _requestControllerMesh(),
+              Promise.resolve(spritesheet),
+              Promise.resolve(sfx),
+            ]);
+          }
         }
-      })
-      .then(([
-        [
-          three,
-          biolumi,
-          hashUtils,
-          creatureUtils,
-        ],
-        hmdModelMesh,
-        controllerModelMesh,
-        spritesheet,
-        sfx,
-      ]) => {
-        if (live) {
-          const {THREE, camera} = three;
-          const {murmur} = hashUtils;
-          const menuRenderer = menuRender.makeRenderer({
-            creatureUtils,
-          });
+      )
+      .then(
+        (
+          [
+            [three, biolumi, hashUtils, creatureUtils],
+            hmdModelMesh,
+            controllerModelMesh,
+            spritesheet,
+            sfx,
+          ]
+        ) => {
+          if (live) {
+            const { THREE, camera } = three;
+            const { murmur } = hashUtils;
+            const menuRenderer = menuRender.makeRenderer({
+              creatureUtils,
+            });
 
-          const _getSpriteImageData = s => {
-            const spriteName = spritesheet.assetSprites[s] ||
-              spritesheet.spriteNames[Math.floor((murmur(s) / 0xFFFFFFFF) * spritesheet.spriteNames.length)];
-            const spriteCoods = spritesheet.spriteCoords[spriteName];
-            const [x, y] = spriteCoods;
-            const imageData = spritesheet.canvas.getSpriteImageData(x, y);
-            return imageData;
-          };
-          /* const _makePlayerLabelMesh = ({username}) => {
+            const _getSpriteImageData = s => {
+              const spriteName =
+                spritesheet.assetSprites[s] ||
+                spritesheet.spriteNames[
+                  Math.floor(
+                    murmur(s) / 0xffffffff * spritesheet.spriteNames.length
+                  )
+                ];
+              const spriteCoods = spritesheet.spriteCoords[spriteName];
+              const [x, y] = spriteCoods;
+              const imageData = spritesheet.canvas.getSpriteImageData(x, y);
+              return imageData;
+            };
+            /* const _makePlayerLabelMesh = ({username}) => {
             const labelState = {
               username: username,
             };
@@ -244,74 +245,80 @@ class Assets {
 
             return mesh;
           }; */
-          const _makePlayerMenuMesh = ({username}) => {
-            const menuState = {
-              username: username,
+            const _makePlayerMenuMesh = ({ username }) => {
+              const menuState = {
+                username: username,
+              };
+
+              const menuUi = biolumi.makeUi({
+                width: MENU_WIDTH,
+                height: MENU_HEIGHT,
+                // color: [1, 1, 1, 0],
+              });
+              const mesh = menuUi.makePage(
+                ({ menu: menuState }) => ({
+                  type: 'html',
+                  src: menuRenderer.getMenuSrc({
+                    menu: menuState,
+                  }),
+                  x: 0,
+                  y: 0,
+                  w: MENU_WIDTH,
+                  h: MENU_HEIGHT,
+                }),
+                {
+                  type: 'menu',
+                  state: {
+                    menu: menuState,
+                  },
+                  worldWidth: WORLD_MENU_WIDTH,
+                  worldHeight: WORLD_MENU_HEIGHT,
+                }
+              );
+              mesh.rotation.order = camera.rotation.order;
+
+              const { page } = mesh;
+              page.update();
+
+              mesh.update = menuStatus => {
+                if (menuStatus.open) {
+                  if (
+                    !menuStatus.position.equals(mesh.position) ||
+                    !menuStatus.rotation.equals(mesh.rotation) ||
+                    !menuStatus.scale.equals(mesh.scale)
+                  ) {
+                    mesh.position.copy(menuStatus.position);
+                    mesh.quaternion.copy(menuStatus.rotation);
+                    mesh.scale.copy(menuStatus.scale);
+                    mesh.updateMatrixWorld();
+                  }
+
+                  if (!mesh.visible) {
+                    mesh.visible = true;
+                  }
+                } else {
+                  if (mesh.visible) {
+                    mesh.visible = false;
+                  }
+                }
+              };
+
+              return mesh;
             };
 
-            const menuUi = biolumi.makeUi({
-              width: MENU_WIDTH,
-              height: MENU_HEIGHT,
-              // color: [1, 1, 1, 0],
-            });
-            const mesh = menuUi.makePage(({
-              menu: menuState,
-            }) => ({
-              type: 'html',
-              src: menuRenderer.getMenuSrc({
-                menu: menuState,
-              }),
-              x: 0,
-              y: 0,
-              w: MENU_WIDTH,
-              h: MENU_HEIGHT,
-            }), {
-              type: 'menu',
-              state: {
-                menu: menuState,
+            return {
+              models: {
+                hmdModelMesh,
+                controllerModelMesh,
               },
-              worldWidth: WORLD_MENU_WIDTH,
-              worldHeight: WORLD_MENU_HEIGHT,
-            });
-            mesh.rotation.order = camera.rotation.order;
-
-            const {page} = mesh;
-            page.update();
-
-            mesh.update = menuStatus => {
-              if (menuStatus.open) {
-                if (!menuStatus.position.equals(mesh.position) || !menuStatus.rotation.equals(mesh.rotation) || !menuStatus.scale.equals(mesh.scale)) {
-                  mesh.position.copy(menuStatus.position);
-                  mesh.quaternion.copy(menuStatus.rotation);
-                  mesh.scale.copy(menuStatus.scale);
-                  mesh.updateMatrixWorld();
-                }
-
-                if (!mesh.visible) {
-                  mesh.visible = true;
-                }
-              } else {
-                if (mesh.visible) {
-                  mesh.visible = false;
-                }
-              }
+              sfx: sfx,
+              getSpriteImageData: _getSpriteImageData,
+              // makePlayerLabelMesh: _makePlayerLabelMesh,
+              makePlayerMenuMesh: _makePlayerMenuMesh,
             };
-
-            return mesh;
-          };
-
-          return {
-            models: {
-              hmdModelMesh,
-              controllerModelMesh,
-            },
-            sfx: sfx,
-            getSpriteImageData: _getSpriteImageData,
-            // makePlayerLabelMesh: _makePlayerLabelMesh,
-            makePlayerMenuMesh: _makePlayerMenuMesh,
-          };
+          }
         }
-      });
+      );
   }
 
   unmount() {

@@ -6,24 +6,28 @@ class Hand {
   }
 
   mount() {
-    const {_archae: archae} = this;
-    const {ws, app, wss} = archae.getCore();
+    const { _archae: archae } = this;
+    const { ws, app, wss } = archae.getCore();
 
     let live = true;
     this._cleanup = () => {
       live = false;
     };
 
-    return archae.requestPlugins([
-      '/core/engines/three',
-    ]).then(([
-      three,
-    ]) => {
+    return archae.requestPlugins(['/core/engines/three']).then(([three]) => {
       if (live) {
-        const {THREE} = three;
+        const { THREE } = three;
 
         class Grabbable {
-          constructor(n, position, rotation, scale, localPosition, localRotation, localScale) {
+          constructor(
+            n,
+            position,
+            rotation,
+            scale,
+            localPosition,
+            localRotation,
+            localScale
+          ) {
             this.n = n;
             this.position = position;
             this.rotation = rotation;
@@ -38,7 +42,7 @@ class Hand {
           }
 
           grab(userId, side) {
-            const {n} = this;
+            const { n } = this;
 
             this.userId = userId;
             this.side = side;
@@ -53,7 +57,14 @@ class Hand {
             this.data[key] = value;
           }
 
-          setState(position, rotation, scale, localPosition, localRotation, localScale) {
+          setState(
+            position,
+            rotation,
+            scale,
+            localPosition,
+            localRotation,
+            localScale
+          ) {
             this.position = position;
             this.rotation = rotation;
             this.scale = scale;
@@ -69,10 +80,10 @@ class Hand {
         const connections = [];
 
         wss.on('connection', c => {
-          const {url} = c.upgradeReq;
+          const { url } = c.upgradeReq;
 
           let match;
-          if (match = url.match(/\/archae\/handWs\?id=(.+)$/)) {
+          if ((match = url.match(/\/archae\/handWs\?id=(.+)$/))) {
             const userId = match[1];
             c.userId = userId;
 
@@ -102,7 +113,7 @@ class Hand {
                   const connection = connections[i];
 
                   if (connection.readyState === ws.OPEN && connection !== c) {
-                    const {userId} = connection;
+                    const { userId } = connection;
 
                     if (interest.includes(userId)) {
                       connection.send(es);
@@ -117,7 +128,7 @@ class Hand {
 
                 for (let i = 0; i < connections.length; i++) {
                   const connection = connections[i];
-                  const {userId} = connection;
+                  const { userId } = connection;
                   if (interest.includes(userId) && connection !== c) {
                     connection.send(buffer);
                   }
@@ -131,11 +142,24 @@ class Hand {
               if (typeof o === 'string') {
                 const m = JSON.parse(o);
 
-                if (typeof m === 'object' && m !== null && typeof m.method === 'string' && Array.isArray(m.args)) {
-                  const {method, args} = m;
+                if (
+                  typeof m === 'object' &&
+                  m !== null &&
+                  typeof m.method === 'string' &&
+                  Array.isArray(m.args)
+                ) {
+                  const { method, args } = m;
 
                   if (method === 'addGrabbable') {
-                    const [n, position, rotation, scale, localPosition, localRotation, localScale] = args;
+                    const [
+                      n,
+                      position,
+                      rotation,
+                      scale,
+                      localPosition,
+                      localRotation,
+                      localScale,
+                    ] = args;
 
                     const grabbable = grabbables[n];
                     if (!grabbable) {
@@ -165,7 +189,7 @@ class Hand {
                     }
 
                     if (grabbable) {
-                      const {userId, side, data} = grabbable;
+                      const { userId, side, data } = grabbable;
                       if (userId) {
                         _sendObject('grab', [n, userId, side]);
                       }
@@ -174,8 +198,27 @@ class Hand {
                         _sendObject('data', [n, key, value]);
                       }
 
-                      const {position, rotation, scale, localPosition, localRotation, localScale} = grabbable;
-                      _sendBuffer(protocolUtils.stringifyUpdate(n, position, rotation, scale, localPosition, localRotation, localScale, buffer, 0));
+                      const {
+                        position,
+                        rotation,
+                        scale,
+                        localPosition,
+                        localRotation,
+                        localScale,
+                      } = grabbable;
+                      _sendBuffer(
+                        protocolUtils.stringifyUpdate(
+                          n,
+                          position,
+                          rotation,
+                          scale,
+                          localPosition,
+                          localRotation,
+                          localScale,
+                          buffer,
+                          0
+                        )
+                      );
                     }
                   } else if (method === 'removeGrabbable') {
                     const [n] = args;
@@ -222,7 +265,9 @@ class Hand {
                       _broadcastObject(n, 'data', [n, key, value]);
                     }
                   } else {
-                    console.warn('no such hand method:' + JSON.stringify(method));
+                    console.warn(
+                      'no such hand method:' + JSON.stringify(method)
+                    );
                   }
                 } else {
                   console.warn('invalid message', m);
@@ -232,7 +277,16 @@ class Hand {
                 const grabbable = grabbables[n];
 
                 if (grabbable) {
-                  protocolUtils.parseUpdate(grabbable.position, grabbable.rotation, grabbable.scale, grabbable.localPosition, grabbable.localRotation, grabbable.localScale, o.buffer, o.byteOffset);
+                  protocolUtils.parseUpdate(
+                    grabbable.position,
+                    grabbable.rotation,
+                    grabbable.scale,
+                    grabbable.localPosition,
+                    grabbable.localRotation,
+                    grabbable.localScale,
+                    o.buffer,
+                    o.byteOffset
+                  );
 
                   _broadcastBuffer(n, o);
                 }

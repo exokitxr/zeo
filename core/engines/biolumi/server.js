@@ -9,9 +9,9 @@ class Biolumi {
   }
 
   mount() {
-    const {_archae: archae} = this;
-    const {port} = archae;
-    const {express, app, wss} = archae.getCore();
+    const { _archae: archae } = this;
+    const { port } = archae;
+    const { express, app, wss } = archae.getCore();
 
     let live = true;
     this._cleanup = () => {
@@ -23,21 +23,19 @@ class Biolumi {
       app,
       wss,
       port,
-    })
-      .then(({
-        type,
-        cleanup,
-      })=> {
-        if (live) {
-          if (type === 'internal') {
-            console.warn('warning: Could not start Chrome. Using *slow* local rendering; VR clients will experience hitching. To fix this, install Chrome.');
-          }
-
-          this._cleanup = cleanup;
-        } else {
-          cleanup();
+    }).then(({ type, cleanup }) => {
+      if (live) {
+        if (type === 'internal') {
+          console.warn(
+            'warning: Could not start Chrome. Using *slow* local rendering; VR clients will experience hitching. To fix this, install Chrome.'
+          );
         }
-      });
+
+        this._cleanup = cleanup;
+      } else {
+        cleanup();
+      }
+    });
   }
 
   unmount() {

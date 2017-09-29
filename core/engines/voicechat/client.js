@@ -8,8 +8,8 @@ export default class VoiceChat {
   }
 
   mount() {
-    const {_archae: archae} = this;
-    const {metadata: {server: {enabled: serverEnabled}}} = archae;
+    const { _archae: archae } = this;
+    const { metadata: { server: { enabled: serverEnabled } } } = archae;
 
     const cleanups = [];
     this._cleanup = () => {
@@ -25,159 +25,172 @@ export default class VoiceChat {
     });
 
     if (serverEnabled) {
-      archae.requestPlugins([
-        '/core/engines/three',
-        '/core/engines/webvr',
-        '/core/engines/input',
-        '/core/engines/somnifer',
-        '/core/engines/config',
-        '/core/engines/multiplayer',
-        '/core/utils/js-utils',
-        '/core/utils/network-utils',
-      ])
-        .then(([
-          three,
-          webvr,
-          input,
-          somnifer,
-          config,
-          multiplayer,
-          jsUtils,
-          networkUtils,
-        ]) => {
-          if (live) {
-            const {THREE} = three;
-            const {events} = jsUtils;
-            const {EventEmitter} = events;
-            const {AutoWs} = networkUtils;
+      archae
+        .requestPlugins([
+          '/core/engines/three',
+          '/core/engines/webvr',
+          '/core/engines/input',
+          '/core/engines/somnifer',
+          '/core/engines/config',
+          '/core/engines/multiplayer',
+          '/core/utils/js-utils',
+          '/core/utils/network-utils',
+        ])
+        .then(
+          (
+            [
+              three,
+              webvr,
+              input,
+              somnifer,
+              config,
+              multiplayer,
+              jsUtils,
+              networkUtils,
+            ]
+          ) => {
+            if (live) {
+              const { THREE } = three;
+              const { events } = jsUtils;
+              const { EventEmitter } = events;
+              const { AutoWs } = networkUtils;
 
-            const callInterface = (() => {
-              let currentRemotePeerId = null;
+              const callInterface = (() => {
+                let currentRemotePeerId = null;
 
-              const connection = new AutoWs(_relativeWsUrl('archae/voicechatWs?id=' + multiplayer.getId()));
-              connection.on('message', msg => {
-                if (typeof msg.data === 'string') {
-                  const e = JSON.parse(msg.data) ;
-                  const {type} = e;
+                const connection = new AutoWs(
+                  _relativeWsUrl('archae/voicechatWs?id=' + multiplayer.getId())
+                );
+                connection.on('message', msg => {
+                  if (typeof msg.data === 'string') {
+                    const e = JSON.parse(msg.data);
+                    const { type } = e;
 
-                  if (type === 'id') {
-                    const {id: messageId} = e;
-                    currentRemotePeerId = messageId;
+                    if (type === 'id') {
+                      const { id: messageId } = e;
+                      currentRemotePeerId = messageId;
+                    } else {
+                      console.warn(
+                        'unknown message type',
+                        JSON.stringify(type)
+                      );
+                    }
                   } else {
-                    console.warn('unknown message type', JSON.stringify(type));
+                    if (currentRemotePeerId !== null) {
+                      callInterface.emit('buffer', {
+                        id: currentRemotePeerId,
+                        data: new Float32Array(msg.data),
+                      });
+                    } else {
+                      console.warn('buffer data before remote peer id', msg);
+                    }
                   }
-                } else {
-                  if (currentRemotePeerId !== null) {
-                    callInterface.emit('buffer', {
-                      id: currentRemotePeerId,
-                      data: new Float32Array(msg.data),
-                    });
-                  } else {
-                    console.warn('buffer data before remote peer id', msg);
+                });
+                connection.on('disconnect', () => {
+                  currentRemotePeerId = null;
+                });
+
+                class CallInterface extends EventEmitter {
+                  write(d) {
+                    connection.sendUnbuffered(d);
+                  }
+
+                  destroy() {
+                    connection.destroy();
                   }
                 }
-              });
-              connection.on('disconnect', () => {
-                currentRemotePeerId = null;
-              });
-
-              class CallInterface extends EventEmitter {
-                write(d) {
-                  connection.sendUnbuffered(d);
-                }
-
-                destroy() {
-                  connection.destroy();
-                }
-              }
-              const callInterface = new CallInterface();
-              return callInterface;
-            })();
-
-            const _init = () => {
-              const _makeSoundBody = id => {
-                const result = somnifer.makeBody();
-
-                const inputNode = new WebAudioBufferQueue({
-                  audioContext: result.sound.context,
-                  // channels: 2,
-                  channels: 1,
-                  // bufferSize: 16384,
-                  objectMode: true,
-                });
-                result.setInputSource(inputNode);
-                result.inputNode = inputNode;
-
-                const remotePlayerMesh = multiplayer.getRemotePlayerMesh(id).children[0];
-                result.setObject(remotePlayerMesh);
-
-                return result;
-              };
-
-              const soundBodies = (() => {
-                const playerStatuses = multiplayer.getPlayerStatuses();
-
-                const result = new Map();
-                playerStatuses.forEach((status, id) => {
-                  result.set(id, _makeSoundBody(id));
-                });
-                return result;
+                const callInterface = new CallInterface();
+                return callInterface;
               })();
 
-              const _playerEnter = ({id}) => {
-                soundBodies.set(id, _makeSoundBody(id));
-              };
-              multiplayer.on('playerEnter', _playerEnter);
-              const _playerLeave = id => {
-                const soundBody = soundBodies.get(id);
-                soundBody.destroy();
+              const _init = () => {
+                const _makeSoundBody = id => {
+                  const result = somnifer.makeBody();
 
-                soundBodies.delete(id);
-              };
-              multiplayer.on('playerLeave', _playerLeave);
-              cleanups.push(() => {
-                multiplayer.removeListener('playerEnter', _playerEnter);
-                multiplayer.removeListener('playerLeave', _playerLeave);
-              });
+                  const inputNode = new WebAudioBufferQueue({
+                    audioContext: result.sound.context,
+                    // channels: 2,
+                    channels: 1,
+                    // bufferSize: 16384,
+                    objectMode: true,
+                  });
+                  result.setInputSource(inputNode);
+                  result.inputNode = inputNode;
 
-              callInterface.on('buffer', ({id, data}) => {
-                const soundBody = soundBodies.get(id);
+                  const remotePlayerMesh = multiplayer.getRemotePlayerMesh(id)
+                    .children[0];
+                  result.setObject(remotePlayerMesh);
 
-                if (soundBody) {
-                  const {inputNode} = soundBody;
-                  inputNode.write(data);
-                }
-              });
-            };
-            _init();
+                  return result;
+                };
 
-            const localCleanups = [];
-            const _localCleanup = () => {
-              for (let i = 0; i < localCleanups.length; i++) {
-                const localCleanup = localCleanups[i];
-                localCleanup();
-              }
-              localCleanups.length = 0;
-            };
+                const soundBodies = (() => {
+                  const playerStatuses = multiplayer.getPlayerStatuses();
 
-            let srcAudioContext = null;
-            let enabled = false;
-            const _enable = () => {
-              enabled = true;
-              localCleanups.push(() => {
-                enabled = false;
-              });
+                  const result = new Map();
+                  playerStatuses.forEach((status, id) => {
+                    result.set(id, _makeSoundBody(id));
+                  });
+                  return result;
+                })();
 
-              const _requestMicrophoneMediaStream = () => navigator.mediaDevices.getUserMedia({
-                audio: true,
-              }).then(mediaStream => {
-                localCleanups.push(() => {
-                  _closeMediaStream(mediaStream);
+                const _playerEnter = ({ id }) => {
+                  soundBodies.set(id, _makeSoundBody(id));
+                };
+                multiplayer.on('playerEnter', _playerEnter);
+                const _playerLeave = id => {
+                  const soundBody = soundBodies.get(id);
+                  soundBody.destroy();
+
+                  soundBodies.delete(id);
+                };
+                multiplayer.on('playerLeave', _playerLeave);
+                cleanups.push(() => {
+                  multiplayer.removeListener('playerEnter', _playerEnter);
+                  multiplayer.removeListener('playerLeave', _playerLeave);
                 });
 
-                return mediaStream;
-              });
-              /* const _requestCameraMediaStream = () => navigator.mediaDevices.getUserMedia({
+                callInterface.on('buffer', ({ id, data }) => {
+                  const soundBody = soundBodies.get(id);
+
+                  if (soundBody) {
+                    const { inputNode } = soundBody;
+                    inputNode.write(data);
+                  }
+                });
+              };
+              _init();
+
+              const localCleanups = [];
+              const _localCleanup = () => {
+                for (let i = 0; i < localCleanups.length; i++) {
+                  const localCleanup = localCleanups[i];
+                  localCleanup();
+                }
+                localCleanups.length = 0;
+              };
+
+              let srcAudioContext = null;
+              let enabled = false;
+              const _enable = () => {
+                enabled = true;
+                localCleanups.push(() => {
+                  enabled = false;
+                });
+
+                const _requestMicrophoneMediaStream = () =>
+                  navigator.mediaDevices
+                    .getUserMedia({
+                      audio: true,
+                    })
+                    .then(mediaStream => {
+                      localCleanups.push(() => {
+                        _closeMediaStream(mediaStream);
+                      });
+
+                      return mediaStream;
+                    });
+                /* const _requestCameraMediaStream = () => navigator.mediaDevices.getUserMedia({
                 audio: true,
               }).then(mediaStream => {
                 localCleanups.push(() => {
@@ -187,17 +200,26 @@ export default class VoiceChat {
                 return mediaStream;
               }); */
 
-              _requestMicrophoneMediaStream()
-                .then(mediaStream => {
+                _requestMicrophoneMediaStream().then(mediaStream => {
                   if (!srcAudioContext) {
                     srcAudioContext = new AudioContext();
                   }
-                  const source = srcAudioContext.createMediaStreamSource(mediaStream);
-                  const scriptNode = srcAudioContext.createScriptProcessor(4096, 1, 1);
+                  const source = srcAudioContext.createMediaStreamSource(
+                    mediaStream
+                  );
+                  const scriptNode = srcAudioContext.createScriptProcessor(
+                    4096,
+                    1,
+                    1
+                  );
                   scriptNode.onaudioprocess = e => {
-                    const {inputBuffer} = e;
+                    const { inputBuffer } = e;
 
-                    for (let channel = 0; channel < inputBuffer.numberOfChannels; channel++) {
+                    for (
+                      let channel = 0;
+                      channel < inputBuffer.numberOfChannels;
+                      channel++
+                    ) {
                       const inputData = inputBuffer.getChannelData(channel);
                       callInterface.write(inputData);
                     }
@@ -213,53 +235,54 @@ export default class VoiceChat {
                     _closeMediaStream(mediaStream);
                   });
                 });
-            };
-            const _disable = () => {
-              _localCleanup();
-            };
-
-            const _menudown = e => {
-              const {side} = e;
-              const {gamepads} = webvr.getStatus();
-              const gamepad = gamepads[side];
-
-              if (gamepad.buttons.grip.pressed) {
-                const browserConfig = config.getBrowserConfig();
-                browserConfig.voiceChat = !browserConfig.voiceChat;
-                config.setBrowserConfig(browserConfig);
-
-                e.stopImmediatePropagation();
-              }
-            };
-            input.on('menudown', _menudown, {
-              priority: 1,
-            });
-
-            const _updateEnabled = () => {
-              const {voiceChat} = config.getBrowserConfig();
-              const shouldBeEnabled = voiceChat;
-
-              if (shouldBeEnabled && !enabled) {
-                _enable();
-              } else if (!shouldBeEnabled && enabled) {
-                _disable();
               };
-            };
-            const _browserConfig = _updateEnabled;
-            config.on('browserConfig', _browserConfig);
+              const _disable = () => {
+                _localCleanup();
+              };
 
-            _updateEnabled();
+              const _menudown = e => {
+                const { side } = e;
+                const { gamepads } = webvr.getStatus();
+                const gamepad = gamepads[side];
 
-            cleanups.push(() => {
-              _localCleanup();
+                if (gamepad.buttons.grip.pressed) {
+                  const browserConfig = config.getBrowserConfig();
+                  browserConfig.voiceChat = !browserConfig.voiceChat;
+                  config.setBrowserConfig(browserConfig);
 
-              callInterface.destroy();
+                  e.stopImmediatePropagation();
+                }
+              };
+              input.on('menudown', _menudown, {
+                priority: 1,
+              });
 
-              input.removeListener('menudown', _menudown);
-              config.removeListener('browserConfig', _browserConfig);
-            });
+              const _updateEnabled = () => {
+                const { voiceChat } = config.getBrowserConfig();
+                const shouldBeEnabled = voiceChat;
+
+                if (shouldBeEnabled && !enabled) {
+                  _enable();
+                } else if (!shouldBeEnabled && enabled) {
+                  _disable();
+                }
+              };
+              const _browserConfig = _updateEnabled;
+              config.on('browserConfig', _browserConfig);
+
+              _updateEnabled();
+
+              cleanups.push(() => {
+                _localCleanup();
+
+                callInterface.destroy();
+
+                input.removeListener('menudown', _menudown);
+                config.removeListener('browserConfig', _browserConfig);
+              });
+            }
           }
-        });
+        );
     }
   }
 
@@ -270,7 +293,13 @@ export default class VoiceChat {
 
 const _relativeWsUrl = s => {
   const l = window.location;
-  return ((l.protocol === 'https:') ? 'wss://' : 'ws://') + l.host + l.pathname + (!/\/$/.test(l.pathname) ? '/' : '') + s;
+  return (
+    (l.protocol === 'https:' ? 'wss://' : 'ws://') +
+    l.host +
+    l.pathname +
+    (!/\/$/.test(l.pathname) ? '/' : '') +
+    s
+  );
 };
 
 const _closeMediaStream = mediaStream => {

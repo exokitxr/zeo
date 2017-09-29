@@ -13,9 +13,15 @@ const Anima = {
       }
 
       getValue() {
-        const {startValue, endValue, startTime, endTime} = this;
+        const { startValue, endValue, startTime, endTime } = this;
         const now = Date.now();
-        return startValue + ease(Math.max(Math.min((now - startTime) / (endTime - startTime), 1), 0)) * (endValue - startValue);
+        return (
+          startValue +
+          ease(
+            Math.max(Math.min((now - startTime) / (endTime - startTime), 1), 0)
+          ) *
+            (endValue - startValue)
+        );
       }
 
       isDone() {
@@ -27,7 +33,8 @@ const Anima = {
       }
     }
 
-    const _makeAnimation = (startValue, endValue, duration) => new Animation(startValue, endValue, duration);
+    const _makeAnimation = (startValue, endValue, duration) =>
+      new Animation(startValue, endValue, duration);
 
     return {
       makeAnimation: _makeAnimation,

@@ -1,5 +1,5 @@
 const events = require('events');
-const {EventEmitter} = events;
+const { EventEmitter } = events;
 
 class Tags {
   constructor(archae) {
@@ -7,7 +7,7 @@ class Tags {
   }
 
   mount() {
-    const {_archae: archae} = this;
+    const { _archae: archae } = this;
 
     class Element extends EventEmitter {
       constructor(tagName, module) {
@@ -33,12 +33,12 @@ class Tags {
         const result = [];
 
         const _recurse = e => {
-          const {tagName} = e;
+          const { tagName } = e;
           if (tagName === selector) {
             result.push(e);
           }
 
-          const {children} = e;
+          const { children } = e;
           for (let i = 0; i < children.length; i++) {
             const child = children[i];
             _recurse(child);
@@ -56,11 +56,11 @@ class Tags {
 
         while (queue.length > 0) {
           const e = queue.pop();
-          const {tagName} = e;
+          const { tagName } = e;
           if (tagName === selector) {
             return e;
           } else {
-            const {children} = e;
+            const { children } = e;
             queue.push.apply(queue, children);
           }
         }
@@ -79,7 +79,7 @@ class Tags {
     const worldElement = new Element('world', 'zeo');
 
     const _getWorldElement = () => worldElement;
-    const _requestElement = (selector, {timeout = 30 * 1000} = {}) => {
+    const _requestElement = (selector, { timeout = 30 * 1000 } = {}) => {
       selector = selector.toUpperCase();
       const element = worldElement.querySelector(selector);
 
@@ -87,26 +87,30 @@ class Tags {
         return Promise.resolve(element);
       } else {
         let _elementAdded = null;
-        const _requestElementAdded = () => new Promise((accept, reject) => {
-          _elementAdded = element => {
-            const {tagName} = element;
+        const _requestElementAdded = () =>
+          new Promise((accept, reject) => {
+            _elementAdded = element => {
+              const { tagName } = element;
 
-            if (tagName === selector) {
-              accept(element);
-            }
-          };
-          worldElement.on('elementAdded', _elementAdded);
-        });
+              if (tagName === selector) {
+                accept(element);
+              }
+            };
+            worldElement.on('elementAdded', _elementAdded);
+          });
         let timeoutInstance = null;
-        const _requestTimeout = () => new Promise((accept, reject) => {
-          timeoutInstance = setTimeout(() => {
-            timeoutInstance = null;
+        const _requestTimeout = () =>
+          new Promise((accept, reject) => {
+            timeoutInstance = setTimeout(() => {
+              timeoutInstance = null;
 
-            const err = new Error(`element request for ${JSON.stringify(selector)} timed out`);
-            err.code = 'ETIMEOUT';
-            reject(err);
-          }, timeout);
-        });
+              const err = new Error(
+                `element request for ${JSON.stringify(selector)} timed out`
+              );
+              err.code = 'ETIMEOUT';
+              reject(err);
+            }, timeout);
+          });
         const _cleanup = () => {
           worldElement.removeListener('elementAdded', _elementAdded);
 
@@ -115,10 +119,7 @@ class Tags {
           }
         };
 
-        return Promise.race([
-          _requestElementAdded(),
-          _requestTimeout(),
-        ])
+        return Promise.race([_requestElementAdded(), _requestTimeout()])
           .then(element => {
             _cleanup();
 
@@ -135,7 +136,7 @@ class Tags {
       entityApi.tagName = _makeTagName(archae.getPath(pluginInstance));
       worldElement.appendChild(entityApi);
 
-      const {entityAddedCallback = nop} = entityApi;
+      const { entityAddedCallback = nop } = entityApi;
       entityAddedCallback(entityApi);
 
       worldElement.emit('elementAdded', entityApi);
@@ -143,7 +144,7 @@ class Tags {
     const _unregisterEntity = (pluginInstance, entityApi) => {
       worldElement.removeChild(entityApi);
 
-      const {entityRemovedCallback = nop} = entityApi;
+      const { entityRemovedCallback = nop } = entityApi;
       entityRemovedCallback(entityApi);
 
       worldElement.emit('elementRemoved', entityApi);
@@ -163,10 +164,11 @@ class Tags {
 }
 
 const nop = () => {};
-const _makeTagName = s => s
-  .toUpperCase()
-  .replace(/[^A-Z0-9-]/g, '-')
-  .replace(/--+/g, '-')
-  .replace(/(?:^-|-$)/g, '');
+const _makeTagName = s =>
+  s
+    .toUpperCase()
+    .replace(/[^A-Z0-9-]/g, '-')
+    .replace(/--+/g, '-')
+    .replace(/(?:^-|-$)/g, '');
 
 module.exports = Tags;

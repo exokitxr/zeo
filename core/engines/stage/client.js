@@ -4,23 +4,24 @@ class Stage {
   }
 
   mount() {
-    const {_archae: archae} = this;
+    const { _archae: archae } = this;
 
     let live = true;
     this._cleanup = () => {
       live = false;
     };
 
-    const _requestImage = src => new Promise((accept, reject) => {
-      const img = new Image();
-      img.onload = () => {
-        accept(img);
-      };
-      img.onerror = err => {
-        reject(err);
-      };
-      img.src = src;
-    });
+    const _requestImage = src =>
+      new Promise((accept, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          accept(img);
+        };
+        img.onerror = err => {
+          reject(err);
+        };
+        img.src = src;
+      });
 
     return Promise.all([
       archae.requestPlugins([
@@ -29,25 +30,21 @@ class Stage {
         '/core/utils/js-utils',
       ]),
       _requestImage('/archae/stage/img/grid.png'),
-    ]).then(([
-      [
-        three,
-        webvr,
-        jsUtils,
-      ],
-      gridImg,
-    ]) => {
+    ]).then(([[three, webvr, jsUtils], gridImg]) => {
       if (live) {
-        const {THREE, scene, camera, renderer} = three;
-        const {events} = jsUtils;
-        const {EventEmitter} = events;
+        const { THREE, scene, camera, renderer } = three;
+        const { events } = jsUtils;
+        const { EventEmitter } = events;
 
         const floorGridMesh = (() => {
-          const geometry = new THREE.PlaneBufferGeometry(10, 10)
-            .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
-              new THREE.Vector3(0, 0, -1),
-              new THREE.Vector3(0, 1, 0)
-            )));
+          const geometry = new THREE.PlaneBufferGeometry(10, 10).applyMatrix(
+            new THREE.Matrix4().makeRotationFromQuaternion(
+              new THREE.Quaternion().setFromUnitVectors(
+                new THREE.Vector3(0, 0, -1),
+                new THREE.Vector3(0, 1, 0)
+              )
+            )
+          );
           const uvs = geometry.getAttribute('uv').array;
           const numUvs = uvs.length / 2;
           for (let i = 0; i < numUvs; i++) {
@@ -152,10 +149,12 @@ class Stage {
               floorGridMesh.scale
             );
             floorGridMesh.matrix.copy(stageMatrix);
-            floorGridMesh.matrixWorld.multiplyMatrices(floorGridMesh.parent.matrixWorld, stageMatrix);
+            floorGridMesh.matrixWorld.multiplyMatrices(
+              floorGridMesh.parent.matrixWorld,
+              stageMatrix
+            );
           }
         });
-
 
         this._cleanup = () => {
           stageApi.destroy();

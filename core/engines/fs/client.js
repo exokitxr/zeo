@@ -8,33 +8,31 @@ class Fs {
   }
 
   mount() {
-    const {_archae: archae} = this;
+    const { _archae: archae } = this;
 
     let live = true;
     this._cleanup = () => {
       live = false;
     };
 
-    return archae.requestPlugins([
-      '/core/engines/three',
-      '/core/engines/webvr',
-      '/core/utils/js-utils',
-    ]).then(([
-      three,
-      webvr,
-      jsUtils,
-    ]) => {
-      if (live) {
-        const {THREE} = three;
-        const {events} = jsUtils;
-        const {EventEmitter} = events;
+    return archae
+      .requestPlugins([
+        '/core/engines/three',
+        '/core/engines/webvr',
+        '/core/utils/js-utils',
+      ])
+      .then(([three, webvr, jsUtils]) => {
+        if (live) {
+          const { THREE } = three;
+          const { events } = jsUtils;
+          const { EventEmitter } = events;
 
-        const forwardVector = new THREE.Vector3(0, 0, -1);
-        const localVector = new THREE.Vector3();
-        const localVector2 = new THREE.Vector3();
-        const localVector3 = new THREE.Vector3();
+          const forwardVector = new THREE.Vector3(0, 0, -1);
+          const localVector = new THREE.Vector3();
+          const localVector2 = new THREE.Vector3();
+          const localVector3 = new THREE.Vector3();
 
-        /* const libRequestPromises = {};
+          /* const libRequestPromises = {};
         const _requestLib = libPath => {
           let entry = libRequestPromises[libPath];
           if (!entry) {
@@ -89,83 +87,95 @@ class Fs {
         const _requestGLTFLoader = () => _requestLib('three-extra/GLTFLoader.js')
           .then(GLTFLoader => GLTFLoader(THREE)); */
 
-        const dragover = e => {
-          e.preventDefault();
-        };
-        document.addEventListener('dragover', dragover);
-        const drop = e => {
-          e.preventDefault();
+          const dragover = e => {
+            e.preventDefault();
+          };
+          document.addEventListener('dragover', dragover);
+          const drop = e => {
+            e.preventDefault();
 
-          const {dataTransfer: {items}} = e;
-          if (items.length > 0) {
-            const _getFiles = items => {
-              const entries = Array.from(items)
-                .map(item => item.webkitGetAsEntry())
-                .filter(entry => entry !== null);
+            const { dataTransfer: { items } } = e;
+            if (items.length > 0) {
+              const _getFiles = items => {
+                const entries = Array.from(items)
+                  .map(item => item.webkitGetAsEntry())
+                  .filter(entry => entry !== null);
 
-              const files = [];
-              const _recurseEntries = entries => Promise.all(entries.map(_recurseEntry));
-              const _recurseEntry = entry => new Promise((accept, reject) => {
-                if (entry.isFile) {
-                  entry.file(file => {
-                    file.path = entry.fullPath;
+                const files = [];
+                const _recurseEntries = entries =>
+                  Promise.all(entries.map(_recurseEntry));
+                const _recurseEntry = entry =>
+                  new Promise((accept, reject) => {
+                    if (entry.isFile) {
+                      entry.file(file => {
+                        file.path = entry.fullPath;
 
-                    files.push(file);
+                        files.push(file);
 
-                    accept();
-                  });
-                } else if (entry.isDirectory) {
-                  const directoryReader = entry.createReader();
-                  directoryReader.readEntries(entries => {
-                    _recurseEntries(Array.from(entries))
-                      .then(() => {
                         accept();
                       });
+                    } else if (entry.isDirectory) {
+                      const directoryReader = entry.createReader();
+                      directoryReader.readEntries(entries => {
+                        _recurseEntries(Array.from(entries)).then(() => {
+                          accept();
+                        });
+                      });
+                    } else {
+                      accept();
+                    }
                   });
-                } else {
-                  accept();
-                }
-              });
-              return _recurseEntries(entries)
-                .then(() => files);
-            };
+                return _recurseEntries(entries).then(() => files);
+              };
 
-            _getFiles(items)
-              .then(files => Promise.all(files.map((file, i) => {
-                const {type} = file;
-                const remoteFile = fsApi.makeRemoteFile();
-                const dropMatrix = (() => {
-                  const {hmd} = webvr.getStatus();
-                  const {worldPosition: hmdPosition, worldRotation: hmdRotation, worldScale: hmdScale} = hmd;
-                  const width = 0.2;
-                  const fullWidth = (files.length - 1) * width;
-                  localVector.copy(hmdPosition)
-                    .add(
-                      localVector2.copy(forwardVector).multiplyScalar(0.5)
-                        .add(localVector3.set(-fullWidth/2 + i*width, 0, 0))
-                        .applyQuaternion(hmdRotation)
-                    );
-                  return localVector.toArray().concat(hmdRotation.toArray()).concat(hmdScale.toArray());
-                })();
+              _getFiles(items).then(files =>
+                Promise.all(
+                  files.map((file, i) => {
+                    const { type } = file;
+                    const remoteFile = fsApi.makeRemoteFile();
+                    const dropMatrix = (() => {
+                      const { hmd } = webvr.getStatus();
+                      const {
+                        worldPosition: hmdPosition,
+                        worldRotation: hmdRotation,
+                        worldScale: hmdScale,
+                      } = hmd;
+                      const width = 0.2;
+                      const fullWidth = (files.length - 1) * width;
+                      localVector.copy(hmdPosition).add(
+                        localVector2
+                          .copy(forwardVector)
+                          .multiplyScalar(0.5)
+                          .add(
+                            localVector3.set(-fullWidth / 2 + i * width, 0, 0)
+                          )
+                          .applyQuaternion(hmdRotation)
+                      );
+                      return localVector
+                        .toArray()
+                        .concat(hmdRotation.toArray())
+                        .concat(hmdScale.toArray());
+                    })();
 
-                return remoteFile.write(file)
-                  .then(() => {
-                    fsApi.emit('upload', {
-                      file: remoteFile,
-                      dropMatrix,
+                    return remoteFile.write(file).then(() => {
+                      fsApi.emit('upload', {
+                        file: remoteFile,
+                        dropMatrix,
+                      });
                     });
-                  });
-              })));
-          }
-        };
-        document.addEventListener('drop', drop);
+                  })
+                )
+              );
+            }
+          };
+          document.addEventListener('drop', drop);
 
-        this._cleanup = () => {
-          document.removeEventListener('dragover', dragover);
-          document.removeEventListener('drop', drop);
-        };
+          this._cleanup = () => {
+            document.removeEventListener('dragover', dragover);
+            document.removeEventListener('drop', drop);
+          };
 
-        /* class FsFile {
+          /* class FsFile {
           constructor(url) {
             this.url = url;
           }
@@ -357,64 +367,65 @@ class Fs {
           }
         } */
 
-        const _resBlob = res => {
-          if (res.status >= 200 && res.status < 300) {
-            return res.blob();
-          } else if (res.status === 404) {
-            return Promise.resolve(null);
-          } else {
-            return Promise.reject({
-              status: res.status,
-              stack: 'API returned invalid status code: ' + res.status,
-            });
-          }
-        };
+          const _resBlob = res => {
+            if (res.status >= 200 && res.status < 300) {
+              return res.blob();
+            } else if (res.status === 404) {
+              return Promise.resolve(null);
+            } else {
+              return Promise.reject({
+                status: res.status,
+                stack: 'API returned invalid status code: ' + res.status,
+              });
+            }
+          };
 
-        class RemoteFile {
-          constructor(id) {
-            this.n = id !== undefined ? (typeof id === 'number' ? id : murmur(id)) : _makeN();
-          }
+          class RemoteFile {
+            constructor(id) {
+              this.n =
+                id !== undefined
+                  ? typeof id === 'number' ? id : murmur(id)
+                  : _makeN();
+            }
 
-          /* getFileName() {
+            /* getFileName() {
             return this.id.match(/([^\[\.]*)/)[1];
           } */
 
-          getUrl() {
-            return `/archae/fs/hash/${this.n}`;
+            getUrl() {
+              return `/archae/fs/hash/${this.n}`;
+            }
+
+            read() {
+              return fetch(this.getUrl(), {
+                credentials: 'include',
+              }).then(_resBlob);
+            }
+
+            write(d) {
+              return fetch(this.getUrl(), {
+                method: 'PUT',
+                body: d,
+                credentials: 'include',
+              }).then(_resBlob);
+            }
+
+            download() {
+              const a = document.createElement('a');
+              a.href = this.getUrl();
+              a.download = 'file';
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+            }
           }
 
-          read() {
-            return fetch(this.getUrl(), {
-              credentials: 'include',
-            })
-              .then(_resBlob);
-          }
+          class FsApi extends EventEmitter {
+            makeRemoteFile(id) {
+              return new RemoteFile(id);
+            }
 
-          write(d) {
-            return fetch(this.getUrl(), {
-              method: 'PUT',
-              body: d,
-              credentials: 'include',
-            })
-              .then(_resBlob);
-          }
-
-          download() {
-            const a = document.createElement('a');
-            a.href = this.getUrl();
-            a.download = 'file';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-          }
-        }
-
-        class FsApi extends EventEmitter {
-          makeRemoteFile(id) {
-            return new RemoteFile(id);
-          }
-
-          /* makeFile(url) {
+            /* makeFile(url) {
             return new FsFile(url);
           }
 
@@ -492,15 +503,15 @@ class Fs {
             });
           } */
 
-          dragover(e) {
-            dragover(e);
+            dragover(e) {
+              dragover(e);
+            }
           }
-        }
 
-        const fsApi = new FsApi();
-        return fsApi;
-      }
-    });
+          const fsApi = new FsApi();
+          return fsApi;
+        }
+      });
   }
 
   unmount() {

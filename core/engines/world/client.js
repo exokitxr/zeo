@@ -5,7 +5,6 @@ import {
   WORLD_WIDTH,
   WORLD_HEIGHT,
   WORLD_DEPTH,
-
   TAGS_WIDTH,
   TAGS_HEIGHT,
   TAGS_WORLD_WIDTH,
@@ -24,7 +23,7 @@ class World {
   }
 
   mount() {
-    const {_archae: archae} = this;
+    const { _archae: archae } = this;
 
     const cleanups = [];
     this._cleanup = () => {
@@ -39,636 +38,684 @@ class World {
       live = false;
     });
 
-    return archae.requestPlugins([
-      '/core/engines/bootstrap',
-      '/core/engines/three',
-      '/core/engines/input',
-      '/core/engines/webvr',
-      '/core/engines/cyborg',
-      '/core/engines/multiplayer',
-      '/core/engines/biolumi',
-      '/core/engines/resource',
-      '/core/engines/rend',
-      '/core/engines/wallet',
-      '/core/engines/keyboard',
-      '/core/engines/transform',
-      '/core/engines/hand',
-      '/core/engines/loader',
-      '/core/engines/tags',
-      // '/core/engines/fs',
-      '/core/utils/network-utils',
-      '/core/utils/geometry-utils',
-      '/core/utils/creature-utils',
-    ]).then(([
-      bootstrap,
-      three,
-      input,
-      webvr,
-      cyborg,
-      multiplayer,
-      biolumi,
-      resource,
-      rend,
-      wallet,
-      keyboard,
-      transform,
-      hand,
-      loader,
-      tags,
-      // fs,
-      networkUtils,
-      geometryUtils,
-      creatureUtils,
-    ]) => {
-      if (live) {
-        const {THREE, scene, camera} = three;
-        const {AutoWs} = networkUtils;
-        const {sfx} = resource;
+    return archae
+      .requestPlugins([
+        '/core/engines/bootstrap',
+        '/core/engines/three',
+        '/core/engines/input',
+        '/core/engines/webvr',
+        '/core/engines/cyborg',
+        '/core/engines/multiplayer',
+        '/core/engines/biolumi',
+        '/core/engines/resource',
+        '/core/engines/rend',
+        '/core/engines/wallet',
+        '/core/engines/keyboard',
+        '/core/engines/transform',
+        '/core/engines/hand',
+        '/core/engines/loader',
+        '/core/engines/tags',
+        // '/core/engines/fs',
+        '/core/utils/network-utils',
+        '/core/utils/geometry-utils',
+        '/core/utils/creature-utils',
+      ])
+      .then(
+        (
+          [
+            bootstrap,
+            three,
+            input,
+            webvr,
+            cyborg,
+            multiplayer,
+            biolumi,
+            resource,
+            rend,
+            wallet,
+            keyboard,
+            transform,
+            hand,
+            loader,
+            tags,
+            // fs,
+            networkUtils,
+            geometryUtils,
+            creatureUtils,
+          ]
+        ) => {
+          if (live) {
+            const { THREE, scene, camera } = three;
+            const { AutoWs } = networkUtils;
+            const { sfx } = resource;
 
-        const worldRenderer = worldRender.makeRenderer({creatureUtils});
+            const worldRenderer = worldRender.makeRenderer({ creatureUtils });
 
-        const mainFontSpec = {
-          fonts: biolumi.getFonts(),
-          fontSize: 36,
-          lineHeight: 1.4,
-          fontWeight: biolumi.getFontWeight(),
-          fontStyle: biolumi.getFontStyle(),
-        };
-
-        const localUserId = multiplayer.getId();
-
-        class ElementManager {
-          constructor() {
-            this.tagMeshes = {};
-          }
-
-          getTagMeshes() {
-            const {tagMeshes} = this;
-
-            const result = [];
-            for (const k in tagMeshes) {
-              const tagMesh = tagMeshes[k];
-              result.push(tagMesh);
-            }
-            return result;
-          }
-
-          getTagMesh(id) {
-            return this.tagMeshes[id];
-          }
-
-          add(tagMesh) {
-            const {tagMeshes} = this;
-            const {item} = tagMesh;
-            const {id} = item;
-            tagMeshes[id] = tagMesh;
-
-            if (!rend.isOpen()) {
-              tagMesh.visible = false;
-            }
-
-            // scene.add(tagMesh);
-            // tagMesh.updateMatrixWorld();
-          }
-
-          remove(tagMesh) {
-            const {tagMeshes} = this;
-            const {item} = tagMesh;
-            const {id} = item;
-            delete tagMeshes[id];
-
-            // tagMesh.parent.remove(tagMesh);
-          }
-        }
-        const elementManager = new ElementManager();
-
-        const _request = (method, args) => {
-          if (connection) {
-            const e = {
-              method,
-              args,
+            const mainFontSpec = {
+              fonts: biolumi.getFonts(),
+              fontSize: 36,
+              lineHeight: 1.4,
+              fontWeight: biolumi.getFontWeight(),
+              fontStyle: biolumi.getFontStyle(),
             };
-            const es = JSON.stringify(e);
-            connection.send(es);
-          }
-        };
-        const _addTag = (itemSpec, {element = null} = {}) => {
-          const newElement = _handleAddTag(localUserId, itemSpec, {element});
-          _request('addTag', [localUserId, itemSpec]);
-          return newElement;
-        };
-        const _addTags = (itemSpecs) => {
-          _handleAddTags(localUserId, itemSpecs);
-          _request('addTags', [localUserId, itemSpecs]);
-        };
-        const _removeTag = id => {
-          const newElement = _handleRemoveTag(localUserId, id);
-          _request('removeTag', [localUserId, id]);
-          return newElement;
-        };
-        const _removeTags = ids => {
-          _handleRemoveTags(localUserId, ids);
-          _request('removeTags', [localUserId, ids]);
-        };
-        const _setTagAttribute = (id, {name, value}) => {
-          _handleSetTagAttribute(localUserId, id, {name, value});
-          _request('setTagAttribute', [localUserId, id, {name, value}]);
-        };
-        const _setTagAttributes = (id, newAttributes) => {
-          _handleSetTagAttributes(localUserId, id, newAttributes);
-          _request('setTagAttributes', [localUserId, id, newAttributes]);
-        };
 
-        const _handleAddTag = (userId, itemSpec, {element = null} = {}) => {
-          const tagMesh = tags.makeTag(itemSpec);
-          const {item} = tagMesh;
+            const localUserId = multiplayer.getId();
 
-          if (element) {
-            element.item = item;
-            item.instance = element;
-          }
+            class ElementManager {
+              constructor() {
+                this.tagMeshes = {};
+              }
 
-          let result = null;
-          if (item.type === 'entity' && !item.instance) {
-            result = tags.mutateAddEntity(tagMesh);
-          }
+              getTagMeshes() {
+                const { tagMeshes } = this;
 
-          elementManager.add(tagMesh);
+                const result = [];
+                for (const k in tagMeshes) {
+                  const tagMesh = tagMeshes[k];
+                  result.push(tagMesh);
+                }
+                return result;
+              }
 
-          return result;
-        };
-        const _handleAddTags = (userId, itemSpecs) => {
-          for (let i = 0; i < itemSpecs.length; i++) {
-            const itemSpec = itemSpecs[i];
-            _handleAddTag(userId, itemSpec);
-          }
-        };
-        const _handleRemoveTag = (userId, id) => {
-          const tagMesh = elementManager.getTagMesh(id);
-          const {item} = tagMesh;
+              getTagMesh(id) {
+                return this.tagMeshes[id];
+              }
 
-          let result = null;
-          if (item.type === 'entity' && item.instance) {
-            result = tags.mutateRemoveEntity(tagMesh);
-          }
+              add(tagMesh) {
+                const { tagMeshes } = this;
+                const { item } = tagMesh;
+                const { id } = item;
+                tagMeshes[id] = tagMesh;
 
-          tags.destroyTag(tagMesh);
+                if (!rend.isOpen()) {
+                  tagMesh.visible = false;
+                }
 
-          return result;
-        };
-        const _handleRemoveTags = (userId, ids) => {
-          for (let i = 0; i < ids.length; i++) {
-            const id = ids[i];
-            _handleRemoveTag(userId, id);
-          }
-        };
-        const _handleSetTagAttribute = (userId, id, {name, value}) => {
-          // same for local and remote user ids
+                // scene.add(tagMesh);
+                // tagMesh.updateMatrixWorld();
+              }
 
-          const tagMesh = elementManager.getTagMesh(id);
-          tagMesh.setAttribute(name, value);
+              remove(tagMesh) {
+                const { tagMeshes } = this;
+                const { item } = tagMesh;
+                const { id } = item;
+                delete tagMeshes[id];
 
-          return tagMesh;
-        };
-        const _handleSetTagAttributes = (userId, id, newAttributes) => {
-          // same for local and remote user ids
+                // tagMesh.parent.remove(tagMesh);
+              }
+            }
+            const elementManager = new ElementManager();
 
-          return newAttributes.map(newAttribute => {
-            const {name, value} = newAttribute;
-            return _handleSetTagAttribute(userId, id, {name, value});
-          });
-        };
-        const _handleTagOpen = (userId, id) => {
-          // same for local and remote user ids
+            const _request = (method, args) => {
+              if (connection) {
+                const e = {
+                  method,
+                  args,
+                };
+                const es = JSON.stringify(e);
+                connection.send(es);
+              }
+            };
+            const _addTag = (itemSpec, { element = null } = {}) => {
+              const newElement = _handleAddTag(localUserId, itemSpec, {
+                element,
+              });
+              _request('addTag', [localUserId, itemSpec]);
+              return newElement;
+            };
+            const _addTags = itemSpecs => {
+              _handleAddTags(localUserId, itemSpecs);
+              _request('addTags', [localUserId, itemSpecs]);
+            };
+            const _removeTag = id => {
+              const newElement = _handleRemoveTag(localUserId, id);
+              _request('removeTag', [localUserId, id]);
+              return newElement;
+            };
+            const _removeTags = ids => {
+              _handleRemoveTags(localUserId, ids);
+              _request('removeTags', [localUserId, ids]);
+            };
+            const _setTagAttribute = (id, { name, value }) => {
+              _handleSetTagAttribute(localUserId, id, { name, value });
+              _request('setTagAttribute', [localUserId, id, { name, value }]);
+            };
+            const _setTagAttributes = (id, newAttributes) => {
+              _handleSetTagAttributes(localUserId, id, newAttributes);
+              _request('setTagAttributes', [localUserId, id, newAttributes]);
+            };
 
-          const tagMesh = elementManager.getTagMesh(id);
-          tagMesh.open();
-        };
-        const _handleTagClose = (userId, id) => {
-          // same for local and remote user ids
+            const _handleAddTag = (
+              userId,
+              itemSpec,
+              { element = null } = {}
+            ) => {
+              const tagMesh = tags.makeTag(itemSpec);
+              const { item } = tagMesh;
 
-          const tagMesh = elementManager.getTagMesh(id);
-          tagMesh.close();
-        };
-        const _handleTagPlay = (userId, id) => {
-          // same for local and remote user ids
+              if (element) {
+                element.item = item;
+                item.instance = element;
+              }
 
-          const tagMesh = elementManager.getTagMesh(id);
-          tagMesh.play();
-        };
-        const _handleTagPause = (userId, id) => {
-          // same for local and remote user ids
+              let result = null;
+              if (item.type === 'entity' && !item.instance) {
+                result = tags.mutateAddEntity(tagMesh);
+              }
 
-          const tagMesh = elementManager.getTagMesh(id);
-          tagMesh.pause();
-        };
-        const _handleTagSeek = (userId, id, value) => {
-          // same for local and remote user ids
+              elementManager.add(tagMesh);
 
-          const tagMesh = elementManager.getTagMesh(id);
-          tagMesh.seek(value);
-        };
-        const _handleLoadModule = (userId, module, version) => {
-          const plugin = _getPlugin(module, version);
-          loader.requestPlugin(plugin)
-            .catch(err => {
-              console.warn(err);
-            });
-        };
-        const _handleUnloadModule = (userId, module, version) => {
-          const plugin = _getPlugin(module, version);
-          loader.releasePlugin(plugin)
-            .catch(err => {
-              console.warn(err);
-            });
-        };
-        const _handleMessage = detail => {
-          tags.message(detail);
-        };
+              return result;
+            };
+            const _handleAddTags = (userId, itemSpecs) => {
+              for (let i = 0; i < itemSpecs.length; i++) {
+                const itemSpec = itemSpecs[i];
+                _handleAddTag(userId, itemSpec);
+              }
+            };
+            const _handleRemoveTag = (userId, id) => {
+              const tagMesh = elementManager.getTagMesh(id);
+              const { item } = tagMesh;
 
-        const _searchNpm = (q = '') => fetch(`archae/rend/search?q=${encodeURIComponent(q)}`, {
-          credentials: 'include',
-        })
-          .then(res => res.json());
-        const _updateNpm = menuUtils.debounce(next => {
-          const {inputText} = npmState;
+              let result = null;
+              if (item.type === 'entity' && item.instance) {
+                result = tags.mutateRemoveEntity(tagMesh);
+              }
 
-          _searchNpm(inputText)
-            .then(itemSpecs =>
-              Promise.all(itemSpecs.map(itemSpec => {
-                itemSpec.metadata.isStatic = true; // XXX can probably be hardcoded in the render
-                itemSpec.metadata.exists = elementManager.getTagMeshes()
-                  .some(tagMesh =>
-                    tagMesh.item.type === itemSpec.type &&
-                    tagMesh.item.name === itemSpec.name
-                  );
+              tags.destroyTag(tagMesh);
 
-                return tags.makeTag(itemSpec, {
-                  initialUpdate: false,
+              return result;
+            };
+            const _handleRemoveTags = (userId, ids) => {
+              for (let i = 0; i < ids.length; i++) {
+                const id = ids[i];
+                _handleRemoveTag(userId, id);
+              }
+            };
+            const _handleSetTagAttribute = (userId, id, { name, value }) => {
+              // same for local and remote user ids
+
+              const tagMesh = elementManager.getTagMesh(id);
+              tagMesh.setAttribute(name, value);
+
+              return tagMesh;
+            };
+            const _handleSetTagAttributes = (userId, id, newAttributes) => {
+              // same for local and remote user ids
+
+              return newAttributes.map(newAttribute => {
+                const { name, value } = newAttribute;
+                return _handleSetTagAttribute(userId, id, { name, value });
+              });
+            };
+            const _handleTagOpen = (userId, id) => {
+              // same for local and remote user ids
+
+              const tagMesh = elementManager.getTagMesh(id);
+              tagMesh.open();
+            };
+            const _handleTagClose = (userId, id) => {
+              // same for local and remote user ids
+
+              const tagMesh = elementManager.getTagMesh(id);
+              tagMesh.close();
+            };
+            const _handleTagPlay = (userId, id) => {
+              // same for local and remote user ids
+
+              const tagMesh = elementManager.getTagMesh(id);
+              tagMesh.play();
+            };
+            const _handleTagPause = (userId, id) => {
+              // same for local and remote user ids
+
+              const tagMesh = elementManager.getTagMesh(id);
+              tagMesh.pause();
+            };
+            const _handleTagSeek = (userId, id, value) => {
+              // same for local and remote user ids
+
+              const tagMesh = elementManager.getTagMesh(id);
+              tagMesh.seek(value);
+            };
+            const _handleLoadModule = (userId, module, version) => {
+              const plugin = _getPlugin(module, version);
+              loader.requestPlugin(plugin).catch(err => {
+                console.warn(err);
+              });
+            };
+            const _handleUnloadModule = (userId, module, version) => {
+              const plugin = _getPlugin(module, version);
+              loader.releasePlugin(plugin).catch(err => {
+                console.warn(err);
+              });
+            };
+            const _handleMessage = detail => {
+              tags.message(detail);
+            };
+
+            const _searchNpm = (q = '') =>
+              fetch(`archae/rend/search?q=${encodeURIComponent(q)}`, {
+                credentials: 'include',
+              }).then(res => res.json());
+            const _updateNpm = menuUtils.debounce(next => {
+              const { inputText } = npmState;
+
+              _searchNpm(inputText)
+                .then(itemSpecs =>
+                  Promise.all(
+                    itemSpecs.map(itemSpec => {
+                      itemSpec.metadata.isStatic = true; // XXX can probably be hardcoded in the render
+                      itemSpec.metadata.exists = elementManager
+                        .getTagMeshes()
+                        .some(
+                          tagMesh =>
+                            tagMesh.item.type === itemSpec.type &&
+                            tagMesh.item.name === itemSpec.name
+                        );
+
+                      return tags.makeTag(itemSpec, {
+                        initialUpdate: false,
+                      });
+                    })
+                  ).then(tagMeshes => {
+                    const { tagMeshes: oldTagMeshes } = npmCacheState;
+
+                    npmState.loading = false;
+                    npmState.page = 0;
+                    npmState.tagSpecs = itemSpecs;
+                    npmState.numTags = itemSpecs.length;
+                    npmCacheState.tagMeshes = tagMeshes;
+
+                    _updatePages();
+
+                    next();
+                  })
+                )
+                .catch(err => {
+                  console.warn(err);
+
+                  next();
                 });
-              }))
-                .then(tagMeshes => {
-                  const {tagMeshes: oldTagMeshes} = npmCacheState;
 
-                  npmState.loading = false;
-                  npmState.page = 0;
-                  npmState.tagSpecs = itemSpecs;
-                  npmState.numTags = itemSpecs.length;
-                  npmCacheState.tagMeshes = tagMeshes;
+              const { numTags } = npmState;
+              npmState.loading = numTags === 0;
+            });
+
+            const npmState = {
+              loading: true,
+              inputText: '',
+              module: null,
+              tagSpecs: [],
+              numTags: 0,
+              page: 0,
+            };
+            const focusState = {
+              keyboardFocusState: null,
+            };
+            const npmCacheState = {
+              tagMeshes: [],
+              loaded: false,
+            };
+
+            const worldMesh = (() => {
+              const object = new THREE.Object3D();
+              object.visible = false;
+
+              const planeMesh = (() => {
+                const worldUi = biolumi.makeUi({
+                  width: WIDTH,
+                  height: HEIGHT,
+                });
+                const mesh = worldUi.makePage(
+                  ({
+                    npm: {
+                      loading,
+                      inputText,
+                      module,
+                      tagSpecs,
+                      numTags,
+                      page,
+                    },
+                    focus: { keyboardFocusState },
+                  }) => {
+                    const { type: focusType = '', inputValue = 0 } =
+                      keyboardFocusState || {};
+
+                    return {
+                      type: 'html',
+                      src: worldRenderer.getWorldPageSrc({
+                        loading,
+                        inputText,
+                        inputValue,
+                        module,
+                        tagSpecs,
+                        numTags,
+                        page,
+                        focusType,
+                      }),
+                      x: 0,
+                      y: 0,
+                      w: WIDTH,
+                      h: HEIGHT,
+                    };
+                  },
+                  {
+                    type: 'world',
+                    state: {
+                      npm: npmState,
+                      focus: focusState,
+                    },
+                    worldWidth: WORLD_WIDTH,
+                    worldHeight: WORLD_HEIGHT,
+                    isEnabled: () => rend.isOpen(),
+                  }
+                );
+                mesh.receiveShadow = true;
+
+                const { page } = mesh;
+                rend.addPage(page);
+
+                cleanups.push(() => {
+                  rend.removePage(page);
+                });
+
+                return mesh;
+              })();
+              object.add(planeMesh);
+              object.planeMesh = planeMesh;
+
+              return object;
+            })();
+            rend.registerMenuMesh('worldMesh', worldMesh);
+            worldMesh.updateMatrixWorld();
+
+            const _updatePages = () => {
+              const { planeMesh } = worldMesh;
+              const { page } = planeMesh;
+              page.update();
+            };
+            _updatePages();
+
+            const _update = e => {
+              // XXX
+            };
+            rend.on('update', _update);
+
+            const _tabchange = tab => {
+              if (tab === 'world') {
+                keyboard.tryBlur();
+
+                const { loaded } = npmCacheState;
+                if (!loaded) {
+                  _updateNpm();
+                  _updatePages();
+
+                  npmCacheState.loaded = true;
+                }
+              }
+            };
+            rend.on('tabchange', _tabchange);
+
+            const _loadEntities = itemSpecs => {
+              _addTags(itemSpecs);
+            };
+            rend.on('loadEntities', _loadEntities);
+            const _clearAllEntities = () => {
+              const entityItemIds = tags
+                .getTagMeshes()
+                .filter(({ item }) => item.type === 'entity')
+                .map(({ item: { id } }) => id);
+              _removeTags(entityItemIds);
+            };
+            rend.on('clearAllEntities', _clearAllEntities);
+
+            const _trigger = e => {
+              const { side } = e;
+
+              const _clickMenu = () => {
+                const hoverState = rend.getHoverState(side);
+                const { anchor } = hoverState;
+                const onclick = (anchor && anchor.onclick) || '';
+
+                let match;
+                if (onclick === 'npm:focus') {
+                  const { inputText } = npmState;
+                  const { value, target: page } = hoverState;
+                  const { layer: { measures } } = page;
+                  const valuePx = value * (WIDTH - (250 + 30 * 2));
+                  const { index, px } = biolumi.getTextPropertiesFromCoord(
+                    measures['npm:search'],
+                    inputText,
+                    valuePx
+                  );
+                  const { hmd: hmdStatus } = webvr.getStatus();
+                  const {
+                    worldPosition: hmdPosition,
+                    worldRotation: hmdRotation,
+                  } = hmdStatus;
+                  const keyboardFocusState = keyboard.focus({
+                    type: 'npm:search',
+                    position: hmdPosition,
+                    rotation: hmdRotation,
+                    inputText: inputText,
+                    inputIndex: index,
+                    inputValue: px,
+                    page: page,
+                  });
+                  focusState.keyboardFocusState = keyboardFocusState;
+
+                  keyboardFocusState.on('update', () => {
+                    const { inputText: keyboardInputText } = keyboardFocusState;
+                    const { inputText: npmInputText } = npmState;
+
+                    if (keyboardInputText !== npmInputText) {
+                      npmState.inputText = keyboardInputText;
+
+                      // XXX the backend should cache responses to prevent local re-requests from hitting external APIs
+                      _updateNpm();
+                    }
+
+                    _updatePages();
+                  });
+                  keyboardFocusState.on('blur', () => {
+                    focusState.keyboardFocusState = null;
+
+                    _updatePages();
+                  });
 
                   _updatePages();
 
-                  next();
-                })
-            )
-            .catch(err => {
-              console.warn(err);
+                  return true;
+                } else if (
+                  (match = onclick.match(/^(?:npm|module):(up|down)$/))
+                ) {
+                  const direction = match[1];
 
-              next();
-            });
+                  npmState.page += direction === 'up' ? -1 : 1;
 
-          const {numTags} = npmState;
-          npmState.loading = numTags === 0;
-        });
+                  _updatePages();
 
-        const npmState = {
-          loading: true,
-          inputText: '',
-          module: null,
-          tagSpecs: [],
-          numTags: 0,
-          page: 0,
-        };
-        const focusState = {
-          keyboardFocusState: null,
-        };
-        const npmCacheState = {
-          tagMeshes: [],
-          loaded: false,
-        };
+                  return true;
+                } else if ((match = onclick.match(/^module:main:(.+)$/))) {
+                  const id = match[1];
 
-        const worldMesh = (() => {
-          const object = new THREE.Object3D();
-          object.visible = false;
+                  const tagMesh = tags
+                    .getTagMeshes()
+                    .find(tagMesh => tagMesh.item.id === id);
+                  const { item } = tagMesh;
+                  npmState.module = item;
+                  npmState.page = 0;
 
-          const planeMesh = (() => {
-            const worldUi = biolumi.makeUi({
-              width: WIDTH,
-              height: HEIGHT,
-            });
-            const mesh = worldUi.makePage(({
-              npm: {
-                loading,
-                inputText,
-                module,
-                tagSpecs,
-                numTags,
-                page,
-              },
-              focus: {
-                keyboardFocusState,
-              },
-            }) => {
-              const {type: focusType = '', inputValue = 0} = keyboardFocusState || {};
+                  _updatePages();
 
-              return {
-                type: 'html',
-                src: worldRenderer.getWorldPageSrc({loading, inputText, inputValue, module, tagSpecs, numTags, page, focusType}),
-                x: 0,
-                y: 0,
-                w: WIDTH,
-                h: HEIGHT,
-              };
-            }, {
-              type: 'world',
-              state: {
-                npm: npmState,
-                focus: focusState,
-              },
-              worldWidth: WORLD_WIDTH,
-              worldHeight: WORLD_HEIGHT,
-              isEnabled: () => rend.isOpen(),
-            });
-            mesh.receiveShadow = true;
+                  return true;
+                } else if (onclick === 'module:back') {
+                  // const id = match[1];
 
-            const {page} = mesh;
-            rend.addPage(page);
+                  npmState.module = null;
 
-            cleanups.push(() => {
-              rend.removePage(page);
-            });
+                  _updatePages();
 
-            return mesh;
-          })();
-          object.add(planeMesh);
-          object.planeMesh = planeMesh;
+                  return true;
+                } else if (onclick === 'module:focusVersion') {
+                  const keyboardFocusState = keyboard.fakeFocus({
+                    type: 'version',
+                  });
+                  focusState.keyboardFocusState = keyboardFocusState;
 
-          return object;
-        })();
-        rend.registerMenuMesh('worldMesh', worldMesh);
-        worldMesh.updateMatrixWorld();
+                  keyboardFocusState.on('blur', () => {
+                    focusState.keyboardFocusState = null;
 
-        const _updatePages = () => {
-          const {planeMesh} = worldMesh;
-          const {page} = planeMesh;
-          page.update();
-        };
-        _updatePages();
+                    _updatePages();
+                  });
 
-        const _update = e => {
-          // XXX
-        };
-        rend.on('update', _update);
+                  _updatePages();
 
-        const _tabchange = tab => {
-          if (tab === 'world') {
-            keyboard.tryBlur();
+                  return true;
+                } else if (
+                  (match = onclick.match(/^module:setVersion:(.+?):(.+?)$/))
+                ) {
+                  // XXX load the version metadata here
+                  const id = match[1];
+                  const version = match[2];
 
-            const {loaded} = npmCacheState;
-            if (!loaded) {
-              _updateNpm();
-              _updatePages();
+                  const moduleTagMesh = tags
+                    .getTagMeshes()
+                    .find(
+                      tagMesh =>
+                        tagMesh.item.type === 'module' && tagMesh.item.id === id
+                    );
+                  const { item: moduleItem } = moduleTagMesh;
+                  moduleItem.version = version;
 
-              npmCacheState.loaded = true;
-            }
-          }
-        };
-        rend.on('tabchange', _tabchange);
+                  keyboard.tryBlur();
 
-        const _loadEntities = itemSpecs => {
-          _addTags(itemSpecs);
-        };
-        rend.on('loadEntities', _loadEntities);
-        const _clearAllEntities = () => {
-          const entityItemIds = tags.getTagMeshes()
-            .filter(({item}) => item.type === 'entity')
-            .map(({item: {id}}) => id);
-          _removeTags(entityItemIds);
-        };
-        rend.on('clearAllEntities', _clearAllEntities);
+                  _updatePages();
 
-        const _trigger = e => {
-          const {side} = e;
+                  return true;
+                } else if ((match = onclick.match(/^module:add:(.+)$/))) {
+                  const id = match[1];
 
-          const _clickMenu = () => {
-            const hoverState = rend.getHoverState(side);
-            const {anchor} = hoverState;
-            const onclick = (anchor && anchor.onclick) || '';
+                  const moduleTagMesh = tags
+                    .getTagMeshes()
+                    .find(
+                      tagMesh =>
+                        tagMesh.item.type === 'module' && tagMesh.item.id === id
+                    );
+                  const { item: moduleItem } = moduleTagMesh;
+                  const { name: module, displayName: moduleName } = moduleItem;
+                  const tagName = _makeTagName(module);
+                  const attributes = tags.getAttributeSpecsMap(module);
 
-            let match;
-            if (onclick === 'npm:focus') {
-              const {inputText} = npmState;
-              const {value, target: page} = hoverState;
-              const {layer: {measures}} = page;
-              const valuePx = value * (WIDTH - (250 + (30 * 2)));
-              const {index, px} = biolumi.getTextPropertiesFromCoord(measures['npm:search'], inputText, valuePx);
-              const {hmd: hmdStatus} = webvr.getStatus();
-              const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
-              const keyboardFocusState = keyboard.focus({
-                type: 'npm:search',
-                position: hmdPosition,
-                rotation: hmdRotation,
-                inputText: inputText,
-                inputIndex: index,
-                inputValue: px,
-                page: page,
-              });
-              focusState.keyboardFocusState = keyboardFocusState;
+                  const itemSpec = {
+                    type: 'entity',
+                    id: _makeId(),
+                    name: module,
+                    displayName: moduleName,
+                    version: '0.0.1',
+                    module: module,
+                    tagName: tagName,
+                    attributes: attributes,
+                    metadata: {},
+                  };
+                  const entityElement = _addTag(itemSpec);
+                  const { item } = entityElement;
 
-              keyboardFocusState.on('update', () => {
-                const {inputText: keyboardInputText} = keyboardFocusState;
-                const {inputText: npmInputText} = npmState;
+                  rend.setTab('entity');
+                  rend.setEntity(item);
 
-                if (keyboardInputText !== npmInputText) {
-                  npmState.inputText = keyboardInputText;
-
-                  // XXX the backend should cache responses to prevent local re-requests from hitting external APIs
-                  _updateNpm();
+                  return true;
+                } else {
+                  return false;
                 }
+              };
+              const _clickMenuBackground = () => {
+                const hoverState = rend.getHoverState(side);
+                const { target } = hoverState;
 
-                _updatePages();
-              });
-              keyboardFocusState.on('blur', () => {
-                focusState.keyboardFocusState = null;
+                if (target && target.mesh && target.mesh.parent === worldMesh) {
+                  return true;
+                } else {
+                  return false;
+                }
+              };
 
-                _updatePages();
-              });
+              if (_clickMenu()) {
+                sfx.digi_select.trigger();
 
-              _updatePages();
+                e.stopImmediatePropagation();
+              } else if (_clickMenuBackground()) {
+                sfx.digi_plink.trigger();
 
-              return true;
-            } else if (match = onclick.match(/^(?:npm|module):(up|down)$/)) {
-              const direction = match[1];
+                e.stopImmediatePropagation();
+              }
+            };
+            input.on('trigger', _trigger, {
+              priority: 1,
+            });
 
-              npmState.page += (direction === 'up' ? -1 : 1);
-
-              _updatePages();
-
-              return true;
-            } else if (match = onclick.match(/^module:main:(.+)$/)) {
-              const id = match[1];
-
-              const tagMesh = tags.getTagMeshes().find(tagMesh => tagMesh.item.id === id);
-              const {item} = tagMesh;
-              npmState.module = item;
-              npmState.page = 0;
-
-              _updatePages();
-
-              return true;
-            } else if (onclick === 'module:back') {
-              // const id = match[1];
-
-              npmState.module = null;
-
-              _updatePages();
-
-              return true;
-            } else if (onclick === 'module:focusVersion') {
-              const keyboardFocusState =  keyboard.fakeFocus({
-                type: 'version',
-              });
-              focusState.keyboardFocusState = keyboardFocusState;
-
-              keyboardFocusState.on('blur', () => {
-                focusState.keyboardFocusState = null;
-
-                _updatePages();
-              });
-
-              _updatePages();
-
-              return true;
-            } else if (match = onclick.match(/^module:setVersion:(.+?):(.+?)$/)) { // XXX load the version metadata here
-              const id = match[1];
-              const version = match[2];
-
-              const moduleTagMesh = tags.getTagMeshes().find(tagMesh => tagMesh.item.type === 'module' && tagMesh.item.id === id);
-              const {item: moduleItem} = moduleTagMesh;
-              moduleItem.version = version;
-
-              keyboard.tryBlur();
-
-              _updatePages();
-
-              return true;
-            } else if (match = onclick.match(/^module:add:(.+)$/)) {
-              const id = match[1];
-
-              const moduleTagMesh = tags.getTagMeshes().find(tagMesh => tagMesh.item.type === 'module' && tagMesh.item.id === id);
-              const {item: moduleItem} = moduleTagMesh;
-              const {name: module, displayName: moduleName} = moduleItem;
-              const tagName = _makeTagName(module);
-              const attributes = tags.getAttributeSpecsMap(module);
-
+            const _mutateAddEntity = ({ element, tagName, attributes }) => {
               const itemSpec = {
                 type: 'entity',
                 id: _makeId(),
-                name: module,
-                displayName: moduleName,
+                name: 'Manual entity',
+                displayName: 'Manual entity',
                 version: '0.0.1',
-                module: module,
                 tagName: tagName,
                 attributes: attributes,
                 metadata: {},
               };
-              const entityElement = _addTag(itemSpec);
-              const {item} = entityElement;
+              _addTag(itemSpec, { element });
+            };
+            tags.on('mutateAddEntity', _mutateAddEntity);
+            const _mutateRemoveEntity = ({ id }) => {
+              _removeTag(id);
+            };
+            tags.on('mutateRemoveEntity', _mutateRemoveEntity);
+            const _mutateSetAttribute = ({ id, name, value }) => {
+              _request('setTagAttribute', [localUserId, id, { name, value }]);
+            };
+            tags.on('mutateSetAttribute', _mutateSetAttribute);
+            const _tagsSetAttribute = ({ id, name, value }) => {
+              _handleSetTagAttribute(localUserId, id, { name, value });
+            };
+            tags.on('setAttribute', _tagsSetAttribute);
+            const _tagsOpen = ({ id }) => {
+              _request('tagOpen', [localUserId, id]);
 
-              rend.setTab('entity');
-              rend.setEntity(item);
+              _handleTagOpen(localUserId, id);
+            };
+            tags.on('open', _tagsOpen);
+            const _tagsClose = ({ id }) => {
+              _request('tagClose', [localUserId, id]);
 
-              return true;
-            } else {
-              return false;
-            }
-          };
-          const _clickMenuBackground = () => {
-            const hoverState = rend.getHoverState(side);
-            const {target} = hoverState;
+              _handleTagClose(localUserId, id);
+            };
+            tags.on('close', _tagsClose);
+            const _tagsPlay = ({ id }) => {
+              _request('tagPlay', [localUserId, id]);
 
-            if (target && target.mesh && target.mesh.parent === worldMesh) {
-              return true;
-            } else {
-              return false;
-            }
-          };
+              _handleTagPlay(localUserId, id);
+            };
+            tags.on('play', _tagsPlay);
+            const _tagsPause = ({ id }) => {
+              _request('tagPause', [localUserId, id]);
 
-          if (_clickMenu()) {
-            sfx.digi_select.trigger();
+              _handleTagPause(localUserId, id);
+            };
+            tags.on('pause', _tagsPause);
+            const _tagsSeek = ({ id, value }) => {
+              _request('tagSeek', [localUserId, id, value]);
 
-            e.stopImmediatePropagation();
-          } else if (_clickMenuBackground()) {
-            sfx.digi_plink.trigger();
-
-            e.stopImmediatePropagation();
-          }
-        };
-        input.on('trigger', _trigger, {
-          priority: 1,
-        });
-
-        const _mutateAddEntity = ({element, tagName, attributes}) => {
-          const itemSpec = {
-            type: 'entity',
-            id: _makeId(),
-            name: 'Manual entity',
-            displayName: 'Manual entity',
-            version: '0.0.1',
-            tagName: tagName,
-            attributes: attributes,
-            metadata: {},
-          };
-          _addTag(itemSpec, {element});
-        };
-        tags.on('mutateAddEntity', _mutateAddEntity);
-        const _mutateRemoveEntity = ({id}) => {
-          _removeTag(id);
-        };
-        tags.on('mutateRemoveEntity', _mutateRemoveEntity);
-        const _mutateSetAttribute = ({id, name, value}) => {
-          _request('setTagAttribute', [localUserId, id, {name, value}]);
-        };
-        tags.on('mutateSetAttribute', _mutateSetAttribute);
-        const _tagsSetAttribute = ({id, name, value}) => {
-          _handleSetTagAttribute(localUserId, id, {name, value});
-        };
-        tags.on('setAttribute', _tagsSetAttribute);
-        const _tagsOpen = ({id}) => {
-          _request('tagOpen', [localUserId, id]);
-
-          _handleTagOpen(localUserId, id);
-        };
-        tags.on('open', _tagsOpen);
-        const _tagsClose = ({id}) => {
-          _request('tagClose', [localUserId, id]);
-
-          _handleTagClose(localUserId, id);
-        };
-        tags.on('close', _tagsClose);
-        const _tagsPlay = ({id}) => {
-          _request('tagPlay', [localUserId, id]);
-
-          _handleTagPlay(localUserId, id);
-        };
-        tags.on('play', _tagsPlay);
-        const _tagsPause = ({id}) => {
-          _request('tagPause', [localUserId, id]);
-
-          _handleTagPause(localUserId, id);
-        };
-        tags.on('pause', _tagsPause);
-        const _tagsSeek = ({id, value}) => {
-          _request('tagSeek', [localUserId, id, value]);
-
-          _handleTagSeek(localUserId, id, value);
-        };
-        tags.on('seek', _tagsSeek);
-        const _tagsSeekUpdate = ({id, value}) => {
-          _request('tagSeekUpdate', [localUserId, id, value]);
-        };
-        tags.on('seekUpdate', _tagsSeekUpdate);
-        /* const _reinstallModule = ({id}) => {
+              _handleTagSeek(localUserId, id, value);
+            };
+            tags.on('seek', _tagsSeek);
+            const _tagsSeekUpdate = ({ id, value }) => {
+              _request('tagSeekUpdate', [localUserId, id, value]);
+            };
+            tags.on('seekUpdate', _tagsSeekUpdate);
+            /* const _reinstallModule = ({id}) => {
           const tagMesh = elementManager.getTagMesh(id);
           const {item} = tagMesh;
           const {module, version} = item;
@@ -687,7 +734,7 @@ class World {
         };
         tags.on('reinstallModule', _reinstallModule); */
 
-        /* const _download = ({id}) => {
+            /* const _download = ({id}) => {
           const a = document.createElement('a');
           a.href = fs.getFileUrl(id);
           a.style.display = 'none';
@@ -697,7 +744,7 @@ class World {
         };
         tags.on('download', _download); */
 
-        /* const _makeFileTagFromSpec = fileSpec => {
+            /* const _makeFileTagFromSpec = fileSpec => {
           const {
             id,
             name,
@@ -829,209 +876,220 @@ class World {
         };
         fs.on('upload', _upload); */
 
-        const initPromise = (() => {
-          let _accept = null;
-          let _reject = null;
-          const result = new Promise((accept, reject) => {
-            _accept = accept;
-            _reject = reject;
-          });
-          result.resolve = _accept;
-          result.reject = _reject;
-          return result;
-        })();
-        const _loadTags = itemSpecs => {
-          for (let i = 0; i < itemSpecs.length; i++) {
-            _handleAddTag(localUserId, itemSpecs[i]);
-          }
-        };
-
-        const connection = new AutoWs(_relativeWsUrl('archae/worldWs?id=' + localUserId));
-        let connectionInitialized = false;
-        connection.on('message', msg => {
-          const m = JSON.parse(msg.data);
-          const {type} = m;
-
-          if (type === 'init') {
-            if (!connectionInitialized) { // XXX temporary hack until we correctly unload tags on disconnect
-              initPromise // wait for core to be loaded before initializing user plugins
-                .then(() => {
-                  const {args: [itemSpecs]} = m;
-
-                  _loadTags(itemSpecs);
-
-                  connectionInitialized = true;
-                });
-            }
-          } else if (type === 'addTag') {
-            const {args: [userId, itemSpec]} = m;
-
-            _handleAddTag(userId, itemSpec);
-          } else if (type === 'addTags') {
-            const {args: [userId, itemSpecs]} = m;
-
-            _handleAddTags(userId, itemSpecs);
-          } else if (type === 'removeTag') {
-            const {args: [userId, id]} = m;
-
-            _handleRemoveTag(userId, id);
-          } else if (type === 'removeTags') {
-            const {args: [userId, ids]} = m;
-
-            _handleRemoveTags(userId, ids);
-          } else if (type === 'setTagAttribute') {
-            const {args: [userId, id, {name, value}]} = m;
-
-            const tagMesh = _handleSetTagAttribute(userId, id, {name, value});
-            // this prevents this mutation from triggering an infinite recursion multiplayer update
-            // we simply ignore this mutation during the next entity mutation tick
-            tags.ignoreEntityMutation({
-              type: 'setAttribute',
-              args: [id, name, value],
-            });
-          } else if (type === 'setTagAttributes') {
-            const {args: [userId, id, newAttributes]} = m;
-
-            const tagMeshes = _handleSetTagAttributes(userId, id, newAttributes);
-            for (let i = 0; i < tagMeshes.length; i++) {
-              const tagMesh = tagMeshes[i];
-              // this prevents this mutation from triggering an infinite recursion multiplayer update
-              // we simply ignore this mutation during the next entity mutation tick
-              tags.ignoreEntityMutation({
-                type: 'setAttribute',
-                args: [id, name, value],
+            const initPromise = (() => {
+              let _accept = null;
+              let _reject = null;
+              const result = new Promise((accept, reject) => {
+                _accept = accept;
+                _reject = reject;
               });
-            }
-          } else if (type === 'tagOpen') {
-            const {args: [userId, id]} = m;
+              result.resolve = _accept;
+              result.reject = _reject;
+              return result;
+            })();
+            const _loadTags = itemSpecs => {
+              for (let i = 0; i < itemSpecs.length; i++) {
+                _handleAddTag(localUserId, itemSpecs[i]);
+              }
+            };
 
-            _handleTagOpen(userId, id);
-          } else if (type === 'tagClose') {
-            const {args: [userId, id]} = m;
+            const connection = new AutoWs(
+              _relativeWsUrl('archae/worldWs?id=' + localUserId)
+            );
+            let connectionInitialized = false;
+            connection.on('message', msg => {
+              const m = JSON.parse(msg.data);
+              const { type } = m;
 
-            _handleTagClose(userId, id);
-          } else if (type === 'tagOpenDetails') {
-            const {args: [userId, id]} = m;
+              if (type === 'init') {
+                if (!connectionInitialized) {
+                  // XXX temporary hack until we correctly unload tags on disconnect
+                  initPromise // wait for core to be loaded before initializing user plugins
+                    .then(() => {
+                      const { args: [itemSpecs] } = m;
 
-            _handleTagOpenDetails(userId, id);
-          } else if (type === 'tagCloseDetails') {
-            const {args: [userId, id]} = m;
+                      _loadTags(itemSpecs);
 
-            _handleTagCloseDetails(userId, id);
-          } else if (type === 'tagPlay') {
-            const {args: [userId, id]} = m;
+                      connectionInitialized = true;
+                    });
+                }
+              } else if (type === 'addTag') {
+                const { args: [userId, itemSpec] } = m;
 
-            _handleTagPlay(userId, id);
-          } else if (type === 'tagPause') {
-            const {args: [userId, id]} = m;
+                _handleAddTag(userId, itemSpec);
+              } else if (type === 'addTags') {
+                const { args: [userId, itemSpecs] } = m;
 
-            _handleTagPause(userId, id);
-          } else if (type === 'tagSeek') {
-            const {args: [userId, id, value]} = m;
+                _handleAddTags(userId, itemSpecs);
+              } else if (type === 'removeTag') {
+                const { args: [userId, id] } = m;
 
-            _handleTagSeek(userId, id, value);
-          } else if (type === 'loadModule') {
-            const {args: [userId, plugin]} = m;
+                _handleRemoveTag(userId, id);
+              } else if (type === 'removeTags') {
+                const { args: [userId, ids] } = m;
 
-            _handleLoadModule(userId, plugin);
-          } else if (type === 'unloadModule') {
-            const {args: [userId, pluginName]} = m;
+                _handleRemoveTags(userId, ids);
+              } else if (type === 'setTagAttribute') {
+                const { args: [userId, id, { name, value }] } = m;
 
-            _handleUnloadModule(userId, pluginName);
-          } else if (type === 'message') {
-            const {args: [detail]} = m;
+                const tagMesh = _handleSetTagAttribute(userId, id, {
+                  name,
+                  value,
+                });
+                // this prevents this mutation from triggering an infinite recursion multiplayer update
+                // we simply ignore this mutation during the next entity mutation tick
+                tags.ignoreEntityMutation({
+                  type: 'setAttribute',
+                  args: [id, name, value],
+                });
+              } else if (type === 'setTagAttributes') {
+                const { args: [userId, id, newAttributes] } = m;
 
-            _handleMessage(detail);
-          } else if (type === 'response') {
-            const {id} = m;
+                const tagMeshes = _handleSetTagAttributes(
+                  userId,
+                  id,
+                  newAttributes
+                );
+                for (let i = 0; i < tagMeshes.length; i++) {
+                  const tagMesh = tagMeshes[i];
+                  // this prevents this mutation from triggering an infinite recursion multiplayer update
+                  // we simply ignore this mutation during the next entity mutation tick
+                  tags.ignoreEntityMutation({
+                    type: 'setAttribute',
+                    args: [id, name, value],
+                  });
+                }
+              } else if (type === 'tagOpen') {
+                const { args: [userId, id] } = m;
 
-            const requestHandler = requestHandlers.get(id);
-            if (requestHandler) {
-              const {error, result} = m;
-              requestHandler(error, result);
-            } else {
-              console.warn('unregistered handler:', JSON.stringify(id));
-            }
-          } else {
-            console.log('unknown message', m);
-          }
-        });
+                _handleTagOpen(userId, id);
+              } else if (type === 'tagClose') {
+                const { args: [userId, id] } = m;
 
-        cleanups.push(() => {
-          rend.removeListener('update', _update);
-          rend.removeListener('tabchange', _tabchange);
-          rend.removeListener('loadEntities', _loadEntities);
-          rend.removeListener('clearAllEntities', _clearAllEntities);
+                _handleTagClose(userId, id);
+              } else if (type === 'tagOpenDetails') {
+                const { args: [userId, id] } = m;
 
-          input.removeListener('trigger', _trigger);
+                _handleTagOpenDetails(userId, id);
+              } else if (type === 'tagCloseDetails') {
+                const { args: [userId, id] } = m;
 
-          // tags.removeListener('download', _download);
-          tags.removeListener('mutateAddEntity', _mutateAddEntity);
-          tags.removeListener('mutateRemoveEntity', _mutateRemoveEntity);
-          tags.removeListener('mutateSetAttribute', _mutateSetAttribute);
-          tags.removeListener('setAttribute', _tagsSetAttribute);
-          tags.removeListener('open', _tagsOpen);
-          tags.removeListener('close', _tagsClose);
-          tags.removeListener('play', _tagsPlay);
-          tags.removeListener('pause', _tagsPause);
-          tags.removeListener('seek', _tagsSeek);
-          tags.removeListener('seekUpdate', _tagsSeekUpdate);
+                _handleTagCloseDetails(userId, id);
+              } else if (type === 'tagPlay') {
+                const { args: [userId, id] } = m;
 
-          // fs.removeListener('upload', _upload);
+                _handleTagPlay(userId, id);
+              } else if (type === 'tagPause') {
+                const { args: [userId, id] } = m;
 
-          connection.destroy();
-        });
+                _handleTagPause(userId, id);
+              } else if (type === 'tagSeek') {
+                const { args: [userId, id, value] } = m;
 
-        class WorldApi {
-          init() {
-            initPromise.resolve();
-          }
+                _handleTagSeek(userId, id, value);
+              } else if (type === 'loadModule') {
+                const { args: [userId, plugin] } = m;
 
-          addTag(itemSpec) {
-            _addTag(itemSpec);
-          }
+                _handleLoadModule(userId, plugin);
+              } else if (type === 'unloadModule') {
+                const { args: [userId, pluginName] } = m;
 
-          addTags(itemSpecs) {
-            _addTags(itemSpecs);
-          }
+                _handleUnloadModule(userId, pluginName);
+              } else if (type === 'message') {
+                const { args: [detail] } = m;
 
-          removeTag(id) {
-            _removeTag(id);
-          }
+                _handleMessage(detail);
+              } else if (type === 'response') {
+                const { id } = m;
 
-          removeTags(ids) {
-            _removeTags(ids);
-          }
-
-          makeFile({ext = 'txt'} = {}) {
-            const id = _makeId();
-            const name = id + '.' + ext;
-            const mimeType = 'mime/' + ext.toLowerCase();
-            const path = '/' + name;
-            const file = new Blob([], {
-              type: mimeType,
+                const requestHandler = requestHandlers.get(id);
+                if (requestHandler) {
+                  const { error, result } = m;
+                  requestHandler(error, result);
+                } else {
+                  console.warn('unregistered handler:', JSON.stringify(id));
+                }
+              } else {
+                console.log('unknown message', m);
+              }
             });
-            file.path = path;
-            const files = [file];
 
-            return _makeFileTagFromSpec({
-              id,
-              name,
-              mimeType,
-              files,
-            }).then(tagMesh => {
-              const {item} = tagMesh;
-              const {id, name} = item;
+            cleanups.push(() => {
+              rend.removeListener('update', _update);
+              rend.removeListener('tabchange', _tabchange);
+              rend.removeListener('loadEntities', _loadEntities);
+              rend.removeListener('clearAllEntities', _clearAllEntities);
 
-              return fs.makeFile('fs/' + id + '/' + name);
+              input.removeListener('trigger', _trigger);
+
+              // tags.removeListener('download', _download);
+              tags.removeListener('mutateAddEntity', _mutateAddEntity);
+              tags.removeListener('mutateRemoveEntity', _mutateRemoveEntity);
+              tags.removeListener('mutateSetAttribute', _mutateSetAttribute);
+              tags.removeListener('setAttribute', _tagsSetAttribute);
+              tags.removeListener('open', _tagsOpen);
+              tags.removeListener('close', _tagsClose);
+              tags.removeListener('play', _tagsPlay);
+              tags.removeListener('pause', _tagsPause);
+              tags.removeListener('seek', _tagsSeek);
+              tags.removeListener('seekUpdate', _tagsSeekUpdate);
+
+              // fs.removeListener('upload', _upload);
+
+              connection.destroy();
             });
+
+            class WorldApi {
+              init() {
+                initPromise.resolve();
+              }
+
+              addTag(itemSpec) {
+                _addTag(itemSpec);
+              }
+
+              addTags(itemSpecs) {
+                _addTags(itemSpecs);
+              }
+
+              removeTag(id) {
+                _removeTag(id);
+              }
+
+              removeTags(ids) {
+                _removeTags(ids);
+              }
+
+              makeFile({ ext = 'txt' } = {}) {
+                const id = _makeId();
+                const name = id + '.' + ext;
+                const mimeType = 'mime/' + ext.toLowerCase();
+                const path = '/' + name;
+                const file = new Blob([], {
+                  type: mimeType,
+                });
+                file.path = path;
+                const files = [file];
+
+                return _makeFileTagFromSpec({
+                  id,
+                  name,
+                  mimeType,
+                  files,
+                }).then(tagMesh => {
+                  const { item } = tagMesh;
+                  const { id, name } = item;
+
+                  return fs.makeFile('fs/' + id + '/' + name);
+                });
+              }
+            }
+            const worldApi = new WorldApi();
+
+            return worldApi;
           }
         }
-        const worldApi = new WorldApi();
-
-        return worldApi;
-      }
-    });
+      );
   }
 
   unmount() {
@@ -1042,9 +1100,18 @@ class World {
 const _clone = o => JSON.parse(JSON.stringify(o));
 const _relativeWsUrl = s => {
   const l = window.location;
-  return ((l.protocol === 'https:') ? 'wss://' : 'ws://') + l.host + l.pathname + (!/\/$/.test(l.pathname) ? '/' : '') + s;
+  return (
+    (l.protocol === 'https:' ? 'wss://' : 'ws://') +
+    l.host +
+    l.pathname +
+    (!/\/$/.test(l.pathname) ? '/' : '') +
+    s
+  );
 };
-const _makeId = () => Math.random().toString(36).substring(7);
+const _makeId = () =>
+  Math.random()
+    .toString(36)
+    .substring(7);
 const _padNumber = (n, width) => {
   n = n + '';
   return n.length >= width ? n : new Array(width - n.length + 1).join('0') + n;
@@ -1077,6 +1144,7 @@ const _makeTagName = s => {
   }
   return s;
 };
-const _getPlugin = (module, version) => /^\//.test(module) ? module : `${module}@${version}`;
+const _getPlugin = (module, version) =>
+  /^\//.test(module) ? module : `${module}@${version}`;
 
 module.exports = World;

@@ -6,20 +6,16 @@ class Somnifer {
   }
 
   mount() {
-    const {_archae: archae} = this;
+    const { _archae: archae } = this;
 
     let live = true;
     this._cleanup = () => {
       live = false;
     };
 
-    return archae.requestPlugins([
-      '/core/engines/three',
-    ]).then(([
-      three,
-    ]) => {
+    return archae.requestPlugins(['/core/engines/three']).then(([three]) => {
       if (live) {
-        const {THREE, camera} = three;
+        const { THREE, camera } = three;
 
         const listener = new THREE.AudioListener();
         camera.add(listener);
@@ -31,7 +27,10 @@ class Somnifer {
             const sound = new THREE.PositionalAudio(listener);
             this.sound = sound;
 
-            const analyser = new THREE.AudioAnalyser(sound, ANALYSER_RESOLUTION);
+            const analyser = new THREE.AudioAnalyser(
+              sound,
+              ANALYSER_RESOLUTION
+            );
             this.analyser = analyser;
 
             this.object = null;
@@ -40,16 +39,18 @@ class Somnifer {
           }
 
           setInputElement(el) {
-            const {sound} = this;
+            const { sound } = this;
 
             const source = sound.context.createMediaElementSource(el);
             sound.setNodeSource(source);
           }
 
           setInputElements(els) {
-            const {sound} = this;
+            const { sound } = this;
 
-            const sources = els.map(el => sound.context.createMediaElementSource(el));
+            const sources = els.map(el =>
+              sound.context.createMediaElementSource(el)
+            );
             const merger = sound.context.createChannelMerger(2);
 
             let outputIndex = 0;
@@ -66,20 +67,20 @@ class Somnifer {
           }
 
           setInputMediaStream(mediaStream) {
-            const {sound} = this;
+            const { sound } = this;
 
             const source = sound.context.createMediaStreamSource(mediaStream);
             sound.setNodeSource(source);
           }
 
           setInputSource(source) {
-            const {sound} = this;
+            const { sound } = this;
 
             sound.setNodeSource(source);
           }
 
           setObject(object) {
-            const {sound} = this;
+            const { sound } = this;
 
             object.add(sound);
 
@@ -87,13 +88,13 @@ class Somnifer {
           }
 
           getAmplitude() {
-            const {analyser} = this;
+            const { analyser } = this;
 
             return analyser.getAverageFrequency() / 255;
           }
 
           destroy() {
-            const {sound, object} = this;
+            const { sound, object } = this;
 
             if (object) {
               object.remove(sound);
