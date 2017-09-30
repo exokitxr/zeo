@@ -1,6 +1,8 @@
 const path = require('path');
 const fs = require('fs');
+const child_process = require('child_process');
 
+const Pullstream = require('pullstream');
 const touch = require('touch');
 const zeode = require('zeode');
 const {
@@ -106,6 +108,57 @@ class Generator {
       }
       return 0;
     };
+
+    const childProcess = child_process.spawn(process.argv[0], [path.join(__dirname, 'servlet.js')]);
+    let numRemovedQueues = 0;
+    const _cleanupQueues = () => {
+      if (++numRemovedQueues >= 16) {
+        const newQueues = {};
+        for (const id in queues) {
+          const entry = queues[id];
+          if (entry !== null) {
+            newQueues[id] = entry;
+          }
+        }
+        queues = newQueues;
+        numRemovedQueues = 0;
+      }
+    };
+    let ids = 0;
+    const queues = {};
+    childProcess.request = (method, buffer, cb) => {
+      const id = ids++;
+
+      const headerBuffer = Uint32Array.from([method, id, buffer.length]);
+      childProcess.stdin.write(new Buffer(headerBuffer.buffer, headerBuffer.byteOffset, headerBuffer.length));
+      childProcess.stdin.write(new Buffer(buffer.buffer, buffer.byteOffset, buffer.length));
+      // childProcess.stdin.end(); // XXX without this the servlet does not get flushed stdin
+
+      queues[id] = cb;
+    };
+    childProcess.request(2, Float32Array.from([1, 2, 3]), (err, result) => { // XXX
+      console.log('generator test result', err, result);
+    });
+    const pullstream = new Pullstream();
+    childProcess.stdout.pipe(pullstream);
+    const _recurse = () => {
+      pullstream.pull(4, (err, data) => {
+        if (!err) {
+          const headerBufer = new Uint32Array(data.buffer, data.byteOffset, 3);
+          const [id, numBuffers] = headerBufer;
+          pullstream.pull(numBuffers, (err, result) => {
+            queues[id](result);
+
+            _recurse();
+          });
+        } else {
+          console.warn(err);
+
+          _recurse();
+        }
+      });
+    };
+    childProcess.stderr.pipe(process.stderr);
 
     const _generateChunk = chunk => {
       _generateChunkTerrain(chunk);
