@@ -166,7 +166,7 @@ class Generator {
     };
     const _generateChunkTerrain = (chunk, opts) => {
       const uint32Buffer = chunk.getTerrainBuffer();
-      protocolUtils.stringifyTerrainData(terrainTesselator.generate(chunk.x, chunk.z, opts), uint32Buffer.buffer, uint32Buffer.byteOffset);
+      protocolUtils.stringifyTerrainData(terrainTesselator.generate(chunk.x, chunk.z, opts), uint32Buffer.buffer, uint32Buffer.byteOffset); // XXX make this go through the child process
     };
     const _generateChunkObjects = chunk => {
       for (let i = 0; i < generators.length; i++) {
@@ -186,7 +186,7 @@ class Generator {
     };
     const _decorateChunkObjectsGeometry = chunk => {
       const geometryBuffer = chunk.getGeometryBuffer();
-      protocolUtils.stringifyGeometry(objectsTesselator.tesselate(chunk), geometryBuffer.buffer, geometryBuffer.byteOffset);
+      protocolUtils.stringifyGeometry(objectsTesselator.tesselate(chunk), geometryBuffer.buffer, geometryBuffer.byteOffset); // XXX make this go through the child process
       return Promise.resolve(chunk);
     };
     const _symbolizeChunk = chunk => {
