@@ -96,17 +96,6 @@
       "attributes": [],
       "metadata": {}
     },
-    "m6ize3": {
-      "type": "entity",
-      "id": "m6ize3",
-      "name": "/plugins/ocean",
-      "displayName": "ocean",
-      "version": "0.0.1",
-      "module": "/plugins/ocean",
-      "tagName": "ocean",
-      "attributes": [],
-      "metadata": {}
-    },
     "kkvl7d": {
       "type": "entity",
       "id": "kkvl7d",
@@ -115,17 +104,6 @@
       "version": "0.0.1",
       "module": "/plugins/day-night-skybox",
       "tagName": "plugins-day-night-skybox",
-      "attributes": {},
-      "metadata": {}
-    },
-    "0u7yql": {
-      "type": "entity",
-      "id": "0u7yql",
-      "name": "/plugins/lightmap",
-      "displayName": "lightmap",
-      "version": "0.0.1",
-      "module": "/plugins/lightmap",
-      "tagName": "plugins-lightmap",
       "attributes": {},
       "metadata": {}
     },
