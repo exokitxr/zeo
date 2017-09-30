@@ -194,6 +194,17 @@
       "tagName": "plugins-tools",
       "attributes": {},
       "metadata": {}
+    },
+    "u3xuc": {
+      "type": "entity",
+      "id": "u3xuc",
+      "name": "/plugins/models",
+      "displayName": "models",
+      "version": "0.0.1",
+      "module": "/plugins/models",
+      "tagName": "plugins-models",
+      "attributes": {},
+      "metadata": {}
     }
   }
 }
