@@ -1,9 +1,6 @@
 const Zlib = require('./inflate.min.js');
 const FBXLoader = require('./FBXLoader');
 
-// const URL = `https://cdn.rawgit.com/mrdoob/three.js/3bdf3cde63d48b897474927a4bd6e1876e104f73/examples/models/fbx/xsi_man_skinning.fbx`;
-// const URL = `/archae/models/models/xsi_man_skinning.fbx`;
-
 class Model {
   mount() {
     const {three: {THREE, scene}, input, elements, hands} = zeo;
