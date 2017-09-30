@@ -19,7 +19,7 @@ class Model {
             const loader = new THREEFBXLoader(manager);
             loader.load('/archae/fs/hash/' + grabbable.value, object => {
               const parent = new THREE.Object3D();
-              parent.position.set(0, 64, 0);
+              parent.position.copy(grabbable.position);
               parent.quaternion.setFromUnitVectors(
                 new THREE.Vector3(0, 0, 1),
                 new THREE.Vector3(0, 1, 0)
