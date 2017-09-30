@@ -1,5 +1,5 @@
 importScripts('/archae/assets/three.js');
-const {exports: THREE} = self.module;
+const { exports: THREE } = self.module;
 self.module = {};
 
 const protocolUtils = require('./lib/utils/protocol-utils');
@@ -26,17 +26,20 @@ const forwardVector = new THREE.Vector3(0, 0, -1);
 
 function mod(value, divisor) {
   var n = value % divisor;
-  return n < 0 ? (divisor + n) : n;
+  return n < 0 ? divisor + n : n;
 }
-const _getStaticBodyIndex = (t, x, z) => (mod(t, 0xFFFF) << 16) | (mod(x, 0xFF) << 8) | mod(z, 0xFF);
-const _getEtherfieldIndex = (x, y, z) => x + (z * NUM_CELLS_OVERSCAN) + (y * NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
-const _li = (left, right, x) => left*(1-x) + right*x;
-const _bi = (bottomLeft, bottomRight, topLeft, topRight, x, y) => bottomLeft*(1-x)*(1-y) + bottomRight*x*(1-y) + topLeft*(1-x)*y + topRight*x*y;
-const _tri = (c010, c110, c000, c100, c011, c111, c001, c101, x, y, z) => _li(
-  _bi(c010, c110, c000, c100, x, z),
-  _bi(c011, c111, c001, c101, x, z),
-  y
-);
+const _getStaticBodyIndex = (t, x, z) =>
+  (mod(t, 0xffff) << 16) | (mod(x, 0xff) << 8) | mod(z, 0xff);
+const _getEtherfieldIndex = (x, y, z) =>
+  x + z * NUM_CELLS_OVERSCAN + y * NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN;
+const _li = (left, right, x) => left * (1 - x) + right * x;
+const _bi = (bottomLeft, bottomRight, topLeft, topRight, x, y) =>
+  bottomLeft * (1 - x) * (1 - y) +
+  bottomRight * x * (1 - y) +
+  topLeft * (1 - x) * y +
+  topRight * x * y;
+const _tri = (c010, c110, c000, c100, c011, c111, c001, c101, x, y, z) =>
+  _li(_bi(c010, c110, c000, c100, x, z), _bi(c011, c111, c001, c101, x, z), y);
 
 const buffer = new ArrayBuffer(protocolUtils.BUFFER_SIZE);
 
@@ -44,7 +47,14 @@ const dynamicBodies = {};
 const staticBodies = {};
 
 class BoxBody {
-  constructor(n, position = new THREE.Vector3(), rotation = new THREE.Quaternion(), scale = new THREE.Vector3(1, 1, 1), size = new THREE.Vector3(0.1, 0.1, 0.1), velocity = new THREE.Vector3()) {
+  constructor(
+    n,
+    position = new THREE.Vector3(),
+    rotation = new THREE.Quaternion(),
+    scale = new THREE.Vector3(1, 1, 1),
+    size = new THREE.Vector3(0.1, 0.1, 0.1),
+    velocity = new THREE.Vector3()
+  ) {
     this.n = n;
     this.position = position;
     this.rotation = rotation;
@@ -59,7 +69,15 @@ class BoxBody {
     this.scale.copy(scale);
     this.velocity.copy(velocity);
 
-    protocolUtils.stringifyUpdate(this.n, this.position, this.rotation, this.scale, this.velocity, buffer, 0);
+    protocolUtils.stringifyUpdate(
+      this.n,
+      this.position,
+      this.rotation,
+      this.scale,
+      this.velocity,
+      buffer,
+      0
+    );
     postMessage(buffer);
   }
 
@@ -80,7 +98,14 @@ class BoxBody {
 } */
 
 class EtherfieldBody {
-  constructor(n, position = new THREE.Vector3(), width = 0, height = 0, depth = 0, data = new Float32Array(0)) {
+  constructor(
+    n,
+    position = new THREE.Vector3(),
+    width = 0,
+    height = 0,
+    depth = 0,
+    data = new Float32Array(0)
+  ) {
     this.n = n;
     this.position = position;
     this.width = width;
@@ -91,7 +116,14 @@ class EtherfieldBody {
 }
 
 class BlockfieldBody {
-  constructor(n, position = new THREE.Vector3(), width = 0, height = 0, depth = 0, data = new Uint8Array(0)) {
+  constructor(
+    n,
+    position = new THREE.Vector3(),
+    width = 0,
+    height = 0,
+    depth = 0,
+    data = new Uint8Array(0)
+  ) {
     this.n = n;
     this.position = position;
     this.width = width;
@@ -162,7 +194,11 @@ const _checkCollision = position => {
     }
   } */
 
-  const staticEtherfieldIndex = _getStaticBodyIndex(STATIC_BODY_TYPES.staticEtherfield, ox, oz);
+  const staticEtherfieldIndex = _getStaticBodyIndex(
+    STATIC_BODY_TYPES.staticEtherfield,
+    ox,
+    oz
+  );
   const staticEtherfieldBody = staticBodies[staticEtherfieldIndex];
   if (staticEtherfieldBody) {
     const ox = Math.floor(position.x / NUM_CELLS);
@@ -180,7 +216,8 @@ const _checkCollision = position => {
     const aly = ly - minY;
     const alz = lz - minZ;
 
-    const _getEtherfield = (x, y, z) => staticEtherfieldBody.data[_getEtherfieldIndex(x, y, z)];
+    const _getEtherfield = (x, y, z) =>
+      staticEtherfieldBody.data[_getEtherfieldIndex(x, y, z)];
 
     const v = _tri(
       _getEtherfield(minX, minY, minZ),
@@ -200,7 +237,11 @@ const _checkCollision = position => {
     }
   }
 
-  const staticBlockfieldIndex = _getStaticBodyIndex(STATIC_BODY_TYPES.staticBlockfield, ox, oz);
+  const staticBlockfieldIndex = _getStaticBodyIndex(
+    STATIC_BODY_TYPES.staticBlockfield,
+    ox,
+    oz
+  );
   const staticBlockfieldBody = staticBodies[staticBlockfieldIndex];
   if (staticBlockfieldBody) {
     const ax = Math.floor(position.x);
@@ -214,10 +255,12 @@ const _checkCollision = position => {
 
     const _getBlockfieldIndex = (x, y, z) => {
       const oy = Math.floor(y / NUM_CELLS);
-      return oy * NUM_CELLS * NUM_CELLS * NUM_CELLS +
-        (x) +
-        ((y - oy * NUM_CELLS) * NUM_CELLS) +
-        (z * NUM_CELLS * NUM_CELLS);
+      return (
+        oy * NUM_CELLS * NUM_CELLS * NUM_CELLS +
+        x +
+        (y - oy * NUM_CELLS) * NUM_CELLS +
+        z * NUM_CELLS * NUM_CELLS
+      );
     };
 
     const block = staticBlockfieldBody.data[_getBlockfieldIndex(lx, ly, lz)];
@@ -235,10 +278,12 @@ const interval = setInterval(() => {
   for (const index in dynamicBodies) {
     const body = dynamicBodies[index];
     if (body) {
-      const {position, velocity, size} = body;
-      nextVelocity.copy(velocity)
+      const { position, velocity, size } = body;
+      nextVelocity
+        .copy(velocity)
         .add(localVector.copy(upVector).multiplyScalar(GRAVITY * timeDiff));
-      nextPosition.copy(position)
+      nextPosition
+        .copy(position)
         .add(localVector.copy(nextVelocity).multiplyScalar(timeDiff / 1000));
 
       let collided = false;
@@ -250,7 +295,8 @@ const interval = setInterval(() => {
         collided = collided || !velocity.equals(zeroVector);
       }
 
-      if ((nextPosition.y - (size.y / 2)) < 0) { // hard limit to y=0
+      if (nextPosition.y - size.y / 2 < 0) {
+        // hard limit to y=0
         nextPosition.y = size.y / 2;
         nextVelocity.copy(zeroVector);
 
@@ -275,7 +321,8 @@ this._cleanup = () => {
 
 const TELEPORT_GRAVITY = GRAVITY * 1000 / 50000;
 const _getTeleportTarget = (position, rotation) => {
-  const velocity = localVector2.copy(forwardVector) // can't use localVector since it's an argument
+  const velocity = localVector2
+    .copy(forwardVector) // can't use localVector since it's an argument
     .applyQuaternion(rotation)
     .multiplyScalar(0.05);
   for (let i = 0; i < 1000; i++) {
@@ -288,7 +335,8 @@ const _getTeleportTarget = (position, rotation) => {
   return null;
 };
 const _getCheckResult = (position, rotation) => {
-  const velocity = localVector2.copy(forwardVector) // can't use localVector since it's an argument
+  const velocity = localVector2
+    .copy(forwardVector) // can't use localVector since it's an argument
     .applyQuaternion(rotation)
     .multiplyScalar(0.1);
   for (let i = 0; i < 10; i++) {
@@ -301,17 +349,17 @@ const _getCheckResult = (position, rotation) => {
 };
 
 self.onmessage = e => {
-  const {data} = e;
-  const {method} = data;
+  const { data } = e;
+  const { method } = data;
 
   switch (method) {
     case 'addBody': {
-      const {args} = data;
+      const { args } = data;
       const [n, type, spec] = args;
 
       switch (type) {
         case 'dynamicBox': {
-          const {position, rotation, scale, size, velocity} = spec;
+          const { position, rotation, scale, size, velocity } = spec;
           const body = new BoxBody(
             n,
             new THREE.Vector3().fromArray(position),
@@ -341,7 +389,7 @@ self.onmessage = e => {
           break;
         } */
         case 'staticEtherfield': {
-          const {position, width, height, depth, data} = spec;
+          const { position, width, height, depth, data } = spec;
           const body = new EtherfieldBody(
             n,
             new THREE.Vector3().fromArray(position),
@@ -352,13 +400,17 @@ self.onmessage = e => {
           );
           const ox = Math.floor(position[0] / NUM_CELLS);
           const oz = Math.floor(position[2] / NUM_CELLS);
-          const index = _getStaticBodyIndex(STATIC_BODY_TYPES.staticEtherfield, ox, oz);
+          const index = _getStaticBodyIndex(
+            STATIC_BODY_TYPES.staticEtherfield,
+            ox,
+            oz
+          );
           staticBodies[index] = body;
 
           break;
         }
         case 'staticBlockfield': {
-          const {position, width, height, depth, data} = spec;
+          const { position, width, height, depth, data } = spec;
           const body = new BlockfieldBody(
             n,
             new THREE.Vector3().fromArray(position),
@@ -369,7 +421,11 @@ self.onmessage = e => {
           );
           const ox = Math.floor(position[0] / NUM_CELLS);
           const oz = Math.floor(position[2] / NUM_CELLS);
-          const index = _getStaticBodyIndex(STATIC_BODY_TYPES.staticBlockfield, ox, oz);
+          const index = _getStaticBodyIndex(
+            STATIC_BODY_TYPES.staticBlockfield,
+            ox,
+            oz
+          );
           staticBodies[index] = body;
 
           break;
@@ -384,7 +440,7 @@ self.onmessage = e => {
       break;
     }
     case 'removeBody': {
-      const {args} = data;
+      const { args } = data;
       const [n] = args;
 
       if (dynamicBodies[n]) {
@@ -405,7 +461,7 @@ self.onmessage = e => {
       break;
     } */
     case 'setData': {
-      const {args} = data;
+      const { args } = data;
       const [n, newData] = args;
 
       staticBodies[n].data = newData;
@@ -413,25 +469,44 @@ self.onmessage = e => {
       break;
     }
     case 'check': {
-      const {args} = data;
+      const { args } = data;
       const [id, positionArray, rotationArray] = args;
 
-      protocolUtils.stringifyCheck(id, _getCheckResult(localVector.fromArray(positionArray), localQuaternion.fromArray(rotationArray)), buffer, 0);
+      protocolUtils.stringifyCheck(
+        id,
+        _getCheckResult(
+          localVector.fromArray(positionArray),
+          localQuaternion.fromArray(rotationArray)
+        ),
+        buffer,
+        0
+      );
       postMessage(buffer);
 
       break;
     }
     case 'teleport': {
-      const {args} = data;
+      const { args } = data;
       const [id, positionArray, rotationArray] = args;
 
-      protocolUtils.stringifyTeleport(id, _getTeleportTarget(localVector.fromArray(positionArray), localQuaternion.fromArray(rotationArray)), buffer, 0);
+      protocolUtils.stringifyTeleport(
+        id,
+        _getTeleportTarget(
+          localVector.fromArray(positionArray),
+          localQuaternion.fromArray(rotationArray)
+        ),
+        buffer,
+        0
+      );
       postMessage(buffer);
 
       break;
     }
     default: {
-      console.warn('invalid heightfield worker method:', JSON.stringify(method));
+      console.warn(
+        'invalid heightfield worker method:',
+        JSON.stringify(method)
+      );
       break;
     }
   }

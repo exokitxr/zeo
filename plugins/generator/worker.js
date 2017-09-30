@@ -1,38 +1,74 @@
 importScripts('/archae/assets/three.js');
-const {exports: THREE} = self.module;
+const { exports: THREE } = self.module;
 importScripts('/archae/assets/murmurhash.js');
-const {exports: murmur} = self.module;
+const { exports: murmur } = self.module;
 importScripts('/archae/assets/autows.js');
-const {exports: Autows} = self.module;
+const { exports: Autows } = self.module;
 importScripts('/archae/assets/alea.js');
-const {exports: alea} = self.module;
+const { exports: alea } = self.module;
 self.module = {};
 
 let slab = null;
 Module = {
-  print(text) { console.log(text); },
-  printErr(text) { console.warn(text); },
+  print(text) {
+    console.log(text);
+  },
+  printErr(text) {
+    console.warn(text);
+  },
   wasmBinaryFile: '/archae/objects/objectize.wasm',
   onRuntimeInitialized: () => {
     slab = (() => {
-      const BIOMES_SIZE = _align(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN * Uint8Array.BYTES_PER_ELEMENT, Float32Array.BYTES_PER_ELEMENT);
-      const ELEVATIONS_SIZE = NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN * Float32Array.BYTES_PER_ELEMENT;
-      const ETHER_SIZE = ((NUM_CELLS + 1) * (NUM_CELLS_HEIGHT + 1) * (NUM_CELLS + 1)) * Float32Array.BYTES_PER_ELEMENT;
-      const WATER_SIZE  = ((NUM_CELLS + 1) * (NUM_CELLS_HEIGHT + 1) * (NUM_CELLS + 1)) * Float32Array.BYTES_PER_ELEMENT;
-      const LAVA_SIZE = ((NUM_CELLS + 1) * (NUM_CELLS_HEIGHT + 1) * (NUM_CELLS + 1)) * Float32Array.BYTES_PER_ELEMENT;
-      const POSITIONS_SIZE = NUM_POSITIONS_CHUNK * Float32Array.BYTES_PER_ELEMENT;
+      const BIOMES_SIZE = _align(
+        NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN * Uint8Array.BYTES_PER_ELEMENT,
+        Float32Array.BYTES_PER_ELEMENT
+      );
+      const ELEVATIONS_SIZE =
+        NUM_CELLS_OVERSCAN *
+        NUM_CELLS_OVERSCAN *
+        Float32Array.BYTES_PER_ELEMENT;
+      const ETHER_SIZE =
+        (NUM_CELLS + 1) *
+        (NUM_CELLS_HEIGHT + 1) *
+        (NUM_CELLS + 1) *
+        Float32Array.BYTES_PER_ELEMENT;
+      const WATER_SIZE =
+        (NUM_CELLS + 1) *
+        (NUM_CELLS_HEIGHT + 1) *
+        (NUM_CELLS + 1) *
+        Float32Array.BYTES_PER_ELEMENT;
+      const LAVA_SIZE =
+        (NUM_CELLS + 1) *
+        (NUM_CELLS_HEIGHT + 1) *
+        (NUM_CELLS + 1) *
+        Float32Array.BYTES_PER_ELEMENT;
+      const POSITIONS_SIZE =
+        NUM_POSITIONS_CHUNK * Float32Array.BYTES_PER_ELEMENT;
       const INDICES_SIZE = NUM_POSITIONS_CHUNK * Uint32Array.BYTES_PER_ELEMENT;
       const COLORS_SIZE = NUM_POSITIONS_CHUNK * Float32Array.BYTES_PER_ELEMENT;
-      const HEIGHTFIELD_SIZE = NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN * HEIGHTFIELD_DEPTH * Float32Array.BYTES_PER_ELEMENT;
-      const STATIC_HEIGHTFIELD_SIZE = NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN * Float32Array.BYTES_PER_ELEMENT;
-      const ATTRIBUTE_RANGES_SIZE = NUM_CHUNKS_HEIGHT * 6 * Uint32Array.BYTES_PER_ELEMENT;
-      const INDEX_RANGES_SIZE = NUM_CHUNKS_HEIGHT * 6 * Uint32Array.BYTES_PER_ELEMENT;
+      const HEIGHTFIELD_SIZE =
+        NUM_CELLS_OVERSCAN *
+        NUM_CELLS_OVERSCAN *
+        HEIGHTFIELD_DEPTH *
+        Float32Array.BYTES_PER_ELEMENT;
+      const STATIC_HEIGHTFIELD_SIZE =
+        NUM_CELLS_OVERSCAN *
+        NUM_CELLS_OVERSCAN *
+        Float32Array.BYTES_PER_ELEMENT;
+      const ATTRIBUTE_RANGES_SIZE =
+        NUM_CHUNKS_HEIGHT * 6 * Uint32Array.BYTES_PER_ELEMENT;
+      const INDEX_RANGES_SIZE =
+        NUM_CHUNKS_HEIGHT * 6 * Uint32Array.BYTES_PER_ELEMENT;
       const PEEK_SIZE = 16 * Uint8Array.BYTES_PER_ELEMENT;
       const PEEKS_ARRAY_SIZE = PEEK_SIZE * NUM_CHUNKS_HEIGHT;
 
       const _alloc = (constructor, size) => {
         const offset = Module._malloc(size);
-        const b = new constructor(Module.HEAP8.buffer, Module.HEAP8.byteOffset + offset, size / constructor.BYTES_PER_ELEMENT);
+        const b = new constructor(
+          Module.HEAP8.buffer,
+          Module.HEAP8.byteOffset + offset,
+          size / constructor.BYTES_PER_ELEMENT
+        );
         b.offset = offset;
         return b;
       };
@@ -52,15 +88,40 @@ Module = {
       const peeks = _alloc(Uint8Array, PEEK_SIZE * NUM_CHUNKS_HEIGHT);
       const peeksArray = Array(NUM_CHUNKS_HEIGHT);
       for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
-        peeksArray[i] = new Uint8Array(peeks.buffer, peeks.byteOffset + i * PEEK_SIZE, PEEK_SIZE / Uint8Array.BYTES_PER_ELEMENT);
+        peeksArray[i] = new Uint8Array(
+          peeks.buffer,
+          peeks.byteOffset + i * PEEK_SIZE,
+          PEEK_SIZE / Uint8Array.BYTES_PER_ELEMENT
+        );
       }
-      const geometriesPositions = _alloc(Float32Array, GEOMETRY_BUFFER_SIZE * NUM_CHUNKS_HEIGHT);
-      const geometriesUvs = _alloc(Float32Array, GEOMETRY_BUFFER_SIZE * NUM_CHUNKS_HEIGHT);
-      const geometriesSsaos = _alloc(Uint8Array, GEOMETRY_BUFFER_SIZE * NUM_CHUNKS_HEIGHT);
-      const geometriesFrames = _alloc(Float32Array, GEOMETRY_BUFFER_SIZE * NUM_CHUNKS_HEIGHT);
-      const geometriesObjectIndices = _alloc(Float32Array, GEOMETRY_BUFFER_SIZE * NUM_CHUNKS_HEIGHT);
-      const geometriesIndices = _alloc(Uint32Array, GEOMETRY_BUFFER_SIZE * NUM_CHUNKS_HEIGHT);
-      const geometriesObjects = _alloc(Uint32Array, GEOMETRY_BUFFER_SIZE * NUM_CHUNKS_HEIGHT);
+      const geometriesPositions = _alloc(
+        Float32Array,
+        GEOMETRY_BUFFER_SIZE * NUM_CHUNKS_HEIGHT
+      );
+      const geometriesUvs = _alloc(
+        Float32Array,
+        GEOMETRY_BUFFER_SIZE * NUM_CHUNKS_HEIGHT
+      );
+      const geometriesSsaos = _alloc(
+        Uint8Array,
+        GEOMETRY_BUFFER_SIZE * NUM_CHUNKS_HEIGHT
+      );
+      const geometriesFrames = _alloc(
+        Float32Array,
+        GEOMETRY_BUFFER_SIZE * NUM_CHUNKS_HEIGHT
+      );
+      const geometriesObjectIndices = _alloc(
+        Float32Array,
+        GEOMETRY_BUFFER_SIZE * NUM_CHUNKS_HEIGHT
+      );
+      const geometriesIndices = _alloc(
+        Uint32Array,
+        GEOMETRY_BUFFER_SIZE * NUM_CHUNKS_HEIGHT
+      );
+      const geometriesObjects = _alloc(
+        Uint32Array,
+        GEOMETRY_BUFFER_SIZE * NUM_CHUNKS_HEIGHT
+      );
       const tesselateObjectsResult = _alloc(Uint32Array, 7 * 8 * 4);
 
       return {
@@ -123,15 +184,12 @@ const {
 const protocolUtils = require('./lib/utils/protocol-utils');
 
 const NUM_CELLS_HALF = NUM_CELLS / 2;
-const NUM_CELLS_CUBE = Math.sqrt((NUM_CELLS_HALF + 16) * (NUM_CELLS_HALF + 16) * 3); // larger than the actual bounding box to account for geometry overflow
+const NUM_CELLS_CUBE = Math.sqrt(
+  (NUM_CELLS_HALF + 16) * (NUM_CELLS_HALF + 16) * 3
+); // larger than the actual bounding box to account for geometry overflow
 const NUM_VOXELS_CHUNK_HEIGHT = BLOCK_BUFFER_SIZE / 4 / NUM_CHUNKS_HEIGHT;
 
-const DIRECTIONS = [
-  [-1, -1],
-  [-1, 1],
-  [1, -1],
-  [1, 1],
-];
+const DIRECTIONS = [[-1, -1], [-1, 1], [1, -1], [1, 1]];
 const CROSS_DIRECTIONS = [
   [-1, -1],
   [0, -1],
@@ -182,10 +240,16 @@ let geometryVersion = '';
 const objectApis = {};
 
 const boundingSpheres = (() => {
-  const slab = new ArrayBuffer(NUM_CHUNKS_HEIGHT * 4 * Float32Array.BYTES_PER_ELEMENT);
+  const slab = new ArrayBuffer(
+    NUM_CHUNKS_HEIGHT * 4 * Float32Array.BYTES_PER_ELEMENT
+  );
   const result = Array(NUM_CHUNKS_HEIGHT);
   for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
-    result[i] = new Float32Array(slab, i * 4 * Float32Array.BYTES_PER_ELEMENT, 4);
+    result[i] = new Float32Array(
+      slab,
+      i * 4 * Float32Array.BYTES_PER_ELEMENT,
+      4
+    );
   }
   return result;
 })();
@@ -199,19 +263,31 @@ class Allocator {
   allocBuffer(b) {
     const offset = Module._malloc(b.byteLength);
     this.offsets.push(offset);
-    new b.constructor(Module.HEAP8.buffer, Module.HEAP8.byteOffset + offset, b.length).set(b);
+    new b.constructor(
+      Module.HEAP8.buffer,
+      Module.HEAP8.byteOffset + offset,
+      b.length
+    ).set(b);
     return offset;
   }
 
   allocBufferArray(bs) {
     const offset = Module._malloc(bs.length * Uint32Array.BYTES_PER_ELEMENT);
     this.offsets.push(offset);
-    const array = new Uint32Array(Module.HEAP8.buffer, Module.HEAP8.byteOffset + offset, bs.length);
+    const array = new Uint32Array(
+      Module.HEAP8.buffer,
+      Module.HEAP8.byteOffset + offset,
+      bs.length
+    );
     for (let i = 0; i < bs.length; i++) {
       const b = bs[i];
       const offset = Module._malloc(b.byteLength);
       this.offsets.push(offset);
-      const shadowBuffer = new b.constructor(Module.HEAP8.buffer, Module.HEAP8.byteOffset + offset, b.length);
+      const shadowBuffer = new b.constructor(
+        Module.HEAP8.buffer,
+        Module.HEAP8.byteOffset + offset,
+        b.length
+      );
       shadowBuffer.set(b);
       array[i] = offset;
     }
@@ -221,29 +297,35 @@ class Allocator {
   allocShadowBuffer(b) {
     const offset = Module._malloc(b.byteLength);
     this.offsets.push(offset);
-    const shadowBuffer = new b.constructor(Module.HEAP8.buffer, Module.HEAP8.byteOffset + offset, b.length);
+    const shadowBuffer = new b.constructor(
+      Module.HEAP8.buffer,
+      Module.HEAP8.byteOffset + offset,
+      b.length
+    );
     shadowBuffer.set(b);
-    this.backbuffers.push([
-      b,
-      shadowBuffer
-    ]);
+    this.backbuffers.push([b, shadowBuffer]);
     return offset;
   }
 
   allocShadowBufferArray(bs) {
     const offset = Module._malloc(bs.length * Uint32Array.BYTES_PER_ELEMENT);
     this.offsets.push(offset);
-    const array = new Uint32Array(Module.HEAP8.buffer, Module.HEAP8.byteOffset + offset, bs.length);
+    const array = new Uint32Array(
+      Module.HEAP8.buffer,
+      Module.HEAP8.byteOffset + offset,
+      bs.length
+    );
     for (let i = 0; i < bs.length; i++) {
       const b = bs[i];
       const offset = Module._malloc(b.byteLength);
       this.offsets.push(offset);
-      const shadowBuffer = new b.constructor(Module.HEAP8.buffer, Module.HEAP8.byteOffset + offset, b.length);
+      const shadowBuffer = new b.constructor(
+        Module.HEAP8.buffer,
+        Module.HEAP8.byteOffset + offset,
+        b.length
+      );
       shadowBuffer.set(b);
-      this.backbuffers.push([
-        b,
-        shadowBuffer
-      ]);
+      this.backbuffers.push([b, shadowBuffer]);
       array[i] = offset;
     }
     return offset;
@@ -263,10 +345,12 @@ class Allocator {
   }
 }
 
-
 const _retesselateTerrain = (chunk, newEther) => {
   const oldTerrainBuffer = chunk.getTerrainBuffer();
-  const oldChunkData = protocolUtils.parseTerrainData(oldTerrainBuffer.buffer, oldTerrainBuffer.byteOffset);
+  const oldChunkData = protocolUtils.parseTerrainData(
+    oldTerrainBuffer.buffer,
+    oldTerrainBuffer.byteOffset
+  );
   const oldBiomes = oldChunkData.biomes.slice();
   const oldElevations = oldChunkData.elevations.slice();
   const oldEther = oldChunkData.ether.slice();
@@ -275,7 +359,13 @@ const _retesselateTerrain = (chunk, newEther) => {
 
   const allocator = new Allocator();
 
-  const {attributeRanges, indexRanges, heightfield, staticHeightfield, peeks} = slab;
+  const {
+    attributeRanges,
+    indexRanges,
+    heightfield,
+    staticHeightfield,
+    peeks,
+  } = slab;
   const noiser = Module._make_noiser(murmur(DEFAULT_SEED));
   Module._noiser_fill(
     noiser,
@@ -304,11 +394,18 @@ const _retesselateTerrain = (chunk, newEther) => {
 
   allocator.unshadow();
 
-  const attributeIndex = attributeRanges[attributeRanges.length - 2] + attributeRanges[attributeRanges.length - 1];
-  const indexIndex = indexRanges[indexRanges.length - 2] + indexRanges[indexRanges.length - 1];
+  const attributeIndex =
+    attributeRanges[attributeRanges.length - 2] +
+    attributeRanges[attributeRanges.length - 1];
+  const indexIndex =
+    indexRanges[indexRanges.length - 2] + indexRanges[indexRanges.length - 1];
   const positions = slab.positions.subarray(0, attributeIndex);
   const indices = slab.indices.subarray(0, indexIndex);
-  const colors = new Float32Array(slab.colors.buffer, slab.colors.byteOffset, attributeIndex);
+  const colors = new Float32Array(
+    slab.colors.buffer,
+    slab.colors.byteOffset,
+    attributeIndex
+  );
 
   const geometries = Array(NUM_CHUNKS_HEIGHT);
   for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
@@ -354,9 +451,16 @@ const _retesselateTerrain = (chunk, newEther) => {
   };
 
   const terrainBuffer = chunk.getTerrainBuffer();
-  protocolUtils.stringifyTerrainData(chunkDataSpec, terrainBuffer.buffer, terrainBuffer.byteOffset);
+  protocolUtils.stringifyTerrainData(
+    chunkDataSpec,
+    terrainBuffer.buffer,
+    terrainBuffer.byteOffset
+  );
 
-  const chunkData = protocolUtils.parseTerrainData(terrainBuffer.buffer, terrainBuffer.byteOffset);
+  const chunkData = protocolUtils.parseTerrainData(
+    terrainBuffer.buffer,
+    terrainBuffer.byteOffset
+  );
   chunk.chunkData.terrain = chunkData;
   chunk.chunkData.decorations.terrain = {
     skyLightmaps: new Uint8Array(chunkData.positions.length / 3),
@@ -370,7 +474,16 @@ const _retesselateTerrain = (chunk, newEther) => {
 const _retesselateObjects = chunk => {
   const allocator = new Allocator();
 
-  const {geometriesPositions, geometriesUvs, geometriesSsaos, geometriesFrames, geometriesObjectIndices, geometriesIndices, geometriesObjects, tesselateObjectsResult} = slab;
+  const {
+    geometriesPositions,
+    geometriesUvs,
+    geometriesSsaos,
+    geometriesFrames,
+    geometriesObjectIndices,
+    geometriesIndices,
+    geometriesObjects,
+    tesselateObjectsResult,
+  } = slab;
 
   Module._objectize(
     allocator.allocBuffer(chunk.getObjectBuffer()),
@@ -382,7 +495,9 @@ const _retesselateObjects = chunk => {
     allocator.allocBuffer(transparentVoxels),
     allocator.allocBuffer(translucentVoxels),
     allocator.allocBuffer(faceUvs),
-    allocator.allocBuffer(Float32Array.from([chunk.x * NUM_CELLS, 0, chunk.z * NUM_CELLS])),
+    allocator.allocBuffer(
+      Float32Array.from([chunk.x * NUM_CELLS, 0, chunk.z * NUM_CELLS])
+    ),
     geometriesPositions.offset,
     geometriesUvs.offset,
     geometriesSsaos.offset,
@@ -395,13 +510,34 @@ const _retesselateObjects = chunk => {
 
   allocator.unshadow();
 
-  const numNewPositions = tesselateObjectsResult.subarray(NUM_CHUNKS_HEIGHT * 0, NUM_CHUNKS_HEIGHT * 1);
-  const numNewUvs = tesselateObjectsResult.subarray(NUM_CHUNKS_HEIGHT * 1, NUM_CHUNKS_HEIGHT * 2);
-  const numNewSsaos = tesselateObjectsResult.subarray(NUM_CHUNKS_HEIGHT * 2, NUM_CHUNKS_HEIGHT * 3);
-  const numNewFrames = tesselateObjectsResult.subarray(NUM_CHUNKS_HEIGHT * 3, NUM_CHUNKS_HEIGHT * 4);
-  const numNewObjectIndices = tesselateObjectsResult.subarray(NUM_CHUNKS_HEIGHT * 4, NUM_CHUNKS_HEIGHT * 5);
-  const numNewIndices = tesselateObjectsResult.subarray(NUM_CHUNKS_HEIGHT * 5, NUM_CHUNKS_HEIGHT * 6);
-  const numNewObjects = tesselateObjectsResult.subarray(NUM_CHUNKS_HEIGHT * 6, NUM_CHUNKS_HEIGHT * 7);
+  const numNewPositions = tesselateObjectsResult.subarray(
+    NUM_CHUNKS_HEIGHT * 0,
+    NUM_CHUNKS_HEIGHT * 1
+  );
+  const numNewUvs = tesselateObjectsResult.subarray(
+    NUM_CHUNKS_HEIGHT * 1,
+    NUM_CHUNKS_HEIGHT * 2
+  );
+  const numNewSsaos = tesselateObjectsResult.subarray(
+    NUM_CHUNKS_HEIGHT * 2,
+    NUM_CHUNKS_HEIGHT * 3
+  );
+  const numNewFrames = tesselateObjectsResult.subarray(
+    NUM_CHUNKS_HEIGHT * 3,
+    NUM_CHUNKS_HEIGHT * 4
+  );
+  const numNewObjectIndices = tesselateObjectsResult.subarray(
+    NUM_CHUNKS_HEIGHT * 4,
+    NUM_CHUNKS_HEIGHT * 5
+  );
+  const numNewIndices = tesselateObjectsResult.subarray(
+    NUM_CHUNKS_HEIGHT * 5,
+    NUM_CHUNKS_HEIGHT * 6
+  );
+  const numNewObjects = tesselateObjectsResult.subarray(
+    NUM_CHUNKS_HEIGHT * 6,
+    NUM_CHUNKS_HEIGHT * 7
+  );
 
   const localGeometries = Array(NUM_CHUNKS_HEIGHT);
   for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
@@ -427,22 +563,57 @@ const _retesselateObjects = chunk => {
       },
       boundingSphere,
     };
-  };
+  }
   const chunkDataSpec = {
-    positions: new Float32Array(geometriesPositions.buffer, geometriesPositions.byteOffset, numNewPositions[NUM_CHUNKS_HEIGHT - 1]),
-    uvs: new Float32Array(geometriesUvs.buffer, geometriesUvs.byteOffset, numNewUvs[NUM_CHUNKS_HEIGHT - 1]),
-    ssaos: new Uint8Array(geometriesSsaos.buffer, geometriesSsaos.byteOffset, numNewSsaos[NUM_CHUNKS_HEIGHT - 1]),
-    frames: new Float32Array(geometriesFrames.buffer, geometriesFrames.byteOffset, numNewFrames[NUM_CHUNKS_HEIGHT - 1]),
-    objectIndices: new Float32Array(geometriesObjectIndices.buffer, geometriesObjectIndices.byteOffset, numNewObjectIndices[NUM_CHUNKS_HEIGHT - 1]),
-    indices: new Uint32Array(geometriesIndices.buffer, geometriesIndices.byteOffset, numNewIndices[NUM_CHUNKS_HEIGHT - 1]),
-    objects: new Uint32Array(geometriesObjects.buffer, geometriesObjects.byteOffset, numNewObjects[NUM_CHUNKS_HEIGHT - 1]),
+    positions: new Float32Array(
+      geometriesPositions.buffer,
+      geometriesPositions.byteOffset,
+      numNewPositions[NUM_CHUNKS_HEIGHT - 1]
+    ),
+    uvs: new Float32Array(
+      geometriesUvs.buffer,
+      geometriesUvs.byteOffset,
+      numNewUvs[NUM_CHUNKS_HEIGHT - 1]
+    ),
+    ssaos: new Uint8Array(
+      geometriesSsaos.buffer,
+      geometriesSsaos.byteOffset,
+      numNewSsaos[NUM_CHUNKS_HEIGHT - 1]
+    ),
+    frames: new Float32Array(
+      geometriesFrames.buffer,
+      geometriesFrames.byteOffset,
+      numNewFrames[NUM_CHUNKS_HEIGHT - 1]
+    ),
+    objectIndices: new Float32Array(
+      geometriesObjectIndices.buffer,
+      geometriesObjectIndices.byteOffset,
+      numNewObjectIndices[NUM_CHUNKS_HEIGHT - 1]
+    ),
+    indices: new Uint32Array(
+      geometriesIndices.buffer,
+      geometriesIndices.byteOffset,
+      numNewIndices[NUM_CHUNKS_HEIGHT - 1]
+    ),
+    objects: new Uint32Array(
+      geometriesObjects.buffer,
+      geometriesObjects.byteOffset,
+      numNewObjects[NUM_CHUNKS_HEIGHT - 1]
+    ),
     geometries: localGeometries,
   };
 
   const geometryBuffer = chunk.getGeometryBuffer();
-  protocolUtils.stringifyGeometry(chunkDataSpec, geometryBuffer.buffer, geometryBuffer.byteOffset);
+  protocolUtils.stringifyGeometry(
+    chunkDataSpec,
+    geometryBuffer.buffer,
+    geometryBuffer.byteOffset
+  );
 
-  const chunkData = protocolUtils.parseGeometry(geometryBuffer.buffer, geometryBuffer.byteOffset);
+  const chunkData = protocolUtils.parseGeometry(
+    geometryBuffer.buffer,
+    geometryBuffer.byteOffset
+  );
   chunk.chunkData.objects = chunkData;
   chunk.chunkData.decorations.objects = {
     skyLightmaps: new Uint8Array(chunkData.positions.length / 3),
@@ -454,18 +625,28 @@ const _retesselateObjects = chunk => {
   allocator.destroy();
 };
 const _relight = (chunk, x, y, z) => {
-  const _decorateChunkLightsSub = (chunk, x, y, z) => _decorateChunkLightsRange(
+  const _decorateChunkLightsSub = (chunk, x, y, z) =>
+    _decorateChunkLightsRange(
+      chunk,
+      Math.max(x - 15, (chunk.x - 1) * NUM_CELLS),
+      Math.min(x + 15, (chunk.x + 2) * NUM_CELLS),
+      Math.max(y - 15, 0),
+      Math.min(y + 15, NUM_CELLS_HEIGHT),
+      Math.max(z - 15, (chunk.z - 1) * NUM_CELLS),
+      Math.min(z + 15, (chunk.z + 2) * NUM_CELLS),
+      true
+    );
+  const _decorateChunkLightsRange = (
     chunk,
-    Math.max(x - 15, (chunk.x - 1) * NUM_CELLS),
-    Math.min(x + 15, (chunk.x + 2) * NUM_CELLS),
-    Math.max(y - 15, 0),
-    Math.min(y + 15, NUM_CELLS_HEIGHT),
-    Math.max(z - 15, (chunk.z - 1) * NUM_CELLS),
-    Math.min(z + 15, (chunk.z + 2) * NUM_CELLS),
-    true
-  );
-  const _decorateChunkLightsRange = (chunk, minX, maxX, minY, maxY, minZ, maxZ, relight) => {
-    const {x: ox, z: oz} = chunk;
+    minX,
+    maxX,
+    minY,
+    maxY,
+    minZ,
+    maxZ,
+    relight
+  ) => {
+    const { x: ox, z: oz } = chunk;
     const updatingLights = chunk[lightsRenderedSymbol];
 
     const lavaArray = Array(9);
@@ -473,7 +654,8 @@ const _relight = (chunk, x, y, z) => {
     const etherArray = Array(9);
     const blocksArray = Array(9);
     const lightsArray = Array(9);
-    for (let doz = -1; doz <= 1; doz++) { // XXX can be reduced to use only the relight range
+    for (let doz = -1; doz <= 1; doz++) {
+      // XXX can be reduced to use only the relight range
       for (let dox = -1; dox <= 1; dox++) {
         const arrayIndex = _getLightsArrayIndex(dox + 1, doz + 1);
 
@@ -481,7 +663,10 @@ const _relight = (chunk, x, y, z) => {
         const aoz = oz + doz;
         const chunk = zde.getChunk(aox, aoz);
         const uint32Buffer = chunk.getTerrainBuffer();
-        const {ether, lava} = protocolUtils.parseTerrainData(uint32Buffer.buffer, uint32Buffer.byteOffset); // XXX can be reduced to only parse the needed fields
+        const { ether, lava } = protocolUtils.parseTerrainData(
+          uint32Buffer.buffer,
+          uint32Buffer.byteOffset
+        ); // XXX can be reduced to only parse the needed fields
         lavaArray[arrayIndex] = lava;
 
         const objectLights = chunk.getLightBuffer();
@@ -494,7 +679,9 @@ const _relight = (chunk, x, y, z) => {
 
         let lights = chunk[lightsSymbol];
         if (!lights) {
-          lights = new Uint8Array(NUM_CELLS_OVERSCAN * (NUM_CELLS_HEIGHT + 1) * NUM_CELLS_OVERSCAN);
+          lights = new Uint8Array(
+            NUM_CELLS_OVERSCAN * (NUM_CELLS_HEIGHT + 1) * NUM_CELLS_OVERSCAN
+          );
           chunk[lightsSymbol] = lights;
         }
         lightsArray[arrayIndex] = lights;
@@ -504,14 +691,20 @@ const _relight = (chunk, x, y, z) => {
     const allocator = new Allocator();
 
     Module._lght(
-      ox, oz,
-      minX, maxX, minY, maxY, minZ, maxZ,
+      ox,
+      oz,
+      minX,
+      maxX,
+      minY,
+      maxY,
+      minZ,
+      maxZ,
       +relight,
       allocator.allocBufferArray(lavaArray),
       allocator.allocBufferArray(objectLightsArray),
       allocator.allocBufferArray(etherArray),
       allocator.allocBufferArray(blocksArray),
-      allocator.allocShadowBufferArray(lightsArray),
+      allocator.allocShadowBufferArray(lightsArray)
     );
 
     allocator.unshadow();
@@ -524,19 +717,31 @@ const _relight = (chunk, x, y, z) => {
 const _relightmap = chunk => {
   const _relightmapTerrain = () => {
     const terrainBuffer = chunk.getTerrainBuffer();
-    const {positions} = protocolUtils.parseTerrainData(terrainBuffer.buffer, terrainBuffer.byteOffset);
-    const {skyLightmaps, torchLightmaps} = chunk.chunkData.decorations.terrain;
-    _relightmapSpec({positions, skyLightmaps, torchLightmaps});
+    const { positions } = protocolUtils.parseTerrainData(
+      terrainBuffer.buffer,
+      terrainBuffer.byteOffset
+    );
+    const {
+      skyLightmaps,
+      torchLightmaps,
+    } = chunk.chunkData.decorations.terrain;
+    _relightmapSpec({ positions, skyLightmaps, torchLightmaps });
   };
   const _relightmapObjects = () => {
-    const {positions} = chunk.chunkData.objects;
-    const {skyLightmaps, torchLightmaps} = chunk.chunkData.decorations.objects;
-    _relightmapSpec({positions, skyLightmaps, torchLightmaps});
+    const { positions } = chunk.chunkData.objects;
+    const {
+      skyLightmaps,
+      torchLightmaps,
+    } = chunk.chunkData.decorations.objects;
+    _relightmapSpec({ positions, skyLightmaps, torchLightmaps });
   };
-  const _relightmapSpec = ({positions, skyLightmaps, torchLightmaps}) => {
+  const _relightmapSpec = ({ positions, skyLightmaps, torchLightmaps }) => {
     const terrainBuffer = chunk.getTerrainBuffer();
-    const {staticHeightfield} = protocolUtils.parseTerrainData(terrainBuffer.buffer, terrainBuffer.byteOffset);
-    const {[lightsSymbol]: lights} = chunk;
+    const { staticHeightfield } = protocolUtils.parseTerrainData(
+      terrainBuffer.buffer,
+      terrainBuffer.byteOffset
+    );
+    const { [lightsSymbol]: lights } = chunk;
 
     const numPositions = positions.length;
 
@@ -587,35 +792,42 @@ const _getHoveredTrackedObject = (x, y, z, buffer, byteOffset) => {
   for (const index in zde.chunks) {
     const chunk = zde.chunks[index];
 
-    if (chunk && chunk[objectsDecorationsSymbol] && localCoord.set(chunk.x - ox, chunk.z - oz).lengthSq() <= 2) {
-      const chunkResult = chunk.forEachObject((n, matrix, value, objectIndex) => {
-        const position = localVector2.fromArray(matrix, 0);
-        const rotation = localQuaternion.fromArray(matrix, 3);
-        const rotationInverse = localQuaternion2.copy(rotation).inverse();
-        const objectArray = chunk.objectsMap[objectIndex];
-        localBox.min.fromArray(objectArray, 0);
-        localBox.max.fromArray(objectArray, 3);
+    if (
+      chunk &&
+      chunk[objectsDecorationsSymbol] &&
+      localCoord.set(chunk.x - ox, chunk.z - oz).lengthSq() <= 2
+    ) {
+      const chunkResult = chunk.forEachObject(
+        (n, matrix, value, objectIndex) => {
+          const position = localVector2.fromArray(matrix, 0);
+          const rotation = localQuaternion.fromArray(matrix, 3);
+          const rotationInverse = localQuaternion2.copy(rotation).inverse();
+          const objectArray = chunk.objectsMap[objectIndex];
+          localBox.min.fromArray(objectArray, 0);
+          localBox.max.fromArray(objectArray, 3);
 
-        localVector3.copy(controllerPosition)
-          .sub(position)
-          .applyQuaternion(rotationInverse);
+          localVector3
+            .copy(controllerPosition)
+            .sub(position)
+            .applyQuaternion(rotationInverse);
           // .add(position);
 
-        if (localBox.containsPoint(localVector3)) {
-          uint32Array[0] = n;
-          int32Array[1] = chunk.x;
-          int32Array[2] = chunk.z;
-          uint32Array[3] = objectIndex;
-          // uint32Array[3] = objectIndex + chunk.offsets.index * chunk.offsets.numObjectIndices;
-          float32Array[4] = position.x;
-          float32Array[5] = position.y;
-          float32Array[6] = position.z;
+          if (localBox.containsPoint(localVector3)) {
+            uint32Array[0] = n;
+            int32Array[1] = chunk.x;
+            int32Array[2] = chunk.z;
+            uint32Array[3] = objectIndex;
+            // uint32Array[3] = objectIndex + chunk.offsets.index * chunk.offsets.numObjectIndices;
+            float32Array[4] = position.x;
+            float32Array[5] = position.y;
+            float32Array[6] = position.z;
 
-          return false;
-        } else {
-          return true;
+            return false;
+          } else {
+            return true;
+          }
         }
-      });
+      );
 
       if (chunkResult === false) {
         break;
@@ -657,41 +869,55 @@ const _getTeleportObject = (x, y, z, buffer) => {
   for (const index in zde.chunks) {
     const chunk = zde.chunks[index];
 
-    if (chunk && chunk[objectsDecorationsSymbol] && localCoord.set(chunk.x - ox, chunk.z - oz).lengthSq() <= 2) {
-      const chunkResult = chunk.forEachObject((n, matrix, value, objectIndex) => {
-        const position = localVector.fromArray(matrix, 0);
-        const rotation = localQuaternion.fromArray(matrix, 3);
-        const rotationInverse = localQuaternion2.copy(rotation).inverse();
-        const objectArray = chunk.objectsMap[objectIndex];
-        localBox.min.fromArray(objectArray, 0);
-        localBox.max.fromArray(objectArray, 3);
+    if (
+      chunk &&
+      chunk[objectsDecorationsSymbol] &&
+      localCoord.set(chunk.x - ox, chunk.z - oz).lengthSq() <= 2
+    ) {
+      const chunkResult = chunk.forEachObject(
+        (n, matrix, value, objectIndex) => {
+          const position = localVector.fromArray(matrix, 0);
+          const rotation = localQuaternion.fromArray(matrix, 3);
+          const rotationInverse = localQuaternion2.copy(rotation).inverse();
+          const objectArray = chunk.objectsMap[objectIndex];
+          localBox.min.fromArray(objectArray, 0);
+          localBox.max.fromArray(objectArray, 3);
 
-        localRay2.origin.copy(localRay.origin)
-          .sub(position)
-          .applyQuaternion(rotationInverse);
+          localRay2.origin
+            .copy(localRay.origin)
+            .sub(position)
+            .applyQuaternion(rotationInverse);
           // .add(position);
-        localRay2.direction.copy(localRay.direction);
+          localRay2.direction.copy(localRay.direction);
 
-        const intersectionPoint = localRay2.intersectBox(localBox, localVector2);
-        if (intersectionPoint && intersectionPoint.y > topY) {
-          topY = intersectionPoint.y;
-          topPosition = position;
-          topRotation = rotation;
-          topRotationInverse = rotationInverse;
-          topBox = localBox2.copy(localBox);
+          const intersectionPoint = localRay2.intersectBox(
+            localBox,
+            localVector2
+          );
+          if (intersectionPoint && intersectionPoint.y > topY) {
+            topY = intersectionPoint.y;
+            topPosition = position;
+            topRotation = rotation;
+            topRotationInverse = rotationInverse;
+            topBox = localBox2.copy(localBox);
 
-          return false;
-        } else {
-          return true;
+            return false;
+          } else {
+            return true;
+          }
         }
-      });
+      );
 
       if (chunkResult === false) {
         let byteOffset = 0;
         new Uint32Array(buffer, byteOffset, 1)[0] = 1;
         byteOffset += 4;
 
-        const float32Array = new Float32Array(buffer, byteOffset, 3 + 3 + 3 + 4 + 4);
+        const float32Array = new Float32Array(
+          buffer,
+          byteOffset,
+          3 + 3 + 3 + 4 + 4
+        );
         topBox.min.toArray(float32Array, 0);
         topBox.max.toArray(float32Array, 3);
         topPosition.toArray(float32Array, 6);
@@ -718,32 +944,39 @@ const _getBodyObject = (x, y, z, buffer) => {
   for (const index in zde.chunks) {
     const chunk = zde.chunks[index];
 
-    if (chunk && chunk[objectsDecorationsSymbol] && localCoord.set(chunk.x - ox, chunk.z - oz).lengthSq() <= 2) {
-      const chunkResult = chunk.forEachObject((n, matrix, value, objectIndex) => {
-        const position = localVector2.fromArray(matrix, 0);
-        const rotation = localQuaternion.fromArray(matrix, 3);
-        const rotationInverse = localQuaternion2.copy(rotation).inverse();
-        const objectArray = chunk.objectsMap[objectIndex];
-        localBox.min.fromArray(objectArray, 0);
-        localBox.max.fromArray(objectArray, 3);
+    if (
+      chunk &&
+      chunk[objectsDecorationsSymbol] &&
+      localCoord.set(chunk.x - ox, chunk.z - oz).lengthSq() <= 2
+    ) {
+      const chunkResult = chunk.forEachObject(
+        (n, matrix, value, objectIndex) => {
+          const position = localVector2.fromArray(matrix, 0);
+          const rotation = localQuaternion.fromArray(matrix, 3);
+          const rotationInverse = localQuaternion2.copy(rotation).inverse();
+          const objectArray = chunk.objectsMap[objectIndex];
+          localBox.min.fromArray(objectArray, 0);
+          localBox.max.fromArray(objectArray, 3);
 
-        localVector3.copy(bodyCenterPoint)
-          .sub(position)
-          .applyQuaternion(rotationInverse);
+          localVector3
+            .copy(bodyCenterPoint)
+            .sub(position)
+            .applyQuaternion(rotationInverse);
           // .add(position);
 
-        const distance = localBox.distanceToPoint(localVector3);
-        if (distance < 0.3 && (distance < topDistance)) {
-          topDistance = distance;
-          topN = n;
-          topChunkX = chunk.x;
-          topChunkZ = chunk.z;
-          topObjectIndex = objectIndex;
-          return false;
-        } else {
-          return true;
+          const distance = localBox.distanceToPoint(localVector3);
+          if (distance < 0.3 && distance < topDistance) {
+            topDistance = distance;
+            topN = n;
+            topChunkX = chunk.x;
+            topChunkZ = chunk.z;
+            topObjectIndex = objectIndex;
+            return false;
+          } else {
+            return true;
+          }
         }
-      });
+      );
 
       if (chunkResult === false) {
         const uint32Array = new Uint32Array(buffer, 0, 4);
@@ -765,12 +998,12 @@ const queue = [];
 let pendingMessage = null;
 const connection = new AutoWs(_wsUrl('/archae/generatorWs'));
 connection.on('message', e => {
-  const {data} = e;
+  const { data } = e;
   const m = JSON.parse(data);
-  const {type} = m;
+  const { type } = m;
 
   if (type === 'addObject') {
-    const {args: {n, positions, rotations, value, result: objectIndex}} = m;
+    const { args: { n, positions, rotations, value, result: objectIndex } } = m;
 
     const ox = Math.floor(positions[0] / NUM_CELLS);
     const oz = Math.floor(positions[2] / NUM_CELLS);
@@ -788,13 +1021,21 @@ connection.on('message', e => {
 
       const light = _findLight(n);
       if (light) {
-        oldChunk.addLightAt(objectIndex, positions[0], positions[1], positions[2], light);
+        oldChunk.addLightAt(
+          objectIndex,
+          positions[0],
+          positions[1],
+          positions[2],
+          light
+        );
 
         for (let i = 0; i < CROSS_DIRECTIONS.length; i++) {
           const [dx, dz] = CROSS_DIRECTIONS[i];
           const ox = Math.floor((x + dx * light) / NUM_CELLS);
           const oz = Math.floor((z + dz * light) / NUM_CELLS);
-          if (!updateSpecs.some(update => update[0] === ox && update[1] === oz)) {
+          if (
+            !updateSpecs.some(update => update[0] === ox && update[1] === oz)
+          ) {
             updateSpecs.push([ox, oz]);
           }
         }
@@ -820,12 +1061,20 @@ connection.on('message', e => {
       if (objectApi && objectApi.added) {
         postMessage({
           type: 'objectAdded',
-          args: [n, ox, oz, objectIndex, matrix.slice(0, 3), matrix.slice(3, 7), value],
+          args: [
+            n,
+            ox,
+            oz,
+            objectIndex,
+            matrix.slice(0, 3),
+            matrix.slice(3, 7),
+            value,
+          ],
         });
       }
     }
   } else if (type === 'removeObject') {
-    const {args: {x: ox, z: oz, index: objectIndex}} = m;
+    const { args: { x: ox, z: oz, index: objectIndex } } = m;
 
     const oldChunk = zde.getChunk(ox, oz);
     if (oldChunk) {
@@ -845,7 +1094,9 @@ connection.on('message', e => {
             const [dx, dz] = CROSS_DIRECTIONS[i];
             const ox = Math.floor((x + dx * light) / NUM_CELLS);
             const oz = Math.floor((z + dz * light) / NUM_CELLS);
-            if (!updateSpecs.some(update => update[0] === ox && update[1] === oz)) {
+            if (
+              !updateSpecs.some(update => update[0] === ox && update[1] === oz)
+            ) {
               updateSpecs.push([ox, oz]);
             }
           }
@@ -878,7 +1129,7 @@ connection.on('message', e => {
       }
     }
   } else if (type === 'setObjectData') {
-    const {args: {x, z, index: objectIndex, value}} = m;
+    const { args: { x, z, index: objectIndex, value } } = m;
 
     const chunk = zde.getChunk(x, z);
     if (chunk) {
@@ -891,12 +1142,20 @@ connection.on('message', e => {
 
         postMessage({
           type: 'objectUpdated',
-          args: [n, x, z, objectIndex, matrix.slice(0, 3), matrix.slice(3, 7), value],
+          args: [
+            n,
+            x,
+            z,
+            objectIndex,
+            matrix.slice(0, 3),
+            matrix.slice(3, 7),
+            value,
+          ],
         });
       }
     }
   } else if (type === 'setBlock') {
-    const {args: {x, y, z, v}} = m;
+    const { args: { x, y, z, v } } = m;
 
     const ox = Math.floor(x / NUM_CELLS);
     const oz = Math.floor(z / NUM_CELLS);
@@ -922,7 +1181,7 @@ connection.on('message', e => {
       }
     }
   } else if (type === 'clearBlock') {
-    const {args: {x, y, z}} = m;
+    const { args: { x, y, z } } = m;
 
     const ox = Math.floor(x / NUM_CELLS);
     const oz = Math.floor(z / NUM_CELLS);
@@ -948,7 +1207,7 @@ connection.on('message', e => {
       }
     }
   } else if (type === 'mutateVoxel') {
-    const {args: {x, y, z, v}} = m;
+    const { args: { x, y, z, v } } = m;
 
     const seenChunks = [];
     for (let i = 0; i < DIRECTIONS.length; i++) {
@@ -961,8 +1220,8 @@ connection.on('message', e => {
       if (!seenChunks.some(([x, z]) => x === ox && z === oz)) {
         const oldChunk = zde.getChunk(ox, oz);
 
-        const lx = x - (ox * NUM_CELLS);
-        const lz = z - (oz * NUM_CELLS);
+        const lx = x - ox * NUM_CELLS;
+        const lz = z - oz * NUM_CELLS;
         const newEther = Float32Array.from([lx, y, lz, v]);
 
         _retesselateTerrain(oldChunk, newEther);
@@ -978,7 +1237,7 @@ connection.on('message', e => {
       args: seenChunks,
     });
   } else if (type === 'response') {
-    const {id, result} = m;
+    const { id, result } = m;
 
     queues[id](result);
     queues[id] = null;
@@ -990,84 +1249,96 @@ connection.on('message', e => {
 });
 connection.mutateVoxel = (x, y, z, v, cb) => {
   const id = _makeId();
-  connection.send(JSON.stringify({
-    method: 'mutateVoxel',
-    id,
-    args: {
-      x,
-      y,
-      z,
-      v,
-    },
-  }));
+  connection.send(
+    JSON.stringify({
+      method: 'mutateVoxel',
+      id,
+      args: {
+        x,
+        y,
+        z,
+        v,
+      },
+    })
+  );
   queues[id] = cb;
 };
 connection.addObject = (n, positions, rotations, value, cb) => {
   const id = _makeId();
-  connection.send(JSON.stringify({
-    method: 'addObject',
-    id,
-    args: {
-      n,
-      positions,
-      rotations,
-      value,
-    },
-  }));
+  connection.send(
+    JSON.stringify({
+      method: 'addObject',
+      id,
+      args: {
+        n,
+        positions,
+        rotations,
+        value,
+      },
+    })
+  );
   queues[id] = cb;
 };
 connection.removeObject = (x, z, index, cb) => {
   const id = _makeId();
-  connection.send(JSON.stringify({
-    method: 'removeObject',
-    id,
-    args: {
-      x,
-      z,
-      index,
-    },
-  }));
+  connection.send(
+    JSON.stringify({
+      method: 'removeObject',
+      id,
+      args: {
+        x,
+        z,
+        index,
+      },
+    })
+  );
   queues[id] = cb;
 };
 connection.setObjectData = (x, z, index, value, cb) => {
   const id = _makeId();
-  connection.send(JSON.stringify({
-    method: 'setObjectData',
-    id,
-    args: {
-      x,
-      z,
-      index,
-      value,
-    },
-  }));
+  connection.send(
+    JSON.stringify({
+      method: 'setObjectData',
+      id,
+      args: {
+        x,
+        z,
+        index,
+        value,
+      },
+    })
+  );
   queues[id] = cb;
 };
 connection.setBlock = (x, y, z, v, cb) => {
   const id = _makeId();
-  connection.send(JSON.stringify({
-    method: 'setBlock',
-    id,
-    args: {
-      x,
-      y,
-      z,
-      v,
-    },
-  }));
+  connection.send(
+    JSON.stringify({
+      method: 'setBlock',
+      id,
+      args: {
+        x,
+        y,
+        z,
+        v,
+      },
+    })
+  );
   queues[id] = cb;
 };
 connection.clearBlock = (x, y, z, cb) => {
   const id = _makeId();
-  connection.send(JSON.stringify({
-    method: 'clearBlock',
-    id,
-    args: {
-      x,
-      y,
-      z,
-    },
-  }));
+  connection.send(
+    JSON.stringify({
+      method: 'clearBlock',
+      id,
+      args: {
+        x,
+        y,
+        z,
+      },
+    })
+  );
   queues[id] = cb;
 };
 const _getOriginHeight = () => 64;
@@ -1083,11 +1354,10 @@ const _resArrayBuffer = res => {
 };
 const _resArrayBufferHeaders = res => {
   if (res.status >= 200 && res.status < 300) {
-    return res.arrayBuffer()
-      .then(buffer => ({
-         buffer,
-         headers: res.headers,
-      }));
+    return res.arrayBuffer().then(buffer => ({
+      buffer,
+      headers: res.headers,
+    }));
   } else {
     return Promise.reject({
       status: res.status,
@@ -1107,12 +1377,14 @@ const _resBlob = res => {
 };
 function mod(value, divisor) {
   var n = value % divisor;
-  return n < 0 ? (divisor + n) : n;
+  return n < 0 ? divisor + n : n;
 }
-const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
+const _getChunkIndex = (x, z) => (mod(x, 0xffff) << 16) | mod(z, 0xffff);
 
 const NUM_MAP_CHUNK_MESHES = 512;
-const terrainMapChunkMeshes = new Int32Array(NUM_MAP_CHUNK_MESHES * NUM_CELLS_HEIGHT * 14);
+const terrainMapChunkMeshes = new Int32Array(
+  NUM_MAP_CHUNK_MESHES * NUM_CELLS_HEIGHT * 14
+);
 let terrainMapChunkMeshesIndex = 0;
 const _findFreeTerrainMapChunkMeshIndex = () => {
   let baseIndex = 0;
@@ -1126,7 +1398,9 @@ const _findFreeTerrainMapChunkMeshIndex = () => {
   throw new Error('ran out of map chunk mesh buffer');
   return -1;
 };
-const objectsMapChunkMeshes = new Int32Array(NUM_MAP_CHUNK_MESHES * (1 + 2 + NUM_CHUNKS_HEIGHT * 2));
+const objectsMapChunkMeshes = new Int32Array(
+  NUM_MAP_CHUNK_MESHES * (1 + 2 + NUM_CHUNKS_HEIGHT * 2)
+);
 let objectsMapChunkMeshesIndex = 0;
 const _findFreeObjectsMapChunkMeshIndex = () => {
   let baseIndex = 0;
@@ -1150,7 +1424,7 @@ const _requestChunk = (x, z) => {
       credentials: 'include',
     })
       .then(_resArrayBufferHeaders)
-      .then(({buffer, headers}) => {
+      .then(({ buffer, headers }) => {
         const newTextureAtlasVersion = headers.get('Texture-Atlas-Version');
         if (newTextureAtlasVersion !== textureAtlasVersion) {
           textureAtlasVersion = newTextureAtlasVersion;
@@ -1165,31 +1439,59 @@ const _requestChunk = (x, z) => {
         }
 
         let index = 0;
-        const terrainBuffer = new Uint32Array(buffer, index, TERRAIN_BUFFER_SIZE / Uint32Array.BYTES_PER_ELEMENT);
+        const terrainBuffer = new Uint32Array(
+          buffer,
+          index,
+          TERRAIN_BUFFER_SIZE / Uint32Array.BYTES_PER_ELEMENT
+        );
         index += TERRAIN_BUFFER_SIZE;
-        const objectBuffer = new Uint32Array(buffer, index, OBJECT_BUFFER_SIZE / Uint32Array.BYTES_PER_ELEMENT);
+        const objectBuffer = new Uint32Array(
+          buffer,
+          index,
+          OBJECT_BUFFER_SIZE / Uint32Array.BYTES_PER_ELEMENT
+        );
         index += OBJECT_BUFFER_SIZE;
-        const blockBuffer = new Uint32Array(buffer, index, BLOCK_BUFFER_SIZE / Uint32Array.BYTES_PER_ELEMENT);
+        const blockBuffer = new Uint32Array(
+          buffer,
+          index,
+          BLOCK_BUFFER_SIZE / Uint32Array.BYTES_PER_ELEMENT
+        );
         index += BLOCK_BUFFER_SIZE;
-        const lightBuffer = new Float32Array(buffer, index, LIGHT_BUFFER_SIZE / Float32Array.BYTES_PER_ELEMENT);
+        const lightBuffer = new Float32Array(
+          buffer,
+          index,
+          LIGHT_BUFFER_SIZE / Float32Array.BYTES_PER_ELEMENT
+        );
         index += LIGHT_BUFFER_SIZE;
-        const geometryBuffer = new Uint8Array(buffer, index, GEOMETRY_BUFFER_SIZE / Uint8Array.BYTES_PER_ELEMENT);
+        const geometryBuffer = new Uint8Array(
+          buffer,
+          index,
+          GEOMETRY_BUFFER_SIZE / Uint8Array.BYTES_PER_ELEMENT
+        );
         index += GEOMETRY_BUFFER_SIZE;
         const decorationsBuffer = new Uint8Array(buffer, index);
 
-        const chunk = new zeode.Chunk(x, z, 0, terrainBuffer, objectBuffer, blockBuffer, lightBuffer, geometryBuffer);
         chunk.chunkData = {
-          terrain: protocolUtils.parseTerrainData(terrainBuffer.buffer, terrainBuffer.byteOffset),
-          objects: protocolUtils.parseGeometry(geometryBuffer.buffer, geometryBuffer.byteOffset),
-          decorations: protocolUtils.parseDecorations(decorationsBuffer.buffer, decorationsBuffer.byteOffset),
+          terrain: protocolUtils.parseTerrainData(
+            terrainBuffer.buffer,
+            terrainBuffer.byteOffset
+          ),
+          objects: protocolUtils.parseGeometry(
+            geometryBuffer.buffer,
+            geometryBuffer.byteOffset
+          ),
+          decorations: protocolUtils.parseDecorations(
+            decorationsBuffer.buffer,
+            decorationsBuffer.byteOffset
+          ),
         };
         zde.pushChunk(chunk);
         return chunk;
       });
   }
 };
-const _requestTerrainChunk = (x, y, index, numPositions, numIndices) => _requestChunk(x, y)
-  .then(chunk => {
+const _requestTerrainChunk = (x, y, index, numPositions, numIndices) =>
+  _requestChunk(x, y).then(chunk => {
     _decorateTerrainChunk(chunk, index, numPositions, numIndices);
     return chunk;
   });
@@ -1198,13 +1500,26 @@ const _getTerrainChunk = (x, y, index, numPositions, numIndices) => {
   _decorateTerrainChunk(chunk, index, numPositions, numIndices);
   return chunk;
 };
-const _requestObjectsChunk = (x, z, index, numPositions, numObjectIndices, numIndices) => _requestChunk(x, z)
-  .then(chunk => {
-    _decorateObjectsChunk(chunk, index, numPositions, numObjectIndices, numIndices);
+const _requestObjectsChunk = (
+  x,
+  z,
+  index,
+  numPositions,
+  numObjectIndices,
+  numIndices
+) =>
+  _requestChunk(x, z).then(chunk => {
+    _decorateObjectsChunk(
+      chunk,
+      index,
+      numPositions,
+      numObjectIndices,
+      numIndices
+    );
     return chunk;
   });
 const _offsetChunkData = (chunkData, index, numPositions) => {
-  const {indices} = chunkData;
+  const { indices } = chunkData;
   const positionOffset = index * (numPositions / 3);
   for (let i = 0; i < indices.length; i++) {
     indices[i] += positionOffset;
@@ -1212,11 +1527,11 @@ const _offsetChunkData = (chunkData, index, numPositions) => {
 };
 const _decorateTerrainChunk = (chunk, index, numPositions, numIndices) => {
   if (!chunk[terrainDecorationsSymbol]) {
-    const {x, z} = chunk;
+    const { x, z } = chunk;
 
     const terrainMapChunkMeshIndices = Array(NUM_CHUNKS_HEIGHT);
     for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
-      const {indexRange, peeks} = chunk.chunkData.terrain.geometries[i];
+      const { indexRange, peeks } = chunk.chunkData.terrain.geometries[i];
       const indexOffset = index * numIndices;
 
       const terrainMapChunkMeshIndex = _findFreeTerrainMapChunkMeshIndex();
@@ -1225,12 +1540,18 @@ const _decorateTerrainChunk = (chunk, index, numPositions, numIndices) => {
       terrainMapChunkMeshes[baseIndex + 1] = x;
       terrainMapChunkMeshes[baseIndex + 2] = i;
       terrainMapChunkMeshes[baseIndex + 3] = z;
-      new Uint8Array(terrainMapChunkMeshes.buffer, terrainMapChunkMeshes.byteOffset + (baseIndex + 4) * 4, 16).set(peeks);
+      new Uint8Array(
+        terrainMapChunkMeshes.buffer,
+        terrainMapChunkMeshes.byteOffset + (baseIndex + 4) * 4,
+        16
+      ).set(peeks);
       terrainMapChunkMeshes[baseIndex + 8] = indexRange.landStart + indexOffset;
       terrainMapChunkMeshes[baseIndex + 9] = indexRange.landCount;
-      terrainMapChunkMeshes[baseIndex + 10] = indexRange.waterStart + indexOffset;
+      terrainMapChunkMeshes[baseIndex + 10] =
+        indexRange.waterStart + indexOffset;
       terrainMapChunkMeshes[baseIndex + 11] = indexRange.waterCount;
-      terrainMapChunkMeshes[baseIndex + 12] = indexRange.lavaStart + indexOffset;
+      terrainMapChunkMeshes[baseIndex + 12] =
+        indexRange.lavaStart + indexOffset;
       terrainMapChunkMeshes[baseIndex + 13] = indexRange.lavaCount;
 
       terrainMapChunkMeshIndices[i] = terrainMapChunkMeshIndex;
@@ -1254,7 +1575,13 @@ const _undecorateTerrainChunk = chunk => {
   }
 };
 let ids = 0;
-const _decorateObjectsChunk = (chunk, index, numPositions, numObjectIndices, numIndices) => {
+const _decorateObjectsChunk = (
+  chunk,
+  index,
+  numPositions,
+  numObjectIndices,
+  numIndices
+) => {
   if (!chunk[objectsDecorationsSymbol]) {
     chunk.id = ids++;
 
@@ -1266,31 +1593,37 @@ const _decorateObjectsChunk = (chunk, index, numPositions, numObjectIndices, num
     };
 
     const objectsMap = {};
-    const {objects} = chunk.chunkData.objects;
+    const { objects } = chunk.chunkData.objects;
     const numObjects = objects.length / 7;
     for (let i = 0; i < numObjects; i++) {
       const baseIndex = i * 7;
       const index = objects[baseIndex];
-      objectsMap[index] = new Float32Array(objects.buffer, objects.byteOffset + ((baseIndex + 1) * 4), 6);
+      objectsMap[index] = new Float32Array(
+        objects.buffer,
+        objects.byteOffset + (baseIndex + 1) * 4,
+        6
+      );
     }
     chunk.objectsMap = objectsMap;
 
-    const {objectIndices} = chunk.chunkData.objects;
+    const { objectIndices } = chunk.chunkData.objects;
     const objectIndexOffset = index * numObjectIndices;
     for (let i = 0; i < objectIndices.length; i++) {
       objectIndices[i] += objectIndexOffset;
     }
 
     const objectsMapChunkMeshIndex = _findFreeObjectsMapChunkMeshIndex();
-    const baseIndex = objectsMapChunkMeshIndex * (1 + 2 + NUM_CHUNKS_HEIGHT * 2);
+    const baseIndex =
+      objectsMapChunkMeshIndex * (1 + 2 + NUM_CHUNKS_HEIGHT * 2);
     objectsMapChunkMeshes[baseIndex + 0] = 1;
     objectsMapChunkMeshes[baseIndex + 1] = chunk.x;
     objectsMapChunkMeshes[baseIndex + 2] = chunk.z;
-    const {geometries} = chunk.chunkData.objects;
+    const { geometries } = chunk.chunkData.objects;
     const indexOffset = index * numIndices;
     for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
-      const {indexRange} = geometries[i];
-      objectsMapChunkMeshes[baseIndex + 3 + i * 2 + 0] = indexRange.start + indexOffset;
+      const { indexRange } = geometries[i];
+      objectsMapChunkMeshes[baseIndex + 3 + i * 2 + 0] =
+        indexRange.start + indexOffset;
       objectsMapChunkMeshes[baseIndex + 3 + i * 2 + 1] = indexRange.count;
     }
 
@@ -1299,10 +1632,10 @@ const _decorateObjectsChunk = (chunk, index, numPositions, numObjectIndices, num
     const allocator = new Allocator();
 
     const blocks = chunk.getBlockBuffer();
-    const {blockfield} = chunk.chunkData.decorations.objects;
+    const { blockfield } = chunk.chunkData.decorations.objects;
     Module._blockfield(
       allocator.allocBuffer(blocks),
-      allocator.allocShadowBuffer(blockfield),
+      allocator.allocShadowBuffer(blockfield)
     );
 
     allocator.unshadow();
@@ -1314,12 +1647,21 @@ const _decorateObjectsChunk = (chunk, index, numPositions, numObjectIndices, num
     };
   }
   if (!chunk[objectsCallbacksSymbol]) {
-    chunk.forEachObject((n, matrix, value, objectIndex) => { // XXX can optimize this with some kind of index
+    chunk.forEachObject((n, matrix, value, objectIndex) => {
+      // XXX can optimize this with some kind of index
       const entry = objectApis[n];
       if (entry && entry.added) {
         postMessage({
           type: 'objectAdded',
-          args: [n, chunk.x, chunk.z, objectIndex, matrix.slice(0, 3), matrix.slice(3, 7), value],
+          args: [
+            n,
+            chunk.x,
+            chunk.z,
+            objectIndex,
+            matrix.slice(0, 3),
+            matrix.slice(3, 7),
+            value,
+          ],
         });
       }
     });
@@ -1339,7 +1681,15 @@ const _decorateObjectsChunk = (chunk, index, numPositions, numObjectIndices, num
         if (entry && entry.removed) {
           postMessage({
             type: 'objectRemoved',
-            args: [n, chunk.x, chunk.z, objectIndex, matrix.slice(0, 3), matrix.slice(3, 7), value],
+            args: [
+              n,
+              chunk.x,
+              chunk.z,
+              objectIndex,
+              matrix.slice(0, 3),
+              matrix.slice(3, 7),
+              value,
+            ],
           });
         }
       });
@@ -1376,14 +1726,19 @@ const _updateTextureAtlas = _debounce(next => {
     credentials: 'include',
   })
     .then(_resBlob)
-    .then(blob => createImageBitmap(blob, 0, 0, TEXTURE_SIZE, TEXTURE_SIZE, {
-      imageOrientation: 'flipY',
-    }))
+    .then(blob =>
+      createImageBitmap(blob, 0, 0, TEXTURE_SIZE, TEXTURE_SIZE, {
+        imageOrientation: 'flipY',
+      })
+    )
     .then(imageBitmap => {
-      postMessage({
-        type: 'textureAtlas',
-        args: [imageBitmap],
-      }, [imageBitmap]);
+      postMessage(
+        {
+          type: 'textureAtlas',
+          args: [imageBitmap],
+        },
+        [imageBitmap]
+      );
 
       next();
     })
@@ -1455,16 +1810,16 @@ const _cleanupQueues = () => {
 };
 function _wsUrl(s) {
   const l = self.location;
-  return ((l.protocol === 'https:') ? 'wss://' : 'ws://') + l.host + s;
+  return (l.protocol === 'https:' ? 'wss://' : 'ws://') + l.host + s;
 }
 
 self.onmessage = e => {
-  const {data} = e;
-  const {type} = data;
+  const { data } = e;
+  const { type } = data;
 
   switch (type) {
     case 'getOriginHeight': {
-      const {id} = data;
+      const { id } = data;
 
       postMessage({
         type: 'response',
@@ -1474,7 +1829,7 @@ self.onmessage = e => {
       break;
     }
     case 'registerObject': {
-      const {n, added, removed, updated, set, clear} = data;
+      const { n, added, removed, updated, set, clear } = data;
 
       let entry = objectApis[n];
       if (!entry) {
@@ -1491,11 +1846,20 @@ self.onmessage = e => {
         entry.added++;
 
         if (entry.added === 1) {
-          zde.forEachObject((localN, matrix, value, objectIndex) => { // XXX also need to do this efficiently when the chunk loads
+          zde.forEachObject((localN, matrix, value, objectIndex) => {
+            // XXX also need to do this efficiently when the chunk loads
             if (localN === n) {
               postMessage({
                 type: 'objectAdded',
-                args: [localN, chunk.x, chunk.z, objectIndex, matrix.slice(0, 3), matrix.slice(3, 7), value],
+                args: [
+                  localN,
+                  chunk.x,
+                  chunk.z,
+                  objectIndex,
+                  matrix.slice(0, 3),
+                  matrix.slice(3, 7),
+                  value,
+                ],
               });
             }
           });
@@ -1517,7 +1881,12 @@ self.onmessage = e => {
               if (localN === n) {
                 postMessage({
                   type: 'blockSet',
-                  args: [n, chunk.x * NUM_CELLS + x, y, chunk.z * NUM_CELLS + z],
+                  args: [
+                    n,
+                    chunk.x * NUM_CELLS + x,
+                    y,
+                    chunk.z * NUM_CELLS + z,
+                  ],
                 });
               }
             });
@@ -1530,7 +1899,7 @@ self.onmessage = e => {
       break;
     }
     case 'unregisterObject': {
-      const {n, added, removed, updated, set, clear} = data;
+      const { n, added, removed, updated, set, clear } = data;
       const entry = objectApis[n];
       if (added) {
         entry.added--;
@@ -1581,13 +1950,19 @@ self.onmessage = e => {
           }
         } */
       }
-      if (entry.added === 0 && entry.removed === 0 && entry.updated === 0 && entry.set === 0 && entry.clear === 0) {
+      if (
+        entry.added === 0 &&
+        entry.removed === 0 &&
+        entry.updated === 0 &&
+        entry.set === 0 &&
+        entry.clear === 0
+      ) {
         objectApis[n] = null;
       }
       break;
     }
     case 'addObject': {
-      const {name, position: positions, rotation: rotations, value} = data;
+      const { name, position: positions, rotation: rotations, value } = data;
 
       const ox = Math.floor(positions[0] / NUM_CELLS);
       const oz = Math.floor(positions[2] / NUM_CELLS);
@@ -1608,13 +1983,21 @@ self.onmessage = e => {
 
         const light = _findLight(n);
         if (light) {
-          oldChunk.addLightAt(objectIndex, positions[0], positions[1], positions[2], light);
+          oldChunk.addLightAt(
+            objectIndex,
+            positions[0],
+            positions[1],
+            positions[2],
+            light
+          );
 
           for (let i = 0; i < CROSS_DIRECTIONS.length; i++) {
             const [dx, dz] = CROSS_DIRECTIONS[i];
             const ox = Math.floor((x + dx * light) / NUM_CELLS);
             const oz = Math.floor((z + dz * light) / NUM_CELLS);
-            if (!updateSpecs.some(update => update[0] === ox && update[1] === oz)) {
+            if (
+              !updateSpecs.some(update => update[0] === ox && update[1] === oz)
+            ) {
               updateSpecs.push([ox, oz]);
             }
           }
@@ -1640,14 +2023,22 @@ self.onmessage = e => {
         if (objectApi && objectApi.added) {
           postMessage({
             type: 'objectAdded',
-            args: [n, ox, oz, objectIndex, matrix.slice(0, 3), matrix.slice(3, 7), value],
+            args: [
+              n,
+              ox,
+              oz,
+              objectIndex,
+              matrix.slice(0, 3),
+              matrix.slice(3, 7),
+              value,
+            ],
           });
         }
       }
       break;
     }
     case 'removeObject': {
-      const {x: ox, z: oz, index: objectIndex} = data;
+      const { x: ox, z: oz, index: objectIndex } = data;
 
       const oldChunk = zde.getChunk(ox, oz);
       if (oldChunk) {
@@ -1669,7 +2060,11 @@ self.onmessage = e => {
               const [dx, dz] = CROSS_DIRECTIONS[i];
               const ox = Math.floor((x + dx * light) / NUM_CELLS);
               const oz = Math.floor((z + dz * light) / NUM_CELLS);
-              if (!updateSpecs.some(update => update[0] === ox && update[1] === oz)) {
+              if (
+                !updateSpecs.some(
+                  update => update[0] === ox && update[1] === oz
+                )
+              ) {
                 updateSpecs.push([ox, oz]);
               }
             }
@@ -1708,7 +2103,7 @@ self.onmessage = e => {
       break;
     }
     case 'setObjectData': {
-      const {x, z, index, value} = data;
+      const { x, z, index, value } = data;
 
       const chunk = zde.getChunk(x, z);
       if (chunk) {
@@ -1722,7 +2117,15 @@ self.onmessage = e => {
 
             postMessage({
               type: 'objectUpdated',
-              args: [n, x, z, index, matrix.slice(0, 3), matrix.slice(3, 7), value],
+              args: [
+                n,
+                x,
+                z,
+                index,
+                matrix.slice(0, 3),
+                matrix.slice(3, 7),
+                value,
+              ],
             });
           }
         });
@@ -1730,7 +2133,7 @@ self.onmessage = e => {
       break;
     }
     case 'setBlock': {
-      const {x, y, z, v} = data;
+      const { x, y, z, v } = data;
 
       const ox = Math.floor(x / NUM_CELLS);
       const oz = Math.floor(z / NUM_CELLS);
@@ -1760,7 +2163,7 @@ self.onmessage = e => {
       break;
     }
     case 'clearBlock': {
-      const {x, y, z} = data;
+      const { x, y, z } = data;
 
       const ox = Math.floor(x / NUM_CELLS);
       const oz = Math.floor(z / NUM_CELLS);
@@ -1768,7 +2171,11 @@ self.onmessage = e => {
       if (oldChunk) {
         connection.clearBlock(x, y, z, () => {});
 
-        const n = oldChunk.clearBlock(x - ox * NUM_CELLS, y, z - oz * NUM_CELLS);
+        const n = oldChunk.clearBlock(
+          x - ox * NUM_CELLS,
+          y,
+          z - oz * NUM_CELLS
+        );
 
         _retesselateObjects(oldChunk);
         _relight(oldChunk, x, y, z);
@@ -1790,8 +2197,8 @@ self.onmessage = e => {
       break;
     }
     case 'generate': {
-      const {id, args} = data;
-      const {x, y} = args;
+      const { id, args } = data;
+      const { x, y } = args;
 
       _requestChunk(x, y)
         .then(() => {
@@ -1807,19 +2214,27 @@ self.onmessage = e => {
       break;
     }
     case 'terrainGenerate': {
-      const {id, args} = data;
-      const {x, y, index, numPositions, numIndices} = args;
-      let {buffer} = args;
+      const { id, args } = data;
+      const { x, y, index, numPositions, numIndices } = args;
+      let { buffer } = args;
 
       _requestTerrainChunk(x, y, index, numPositions, numIndices)
         .then(chunk => {
-          protocolUtils.stringifyTerrainRenderChunk(chunk.chunkData.terrain, chunk.chunkData.decorations.terrain, buffer, 0);
+          protocolUtils.stringifyTerrainRenderChunk(
+            chunk.chunkData.terrain,
+            chunk.chunkData.decorations.terrain,
+            buffer,
+            0
+          );
 
-          postMessage({
-            type: 'response',
-            args: [id],
-            result: buffer,
-          }, [buffer]);
+          postMessage(
+            {
+              type: 'response',
+              args: [id],
+              result: buffer,
+            },
+            [buffer]
+          );
         })
         .catch(err => {
           console.warn(err);
@@ -1827,36 +2242,56 @@ self.onmessage = e => {
       break;
     }
     case 'terrainsGenerate': {
-      const {id, args} = data;
-      const {specs} = args;
-      let {buffer} = args;
+      const { id, args } = data;
+      const { specs } = args;
+      let { buffer } = args;
 
-      const chunks = specs.map(({x, y, index, numPositions, numIndices}) => _getTerrainChunk(x, y, index, numPositions, numIndices));
+      const chunks = specs.map(({ x, y, index, numPositions, numIndices }) =>
+        _getTerrainChunk(x, y, index, numPositions, numIndices)
+      );
       protocolUtils.stringifyTerrainsRenderChunk(chunks, buffer, 0);
 
-      postMessage({
-        type: 'response',
-        args: [id],
-        result: buffer,
-      }, [buffer]);
+      postMessage(
+        {
+          type: 'response',
+          args: [id],
+          result: buffer,
+        },
+        [buffer]
+      );
       break;
     }
     case 'objectsGenerate': {
-      const {id, args} = data;
-      const {x, z, index, numPositions, numObjectIndices, numIndices} = args;
-      let {buffer} = args;
+      const { id, args } = data;
+      const { x, z, index, numPositions, numObjectIndices, numIndices } = args;
+      let { buffer } = args;
 
-      _requestObjectsChunk(x, z, index, numPositions, numObjectIndices, numIndices)
+      _requestObjectsChunk(
+        x,
+        z,
+        index,
+        numPositions,
+        numObjectIndices,
+        numIndices
+      )
         .then(chunk => {
           zde.pushChunk(chunk);
 
-          protocolUtils.stringifyWorker(chunk.chunkData.objects, chunk.chunkData.decorations.objects, buffer, 0);
+          protocolUtils.stringifyWorker(
+            chunk.chunkData.objects,
+            chunk.chunkData.decorations.objects,
+            buffer,
+            0
+          );
 
-          postMessage({
-            type: 'response',
-            args: [id],
-            result: buffer,
-          }, [buffer]);
+          postMessage(
+            {
+              type: 'response',
+              args: [id],
+              result: buffer,
+            },
+            [buffer]
+          );
 
           chunk.forEachObject((n, matrix, value, objectIndex) => {
             const objectApi = objectApis[n];
@@ -1864,7 +2299,15 @@ self.onmessage = e => {
             if (objectApi && objectApi.added) {
               postMessage({
                 type: 'objectAdded',
-                args: [n, x, z, objectIndex, matrix.slice(0, 3), matrix.slice(3, 7), value],
+                args: [
+                  n,
+                  x,
+                  z,
+                  objectIndex,
+                  matrix.slice(0, 3),
+                  matrix.slice(3, 7),
+                  value,
+                ],
               });
             }
           });
@@ -1875,8 +2318,8 @@ self.onmessage = e => {
       break;
     }
     case 'ungenerate': {
-      const {args} = data;
-      const {x, z} = args;
+      const { args } = data;
+      const { x, z } = args;
 
       const chunk = _unrequestChunk(x, z);
       chunk.forEachObject((n, matrix, value, objectIndex) => {
@@ -1926,8 +2369,8 @@ self.onmessage = e => {
       break;
     } */
     case 'mutateVoxel': {
-      const {id, args} = data;
-      const {position: [x, y, z, v]} = args;
+      const { id, args } = data;
+      const { position: [x, y, z, v] } = args;
 
       connection.mutateVoxel(x, y, z, v, () => {});
 
@@ -1942,8 +2385,8 @@ self.onmessage = e => {
         if (!seenChunks.some(([x, z]) => x === ox && z === oz)) {
           const oldChunk = zde.getChunk(ox, oz);
 
-          const lx = x - (ox * NUM_CELLS);
-          const lz = z - (oz * NUM_CELLS);
+          const lx = x - ox * NUM_CELLS;
+          const lz = z - oz * NUM_CELLS;
           const newEther = Float32Array.from([lx, y, lz, v]);
 
           _retesselateTerrain(oldChunk, newEther);
@@ -1961,33 +2404,57 @@ self.onmessage = e => {
       break;
     }
     case 'terrainCull': {
-      const {id, args} = data;
-      const {hmdPosition, projectionMatrix, matrixWorldInverse, buffer} = args;
+      const { id, args } = data;
+      const {
+        hmdPosition,
+        projectionMatrix,
+        matrixWorldInverse,
+        buffer,
+      } = args;
 
-      const groups = _getTerrainCull(hmdPosition, projectionMatrix, matrixWorldInverse);
+      const groups = _getTerrainCull(
+        hmdPosition,
+        projectionMatrix,
+        matrixWorldInverse
+      );
       protocolUtils.stringifyTerrainCull(groups, buffer, 0);
-      postMessage({
-        type: 'response',
-        args: [id],
-        result: buffer,
-      }, [buffer]);
+      postMessage(
+        {
+          type: 'response',
+          args: [id],
+          result: buffer,
+        },
+        [buffer]
+      );
       break;
     }
     case 'objectsCull': {
-      const {id, args} = data;
-      const {hmdPosition, projectionMatrix, matrixWorldInverse, buffer} = args;
+      const { id, args } = data;
+      const {
+        hmdPosition,
+        projectionMatrix,
+        matrixWorldInverse,
+        buffer,
+      } = args;
 
-      const chunks = _getObjectsCull(hmdPosition, projectionMatrix, matrixWorldInverse);
+      const chunks = _getObjectsCull(
+        hmdPosition,
+        projectionMatrix,
+        matrixWorldInverse
+      );
       protocolUtils.stringifyObjectsCull(chunks, buffer, 0);
-      postMessage({
-        type: 'response',
-        args: [id],
-        result: buffer,
-      }, [buffer]);
+      postMessage(
+        {
+          type: 'response',
+          args: [id],
+          result: buffer,
+        },
+        [buffer]
+      );
       break;
     }
     case 'getHoveredObjects': {
-      const {id, args: {buffer}} = data;
+      const { id, args: { buffer } } = data;
 
       const float32Array = new Float32Array(buffer);
       const lx = float32Array[0];
@@ -1996,44 +2463,58 @@ self.onmessage = e => {
       const rx = float32Array[3];
       const ry = float32Array[4];
       const rz = float32Array[5];
-      _getHoveredTrackedObject(lx, ly, lz, buffer, 0)
+      _getHoveredTrackedObject(lx, ly, lz, buffer, 0);
       _getHoveredTrackedObject(rx, ry, rz, buffer, 12 * 4);
 
-      postMessage({
-        type: 'response',
-        args: [id],
-        result: buffer,
-      }, [buffer]);
+      postMessage(
+        {
+          type: 'response',
+          args: [id],
+          result: buffer,
+        },
+        [buffer]
+      );
       break;
     }
     case 'getTeleportObject': {
-      const {id, args: {buffer}} = data;
+      const { id, args: { buffer } } = data;
 
       const float32Array = new Float32Array(buffer, 0, 3);
-      _getTeleportObject(float32Array[0], float32Array[1], float32Array[2], buffer);
+      _getTeleportObject(
+        float32Array[0],
+        float32Array[1],
+        float32Array[2],
+        buffer
+      );
 
-      postMessage({
-        type: 'response',
-        args: [id],
-        result: buffer,
-      }, [buffer]);
+      postMessage(
+        {
+          type: 'response',
+          args: [id],
+          result: buffer,
+        },
+        [buffer]
+      );
       break;
     }
     case 'getBodyObject': {
-      const {id, args: {buffer}} = data;
+      const { id, args: { buffer } } = data;
 
       const float32Array = new Float32Array(buffer, 0, 3);
       _getBodyObject(float32Array[0], float32Array[1], float32Array[2], buffer);
 
-      postMessage({
-        type: 'response',
-        args: [id],
-        result: buffer,
-      }, [buffer]);
+      postMessage(
+        {
+          type: 'response',
+          args: [id],
+          result: buffer,
+        },
+        [buffer]
+      );
       break;
     }
     case 'response': {
-      const {id, result} = data;
+      const { id, result } = data;
 
       queues[id](result);
       queues[id] = null;
@@ -2054,7 +2535,11 @@ const _getTerrainCull = (hmdPosition, projectionMatrix, matrixWorldInverse) => {
   const resultSize = NUM_MAP_CHUNK_MESHES * (1 + NUM_RENDER_GROUPS * 6);
   const resultOffset = Module._malloc(resultSize * 4);
   allocator.offsets.push(resultOffset);
-  const groups = new Uint32Array(Module.HEAP8.buffer, Module.HEAP8.byteOffset + resultOffset, resultSize);
+  const groups = new Uint32Array(
+    Module.HEAP8.buffer,
+    Module.HEAP8.byteOffset + resultOffset,
+    resultSize
+  );
 
   const groupsIndex = Module._cllTerrain(
     allocator.allocBuffer(Float32Array.from(hmdPosition)),
@@ -2077,7 +2562,11 @@ const _getObjectsCull = (hmdPosition, projectionMatrix, matrixWorldInverse) => {
   const resultSize = NUM_MAP_CHUNK_MESHES * (1 + NUM_RENDER_GROUPS * 2);
   const resultOffset = Module._malloc(resultSize * 4);
   allocator.offsets.push(resultOffset);
-  const groups = new Uint32Array(Module.HEAP8.buffer, Module.HEAP8.byteOffset + resultOffset, resultSize);
+  const groups = new Uint32Array(
+    Module.HEAP8.buffer,
+    Module.HEAP8.byteOffset + resultOffset,
+    resultSize
+  );
 
   const groupsIndex = Module._cllObjects(
     allocator.allocBuffer(Float32Array.from(hmdPosition)),

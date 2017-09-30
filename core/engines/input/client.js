@@ -94,14 +94,16 @@ class Input {
         inputEvent.reset();
       }
 
-      add(handler, {priority}) {
+      add(handler, { priority }) {
         const listener = new Listener(handler, priority);
         this.listeners.push(listener);
         this.listeners.sort((a, b) => b.priority - a.priority);
       }
 
       remove(handler) {
-        const listener = this.listeners.find(listener => listener.handler === handler);
+        const listener = this.listeners.find(
+          listener => listener.handler === handler
+        );
         if (listener) {
           listener.live = false;
 
@@ -119,8 +121,8 @@ class Input {
     const _preventKeyHijack = e => {
       // prevent some key combinations from hijacking input
       if (
-        (e.keyCode === 8) || // Backspace
-        (e.keyCode === 18) || // Alt
+        e.keyCode === 8 || // Backspace
+        e.keyCode === 18 || // Alt
         (e.ctrlKey && e.keyCode === 70) || // Ctrl-F
         (e.ctrlKey && e.keyCode === 87) || // Ctrl-W
         (e.ctrlKey && e.keyCode === 83) // Ctrl-S
@@ -170,7 +172,7 @@ class Input {
       document.removeEventListener('paste', eventRouters.paste.handle);
     };
 
-    function _on(event, handler, {priority = 0} = {}) {
+    function _on(event, handler, { priority = 0 } = {}) {
       const eventRouter = eventRouters[event];
       if (eventRouter) {
         eventRouter.add(handler, {

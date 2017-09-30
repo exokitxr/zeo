@@ -9,9 +9,9 @@ class Rend {
   }
 
   mount() {
-    const {_archae: archae} = this;
-    const {metadata: {site: {url: siteUrl}}} = archae;
-    const {app, dirname} = archae.getCore();
+    const { _archae: archae } = this;
+    const { metadata: { site: { url: siteUrl } } } = archae;
+    const { app, dirname } = archae.getCore();
 
     const mq = modulequery({
       dirname: dirname,
@@ -21,9 +21,10 @@ class Rend {
     function serveSearch(req, res, next) {
       const q = req.query.q ? decodeURIComponent(req.query.q) : '';
 
-      mq.search(q, {
-        keywords: ['zeo-mod'],
-      })
+      mq
+        .search(q, {
+          keywords: ['zeo-mod'],
+        })
         .then(modSpecs => {
           res.json(modSpecs);
         })
@@ -36,7 +37,8 @@ class Rend {
     function serveMods(req, res, next) {
       const q = req.query.q ? decodeURIComponent(req.query.q) : '';
 
-      mq.getModule(q)
+      mq
+        .getModule(q)
         .then(modSpec => {
           res.json(modSpec);
         })

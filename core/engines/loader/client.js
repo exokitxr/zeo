@@ -4,7 +4,7 @@ class Loader {
   }
 
   mount() {
-    const {_archae: archae} = this;
+    const { _archae: archae } = this;
 
     class LoaderApi {
       requestPlugin(plugin) {
@@ -43,6 +43,6 @@ class Loader {
   unmount() {
     this._cleanup();
   }
-};
+}
 
 module.exports = Loader;

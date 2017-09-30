@@ -11,7 +11,10 @@ class VRFrameDataFake {
   }
 }
 class VRPoseFake {
-  constructor(position = new Float32Array(3), orientation = new Float32Array(4)) {
+  constructor(
+    position = new Float32Array(3),
+    orientation = new Float32Array(4)
+  ) {
     this.position = position;
     this.orientation = orientation;
   }
@@ -38,11 +41,19 @@ const DEFAULT_ASPECT_RATIO = DEFAULT_WIDTH / DEFAULT_HEIGHT;
 const CONTROLLER_DEFAULT_OFFSETS = [0.2, -0.1, -0.2];
 const DEFAULT_GAMEPAD_POSES = [
   {
-    position: [-CONTROLLER_DEFAULT_OFFSETS[0], CONTROLLER_DEFAULT_OFFSETS[1], CONTROLLER_DEFAULT_OFFSETS[2]],
+    position: [
+      -CONTROLLER_DEFAULT_OFFSETS[0],
+      CONTROLLER_DEFAULT_OFFSETS[1],
+      CONTROLLER_DEFAULT_OFFSETS[2],
+    ],
     orientation: [0, 0, 0, 1],
   },
   {
-    position: [CONTROLLER_DEFAULT_OFFSETS[0], CONTROLLER_DEFAULT_OFFSETS[1], CONTROLLER_DEFAULT_OFFSETS[2]],
+    position: [
+      CONTROLLER_DEFAULT_OFFSETS[0],
+      CONTROLLER_DEFAULT_OFFSETS[1],
+      CONTROLLER_DEFAULT_OFFSETS[2],
+    ],
     orientation: [0, 0, 0, 1],
   },
 ];
@@ -62,7 +73,15 @@ const BUTTONS = {
 const SIDES = ['left', 'right'];
 
 class EventSpec {
-  constructor(buttonName, rootName, downName, upName, touchName, touchdownName, touchupName) {
+  constructor(
+    buttonName,
+    rootName,
+    downName,
+    upName,
+    touchName,
+    touchdownName,
+    touchupName
+  ) {
     this.buttonName = buttonName;
     this.rootName = rootName;
     this.downName = downName;
@@ -83,10 +102,42 @@ const VR_EVENTS = {
 };
 
 const EVENT_SPECS = [
-  new EventSpec('trigger', 'trigger', 'triggerdown', 'triggerup', 'triggertouch', 'triggertouchdown', 'triggertouchup'),
-  new EventSpec('pad', 'pad', 'paddown', 'padup', 'padtouch', 'padtouchdown', 'padtouchup'),
-  new EventSpec('grip', 'grip', 'gripdown', 'gripup', 'griptouch', 'griptouchdown', 'griptouchup'),
-  new EventSpec('menu', 'menu', 'menudown', 'menuup', 'menutouch', 'menutouchdown', 'menutouchup'),
+  new EventSpec(
+    'trigger',
+    'trigger',
+    'triggerdown',
+    'triggerup',
+    'triggertouch',
+    'triggertouchdown',
+    'triggertouchup'
+  ),
+  new EventSpec(
+    'pad',
+    'pad',
+    'paddown',
+    'padup',
+    'padtouch',
+    'padtouchdown',
+    'padtouchup'
+  ),
+  new EventSpec(
+    'grip',
+    'grip',
+    'gripdown',
+    'gripup',
+    'griptouch',
+    'griptouchdown',
+    'griptouchup'
+  ),
+  new EventSpec(
+    'menu',
+    'menu',
+    'menudown',
+    'menuup',
+    'menutouch',
+    'menutouchdown',
+    'menutouchup'
+  ),
 ];
 
 class WebVR {
@@ -95,7 +146,7 @@ class WebVR {
   }
 
   mount() {
-    const {_archae: archae} = this;
+    const { _archae: archae } = this;
 
     let live = true;
     this._cleanup = () => {
@@ -118,19 +169,11 @@ class WebVR {
         '/core/utils/js-utils',
       ]),
       _getVRDisplays(),
-    ]).then(([
-      [
-        bootstrap,
-        input,
-        three,
-        jsUtils,
-      ],
-      displays,
-    ]) => {
+    ]).then(([[bootstrap, input, three, jsUtils], displays]) => {
       if (live) {
-        const {THREE, scene, camera, renderer} = three;
-        const {domElement} = renderer;
-        const {events} = jsUtils;
+        const { THREE, scene, camera, renderer } = three;
+        const { domElement } = renderer;
+        const { events } = jsUtils;
         const EventEmitter = events;
 
         const _decomposeMatrix = matrix => {
@@ -138,9 +181,10 @@ class WebVR {
           const rotation = new THREE.Quaternion();
           const scale = new THREE.Vector3();
           matrix.decompose(position, rotation, scale);
-          return {position, rotation, scale};
+          return { position, rotation, scale };
         };
-        const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
+        const _decomposeObjectMatrixWorld = object =>
+          _decomposeMatrix(object.matrixWorld);
 
         const zeroVector = new THREE.Vector3();
         const zeroQuaternion = new THREE.Quaternion();
@@ -161,10 +205,16 @@ class WebVR {
         })[0];
 
         const _getPropertiesFromPose = pose => {
-          const position = (pose && pose.position !== null) ? new THREE.Vector3().fromArray(pose.position) : zeroVector;
-          const rotation = (pose && pose.orientation !== null) ? new THREE.Quaternion().fromArray(pose.orientation) : zeroQuaternion;
+          const position =
+            pose && pose.position !== null
+              ? new THREE.Vector3().fromArray(pose.position)
+              : zeroVector;
+          const rotation =
+            pose && pose.orientation !== null
+              ? new THREE.Quaternion().fromArray(pose.orientation)
+              : zeroQuaternion;
           const scale = oneVector;
-          return {position, rotation, scale};
+          return { position, rotation, scale };
         };
         const _getPropertiesFromPoseTo = (pose, position, rotation, scale) => {
           if (pose && pose.position !== null) {
@@ -188,7 +238,14 @@ class WebVR {
         }
 
         class HmdStatus {
-          constructor(position, rotation, scale, worldPosition, worldRotation, worldScale) {
+          constructor(
+            position,
+            rotation,
+            scale,
+            worldPosition,
+            worldRotation,
+            worldScale
+          ) {
             this.position = position;
             this.rotation = rotation;
             this.scale = scale;
@@ -204,7 +261,16 @@ class WebVR {
           }
         }
         class GamepadStatus {
-          constructor(position, rotation, scale, worldPosition, worldRotation, worldScale, buttons, axes) {
+          constructor(
+            position,
+            rotation,
+            scale,
+            worldPosition,
+            worldRotation,
+            worldScale,
+            buttons,
+            axes
+          ) {
             this.position = position;
             this.rotation = rotation;
             this.scale = scale;
@@ -259,25 +325,33 @@ class WebVR {
           }
         }
 
-        const _makeDefaultHmdStatus = () => (() => {
-          const {position: worldPosition, rotation: worldRotation, scale: worldScale} = _decomposeObjectMatrixWorld(camera);
+        const _makeDefaultHmdStatus = () =>
+          (() => {
+            const {
+              position: worldPosition,
+              rotation: worldRotation,
+              scale: worldScale,
+            } = _decomposeObjectMatrixWorld(camera);
 
-          return new HmdStatus(
-            camera.position.clone(),
-            camera.quaternion.clone(),
-            camera.scale.clone(),
-            worldPosition,
-            worldRotation,
-            worldScale
-          );
-        })();
+            return new HmdStatus(
+              camera.position.clone(),
+              camera.quaternion.clone(),
+              camera.scale.clone(),
+              worldPosition,
+              worldRotation,
+              worldScale
+            );
+          })();
         const _makeDefaultGamepadStatus = index => {
-          const {position, rotation, scale} = _getPropertiesFromPose(DEFAULT_GAMEPAD_POSES[index]);
+          const { position, rotation, scale } = _getPropertiesFromPose(
+            DEFAULT_GAMEPAD_POSES[index]
+          );
           const worldPosition = position.clone();
           const worldRotation = rotation.clone();
           const worldScale = scale.clone();
 
-          const _makeDefaultButtonStatus = () => new GamepadButton(false, false, 0);
+          const _makeDefaultButtonStatus = () =>
+            new GamepadButton(false, false, 0);
           const buttons = new GamepadButtons(
             _makeDefaultButtonStatus(),
             _makeDefaultButtonStatus(),
@@ -370,7 +444,10 @@ class WebVR {
                     this.isOpen = false;
                   });
 
-                  const frameData = (!display || (display instanceof FakeVRDisplay)) ? new VRFrameDataFake() : new VRFrameData();
+                  const frameData =
+                    !display || display instanceof FakeVRDisplay
+                      ? new VRFrameDataFake()
+                      : new VRFrameData();
                   this._frameData = frameData;
 
                   if (display && stereoscopic) {
@@ -390,9 +467,13 @@ class WebVR {
 
                   const displayStageMatrix = new THREE.Matrix4();
                   if (display && display.stageParameters) {
-                    displayStageMatrix.fromArray(display.stageParameters.sittingToStandingTransform);
+                    displayStageMatrix.fromArray(
+                      display.stageParameters.sittingToStandingTransform
+                    );
                   }
-                  this.setStageMatrix(displayStageMatrix.premultiply(this.getSpawnMatrix()));
+                  this.setStageMatrix(
+                    displayStageMatrix.premultiply(this.getSpawnMatrix())
+                  );
                   this.updateStatus();
 
                   cleanups.push(() => {
@@ -404,19 +485,30 @@ class WebVR {
 
                   if (!display) {
                     // const originalStageMatrix = stageMatrix.clone();
-                    const {lookMatrix} = this;
-                    const {position, rotation, scale} = _decomposeMatrix(lookMatrix);
-                    const euler = new THREE.Euler().setFromQuaternion(rotation, camera.rotation.order);
+                    const { lookMatrix } = this;
+                    const { position, rotation, scale } = _decomposeMatrix(
+                      lookMatrix
+                    );
+                    const euler = new THREE.Euler().setFromQuaternion(
+                      rotation,
+                      camera.rotation.order
+                    );
 
                     const mousemove = e => {
-                      const xFactor = -0.5 + (e.event.clientX / window.innerWidth);
-                      const yFactor = -0.5 + (e.event.clientY / window.innerHeight);
+                      const xFactor =
+                        -0.5 + e.event.clientX / window.innerWidth;
+                      const yFactor =
+                        -0.5 + e.event.clientY / window.innerHeight;
 
                       localEuler.copy(euler);
                       localEuler.y -= xFactor * (Math.PI * 0.1);
                       localEuler.x -= yFactor * (Math.PI * 0.1);
 
-                      lookMatrix.compose(position, localQuaternion.setFromEuler(localEuler), scale);
+                      lookMatrix.compose(
+                        position,
+                        localQuaternion.setFromEuler(localEuler),
+                        scale
+                      );
                     };
                     input.on('mousemove', mousemove);
 
@@ -469,14 +561,16 @@ class WebVR {
                 };
                 accept(api);
               } else {
-                const err = new Error('webvr engine is already render looping. destroy() the old render first.');
+                const err = new Error(
+                  'webvr engine is already render looping. destroy() the old render first.'
+                );
                 reject(err);
               }
             });
             result.destroy = _destroy;
 
             return result;
-          };
+          }
 
           requestEnterVR({
             stereoscopic = true,
@@ -489,16 +583,17 @@ class WebVR {
             onExit = () => {},
           }) {
             // NOTE: these promises *need* to be synchronous because the WebVR api can only be triggered in the same tick as a user action
-            const _checkNotOpening = () => new SynchronousPromise((accept, reject) => {
-              const {isOpening} = this;
+            const _checkNotOpening = () =>
+              new SynchronousPromise((accept, reject) => {
+                const { isOpening } = this;
 
-              if (!isOpening) {
-                accept();
-              } else {
-                const err = new Error('webvr engine is already entering vr');
-                reject(err);
-              }
-            });
+                if (!isOpening) {
+                  accept();
+                } else {
+                  const err = new Error('webvr engine is already entering vr');
+                  reject(err);
+                }
+              });
             const _startOpening = () => {
               this.isOpening = true;
 
@@ -541,85 +636,100 @@ class WebVR {
                     return display.requestPresent([
                       {
                         source: domElement,
-                      }
+                      },
                     ]);
                   } else {
                     return Promise.resolve();
                   }
                 };
 
-                return _requestPresent()
-                  .then(() => new Promise((accept, reject) => {
-                    const _listen = () => {
-                      if (display instanceof FakeVRDisplay) {
-                        const pointerlockchange = () => {
-                          const {isPresenting} = display;
-                          if (!isPresenting) {
-                            _destroy();
+                return _requestPresent().then(
+                  () =>
+                    new Promise((accept, reject) => {
+                      const _listen = () => {
+                        if (display instanceof FakeVRDisplay) {
+                          const pointerlockchange = () => {
+                            const { isPresenting } = display;
+                            if (!isPresenting) {
+                              _destroy();
 
-                            onExit();
-                          }
-                        };
-                        document.addEventListener('pointerlockchange', pointerlockchange);
+                              onExit();
+                            }
+                          };
+                          document.addEventListener(
+                            'pointerlockchange',
+                            pointerlockchange
+                          );
+
+                          cleanups.push(() => {
+                            display.destroy();
+
+                            document.removeEventListener(
+                              'pointerlockchange',
+                              pointerlockchange
+                            );
+                          });
+                        } else {
+                          const vrdisplaypresentchange = () => {
+                            const { isPresenting } = display;
+                            if (!isPresenting) {
+                              _destroy();
+
+                              onExit();
+                            }
+                          };
+                          window.addEventListener(
+                            'vrdisplaypresentchange',
+                            vrdisplaypresentchange
+                          );
+                          const keydown = e => {
+                            if (e.keyCode === 27) {
+                              // esc
+                              display.exitPresent();
+                            }
+                          };
+                          document.addEventListener('keydown', keydown);
+
+                          cleanups.push(() => {
+                            window.removeEventListener(
+                              'vrdisplaypresentchange',
+                              vrdisplaypresentchange
+                            );
+                            document.removeEventListener('keydown', keydown);
+                          });
+                        }
+                      };
+                      const _requestRenderLoop = () => {
+                        const renderLoopPromise = this.requestRenderLoop({
+                          display,
+                          stereoscopic,
+                          update,
+                          // updateEye,
+                          updateStart,
+                          updateEnd,
+                          // renderStart,
+                          // renderEnd,
+                        });
 
                         cleanups.push(() => {
-                          display.destroy();
-
-                          document.removeEventListener('pointerlockchange', pointerlockchange);
+                          renderLoopPromise.destroy();
                         });
-                      } else {
-                        const vrdisplaypresentchange = () => {
-                          const {isPresenting} = display;
-                          if (!isPresenting) {
-                            _destroy();
 
-                            onExit();
-                          }
-                        };
-                        window.addEventListener('vrdisplaypresentchange', vrdisplaypresentchange);
-                        const keydown = e => {
-                          if (e.keyCode === 27) { // esc
-                            display.exitPresent();
-                          }
-                        };
-                        document.addEventListener('keydown', keydown);
+                        return renderLoopPromise;
+                      };
 
-                        cleanups.push(() => {
-                          window.removeEventListener('vrdisplaypresentchange', vrdisplaypresentchange);
-                          document.removeEventListener('keydown', keydown);
-                        });
-                      }
-                    };
-                    const _requestRenderLoop = () => {
-                      const renderLoopPromise = this.requestRenderLoop({
-                        display,
-                        stereoscopic,
-                        update,
-                        // updateEye,
-                        updateStart,
-                        updateEnd,
-                        // renderStart,
-                        // renderEnd,
-                      });
+                      _listen();
 
-                      cleanups.push(() => {
-                        renderLoopPromise.destroy();
-                      });
-
-                      return renderLoopPromise;
-                    };
-
-                    _listen();
-
-                    return _requestRenderLoop()
-                      .then(_stopOpening)
-                      .then(() => {
-                        return {
-                          destroy: _destroy,
-                        };
-                      })
-                      .catch(_handleError);
-                  }));
+                      return _requestRenderLoop()
+                        .then(_stopOpening)
+                        .then(() => {
+                          return {
+                            destroy: _destroy,
+                          };
+                        })
+                        .catch(_handleError);
+                    })
+                );
               })
               .catch(_handleError);
             result.destroy = _destroy;
@@ -629,12 +739,12 @@ class WebVR {
 
           updateStatus() {
             const _setHmdStatus = () => {
-              const {display} = this;
+              const { display } = this;
               if (display && display.updatePose) {
                 display.updatePose();
               }
 
-              const {_frameData: frameData} = this;
+              const { _frameData: frameData } = this;
               if (display) {
                 display.getFrameData(frameData);
               }
@@ -644,7 +754,12 @@ class WebVR {
                 this.status.hmd.rotation,
                 this.status.hmd.scale
               );
-              localMatrix.compose(this.status.hmd.position, this.status.hmd.rotation, this.status.hmd.scale)
+              localMatrix
+                .compose(
+                  this.status.hmd.position,
+                  this.status.hmd.rotation,
+                  this.status.hmd.scale
+                )
                 .premultiply(this.stageMatrix)
                 .decompose(
                   this.status.hmd.worldPosition,
@@ -684,7 +799,11 @@ class WebVR {
                 gamepad.updateButtons();
               }
 
-              const {pose, buttons: [pad, trigger, grip, menu], axes: [x, y]} = gamepad;
+              const {
+                pose,
+                buttons: [pad, trigger, grip, menu],
+                axes: [x, y],
+              } = gamepad;
               const gamepadStatus = this.status.gamepads[side];
 
               _getPropertiesFromPoseTo(
@@ -693,7 +812,12 @@ class WebVR {
                 gamepadStatus.rotation,
                 gamepadStatus.scale
               );
-              localMatrix.compose(gamepadStatus.position, gamepadStatus.rotation, gamepadStatus.scale)
+              localMatrix
+                .compose(
+                  gamepadStatus.position,
+                  gamepadStatus.rotation,
+                  gamepadStatus.scale
+                )
                 .premultiply(this.stageMatrix)
                 .decompose(
                   gamepadStatus.worldPosition,
@@ -701,11 +825,19 @@ class WebVR {
                   gamepadStatus.worldScale
                 );
 
-              const buttons = {pad, trigger, grip, menu};
+              const buttons = { pad, trigger, grip, menu };
               const axes = [x, y];
               for (let e = 0; e < EVENT_SPECS.length; e++) {
                 const eventSpec = EVENT_SPECS[e];
-                const {buttonName, rootName, downName, upName, touchName, touchdownName, touchupName} = eventSpec;
+                const {
+                  buttonName,
+                  rootName,
+                  downName,
+                  upName,
+                  touchName,
+                  touchdownName,
+                  touchupName,
+                } = eventSpec;
 
                 const oldPressed = gamepadStatus.buttons[buttonName].pressed;
                 const newPressed = buttons[buttonName].pressed;
@@ -740,9 +872,14 @@ class WebVR {
             const _setGamepadAxes = (src, dst) => {
               dst[0] = src[0];
               dst[1] = src[1];
-            }
+            };
             function _isGamepadAvailable(gamepad) {
-              return Boolean(gamepad) && Boolean(gamepad.pose) && gamepad.pose.position !== null && gamepad.pose.orientation !== null;
+              return (
+                Boolean(gamepad) &&
+                Boolean(gamepad.pose) &&
+                gamepad.pose.position !== null &&
+                gamepad.pose.orientation !== null
+              );
             }
 
             _setHmdStatus();
@@ -774,7 +911,10 @@ class WebVR {
           }
 
           getSpawnTransform() {
-            return new THREE.Matrix4().fromArray(this.display.stageParameters.sittingToStandingTransform)
+            return new THREE.Matrix4()
+              .fromArray(
+                this.display.stageParameters.sittingToStandingTransform
+              )
               .premultiply(this.spawnMatrix);
           }
 
@@ -791,7 +931,7 @@ class WebVR {
           }
 
           getMode() {
-            const {display} = this;
+            const { display } = this;
             if (display instanceof FakeVRDisplay) {
               return display.getMode();
             } else {
@@ -800,7 +940,7 @@ class WebVR {
           }
 
           getKeys() {
-            const {display} = this;
+            const { display } = this;
             if (display instanceof FakeVRDisplay) {
               return display.getKeys();
             } else {
@@ -809,11 +949,13 @@ class WebVR {
           }
 
           getSittingToStandingTransform() {
-            const {display} = this;
+            const { display } = this;
 
             const result = new THREE.Matrix4();
             if (display) {
-              result.fromArray(display.stageParameters.sittingToStandingTransform);
+              result.fromArray(
+                display.stageParameters.sittingToStandingTransform
+              );
             }
             return result;
           }
@@ -822,7 +964,7 @@ class WebVR {
             let left = null;
             let right = null;
 
-            const {display} = this;
+            const { display } = this;
             if (display.getGamepads) {
               const gamepads = display.getGamepads();
 
@@ -835,7 +977,7 @@ class WebVR {
                 const gamepad = gamepads[i];
 
                 if (gamepad) {
-                  const {hand} = gamepad;
+                  const { hand } = gamepad;
 
                   if (hand === 'left') {
                     left = gamepad;
@@ -847,7 +989,7 @@ class WebVR {
             }
 
             const _vibrate = gamepad => {
-              const {hapticActuators} = gamepad;
+              const { hapticActuators } = gamepad;
 
               if (hapticActuators.length > 0) {
                 hapticActuators[0].pulse(value, time);
@@ -874,7 +1016,12 @@ class WebVR {
             this.scale = new THREE.Vector3(1, 1, 1);
             this.matrix = new THREE.Matrix4();
 
-            this.rotationOffset = new THREE.Euler(0, 0, 0, camera.rotation.order);
+            this.rotationOffset = new THREE.Euler(
+              0,
+              0,
+              0,
+              camera.rotation.order
+            );
             this.poseNeedsUpdate = false;
 
             this.stageParameters = {
@@ -883,7 +1030,8 @@ class WebVR {
                   new THREE.Vector3(0, DEFAULT_USER_HEIGHT, 0),
                   new THREE.Quaternion(),
                   new THREE.Vector3(1, 1, 1)
-                ).toArray(),
+                )
+                .toArray(),
             };
 
             const keys = {
@@ -915,7 +1063,10 @@ class WebVR {
               keys.axis = false;
             };
 
-            const gamepads = [new FakeVRGamepad(this, 0), new FakeVRGamepad(this, 1)];
+            const gamepads = [
+              new FakeVRGamepad(this, 0),
+              new FakeVRGamepad(this, 1),
+            ];
             this.gamepads = gamepads;
 
             this.mode = 'right';
@@ -1016,11 +1167,27 @@ class WebVR {
             };
             const mousemove = e => {
               if (this.isPresenting) {
-                const _handleGamepad = () => e.event.ctrlKey || e.event.altKey || this.keys.axis; // handled by the fake gamepad
+                const _handleGamepad = () =>
+                  e.event.ctrlKey || e.event.altKey || this.keys.axis; // handled by the fake gamepad
                 const _handleDisplay = () => {
-                  if (Math.abs(e.event.movementX) < 300 && Math.abs(e.event.movementY) < 300) { // work around fast movement glitching
-                    this.rotationOffset.x = Math.max(Math.min(this.rotationOffset.x - e.event.movementY * ROTATION_SPEED, Math.PI / 2), -Math.PI / 2);
-                    this.rotationOffset.y = mod(this.rotationOffset.y - e.event.movementX * ROTATION_SPEED, Math.PI * 2);
+                  if (
+                    Math.abs(e.event.movementX) < 300 &&
+                    Math.abs(e.event.movementY) < 300
+                  ) {
+                    // work around fast movement glitching
+                    this.rotationOffset.x = Math.max(
+                      Math.min(
+                        this.rotationOffset.x -
+                          e.event.movementY * ROTATION_SPEED,
+                        Math.PI / 2
+                      ),
+                      -Math.PI / 2
+                    );
+                    this.rotationOffset.y = mod(
+                      this.rotationOffset.y -
+                        e.event.movementX * ROTATION_SPEED,
+                      Math.PI * 2
+                    );
 
                     this.poseNeedsUpdate = true;
                     this.gamepads[0].poseNeedsUpdate = true;
@@ -1036,7 +1203,7 @@ class WebVR {
               }
             };
             const pointerlockchange = e => {
-              const {isPresenting: wasPresenting} = this;
+              const { isPresenting: wasPresenting } = this;
 
               const isPresenting = document.pointerLockElement !== null;
               this.isPresenting = isPresenting;
@@ -1070,8 +1237,14 @@ class WebVR {
               input.removeListener('mousedown', mousedown);
               input.removeListener('mouseup', mouseup);
               input.removeListener('mousemove', mousemove);
-              document.removeEventListener('pointerlockchange', pointerlockchange);
-              document.removeEventListener('pointerlockerror', pointerlockerror);
+              document.removeEventListener(
+                'pointerlockchange',
+                pointerlockchange
+              );
+              document.removeEventListener(
+                'pointerlockerror',
+                pointerlockerror
+              );
             };
           }
 
@@ -1128,7 +1301,7 @@ class WebVR {
 
           getEyeParameters(side) {
             return {
-              offset: [(DEFAULT_USER_IPD / 2) * (side === 'left' ? -1 : 1), 0, 0],
+              offset: [DEFAULT_USER_IPD / 2 * (side === 'left' ? -1 : 1), 0, 0],
               fieldOfView: {
                 upDegrees: DEFAULT_USER_FOV / 2,
                 rightDegrees: DEFAULT_USER_FOV / 2,
@@ -1158,7 +1331,9 @@ class WebVR {
             let matrixNeedsUpdate = false;
 
             localVector.set(0, 0, 0);
-            const speed = this.keys.shift ? POSITION_SPEED_FAST : POSITION_SPEED;
+            const speed = this.keys.shift
+              ? POSITION_SPEED_FAST
+              : POSITION_SPEED;
             let moved = false;
             if (this.keys.up) {
               localVector.z -= speed;
@@ -1267,17 +1442,31 @@ class WebVR {
             const mousemove = e => {
               if (this.displayIsInControllerMode()) {
                 const _isReversed = () => {
-                  const {_parent: parent, _index: index} = this;
+                  const { _parent: parent, _index: index } = this;
                   const mode = parent.getMode();
                   return mode === 'center' && index === 1;
                 };
 
                 if (e.event.ctrlKey) {
-                  this.move(-e.event.movementX, -e.event.movementY, 0, _isReversed());
+                  this.move(
+                    -e.event.movementX,
+                    -e.event.movementY,
+                    0,
+                    _isReversed()
+                  );
                 } else if (e.altKey) {
-                  this.move(-e.event.movementX, 0, -e.event.movementY, _isReversed());
+                  this.move(
+                    -e.event.movementX,
+                    0,
+                    -e.event.movementY,
+                    _isReversed()
+                  );
                 } else if (this._parent.keys.axis) {
-                  this.axis(-e.event.movementX, -e.event.movementY, _isReversed());
+                  this.axis(
+                    -e.event.movementX,
+                    -e.event.movementY,
+                    _isReversed()
+                  );
                 }
               }
             };
@@ -1289,9 +1478,14 @@ class WebVR {
           }
 
           displayIsInControllerMode() {
-            const {_parent: parent, _index: index} = this;
+            const { _parent: parent, _index: index } = this;
             const mode = parent.getMode();
-            return parent.isPresenting && ((mode === 'center') || (mode === 'left' && index === 0) || (mode === 'right' && index === 1));
+            return (
+              parent.isPresenting &&
+              (mode === 'center' ||
+                (mode === 'left' && index === 0) ||
+                (mode === 'right' && index === 1))
+            );
           }
 
           move(x, y, z, reverse) {
@@ -1304,11 +1498,11 @@ class WebVR {
           }
 
           axis(x, y, reverse) {
-            const {axes} = this;
+            const { axes } = this;
 
             const reverseFactor = !reverse ? 1 : -1;
-            axes[0] = _clampAxis(axes[0] - (x * MOVE_FACTOR * reverseFactor));
-            axes[1] = _clampAxis(axes[1] + (y * MOVE_FACTOR * reverseFactor));
+            axes[0] = _clampAxis(axes[0] - x * MOVE_FACTOR * reverseFactor);
+            axes[1] = _clampAxis(axes[1] + y * MOVE_FACTOR * reverseFactor);
 
             this.poseNeedsUpdate = true;
           }
@@ -1325,7 +1519,12 @@ class WebVR {
 
           updatePose() {
             if (this.poseNeedsUpdate) {
-              localMatrix.compose(this.positionOffset, localQuaternion.setFromEuler(this.rotationOffset), oneVector)
+              localMatrix
+                .compose(
+                  this.positionOffset,
+                  localQuaternion.setFromEuler(this.rotationOffset),
+                  oneVector
+                )
                 .premultiply(this._parent.matrix);
 
               localMatrix.decompose(this.position, this.rotation, this.scale);
@@ -1368,7 +1567,8 @@ class WebVR {
 }
 
 const _isPolyfillDisplay = vrDisplay => /polyfill/i.test(vrDisplay.displayName);
-const _canPresent = vrDisplay => vrDisplay ? vrDisplay.capabilities.canPresent : false;
+const _canPresent = vrDisplay =>
+  vrDisplay ? vrDisplay.capabilities.canPresent : false;
 const _clampAxis = v => Math.min(Math.max(v, -1), 1);
 
 module.exports = WebVR;

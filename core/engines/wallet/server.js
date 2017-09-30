@@ -1,14 +1,14 @@
 const events = require('events');
-const {EventEmitter} = events;
+const { EventEmitter } = events;
 
 class Wallet {
-constructor(archae) {
+  constructor(archae) {
     this._archae = archae;
   }
 
   mount() {
-    const {_archae: archae} = this;
-    const {ws, wss} = archae.getCore();
+    const { _archae: archae } = this;
+    const { ws, wss } = archae.getCore();
 
     class AssetInstance {
       constructor(id, type, value, n, physics, matrix) {
@@ -25,16 +25,18 @@ constructor(archae) {
 
     const connections = [];
     wss.on('connection', c => {
-      const {url} = c.upgradeReq;
+      const { url } = c.upgradeReq;
 
       if (url === '/archae/walletWs') {
         const _init = () => {
-          c.send(JSON.stringify({
-            type: 'init',
-            args: {
-              assets: assetInstances,
-            }
-          }));
+          c.send(
+            JSON.stringify({
+              type: 'init',
+              args: {
+                assets: assetInstances,
+              },
+            })
+          );
         };
         _init();
 
@@ -44,32 +46,53 @@ constructor(archae) {
             if (connection.readyState === ws.OPEN && connection !== c) {
               connection.send(m);
             }
-          };
+          }
         };
 
         c.on('message', s => {
           const m = _jsonParse(s);
-          const {method, args} = m;
+          const { method, args } = m;
 
           if (method === 'addAsset') {
-            const {id, type, value, n, physics, matrix} = args;
-            const assetInstance = new AssetInstance(id, type, value, n, physics, matrix);
+            const { id, type, value, n, physics, matrix } = args;
+            const assetInstance = new AssetInstance(
+              id,
+              type,
+              value,
+              n,
+              physics,
+              matrix
+            );
             assetInstances.push(assetInstance);
 
-            _broadcast(JSON.stringify({type: 'addAsset', args: {id, type, value, n, physics, matrix}}));
+            _broadcast(
+              JSON.stringify({
+                type: 'addAsset',
+                args: { id, type, value, n, physics, matrix },
+              })
+            );
           } else if (method === 'removeAsset') {
-            const {id} = args;
-            assetInstances.splice(assetInstances.findIndex(assetInstance => assetInstance.id === id), 1);
+            const { id } = args;
+            assetInstances.splice(
+              assetInstances.findIndex(
+                assetInstance => assetInstance.id === id
+              ),
+              1
+            );
 
-            _broadcast(JSON.stringify({type: 'removeAsset', args: {id}}));
+            _broadcast(JSON.stringify({ type: 'removeAsset', args: { id } }));
           } else if (method === 'setPhysics') {
-            const {id, physics} = args;
-            const assetInstance = assetInstances.find(assetInstance => assetInstance.id === id);
+            const { id, physics } = args;
+            const assetInstance = assetInstances.find(
+              assetInstance => assetInstance.id === id
+            );
 
             if (assetInstance) {
               assetInstance.physics = physics;
 
-              _broadcast(JSON.stringify({type: 'setPhysics', args: {id, physics}}));
+              _broadcast(
+                JSON.stringify({ type: 'setPhysics', args: { id, physics } })
+              );
             }
           } else {
             console.warn('no such method:' + JSON.stringify(method));

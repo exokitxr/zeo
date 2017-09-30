@@ -17,8 +17,10 @@ class Notification {
   }
 
   mount() {
-    const {_archae: archae} = this;
-    const {metadata: {site: {url: siteUrl}, server: {enabled: serverEnabled}}} = archae;
+    const { _archae: archae } = this;
+    const {
+      metadata: { site: { url: siteUrl }, server: { enabled: serverEnabled } },
+    } = archae;
 
     const cleanups = [];
     this._cleanup = () => {
@@ -33,181 +35,213 @@ class Notification {
       live = false;
     });
 
-    return archae.requestPlugins([
-      '/core/engines/three',
-      '/core/engines/input',
-      '/core/engines/webvr',
-      '/core/engines/biolumi',
-      '/core/engines/keyboard',
-      '/core/engines/rend',
-      '/core/engines/tags',
-      '/core/utils/geometry-utils',
-      '/core/utils/creature-utils',
-    ]).then(([
-      three,
-      input,
-      webvr,
-      biolumi,
-      keyboard,
-      rend,
-      tags,
-      geometryUtils,
-      creatureUtils,
-    ]) => {
-      if (live) {
-        const {THREE, scene, camera} = three;
+    return archae
+      .requestPlugins([
+        '/core/engines/three',
+        '/core/engines/input',
+        '/core/engines/webvr',
+        '/core/engines/biolumi',
+        '/core/engines/keyboard',
+        '/core/engines/rend',
+        '/core/engines/tags',
+        '/core/utils/geometry-utils',
+        '/core/utils/creature-utils',
+      ])
+      .then(
+        (
+          [
+            three,
+            input,
+            webvr,
+            biolumi,
+            keyboard,
+            rend,
+            tags,
+            geometryUtils,
+            creatureUtils,
+          ]
+        ) => {
+          if (live) {
+            const { THREE, scene, camera } = three;
 
-        const localVector = new THREE.Vector3();
-        const localVector2 = new THREE.Vector3();
-        const localQuaternion = new THREE.Quaternion();
+            const localVector = new THREE.Vector3();
+            const localVector2 = new THREE.Vector3();
+            const localQuaternion = new THREE.Quaternion();
 
-        const notifications = [];
+            const notifications = [];
 
-        const hudMesh = (() => {
-          const menuUi = biolumi.makeUi({
-            width: WIDTH,
-            height: HEIGHT,
-            color: [1, 1, 1, 0],
-          });
-          const mesh = menuUi.makePage(({
-            notifications,
-          }) => {
-            const text = _escape(notifications.map(({text}) => text).join(' '));
+            const hudMesh = (() => {
+              const menuUi = biolumi.makeUi({
+                width: WIDTH,
+                height: HEIGHT,
+                color: [1, 1, 1, 0],
+              });
+              const mesh = menuUi.makePage(
+                ({ notifications }) => {
+                  const text = _escape(
+                    notifications.map(({ text }) => text).join(' ')
+                  );
 
-            return {
-              type: 'html',
-              src: notificationRenderer.getHudSrc(text),
-              x: 0,
-              y: 0,
-              w: WIDTH,
-              h: HEIGHT,
-            };
-          }, {
-            type: 'notification',
-            state: {
-              notifications,
-            },
-            worldWidth: WORLD_WIDTH,
-            worldHeight: WORLD_HEIGHT,
-          });
-          mesh.visible = false;
-
-          mesh.needsUpdate = false;
-          mesh.update = () => {
-            if (mesh.needsUpdate) {
-              const {page} = mesh;
-              page.update();
+                  return {
+                    type: 'html',
+                    src: notificationRenderer.getHudSrc(text),
+                    x: 0,
+                    y: 0,
+                    w: WIDTH,
+                    h: HEIGHT,
+                  };
+                },
+                {
+                  type: 'notification',
+                  state: {
+                    notifications,
+                  },
+                  worldWidth: WORLD_WIDTH,
+                  worldHeight: WORLD_HEIGHT,
+                }
+              );
+              mesh.visible = false;
 
               mesh.needsUpdate = false;
-            }
-          };
-          mesh.align = (position, rotation, scale, lerpFactor) => {
-            const targetPosition = position.clone().add(
-              new THREE.Vector3(
-                0,
-                -WORLD_HEIGHT * 0.25,
-                -0.5
-              ).applyQuaternion(rotation)
-            );
-            const targetRotation = rotation;
-            const distance = position.distanceTo(targetPosition);
+              mesh.update = () => {
+                if (mesh.needsUpdate) {
+                  const { page } = mesh;
+                  page.update();
 
-            if (lerpFactor < 1) {
-              mesh.position.add(
-                targetPosition.clone().sub(mesh.position).multiplyScalar(distance * lerpFactor)
+                  mesh.needsUpdate = false;
+                }
+              };
+              mesh.align = (position, rotation, scale, lerpFactor) => {
+                const targetPosition = position
+                  .clone()
+                  .add(
+                    new THREE.Vector3(
+                      0,
+                      -WORLD_HEIGHT * 0.25,
+                      -0.5
+                    ).applyQuaternion(rotation)
+                  );
+                const targetRotation = rotation;
+                const distance = position.distanceTo(targetPosition);
+
+                if (lerpFactor < 1) {
+                  mesh.position.add(
+                    targetPosition
+                      .clone()
+                      .sub(mesh.position)
+                      .multiplyScalar(distance * lerpFactor)
+                  );
+                  mesh.quaternion.slerp(targetRotation, lerpFactor);
+                  mesh.scale.copy(scale);
+                } else {
+                  mesh.position.copy(targetPosition);
+                  mesh.quaternion.copy(targetRotation);
+                  mesh.scale.copy(scale);
+                }
+
+                mesh.updateMatrixWorld();
+              };
+
+              camera.matrixWorld.decompose(
+                localVector,
+                localQuaternion,
+                localVector2
               );
-              mesh.quaternion.slerp(targetRotation, lerpFactor);
-              mesh.scale.copy(scale);
-            } else {
-              mesh.position.copy(targetPosition);
-              mesh.quaternion.copy(targetRotation);
-              mesh.scale.copy(scale);
+              mesh.align(localVector, localQuaternion, localVector2, 1);
+
+              return mesh;
+            })();
+            scene.add(hudMesh);
+
+            let lastUpdateTime = Date.now();
+            const _update = () => {
+              const now = Date.now();
+
+              const _updateHudMesh = () => {
+                if (hudMesh.visible) {
+                  hudMesh.update();
+                }
+              };
+              const _alignHudMesh = () => {
+                if (hudMesh.visible) {
+                  camera.matrixWorld.decompose(
+                    localVector,
+                    localQuaternion,
+                    localVector2
+                  );
+                  hudMesh.align(
+                    localVector,
+                    localQuaternion,
+                    localVector2,
+                    (now - lastUpdateTime) * 0.02
+                  );
+                }
+              };
+
+              _updateHudMesh();
+              _alignHudMesh();
+
+              lastUpdateTime = now;
+            };
+            rend.on('update', _update);
+
+            cleanups.push(() => {
+              scene.remove(hudMesh);
+
+              rend.removeListener('update', _update);
+            });
+
+            class Notification {
+              constructor(text) {
+                this.text = text;
+              }
             }
 
-            mesh.updateMatrixWorld();
-          };
+            const _addNotification = text => {
+              const notification = new Notification(text);
+              notifications.push(notification);
 
-          camera.matrixWorld.decompose(localVector, localQuaternion, localVector2);
-          mesh.align(localVector, localQuaternion, localVector2, 1);
+              if (notifications.length === 1) {
+                camera.matrixWorld.decompose(
+                  localVector,
+                  localQuaternion,
+                  localVector2
+                );
+                hudMesh.align(localVector, localQuaternion, localVector2, 1);
+                hudMesh.visible = true;
+              }
 
-          return mesh;
-        })();
-        scene.add(hudMesh);
+              hudMesh.needsUpdate = true;
 
-        let lastUpdateTime = Date.now();
-        const _update = () => {
-          const now = Date.now();
+              return notification;
+            };
+            const _removeNotification = notification => {
+              notifications.splice(notifications.indexOf(notification), 1);
 
-          const _updateHudMesh = () => {
-            if (hudMesh.visible) {
-              hudMesh.update();
-            }
-          };
-          const _alignHudMesh = () => {
-            if (hudMesh.visible) {
-              camera.matrixWorld.decompose(localVector, localQuaternion, localVector2);
-              hudMesh.align(localVector, localQuaternion, localVector2, (now - lastUpdateTime) * 0.02);
-            }
-          };
+              if (notifications.length === 0) {
+                hudMesh.visible = false;
+              }
 
-          _updateHudMesh();
-          _alignHudMesh();
+              hudMesh.needsUpdate = true;
+            };
 
-          lastUpdateTime = now;
-        };
-        rend.on('update', _update);
-
-        cleanups.push(() => {
-          scene.remove(hudMesh);
-
-          rend.removeListener('update', _update);
-        });
-
-        class Notification {
-          constructor(text) {
-            this.text = text;
+            return {
+              addNotification: _addNotification,
+              removeNotification: _removeNotification,
+            };
           }
         }
-
-        const _addNotification = text => {
-          const notification = new Notification(text);
-          notifications.push(notification);
-
-          if (notifications.length === 1) {
-            camera.matrixWorld.decompose(localVector, localQuaternion, localVector2);
-            hudMesh.align(localVector, localQuaternion, localVector2, 1);
-            hudMesh.visible = true;
-          }
-
-          hudMesh.needsUpdate = true;
-
-          return notification;
-        };
-        const _removeNotification = notification => {
-          notifications.splice(notifications.indexOf(notification), 1);
-
-          if (notifications.length === 0) {
-            hudMesh.visible = false;
-          }
-
-          hudMesh.needsUpdate = true;
-        };
-
-        return {
-          addNotification: _addNotification,
-          removeNotification: _removeNotification,
-        };
-      }
-    });
+      );
   }
 
   unmount() {
     this._cleanup();
   }
 }
-const _escape = s => s
-  .replace(/</g, '&lt;')
-  .replace(/>/g, '&gt;')
-  .replace(/&/g, '&amp;');
+const _escape = s =>
+  s
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/&/g, '&amp;');
 
 module.exports = Notification;

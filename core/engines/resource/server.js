@@ -12,14 +12,19 @@ class Resource {
   }
 
   mount() {
-    const {_archae: archae} = this;
-    const {express, app} = archae.getCore();
+    const { _archae: archae } = this;
+    const { express, app } = archae.getCore();
 
-    const controllerjsModelPath = path.join(path.dirname(require.resolve('controllerjs')), 'model');
+    const controllerjsModelPath = path.join(
+      path.dirname(require.resolve('controllerjs')),
+      'model'
+    );
     const imgPath = path.join(__dirname, 'lib', 'img');
     const sfxPath = path.join(__dirname, 'lib', 'sfx');
 
-    const assetsHmdStatic = express.static(path.join(__dirname, 'lib', 'models', 'hmd'));
+    const assetsHmdStatic = express.static(
+      path.join(__dirname, 'lib', 'models', 'hmd')
+    );
     function serveAssetsHmd(req, res, next) {
       assetsHmdStatic(req, res, next);
     }

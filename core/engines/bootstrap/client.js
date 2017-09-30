@@ -4,7 +4,7 @@ class Bootstrap {
   }
 
   mount() {
-    const {_archae: archae} = this;
+    const { _archae: archae } = this;
 
     let live = true;
     this._cleanup = () => {
@@ -12,20 +12,19 @@ class Bootstrap {
     };
 
     const initialUrl = document.location.href;
-    const initialPath = document.location.protocol + '//' + document.location.host + document.location.pathname;
+    const initialPath =
+      document.location.protocol +
+      '//' +
+      document.location.host +
+      document.location.pathname;
 
-    return archae.requestPlugins([
-      '/core/utils/js-utils',
-      '/core/utils/network-utils',
-    ])
-      .then(([
-        jsUtils,
-        networkUtils,
-      ]) => {
+    return archae
+      .requestPlugins(['/core/utils/js-utils', '/core/utils/network-utils'])
+      .then(([jsUtils, networkUtils]) => {
         if (live) {
-          const {events} = jsUtils;
-          const {EventEmitter} = events;
-          const {AutoWs} = networkUtils;
+          const { events } = jsUtils;
+          const { EventEmitter } = events;
+          const { AutoWs } = networkUtils;
 
           let connectionState = null;
           const connection = (() => {
@@ -48,7 +47,7 @@ class Bootstrap {
             }
 
             getWorldTime() {
-              const {startTime} = this;
+              const { startTime } = this;
               const now = Date.now();
               const worldTime = now - startTime;
               return worldTime;
@@ -119,7 +118,13 @@ class Bootstrap {
 
 const _relativeWsUrl = s => {
   const l = window.location;
-  return ((l.protocol === 'https:') ? 'wss://' : 'ws://') + l.host + l.pathname + (!/\/$/.test(l.pathname) ? '/' : '') + s;
+  return (
+    (l.protocol === 'https:' ? 'wss://' : 'ws://') +
+    l.host +
+    l.pathname +
+    (!/\/$/.test(l.pathname) ? '/' : '') +
+    s
+  );
 };
 const _getQueryVariable = (url, variable) => {
   const match = url.match(/\?(.+)$/);

@@ -4,7 +4,6 @@ import {
   WORLD_WIDTH,
   WORLD_HEIGHT,
   WORLD_DEPTH,
-
   TAGS_WIDTH,
   TAGS_HEIGHT,
   TAGS_WORLD_WIDTH,
@@ -20,8 +19,13 @@ class FileEngine {
   }
 
   mount() {
-    const {_archae: archae} = this;
-    const {metadata: {site: {url: siteUrl}, server: {url: serverUrl, enabled: serverEnabled}}} = archae;
+    const { _archae: archae } = this;
+    const {
+      metadata: {
+        site: { url: siteUrl },
+        server: { url: serverUrl, enabled: serverEnabled },
+      },
+    } = archae;
 
     const cleanups = [];
     this._cleanup = () => {
@@ -36,41 +40,32 @@ class FileEngine {
       live = false;
     });
 
-    return archae.requestPlugins([
-      '/core/engines/three',
-      '/core/engines/input',
-      '/core/engines/webvr',
-      '/core/engines/biolumi',
-      '/core/engines/resource',
-      '/core/engines/rend',
-      '/core/engines/tags',
-      // '/core/engines/fs',
-      '/core/engines/world',
-      '/core/engines/keyboard',
-      '/core/utils/creature-utils',
-    ]).then(([
-      three,
-      input,
-      webvr,
-      biolumi,
-      resource,
-      rend,
-      tags,
-      // fs,
-      world,
-      keyboard,
-      creatureUtils,
-    ]) => {
-      if (live) {
-        const {THREE} = three;
-        const {sfx} = resource;
+    return archae
+      .requestPlugins([
+        '/core/engines/three',
+        '/core/engines/input',
+        '/core/engines/webvr',
+        '/core/engines/biolumi',
+        '/core/engines/resource',
+        '/core/engines/rend',
+        '/core/engines/tags',
+        // '/core/engines/fs',
+        '/core/engines/world',
+        '/core/engines/keyboard',
+        '/core/utils/creature-utils',
+      ])
+      .then(([three, input, webvr, biolumi, resource, rend, tags, // fs,
+        world, keyboard, creatureUtils]) => {
+        if (live) {
+          const { THREE } = three;
+          const { sfx } = resource;
 
-        const fileRenderer = fileRender.makeRenderer({creatureUtils});
+          const fileRenderer = fileRender.makeRenderer({ creatureUtils });
 
-        const transparentImg = biolumi.getTransparentImg();
-        // const blackImg = biolumi.getBlackImg();
+          const transparentImg = biolumi.getTransparentImg();
+          // const blackImg = biolumi.getBlackImg();
 
-        /* const _decorateFile = item => {
+          /* const _decorateFile = item => {
           const {id, name, mimeType, instancing, paused, value} = item;
           const mode = fs.getFileMode(mimeType);
           const media = null;
@@ -200,20 +195,20 @@ class FileEngine {
           }
         }; */
 
-        const updatePromises = [];
-        const _cancelNpm = () => {
-          if (updatePromises.length > 0) {
-            for (let i = 0; i < updatePromises.length; i++) {
-              const updatePromise = updatePromises[i];
-              updatePromise.cancel();
+          const updatePromises = [];
+          const _cancelNpm = () => {
+            if (updatePromises.length > 0) {
+              for (let i = 0; i < updatePromises.length; i++) {
+                const updatePromise = updatePromises[i];
+                updatePromise.cancel();
+              }
+              updatePromises.length = 0;
             }
-            updatePromises.length = 0;
-          }
-        };
-        const _updateNpm = () => {
-          _cancelNpm();
+          };
+          const _updateNpm = () => {
+            _cancelNpm();
 
-          /* const {inputText} = npmState;
+            /* const {inputText} = npmState;
 
           const files = tags.getTagMeshes()
             .filter(({item}) =>
@@ -241,312 +236,341 @@ class FileEngine {
                 _updatePages();
               });
           } */
-          const files = [];
+            const files = [];
 
-          npmState.loading = false;
-          npmState.page = 0;
-          npmState.tagSpecs = files;
-          npmState.numTags = files.length;
+            npmState.loading = false;
+            npmState.page = 0;
+            npmState.tagSpecs = files;
+            npmState.numTags = files.length;
 
-          npmState.loading = false;
-        };
+            npmState.loading = false;
+          };
 
-        const npmState = {
-          loading: true,
-          inputText: '',
-          tagSpecs: [],
-          numTags: 0,
-          file: null,
-          value: 0,
-          page: 0,
-        };
-        const focusState = {
-          keyboardFocusState: null,
-        };
-        const npmCacheState = {
-          loaded: false,
-        };
+          const npmState = {
+            loading: true,
+            inputText: '',
+            tagSpecs: [],
+            numTags: 0,
+            file: null,
+            value: 0,
+            page: 0,
+          };
+          const focusState = {
+            keyboardFocusState: null,
+          };
+          const npmCacheState = {
+            loaded: false,
+          };
 
-        const fileMesh = (() => {
-          const object = new THREE.Object3D();
-          object.visible = false;
+          const fileMesh = (() => {
+            const object = new THREE.Object3D();
+            object.visible = false;
 
-          const planeMesh = (() => {
-            const worldUi = biolumi.makeUi({
-              width: WIDTH,
-              height: HEIGHT,
-            });
-            const mesh = worldUi.makePage(({
-              npm: {
-                loading,
-                inputText,
-                tagSpecs,
-                numTags,
-                file,
-                value,
-                page,
-              },
-              focus: {
-                keyboardFocusState,
-              },
-            }) => {
-              const {type = '', inputValue = 0} = keyboardFocusState || {};
-              const focus = type === 'file:search';
+            const planeMesh = (() => {
+              const worldUi = biolumi.makeUi({
+                width: WIDTH,
+                height: HEIGHT,
+              });
+              const mesh = worldUi.makePage(
+                ({
+                  npm: {
+                    loading,
+                    inputText,
+                    tagSpecs,
+                    numTags,
+                    file,
+                    value,
+                    page,
+                  },
+                  focus: { keyboardFocusState },
+                }) => {
+                  const { type = '', inputValue = 0 } =
+                    keyboardFocusState || {};
+                  const focus = type === 'file:search';
 
-              return {
-                type: 'html',
-                src: fileRenderer.getFilePageSrc({
-                  loading,
-                  inputText,
-                  inputValue,
-                  tagSpecs,
-                  numTags,
-                  file,
-                  value,
-                  page,
-                  focus,
-                }),
-                x: 0,
-                y: 0,
-                w: WIDTH,
-                h: HEIGHT,
+                  return {
+                    type: 'html',
+                    src: fileRenderer.getFilePageSrc({
+                      loading,
+                      inputText,
+                      inputValue,
+                      tagSpecs,
+                      numTags,
+                      file,
+                      value,
+                      page,
+                      focus,
+                    }),
+                    x: 0,
+                    y: 0,
+                    w: WIDTH,
+                    h: HEIGHT,
+                  };
+                },
+                {
+                  type: 'file',
+                  state: {
+                    npm: npmState,
+                    focus: focusState,
+                  },
+                  worldWidth: WORLD_WIDTH,
+                  worldHeight: WORLD_HEIGHT,
+                  isEnabled: () => rend.isOpen(),
+                }
+              );
+              mesh.receiveShadow = true;
+
+              const { page } = mesh;
+              rend.addPage(page);
+
+              cleanups.push(() => {
+                rend.removePage(page);
+              });
+
+              return mesh;
+            })();
+            object.add(planeMesh);
+            object.planeMesh = planeMesh;
+
+            const size = 480;
+            const worldWidth = size / WIDTH * WORLD_WIDTH;
+            const worldHeight = size / HEIGHT * WORLD_HEIGHT;
+            const detailsMesh = (() => {
+              const geometry = new THREE.PlaneBufferGeometry(
+                worldWidth,
+                worldHeight
+              );
+              const texture = new THREE.Texture(
+                transparentImg,
+                THREE.UVMapping,
+                THREE.ClampToEdgeWrapping,
+                THREE.ClampToEdgeWrapping,
+                THREE.NearestFilter,
+                THREE.NearestFilter,
+                THREE.RGBAFormat,
+                THREE.UnsignedByteType,
+                16
+              );
+              texture.needsUpdate = true;
+              const material = new THREE.MeshBasicMaterial({
+                color: 0xffffff,
+                map: texture,
+                side: THREE.DoubleSide,
+              });
+
+              const mesh = new THREE.Mesh(geometry, material);
+              mesh.position.set(
+                -(WORLD_WIDTH / 2) + worldWidth / 2 + 30 / WIDTH * WORLD_WIDTH,
+                WORLD_HEIGHT / 2 -
+                  worldHeight / 2 -
+                  (30 + 80) / HEIGHT * WORLD_HEIGHT,
+                0.001
+              );
+              mesh.visible = false;
+              mesh.setAspectRatio = aspectRatio => {
+                mesh.scale.x = aspectRatio < 1 ? aspectRatio : 1;
+                mesh.scale.y = aspectRatio > 1 ? 1 / aspectRatio : 1;
+                mesh.updateMatrixWorld();
               };
-            }, {
-              type: 'file',
-              state: {
-                npm: npmState,
-                focus: focusState,
-              },
-              worldWidth: WORLD_WIDTH,
-              worldHeight: WORLD_HEIGHT,
-              isEnabled: () => rend.isOpen(),
-            });
-            mesh.receiveShadow = true;
 
-            const {page} = mesh;
-            rend.addPage(page);
+              return mesh;
+            })();
+            object.add(detailsMesh);
+            object.detailsMesh = detailsMesh;
+
+            const anchors = [
+              {
+                rect: {
+                  left: 0,
+                  right: size,
+                  top: 0,
+                  bottom: size,
+                },
+                onclick: 'file:media',
+              },
+            ];
+            const detailsPage = biolumi.makePage(null, {
+              type: 'file:media',
+              width: size,
+              height: size,
+              worldWidth: worldWidth,
+              worldHeight: worldHeight,
+              color: [1, 1, 1, 0],
+              layer: {
+                getAnchors: () => anchors,
+              },
+            });
+            detailsPage.mesh.position.copy(detailsMesh.position);
+            detailsPage.mesh.visible = false;
+            detailsPage.setId = id => {
+              anchors[0].onclick = id ? 'file:media:' + id : 'file:media';
+            };
+            object.add(detailsPage.mesh);
+            object.detailsPage = detailsPage;
+            rend.addPage(detailsPage);
 
             cleanups.push(() => {
-              rend.removePage(page);
+              rend.removePage(detailsPage);
             });
 
-            return mesh;
+            return object;
           })();
-          object.add(planeMesh);
-          object.planeMesh = planeMesh;
+          rend.registerMenuMesh('fileMesh', fileMesh);
+          fileMesh.updateMatrixWorld();
 
-          const size = 480;
-          const worldWidth = (size / WIDTH) * WORLD_WIDTH;
-          const worldHeight = (size / HEIGHT) * WORLD_HEIGHT;
-          const detailsMesh = (() => {
-            const geometry = new THREE.PlaneBufferGeometry(worldWidth, worldHeight);
-            const texture = new THREE.Texture(
-              transparentImg,
-              THREE.UVMapping,
-              THREE.ClampToEdgeWrapping,
-              THREE.ClampToEdgeWrapping,
-              THREE.NearestFilter,
-              THREE.NearestFilter,
-              THREE.RGBAFormat,
-              THREE.UnsignedByteType,
-              16
-            );
-            texture.needsUpdate = true;
-            const material = new THREE.MeshBasicMaterial({
-              color: 0xFFFFFF,
-              map: texture,
-              side: THREE.DoubleSide,
-            });
-
-            const mesh = new THREE.Mesh(geometry, material);
-            mesh.position.set(
-              -(WORLD_WIDTH / 2) + (worldWidth / 2) + ((30 / WIDTH) * WORLD_WIDTH),
-              (WORLD_HEIGHT / 2) - (worldHeight / 2) - (((30 + 80) / HEIGHT) * WORLD_HEIGHT),
-              0.001
-            );
-            mesh.visible = false;
-            mesh.setAspectRatio = aspectRatio => {
-              mesh.scale.x = aspectRatio < 1 ? aspectRatio : 1;
-              mesh.scale.y = aspectRatio > 1 ? (1 / aspectRatio) : 1;
-              mesh.updateMatrixWorld();
-            };
-
-            return mesh;
-          })();
-          object.add(detailsMesh);
-          object.detailsMesh = detailsMesh;
-
-          const anchors = [
-            {
-              rect: {
-                left: 0,
-                right: size,
-                top: 0,
-                bottom: size,
-              },
-              onclick: 'file:media',
-            },
-          ];
-          const detailsPage = biolumi.makePage(null, {
-            type: 'file:media',
-            width: size,
-            height: size,
-            worldWidth: worldWidth,
-            worldHeight: worldHeight,
-            color: [1, 1, 1, 0],
-            layer: {
-              getAnchors: () => anchors,
-            },
-          });
-          detailsPage.mesh.position.copy(detailsMesh.position);
-          detailsPage.mesh.visible = false;
-          detailsPage.setId = id => {
-            anchors[0].onclick = id ? ('file:media:' + id) : 'file:media';
+          const _updatePages = () => {
+            const { planeMesh } = fileMesh;
+            const { page } = planeMesh;
+            return page.update();
           };
-          object.add(detailsPage.mesh);
-          object.detailsPage = detailsPage;
-          rend.addPage(detailsPage);
+          _updatePages();
 
-          cleanups.push(() => {
-            rend.removePage(detailsPage);
-          });
+          const _tabchange = tab => {
+            if (tab === 'file') {
+              keyboard.tryBlur();
 
-          return object;
-        })();
-        rend.registerMenuMesh('fileMesh', fileMesh);
-        fileMesh.updateMatrixWorld();
+              const { loaded } = npmCacheState;
+              if (!loaded) {
+                _updateNpm();
+                _updatePages();
 
-        const _updatePages = () => {
-          const {planeMesh} = fileMesh;
-          const {page} = planeMesh;
-          return page.update();
-        };
-        _updatePages();
-
-        const _tabchange = tab => {
-          if (tab === 'file') {
-            keyboard.tryBlur();
-
-            const {loaded} = npmCacheState;
-            if (!loaded) {
-              _updateNpm();
-              _updatePages();
-
-              npmCacheState.loaded = true;
+                npmCacheState.loaded = true;
+              }
             }
-          }
-        };
-        rend.on('tabchange', _tabchange);
+          };
+          rend.on('tabchange', _tabchange);
 
-        const _trigger = e => {
-          const {side} = e;
+          const _trigger = e => {
+            const { side } = e;
 
-          const _clickMenu = () => {
-            const hoverState = rend.getHoverState(side);
-            const {anchor} = hoverState;
-            const onclick = (anchor && anchor.onclick) || '';
+            const _clickMenu = () => {
+              const hoverState = rend.getHoverState(side);
+              const { anchor } = hoverState;
+              const onclick = (anchor && anchor.onclick) || '';
 
-            let match;
-            if (onclick === 'file:focus') {
-              const {inputText} = npmState;
-              const {value, target: page} = hoverState;
-              const {layer: {measures}} = page;
-              const valuePx = value * (WIDTH - (250 + (30 * 2)));
-              const {index, px} = biolumi.getTextPropertiesFromCoord(measures['file:search'], inputText, valuePx);
-              const {hmd: hmdStatus} = webvr.getStatus();
-              const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
-              const keyboardFocusState = keyboard.focus({
-                type: 'file:search',
-                position: hmdPosition,
-                rotation: hmdRotation,
-                inputText: inputText,
-                inputIndex: index,
-                inputValue: px,
-                page: page,
-              });
-              focusState.keyboardFocusState = keyboardFocusState;
+              let match;
+              if (onclick === 'file:focus') {
+                const { inputText } = npmState;
+                const { value, target: page } = hoverState;
+                const { layer: { measures } } = page;
+                const valuePx = value * (WIDTH - (250 + 30 * 2));
+                const { index, px } = biolumi.getTextPropertiesFromCoord(
+                  measures['file:search'],
+                  inputText,
+                  valuePx
+                );
+                const { hmd: hmdStatus } = webvr.getStatus();
+                const {
+                  worldPosition: hmdPosition,
+                  worldRotation: hmdRotation,
+                } = hmdStatus;
+                const keyboardFocusState = keyboard.focus({
+                  type: 'file:search',
+                  position: hmdPosition,
+                  rotation: hmdRotation,
+                  inputText: inputText,
+                  inputIndex: index,
+                  inputValue: px,
+                  page: page,
+                });
+                focusState.keyboardFocusState = keyboardFocusState;
 
-              keyboardFocusState.on('update', () => {
-                const {inputText: keyboardInputText} = keyboardFocusState;
-                const {inputText: npmInputText} = npmState;
+                keyboardFocusState.on('update', () => {
+                  const { inputText: keyboardInputText } = keyboardFocusState;
+                  const { inputText: npmInputText } = npmState;
 
-                if (keyboardInputText !== npmInputText) {
-                  npmState.inputText = keyboardInputText;
+                  if (keyboardInputText !== npmInputText) {
+                    npmState.inputText = keyboardInputText;
 
-                  _updateNpm();
+                    _updateNpm();
+                  }
+
+                  _updatePages();
+                });
+                keyboardFocusState.on('blur', () => {
+                  focusState.keyboardFocusState = null;
+
+                  _updatePages();
+                });
+
+                _updatePages();
+
+                return true;
+              } else if ((match = onclick.match(/^file:(up|down)$/))) {
+                const direction = match[1];
+
+                npmState.page += direction === 'up' ? -1 : 1;
+
+                _updatePages();
+
+                return true;
+              } else if ((match = onclick.match(/^file:file:(.+)$/))) {
+                const id = match[1];
+
+                const itemSpec = npmState.tagSpecs.find(
+                  tagSpec => tagSpec.id === id
+                );
+                _setFile(itemSpec);
+
+                return true;
+              } else if (onclick === 'file:back') {
+                _setFile(null);
+
+                return true;
+              } else if ((match = onclick.match(/^file:media:(.+)$/))) {
+                const id = match[1];
+
+                const itemSpec = npmState.tagSpecs.find(
+                  tagSpec => tagSpec.id === id
+                );
+                const { media } = itemSpec;
+
+                if (
+                  media &&
+                  (media.tagName === 'AUDIO' || media.tagName === 'VIDEO')
+                ) {
+                  if (media.paused) {
+                    media.play();
+                  } else {
+                    media.pause();
+                  }
                 }
 
-                _updatePages();
-              });
-              keyboardFocusState.on('blur', () => {
-                focusState.keyboardFocusState = null;
+                return true;
+              } else if ((match = onclick.match(/^file:seek:(.+)$/))) {
+                const id = match[1];
 
-                _updatePages();
-              });
+                const itemSpec = npmState.tagSpecs.find(
+                  tagSpec => tagSpec.id === id
+                );
+                const { media } = itemSpec;
 
-              _updatePages();
+                if (
+                  media &&
+                  (media.tagName === 'AUDIO' || media.tagName === 'VIDEO')
+                ) {
+                  const { value } = hoverState;
+                  media.currentTime = value * media.duration;
 
-              return true;
-            } else if (match = onclick.match(/^file:(up|down)$/)) {
-              const direction = match[1];
+                  npmState.value = value;
 
-              npmState.page += (direction === 'up' ? -1 : 1);
-
-              _updatePages();
-
-              return true;
-            } else if (match = onclick.match(/^file:file:(.+)$/)) {
-              const id = match[1];
-
-              const itemSpec = npmState.tagSpecs.find(tagSpec => tagSpec.id === id);
-              _setFile(itemSpec);
-
-              return true;
-            } else if (onclick === 'file:back') {
-              _setFile(null);
-
-              return true;
-            } else if (match = onclick.match(/^file:media:(.+)$/)) {
-              const id = match[1];
-
-              const itemSpec = npmState.tagSpecs.find(tagSpec => tagSpec.id === id);
-              const {media} = itemSpec;
-
-              if (media && (media.tagName === 'AUDIO' || media.tagName === 'VIDEO')) {
-                if (media.paused) {
-                  media.play();
-                } else {
-                  media.pause();
+                  _updatePages();
                 }
-              }
 
-              return true;
-            } else if (match = onclick.match(/^file:seek:(.+)$/)) {
-              const id = match[1];
+                return true;
+              } else if ((match = onclick.match(/^file:remove:(.+)$/))) {
+                const id = match[1];
 
-              const itemSpec = npmState.tagSpecs.find(tagSpec => tagSpec.id === id);
-              const {media} = itemSpec;
+                world.removeTag(id);
 
-              if (media && (media.tagName === 'AUDIO' || media.tagName === 'VIDEO')) {
-                const {value} = hoverState;
-                media.currentTime = value * media.duration;
+                npmState.tagSpecs.splice(
+                  npmState.tagSpecs.findIndex(tagSpec => tagSpec.id === id),
+                  1
+                );
+                _setFile(null);
 
-                npmState.value = value;
-
-                _updatePages();
-              }
-
-              return true;
-            } else if (match = onclick.match(/^file:remove:(.+)$/)) {
-              const id = match[1];
-
-              world.removeTag(id);
-
-              npmState.tagSpecs.splice(npmState.tagSpecs.findIndex(tagSpec => tagSpec.id === id), 1);
-              _setFile(null);
-
-              return true;
-            /* } else if (match = onclick.match(/^file:loadEntities:(.+)$/)) {
+                return true;
+                /* } else if (match = onclick.match(/^file:loadEntities:(.+)$/)) {
               const id = match[1];
 
               const file = npmState.tagSpecs.find(tagSpec => tagSpec.id === id);
@@ -591,39 +615,39 @@ class FileEngine {
                 });
 
               return true; */
-            } else {
-              return false;
+              } else {
+                return false;
+              }
+            };
+            const _clickMenuBackground = () => {
+              const hoverState = rend.getHoverState(side);
+              const { target } = hoverState;
+
+              if (target && target.mesh && target.mesh.parent === fileMesh) {
+                return true;
+              } else {
+                return false;
+              }
+            };
+
+            if (_clickMenu()) {
+              sfx.digi_select.trigger();
+
+              e.stopImmediatePropagation();
+            } else if (_clickMenuBackground()) {
+              sfx.digi_plink.trigger();
+
+              e.stopImmediatePropagation();
             }
           };
-          const _clickMenuBackground = () => {
-            const hoverState = rend.getHoverState(side);
-            const {target} = hoverState;
+          input.on('trigger', _trigger);
 
-            if (target && target.mesh && target.mesh.parent === fileMesh) {
-              return true;
-            } else {
-              return false;
-            }
-          };
+          cleanups.push(() => {
+            rend.removeListener('tabchange', _tabchange);
+            input.removeListener('trigger', _trigger);
+          });
 
-          if (_clickMenu()) {
-            sfx.digi_select.trigger();
-
-            e.stopImmediatePropagation();
-          } else if (_clickMenuBackground()) {
-            sfx.digi_plink.trigger();
-
-            e.stopImmediatePropagation();
-          }
-        };
-        input.on('trigger', _trigger);
-
-        cleanups.push(() => {
-          rend.removeListener('tabchange', _tabchange);
-          input.removeListener('trigger', _trigger);
-        });
-
-        /* const _setFile = itemSpec => {
+          /* const _setFile = itemSpec => {
           if (itemSpec) {
             npmState.file = itemSpec;
 
@@ -697,18 +721,21 @@ class FileEngine {
           _setFile(fileItem);
         }; */
 
-        return {
-          // addFile: _addFile,
-        };
-      }
-    });
+          return {
+            // addFile: _addFile,
+          };
+        }
+      });
   }
 
   unmount() {
     this._cleanup();
   }
 }
-const _makeId = () => Math.random().toString(36).substring(7);
+const _makeId = () =>
+  Math.random()
+    .toString(36)
+    .substring(7);
 const _resizeImage = (img, width, height) => {
   const canvas = document.createElement('canvas');
   canvas.width = width;
