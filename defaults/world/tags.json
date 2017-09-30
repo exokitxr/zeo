@@ -198,11 +198,11 @@
     "u3xuc": {
       "type": "entity",
       "id": "u3xuc",
-      "name": "/plugins/models",
+      "name": "/plugins/model",
       "displayName": "models",
       "version": "0.0.1",
-      "module": "/plugins/models",
-      "tagName": "plugins-models",
+      "module": "/plugins/model",
+      "tagName": "plugins-model",
       "attributes": {},
       "metadata": {}
     }
