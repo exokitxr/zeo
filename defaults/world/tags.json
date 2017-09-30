@@ -74,28 +74,6 @@
       },
       "metadata": {}
     },
-    "7w06": {
-      "type": "entity",
-      "id": "7w06",
-      "name": "/plugins/heightfield",
-      "displayName": "heightfield",
-      "version": "0.0.1",
-      "module": "/plugins/heightfield",
-      "tagName": "plugins-heightfield",
-      "attributes": [],
-      "metadata": {}
-    },
-    "7w07": {
-      "type": "entity",
-      "id": "7w07",
-      "name": "/plugins/generator",
-      "displayName": "generator",
-      "version": "0.0.1",
-      "module": "/plugins/generator",
-      "tagName": "plugins-generator",
-      "attributes": [],
-      "metadata": {}
-    },
     "kkvl7d": {
       "type": "entity",
       "id": "kkvl7d",
@@ -107,58 +85,14 @@
       "attributes": {},
       "metadata": {}
     },
-    "0pdq0ak": {
-      "type": "entity",
-      "id": "0pdq0ak",
-      "name": "/plugins/skin",
-      "displayName": "skin",
-      "version": "0.0.1",
-      "module": "/plugins/skin",
-      "tagName": "plugins-skin",
-      "attributes": {},
-      "metadata": {}
-    },
-    "0pdq0al": {
-      "type": "entity",
-      "id": "0pdq0al",
-      "name": "/plugins/objects",
-      "displayName": "objects",
-      "version": "0.0.1",
-      "module": "/plugins/objects",
-      "tagName": "plugins-objects",
-      "attributes": {},
-      "metadata": {}
-    },
-    "0pdq0am": {
-      "type": "entity",
-      "id": "0pdq0am",
-      "name": "/plugins/craft",
-      "displayName": "craft",
-      "version": "0.0.1",
-      "module": "/plugins/craft",
-      "tagName": "plugins-craft",
-      "attributes": {},
-      "metadata": {}
-    },
-    "x76y1": {
-      "type": "entity",
-      "id": "x76y1",
-      "name": "/plugins/health",
-      "displayName": "health",
-      "version": "0.0.1",
-      "module": "/plugins/health",
-      "tagName": "plugins-health",
-      "attributes": {},
-      "metadata": {}
-    },
     "u3xub": {
       "type": "entity",
       "id": "u3xub",
-      "name": "/plugins/tools",
-      "displayName": "tools",
+      "name": "/plugins/floor",
+      "displayName": "floor",
       "version": "0.0.1",
-      "module": "/plugins/tools",
-      "tagName": "plugins-tools",
+      "module": "/plugins/floor",
+      "tagName": "plugins-floor",
       "attributes": {},
       "metadata": {}
     },
