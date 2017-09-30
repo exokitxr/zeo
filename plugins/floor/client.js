@@ -1,5 +1,3 @@
-const geometryutils = require('geometryutils');
-
 const FLOOR_SIZE = 1024;
 const GRID_SIZE = 128;
 const GRID_RESOLUTION = 4;
@@ -7,19 +5,19 @@ const TARGET_RADII = [1, 2, 4, 8, 16, 32, 64, 128, 256];
 
 const FLOOR_COLOR = 0xAAAAAA;
 const LINE_COLOR = 0xCCCCCC;
-const DOT_COLOR = 0x808080;
+const DOT_COLOR = 0x666666;
 
 const DEFAULT_MATRIX = [
   0, 0, 0,
   0, 0, 0, 1,
   1, 1, 1,
 ];
+const meshSymbol = Symbol();
+const cleanupSymbol = Symbol();
 
 class Floor {
   mount() {
-    const {three: {THREE, scene}, elements} = zeo;
-
-    const geometryUtils = geometryutils({THREE});
+    const {three: {THREE, scene}, elements, utils: {geometry: geometryUtils}} = zeo;
 
     const floorEntity = {
       attributes: {
@@ -29,9 +27,6 @@ class Floor {
         },
       },
       entityAddedCallback(entityElement) {
-        const entityApi = entityElement.getEntityApi();
-        const entityObject = entityElement.getObject();
-
         const mesh = (() => {
           const object = new THREE.Object3D();
 
@@ -107,7 +102,7 @@ class Floor {
 
             const material = new THREE.PointsMaterial({
               color: DOT_COLOR,
-              size: 0.015,
+              size: 0.03,
             });
 
             const mesh = new THREE.Points(geometry, material);
@@ -115,7 +110,7 @@ class Floor {
           })();
           object.add(gridMesh);
 
-          const floorMesh = (() => {
+          /* const floorMesh = (() => {
             const geometry = new THREE.PlaneBufferGeometry(FLOOR_SIZE, FLOOR_SIZE);
             geometry.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
             geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, -0.1, 0));
@@ -129,7 +124,7 @@ class Floor {
             mesh.receiveShadow = true;
             return mesh;
           })();
-          object.add(floorMesh);
+          object.add(floorMesh); */
 
           const targetMesh = (() => {
             const geometry = (() => {
@@ -168,28 +163,28 @@ class Floor {
 
           return object;
         })();
-        entityObject.add(mesh);
+        scene.add(mesh);
 
-        entityApi._cleanup = () => {
-          entityObject.remove(mesh);
+        entityElement[meshSymbol] = mesh;
+
+        entityElement[cleanupSymbol] = () => {
+          scene.remove(mesh);
         };
       },
       entityRemovedCallback(entityElement) {
-        const entityApi = entityElement.getEntityApi();
-
-        entityApi._cleanup();
+        entityElement[cleanupSymbol]();
       },
       entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-        const entityObject = entityElement.getObject();
+        const {[meshSymbol]: mesh} = entityElement;
 
         switch (name) {
           case 'position': {
             const position = newValue;
 
             if (position) {
-              entityObject.position.set(position[0], position[1], position[2]);
-              entityObject.quaternion.set(position[3], position[4], position[5], position[6]);
-              entityObject.scale.set(position[7], position[8], position[9]);
+              mesh.position.set(position[0], position[1], position[2]);
+              mesh.quaternion.set(position[3], position[4], position[5], position[6]);
+              mesh.scale.set(position[7], position[8], position[9]);
             }
 
             break;

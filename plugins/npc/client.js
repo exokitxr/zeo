@@ -387,6 +387,8 @@ class Mobs {
                   // input.removeListener('gripdown', _gripdown);
 
                   render.removeListener('update', _update);
+
+                  connection.destroy();
                 },
               };
             },
