@@ -20,20 +20,20 @@
  * 	PreRotation support.
  */
 
-( function () {
+module.exports = ({THREE, Zlib}) => {
 
 	/**
 	 * Generates a loader for loading FBX files from URL and parsing into
 	 * a THREE.Group.
 	 * @param {THREE.LoadingManager} manager - Loading Manager for loader to use.
 	 */
-	THREE.FBXLoader = function ( manager ) {
+	function THREEFBXLoader( manager ) {
 
 		this.manager = ( manager !== undefined ) ? manager : THREE.DefaultLoadingManager;
 
 	};
 
-	Object.assign( THREE.FBXLoader.prototype, {
+	Object.assign( THREEFBXLoader.prototype, {
 
 		/**
 		 * Loads an ASCII/Binary FBX file from URL and parses into a THREE.Group.
@@ -98,13 +98,13 @@
 
 				if ( ! isFbxFormatASCII( FBXText ) ) {
 
-					throw new Error( 'THREE.FBXLoader: Unknown format.' );
+					throw new Error( 'THREEFBXLoader: Unknown format.' );
 
 				}
 
 				if ( getFbxVersion( FBXText ) < 7000 ) {
 
-					throw new Error( 'THREE.FBXLoader: FBX version not supported, FileVersion: ' + getFbxVersion( FBXText ) );
+					throw new Error( 'THREEFBXLoader: FBX version not supported, FileVersion: ' + getFbxVersion( FBXText ) );
 
 				}
 
@@ -440,19 +440,25 @@
 		switch ( type.toLowerCase() ) {
 
 			case 'phong':
-				material = new THREE.MeshPhongMaterial();
+				material = new THREE.MeshPhysicalMaterial({ // XXX
+          side:  THREE.DoubleSide,
+        });
+        material.transparent = materialNode.attrName === 'window glass';
 				break;
 			case 'lambert':
 				material = new THREE.MeshLambertMaterial();
 				break;
 			default:
-				console.warn( 'THREE.FBXLoader: No implementation given for material type %s in FBXLoader.js. Defaulting to basic material.', type );
+				console.warn( 'THREEFBXLoader: No implementation given for material type %s in FBXLoader.js. Defaulting to basic material.', type );
 				material = new THREE.MeshBasicMaterial( { color: 0x3300ff } );
 				break;
 
 		}
 
 		material.setValues( parameters );
+    material.metalness = material.color.b; // XXX
+    material.roughness = material.color.g;
+    material.color.set(0xDDDDDD);
 		material.name = name;
 
 		return material;
@@ -522,6 +528,9 @@
 				case 'DiffuseColor':
 				case ' "DiffuseColor':
 					parameters.map = textureMap.get( relationship.ID );
+					// parameters.aoMap = textureMap.get( relationship.ID );
+					// parameters.metalnessMap = textureMap.get( relationship.ID );
+					// parameters.roughnessMap = textureMap.get( relationship.ID );
 					break;
 
 				case 'Bump':
@@ -539,7 +548,7 @@
 				case ' "AmbientColor':
 				case ' "EmissiveColor':
 				default:
-					console.warn( 'THREE.FBXLoader: Unknown texture application of type %s, skipping texture.', type );
+					console.warn( 'THREEFBXLoader: Unknown texture application of type %s, skipping texture.', type );
 					break;
 
 			}
@@ -814,7 +823,7 @@
 
 					if ( ! displayedWeightsWarning ) {
 
-						console.warn( 'THREE.FBXLoader: Vertex has more than 4 skinning weights assigned to vertex. Deleting additional weights.' );
+						console.warn( 'THREEFBXLoader: Vertex has more than 4 skinning weights assigned to vertex. Deleting additional weights.' );
 						displayedWeightsWarning = true;
 
 					}
@@ -1250,7 +1259,7 @@
 
 		if ( THREE.NURBSCurve === undefined ) {
 
-			console.error( 'THREE.FBXLoader: The loader relies on THREE.NURBSCurve for any nurbs present in the model. Nurbs will show up as empty geometry.' );
+			console.error( 'THREEFBXLoader: The loader relies on THREE.NURBSCurve for any nurbs present in the model. Nurbs will show up as empty geometry.' );
 			return new THREE.BufferGeometry();
 
 		}
@@ -1259,7 +1268,7 @@
 
 		if ( isNaN( order ) ) {
 
-			console.error( 'THREE.FBXLoader: Invalid Order %s given for geometry ID: %s', geometryNode.properties.Order, geometryNode.id );
+			console.error( 'THREEFBXLoader: Invalid Order %s given for geometry ID: %s', geometryNode.properties.Order, geometryNode.id );
 			return new THREE.BufferGeometry();
 
 		}
@@ -3291,8 +3300,8 @@
 		} catch ( error ) {
 
 			// Curve is not fully plotted.
-			console.log( 'THREE.FBXLoader: ', bone );
-			console.log( 'THREE.FBXLoader: ', error );
+			console.log( 'THREEFBXLoader: ', bone );
+			console.log( 'THREEFBXLoader: ', error );
 
 		}
 
@@ -4003,7 +4012,7 @@
 
 			var version = reader.getUint32();
 
-			console.log( 'THREE.FBXLoader: FBX binary version: ' + version );
+			console.log( 'THREEFBXLoader: FBX binary version: ' + version );
 
 			var allNodes = new FBXTree();
 
@@ -4345,9 +4354,9 @@
 
 					}
 
-					if ( window.Zlib === undefined ) {
+					if ( Zlib === undefined ) { // XXX
 
-						throw new Error( 'THREE.FBXLoader: External library Inflate.min.js required, obtain or import from https://github.com/imaya/zlib.js' );
+						throw new Error( 'THREEFBXLoader: External library Inflate.min.js required, obtain or import from https://github.com/imaya/zlib.js' );
 
 					}
 
@@ -4382,7 +4391,7 @@
 					return reader.getArrayBuffer( length );
 
 				default:
-					throw new Error( 'THREE.FBXLoader: Unknown property type ' + type );
+					throw new Error( 'THREEFBXLoader: Unknown property type ' + type );
 
 			}
 
@@ -4947,7 +4956,7 @@
 			return version;
 
 		}
-		throw new Error( 'THREE.FBXLoader: Cannot find the version number for the file given.' );
+		throw new Error( 'THREEFBXLoader: Cannot find the version number for the file given.' );
 
 	}
 
@@ -5114,4 +5123,6 @@
 
 	}
 
-} )();
+	return THREEFBXLoader;
+
+};
