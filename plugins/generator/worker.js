@@ -1177,7 +1177,7 @@ const _requestChunk = (x, z) => {
         index += GEOMETRY_BUFFER_SIZE;
         const decorationsBuffer = new Uint8Array(buffer, index);
 
-        const chunk = new zeode.Chunk(x, z, terrainBuffer, objectBuffer, blockBuffer, lightBuffer, geometryBuffer);
+        const chunk = new zeode.Chunk(x, z, 0, terrainBuffer, objectBuffer, blockBuffer, lightBuffer, geometryBuffer);
         chunk.chunkData = {
           terrain: protocolUtils.parseTerrainData(terrainBuffer.buffer, terrainBuffer.byteOffset),
           objects: protocolUtils.parseGeometry(geometryBuffer.buffer, geometryBuffer.byteOffset),
