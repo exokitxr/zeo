@@ -22,8 +22,6 @@ module.exports = ({
   THREE,
   mod,
   murmur,
-  alea,
-  vxl,
   noiser,
 }) => {
 
@@ -122,21 +120,21 @@ const _generateMapChunk = (ox, oy, opts) => {
 
   let biomes = opts.oldBiomes;
   let fillBiomes = false;
-  if (!biomes) {
+  if (!(biomes && biomes.length > 0)) {
     biomes = slab.biomes;
     fillBiomes = true;
   }
 
   let elevations = opts.oldElevations;
   let fillElevations = false;
-  if (!elevations) {
+  if (!(elevations && elevations.length > 0)) {
     elevations = slab.elevations;
     fillElevations = true;
   }
 
   let ether = opts.oldEther;
   let fillEther = false;
-  if (!ether) {
+  if (!(ether && ether.length > 0)) {
     ether = slab.ether;
     fillEther = true;
 
@@ -239,7 +237,7 @@ const _generateMapChunk = (ox, oy, opts) => {
   let water = opts.oldWater;
   let lava = opts.oldLava;
   let fillLiquid = false;
-  if (!water || !lava) {
+  if (!(water && water.length > 0 && lava && lava.length > 0)) {
     water = slab.water;
     lava = slab.lava;
     fillLiquid = true;
