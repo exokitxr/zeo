@@ -2,7 +2,6 @@ const path = require('path');
 const fs = require('fs');
 const child_process = require('child_process');
 
-const Pullstream = require('pullstream');
 const touch = require('touch');
 const zeode = require('zeode');
 const {
@@ -10,6 +9,9 @@ const {
   GEOMETRY_BUFFER_SIZE,
 } = zeode;
 const txtr = require('txtr');
+const Pullstream = require('pullstream');
+const servletPath = require.resolve('./servlet');
+const servlet = require(servletPath);
 const {
   NUM_CELLS,
   NUM_CELLS_OVERSCAN,
@@ -24,7 +26,6 @@ const {
   NUM_POSITIONS_CHUNK,
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
-const terrainTesselatorLib = require('./terrain-tesselator');
 const objectsTesselatorLib = require('./objects-tesselator');
 
 const DIRECTIONS = [
@@ -47,13 +48,13 @@ class Generator {
 
   mount() {
     const {_archae: archae} = this;
-    const {dirname, dataDirectory} = archae;
+    const {dirname, dataDirectory, installDirectory} = archae;
     const {express, ws, app, wss} = archae.getCore();
     const {three, elements, utils: {js: jsUtils, hash: hashUtils, random: randomUtils, image: imageUtils}} = zeo;
     const {THREE} = three;
     const {mod} = jsUtils;
     const {murmur} = hashUtils;
-    const {alea, vxlPath, vxl} = randomUtils;
+    const {vxlPath, vxl} = randomUtils;
     const {jimp} = imageUtils;
 
     const zeroVector = new THREE.Vector3();
@@ -71,18 +72,11 @@ class Generator {
     const transparentVoxels = new Uint8Array(256);
     const translucentVoxels = new Uint8Array(256);
     const faceUvs = new Float32Array(256 * 6 * 4);
-    const lights = new Uint32Array(256);;
+    const lights = new Uint32Array(256);
+    const zeroBuffer = new Uint32Array(0);
     let lightsIndex = 0;
     const noiser = vxl.noiser({
       seed: murmur(DEFAULT_SEED),
-    });
-    const terrainTesselator = terrainTesselatorLib({
-      THREE,
-      mod,
-      murmur,
-      alea,
-      vxl,
-      noiser,
     });
     const objectsTesselator = objectsTesselatorLib({
       vxl,
@@ -109,7 +103,7 @@ class Generator {
       return 0;
     };
 
-    const childProcess = child_process.spawn(process.argv[0], [path.join(__dirname, 'servlet.js')], {
+    const childProcess = child_process.spawn(process.argv[0], [servletPath, path.join(dirname, installDirectory)], {
       stdio: 'pipe',
     });
     let numRemovedQueues = 0;
@@ -128,18 +122,21 @@ class Generator {
     };
     let ids = 0;
     const queues = {};
-    childProcess.request = (method, buffer, cb) => {
+    childProcess.request = (method, args, cb) => {
       const id = ids++;
 
-      const headerBuffer = Uint32Array.from([method, id, buffer.length]);
-      childProcess.stdin.write(new Buffer(headerBuffer.buffer, headerBuffer.byteOffset, headerBuffer.length * headerBuffer.constructor.BYTES_PER_ELEMENT));
-      childProcess.stdin.write(new Buffer(buffer.buffer, buffer.byteOffset, buffer.length * buffer.constructor.BYTES_PER_ELEMENT));
+      const headerBuffer = Uint32Array.from([method, id]);
+      childProcess.stdin.write(new Buffer(headerBuffer.buffer, headerBuffer.byteOffset, headerBuffer.byteLength));
+
+      for (let i = 0; i < args.length; i++) {
+        const arg = args[i];
+        const headerBuffer = Uint32Array.from([arg.byteLength]);
+        childProcess.stdin.write(new Buffer(headerBuffer.buffer, headerBuffer.byteOffset, headerBuffer.byteLength));
+        childProcess.stdin.write(new Buffer(arg.buffer, arg.byteOffset, arg.length * arg.constructor.BYTES_PER_ELEMENT));
+      }
 
       queues[id] = cb;
     };
-    childProcess.request(2, Float32Array.from([1, 2, 3]), result => { // XXX
-      console.log('generator test result', new Float32Array(result.buffer, result.byteOffset, result.length / Float32Array.BYTES_PER_ELEMENT));
-    });
     const pullstream = new Pullstream();
     childProcess.stdout.pipe(pullstream);
     childProcess.stderr.pipe(process.stderr);
@@ -156,25 +153,41 @@ class Generator {
         } else {
           console.warn(err);
 
-          _recurse();
+          // _recurse();
         }
       });
     };
     _recurse();
+    childProcess.on('exit', (code, signal) => {
+      console.warn('generator child process exited with code', code, signal);
+    });
 
-    const _generateChunk = chunk => {
-      _generateChunkTerrain(chunk);
-      _generateChunkObjects(chunk);
-    };
-    const _generateChunkTerrain = (chunk, opts) => {
-      const uint32Buffer = chunk.getTerrainBuffer();
-      protocolUtils.stringifyTerrainData(terrainTesselator.generate(chunk.x, chunk.z, opts), uint32Buffer.buffer, uint32Buffer.byteOffset); // XXX make this go through the child process
-    };
+    const _generateChunk = chunk => _generateChunkTerrain(chunk)
+      .then(chunk => _generateChunkObjects(chunk));
+    const _generateChunkTerrain = (chunk, oldBiomes, oldElevations, oldEther, oldWater, oldLava, newEther) => new Promise((accept, reject) => {
+      childProcess.request(servlet.METHODS.generateTerrain, [
+        Uint32Array.from([chunk.x, chunk.z]),
+        oldBiomes || zeroBuffer,
+        oldElevations || zeroBuffer,
+        oldEther || zeroBuffer,
+        oldWater || zeroBuffer,
+        oldLava || zeroBuffer,
+        newEther || zeroBuffer,
+      ], result => {
+        const uint32Buffer = chunk.getTerrainBuffer();
+        result.copy(new Buffer(uint32Buffer.buffer, uint32Buffer.byteOffset, uint32Buffer.byteLength));
+        // protocolUtils.stringifyTerrainData(result, uint32Buffer.buffer, uint32Buffer.byteOffset);
+
+        accept(chunk);
+      });
+    });
     const _generateChunkObjects = chunk => {
       for (let i = 0; i < generators.length; i++) {
         _generateChunkObjectsWithGenerator(chunk, generators[i]);
       }
       _decorateChunkObjectsGeometry(chunk);
+
+      return Promise.resolve(chunk);
     };
     const _generateChunkObjectsWithGenerator = (chunk, generator) => {
       const n = generator[0];
@@ -291,11 +304,13 @@ class Generator {
           } else {
             const chunk = zde.makeChunk(x, z);
             _symbolizeChunk(chunk);
-            _generateChunk(chunk);
 
-            _saveChunks();
+            return _generateChunk(chunk)
+              .then(() => {
+                _saveChunks();
 
-            return Promise.resolve(chunk);
+                return chunk;
+              });
           }
         };
         const _decorateChunkLights = chunk => _decorateChunkLightsRange(
@@ -838,16 +853,17 @@ class Generator {
                       const oldWater = oldChunkData.water.slice();
                       const oldLava = oldChunkData.lava.slice();
 
-                      _generateChunkTerrain(chunk, {
-                        oldBiomes,
-                        oldElevations,
-                        oldEther,
-                        oldWater,
-                        oldLava,
-                        newEther,
-                      });
-
-                      regeneratePromises.push(generatorElement.requestRelight(x, y, z));
+                      regeneratePromises.push(
+                        _generateChunkTerrain(chunk, {
+                          oldBiomes,
+                          oldElevations,
+                          oldEther,
+                          oldWater,
+                          oldLava,
+                          newEther,
+                        })
+                          .then(() => generatorElement.requestRelight(x, y, z))
+                      );
                     }
 
                     seenIndex[index] = true;
