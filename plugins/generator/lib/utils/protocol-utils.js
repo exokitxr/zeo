@@ -35,7 +35,7 @@ const OBJECTS_CULL_GROUP_LENGTH = (1 + NUM_RENDER_GROUPS * 2);
 // const OBJECTS_CULL_GROUP_SIZE = OBJECTS_CULL_GROUP_LENGTH * 4;
 
 const _getTerrainDataChunkSizeFromMetadata = metadata => {
-  const {numPositions, numColors, /*numSkyLightmaps, numTorchLightmaps, */numIndices, numPeeks, numHeightfield, numStaticHeightfield, numBiomes, numElevations, numWater, numLava} = metadata;
+  const {numPositions, numColors, /*numSkyLightmaps, numTorchLightmaps, */numIndices, numPeeks, numHeightfield, numStaticHeightfield, numBiomes, numElevations, numEther, numWater, numLava} = metadata;
 
   return TERRAIN_DATA_HEADER_SIZE + // header
     (FLOAT32_SIZE * numPositions) + // positions
@@ -44,7 +44,7 @@ const _getTerrainDataChunkSizeFromMetadata = metadata => {
     // _align(UINT8_SIZE * numTorchLightmaps, UINT32_SIZE) + // torch lightmaps
     (UINT32_SIZE * numIndices) + // indices
     (UINT32_SIZE * 6 * NUM_CHUNKS_HEIGHT) + // index range
-    (FLOAT32_SIZE * NUM_CHUNKS_HEIGHT) + // bounding sphere
+    (FLOAT32_SIZE * 4 * NUM_CHUNKS_HEIGHT) + // bounding sphere
     (UINT8_SIZE * _sum(numPeeks)) + // peeks
     (FLOAT32_SIZE * numHeightfield) + // heightfield
     (FLOAT32_SIZE * numStaticHeightfield) + // static heightfield
@@ -83,6 +83,7 @@ const _getTerrainDataChunkSize = mapChunk => {
     // numSkyLightmaps,
     // numTorchLightmaps,
     numIndices,
+    numPeeks,
     numHeightfield,
     numStaticHeightfield,
     numBiomes,
