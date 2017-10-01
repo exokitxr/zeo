@@ -11,8 +11,10 @@ const _recurse = () => {
       const [method, id, numBuffers] = headerBufer;
       pullstream.pull(numBuffers, (err, data) => {
         if (!err) {
-          process.stdout.write(new Buffer(Uint32Array.from([id])));
-          process.stdout.write(new Buffer(Float32Array.from([4, 5, 6])));
+          const headerBuffer = Uint32Array.from([id, 3 * 4]);
+          process.stdout.write(new Buffer(headerBuffer.buffer, headerBuffer.byteOffset, headerBuffer.length * headerBuffer.constructor.BYTES_PER_ELEMENT));
+          const resultBuffer = Float32Array.from([4, 5, 6]);
+          process.stdout.write(new Buffer(resultBuffer.buffer, resultBuffer.byteOffset, resultBuffer.length * resultBuffer.constructor.BYTES_PER_ELEMENT));
 
           _recurse();
         } else {

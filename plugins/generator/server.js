@@ -109,7 +109,9 @@ class Generator {
       return 0;
     };
 
-    const childProcess = child_process.spawn(process.argv[0], [path.join(__dirname, 'servlet.js')]);
+    const childProcess = child_process.spawn(process.argv[0], [path.join(__dirname, 'servlet.js')], {
+      stdio: 'pipe',
+    });
     let numRemovedQueues = 0;
     const _cleanupQueues = () => {
       if (++numRemovedQueues >= 16) {
@@ -130,21 +132,21 @@ class Generator {
       const id = ids++;
 
       const headerBuffer = Uint32Array.from([method, id, buffer.length]);
-      childProcess.stdin.write(new Buffer(headerBuffer.buffer, headerBuffer.byteOffset, headerBuffer.length));
-      childProcess.stdin.write(new Buffer(buffer.buffer, buffer.byteOffset, buffer.length));
-      // childProcess.stdin.end(); // XXX without this the servlet does not get flushed stdin
+      childProcess.stdin.write(new Buffer(headerBuffer.buffer, headerBuffer.byteOffset, headerBuffer.length * headerBuffer.constructor.BYTES_PER_ELEMENT));
+      childProcess.stdin.write(new Buffer(buffer.buffer, buffer.byteOffset, buffer.length * buffer.constructor.BYTES_PER_ELEMENT));
 
       queues[id] = cb;
     };
-    childProcess.request(2, Float32Array.from([1, 2, 3]), (err, result) => { // XXX
-      console.log('generator test result', err, result);
+    childProcess.request(2, Float32Array.from([1, 2, 3]), result => { // XXX
+      console.log('generator test result', new Float32Array(result.buffer, result.byteOffset, result.length / Float32Array.BYTES_PER_ELEMENT));
     });
     const pullstream = new Pullstream();
     childProcess.stdout.pipe(pullstream);
+    childProcess.stderr.pipe(process.stderr);
     const _recurse = () => {
-      pullstream.pull(4, (err, data) => {
+      pullstream.pull(4 * 2, (err, data) => {
         if (!err) {
-          const headerBufer = new Uint32Array(data.buffer, data.byteOffset, 3);
+          const headerBufer = new Uint32Array(data.buffer, data.byteOffset, 2);
           const [id, numBuffers] = headerBufer;
           pullstream.pull(numBuffers, (err, result) => {
             queues[id](result);
@@ -158,7 +160,7 @@ class Generator {
         }
       });
     };
-    childProcess.stderr.pipe(process.stderr);
+    _recurse();
 
     const _generateChunk = chunk => {
       _generateChunkTerrain(chunk);
