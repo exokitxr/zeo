@@ -15,8 +15,9 @@ let numMethods = 0;
 const METHODS = {
   generateTerrain: numMethods++,
   generateObjects: numMethods++,
-  light: numMethods++,
+  // light: numMethods++,
   lightmap: numMethods++,
+  blockfield: numMethods++,
 };
 
 const _alignData = (data, alignment) => {
@@ -179,7 +180,7 @@ const _init = () => _requestPlugins([
           cb(null, new Uint8Array(protocolUtils.stringifyGeometry(result)[0]));
         });
       },
-      [METHODS.light]: cb => {
+      /* [METHODS.light]: cb => {
         _readArgs([
           Int32Array, // header
           Uint32Array, // objects
@@ -214,7 +215,7 @@ const _init = () => _requestPlugins([
           );
           // XXX
         });
-      },
+      }, */
       [METHODS.lightmap]: cb => {
         _readArgs([
           Int32Array, // header
@@ -238,6 +239,18 @@ const _init = () => _requestPlugins([
           vxl.lightmap(ox, oz, positions, numPositions, staticHeightfield, lights, skyLightmaps, torchLightmaps);
 
           cb(null, new Uint8Array(protocolUtils.stringifyLightmaps(skyLightmaps, torchLightmaps)[0]));
+        });
+      },
+      [METHODS.blockfield]: cb => {
+        _readArgs([
+          Uint32Array, // blocks
+        ], (err, [
+          blocks,
+        ]) => {
+          const blockfield = new Uint8Array(blocks.length);
+          vxl.blockfield(blocks, blockfield);
+
+          cb(null, blockfield);
         });
       },
     };

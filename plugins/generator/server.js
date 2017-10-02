@@ -447,9 +447,16 @@ class Generator {
           if (chunk[blockfieldRenderedSymbol]) {
             return Promise.resolve(chunk);
           } else {
-            vxl.blockfield(chunk.getBlockBuffer(), chunk[blockfieldSymbol]);
-            chunk[blockfieldRenderedSymbol] = true;
-            return Promise.resolve(chunk);
+            return new Promise((accept, reject) => {
+              childProcess.request(servlet.METHODS.blockfield, [
+                chunk.getBlockBuffer(),
+              ], result => {
+                chunk[blockfieldSymbol].set(result);
+                chunk[blockfieldRenderedSymbol] = true;
+
+                accept(chunk);
+              });
+            });
           }
         };
         const _requestChunk = (x, z) => _requestChunkHard(x, z)
