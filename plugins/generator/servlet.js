@@ -1,12 +1,12 @@
 const path = require('path');
 const fs = require('fs');
-
-const Pullstream = require('pullstream');
-const terrainTesselatorLib = require('./terrain-tesselator');
 const {
   DEFAULT_SEED,
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
+const terrainTesselatorLib = require('./terrain-tesselator');
+const objectsTesselatorLib = require('./objects-tesselator');
+const Pullstream = require('pullstream');
 
 const installDirectory = process.argv[2];
 const prefix = path.join(installDirectory, 'plugins');
@@ -14,6 +14,7 @@ const prefix = path.join(installDirectory, 'plugins');
 let numMethods = 0;
 const METHODS = {
   generateTerrain: numMethods++,
+  generateObjects: numMethods++,
 };
 
 const _instantiate = (o, arg) => {
@@ -54,16 +55,18 @@ const _init = () => _requestPlugins([
     const noiser = vxl.noiser({
       seed: murmur(DEFAULT_SEED),
     });
-
-    const pullstream = new Pullstream();
-    process.stdin.pipe(pullstream)
-
     const terrainTesselator = terrainTesselatorLib({
       THREE,
       mod,
       murmur,
       noiser,
     });
+    const objectsTesselator = objectsTesselatorLib({
+      vxl,
+    });
+
+    const pullstream = new Pullstream();
+    process.stdin.pipe(pullstream)
 
     const _readArgs = (constructors, cb) => {
       const result = Array(constructors.length);
@@ -96,7 +99,7 @@ const _init = () => _requestPlugins([
     const methods = {
       [METHODS.generateTerrain]: cb => {
         _readArgs([
-          Uint32Array, // header
+          Int32Array, // header
           Uint8Array, // biomes
           Float32Array, // elevation
           Float32Array, // old ether
@@ -121,7 +124,46 @@ const _init = () => _requestPlugins([
             oldLava,
             newEther,
           };
-          cb(null, new Uint8Array(protocolUtils.stringifyTerrainData(terrainTesselator.generate(ox, oz, opts))[0]));
+          const result = terrainTesselator.generate(ox, oz, opts);
+          cb(null, new Uint8Array(protocolUtils.stringifyTerrainData(result)[0]));
+        });
+      },
+      [METHODS.generateObjects]: cb => {
+        _readArgs([
+          Int32Array, // header
+          Uint32Array, // objects
+          Uint32Array, // blocks
+          Uint8Array, // geometry buffer
+          Uint32Array, // geometry types
+          Uint32Array, // block types
+          Uint8Array, // transparent voxels
+          Uint8Array, // translucent voxels
+          Float32Array, // face uvs
+        ], (err, [
+          header,
+          src,
+          blocks,
+          geometriesBuffer,
+          geometryTypes,
+          blockTypes,
+          transparentVoxels,
+          translucentVoxels,
+          faceUvs,
+        ]) => {
+          const [ox, oz] = header;
+          const result = objectsTesselator.tesselate(
+            ox,
+            oz,
+            src,
+            blocks,
+            geometriesBuffer,
+            geometryTypes,
+            blockTypes,
+            transparentVoxels,
+            translucentVoxels,
+            faceUvs
+          );
+          cb(null, new Uint8Array(protocolUtils.stringifyGeometry(result)[0]));
         });
       },
     };

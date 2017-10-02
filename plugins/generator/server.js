@@ -78,6 +78,7 @@ class Generator {
     const noiser = vxl.noiser({
       seed: murmur(DEFAULT_SEED),
     });
+
     const objectsTesselator = objectsTesselatorLib({
       vxl,
       geometriesBuffer,
@@ -166,7 +167,7 @@ class Generator {
       .then(chunk => _generateChunkObjects(chunk));
     const _generateChunkTerrain = (chunk, oldBiomes, oldElevations, oldEther, oldWater, oldLava, newEther) => new Promise((accept, reject) => {
       childProcess.request(servlet.METHODS.generateTerrain, [
-        Uint32Array.from([chunk.x, chunk.z]),
+        Int32Array.from([chunk.x, chunk.z]),
         oldBiomes || zeroBuffer,
         oldElevations || zeroBuffer,
         oldEther || zeroBuffer,
@@ -185,9 +186,7 @@ class Generator {
       for (let i = 0; i < generators.length; i++) {
         _generateChunkObjectsWithGenerator(chunk, generators[i]);
       }
-      _decorateChunkObjectsGeometry(chunk);
-
-      return Promise.resolve(chunk);
+      return _decorateChunkObjectsGeometry(chunk);
     };
     const _generateChunkObjectsWithGenerator = (chunk, generator) => {
       const n = generator[0];
@@ -199,11 +198,24 @@ class Generator {
         return false;
       }
     };
-    const _decorateChunkObjectsGeometry = chunk => {
-      const geometryBuffer = chunk.getGeometryBuffer();
-      protocolUtils.stringifyGeometry(objectsTesselator.tesselate(chunk), geometryBuffer.buffer, geometryBuffer.byteOffset); // XXX make this go through the child process
-      return Promise.resolve(chunk);
-    };
+
+    const _decorateChunkObjectsGeometry = chunk => new Promise((accept, reject) => {
+      childProcess.request(servlet.METHODS.generateObjects, [
+        Int32Array.from([chunk.x, chunk.z]),
+        chunk.getObjectBuffer(),
+        chunk.getBlockBuffer(),
+        geometriesBuffer,
+        geometryTypes,
+        blockTypes,
+        transparentVoxels,
+        translucentVoxels,
+        faceUvs,
+      ], result => {
+        const geometryBuffer = chunk.getGeometryBuffer();
+        result.copy(new Buffer(geometryBuffer.buffer, geometryBuffer.byteOffset, geometryBuffer.byteLength));
+        return accept(chunk);
+      });
+    });
     const _symbolizeChunk = chunk => {
       if (chunk) {
         chunk[lightsSymbol] = new Uint8Array(NUM_CELLS_OVERSCAN * (NUM_CELLS_HEIGHT + 1) * NUM_CELLS_OVERSCAN);

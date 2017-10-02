@@ -13,7 +13,6 @@ const {
   DEFAULT_SEED,
 } = require('./lib/constants/constants');
 
-// const NUM_POSITIONS_CHUNK = 800 * 1024;
 const NUM_CELLS_HALF = NUM_CELLS / 2;
 const NUM_CELLS_CUBE = Math.sqrt(NUM_CELLS_HALF * NUM_CELLS_HALF * 3);
 const NUM_CELLS_OVERSCAN_Y = NUM_CELLS_HEIGHT + OVERSCAN;

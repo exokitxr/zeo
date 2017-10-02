@@ -15,12 +15,6 @@ const NUM_CELLS_CUBE = Math.sqrt((NUM_CELLS_HALF + 16) * (NUM_CELLS_HALF + 16) *
 
 module.exports = ({
   vxl,
-  geometriesBuffer,
-  geometryTypes,
-  blockTypes,
-  transparentVoxels,
-  translucentVoxels,
-  faceUvs,
 }) => {
 
 const _makeGeometeriesBuffer = (() => {
@@ -44,7 +38,7 @@ const boundingSpheres = (() => {
   }
   return result;
 })();
-const tesselate = chunk => {
+const tesselate = (x, z, src, blocks, geometriesBuffer, geometryTypes, blockTypes, transparentVoxels, translucentVoxels, faceUvs) => {
   _makeGeometeriesBuffer.reset();
   const geometriesPositions = _makeGeometeriesBuffer(Float32Array);
   const geometriesUvs = _makeGeometeriesBuffer(Float32Array);
@@ -63,16 +57,16 @@ const tesselate = chunk => {
     indices: numNewIndices,
     objects: numNewObjects,
   } = vxl.objectize({
-    src: chunk.getObjectBuffer(),
+    src,
     geometries: geometriesBuffer,
     geometryIndex: geometryTypes,
-    blocks: chunk.getBlockBuffer(),
+    blocks,
     blockTypes,
     dims: Int32Array.from([NUM_CELLS, NUM_CELLS, NUM_CELLS]),
     transparentVoxels,
     translucentVoxels,
     faceUvs,
-    shift: Float32Array.from([chunk.x * NUM_CELLS, 0, chunk.z * NUM_CELLS]),
+    shift: Float32Array.from([x * NUM_CELLS, 0, z * NUM_CELLS]),
     positions: geometriesPositions,
     uvs: geometriesUvs,
     ssaos: geometriesSsaos,
@@ -90,9 +84,9 @@ const tesselate = chunk => {
     const indexRangeCount = numNewIndices[i] - indexRangeStart;
 
     const boundingSphere = boundingSpheres[i];
-    boundingSphere[0] = chunk.x * NUM_CELLS + NUM_CELLS_HALF;
+    boundingSphere[0] = x * NUM_CELLS + NUM_CELLS_HALF;
     boundingSphere[1] = i * NUM_CELLS + NUM_CELLS_HALF;
-    boundingSphere[2] = chunk.z * NUM_CELLS + NUM_CELLS_HALF;
+    boundingSphere[2] = z * NUM_CELLS + NUM_CELLS_HALF;
     boundingSphere[3] = NUM_CELLS_CUBE;
 
     localGeometries[i] = {

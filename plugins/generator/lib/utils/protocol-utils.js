@@ -853,7 +853,7 @@ const _getGeometrySizeFromMetadata = metadata => {
     (UINT32_SIZE * numIndices) + // indices
     (UINT32_SIZE * numObjects) + // objects
     (UINT32_SIZE * 2 * NUM_CHUNKS_HEIGHT) + // index range
-    (FLOAT32_SIZE * NUM_CHUNKS_HEIGHT); // bounding sphere
+    (FLOAT32_SIZE * 4 * NUM_CHUNKS_HEIGHT); // bounding sphere
 };
 
 const _getGeometrySize = geometry => {
@@ -929,7 +929,7 @@ const stringifyGeometry = (geometry, arrayBuffer, byteOffset) => {
 
   for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
     const geometry = geometries[i];
-    const {indexRange, boundingSphere, peeks} = geometry;
+    const {indexRange, boundingSphere} = geometry;
 
     const indexRangeBuffer = new Uint32Array(arrayBuffer, byteOffset, 2);
     indexRangeBuffer.set(Uint32Array.from([indexRange.start, indexRange.count]));
