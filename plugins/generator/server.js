@@ -26,7 +26,6 @@ const {
   NUM_POSITIONS_CHUNK,
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
-const objectsTesselatorLib = require('./objects-tesselator');
 
 const DIRECTIONS = [
   [-1, -1],
@@ -79,15 +78,6 @@ class Generator {
       seed: murmur(DEFAULT_SEED),
     });
 
-    const objectsTesselator = objectsTesselatorLib({
-      vxl,
-      geometriesBuffer,
-      geometryTypes,
-      blockTypes,
-      transparentVoxels,
-      translucentVoxels,
-      faceUvs,
-    });
     const zeodeDataPath = path.join(dirname, dataDirectory, 'zeode.dat');
     const texturesPngDataPath = path.join(dirname, dataDirectory, 'textures.png');
     const texturesJsonDataPath = path.join(dirname, dataDirectory, 'textures.json');
@@ -124,16 +114,21 @@ class Generator {
     let ids = 0;
     const queues = {};
     childProcess.request = (method, args, cb) => {
-      const id = ids++;
+      let byteOffset = 0;
 
+      const id = ids++;
       const headerBuffer = Uint32Array.from([method, id]);
       childProcess.stdin.write(new Buffer(headerBuffer.buffer, headerBuffer.byteOffset, headerBuffer.byteLength));
+      byteOffset += headerBuffer.byteLength;
 
       for (let i = 0; i < args.length; i++) {
         const arg = args[i];
         const headerBuffer = Uint32Array.from([arg.byteLength]);
         childProcess.stdin.write(new Buffer(headerBuffer.buffer, headerBuffer.byteOffset, headerBuffer.byteLength));
-        childProcess.stdin.write(new Buffer(arg.buffer, arg.byteOffset, arg.length * arg.constructor.BYTES_PER_ELEMENT));
+        byteOffset += headerBuffer.byteLength;
+        const argByteLength = arg.length * arg.constructor.BYTES_PER_ELEMENT;
+        childProcess.stdin.write(new Buffer(arg.buffer, arg.byteOffset, argByteLength));
+        byteOffset += argByteLength;
       }
 
       queues[id] = cb;
@@ -213,7 +208,17 @@ class Generator {
       ], result => {
         const geometryBuffer = chunk.getGeometryBuffer();
         result.copy(new Buffer(geometryBuffer.buffer, geometryBuffer.byteOffset, geometryBuffer.byteLength));
-        return accept(chunk);
+        accept(chunk);
+      });
+    });
+    const _requestComputeLightmaps = (chunk, positions, staticHeightfield, lights) => new Promise((accept, reject) => {
+      childProcess.request(servlet.METHODS.lightmap, [
+        Int32Array.from([chunk.x, chunk.z]),
+        positions,
+        staticHeightfield,
+        lights,
+      ], result => {
+        accept(protocolUtils.parseLightmaps(result.buffer, result.byteOffset));
       });
     });
     const _symbolizeChunk = chunk => {
@@ -416,52 +421,26 @@ class Generator {
           if (chunk[lightmapsSymbol]) {
             return Promise.resolve(chunk);
           } else {
-            const _getTerrainLightmaps = () => {
-              const terrainBuffer = chunk.getTerrainBuffer();
-              const {positions, staticHeightfield} = protocolUtils.parseTerrainData(terrainBuffer.buffer, terrainBuffer.byteOffset);
-              const {[lightsSymbol]: lights} = chunk;
+            const terrainBuffer = chunk.getTerrainBuffer();
+            const {positions: terrainPositions, staticHeightfield} = protocolUtils.parseTerrainData(terrainBuffer.buffer, terrainBuffer.byteOffset);
+            const geometryBuffer = chunk.getGeometryBuffer();
+            const {positions: objectPositions} = protocolUtils.parseGeometry(geometryBuffer.buffer, geometryBuffer.byteOffset);
+            const {[lightsSymbol]: lights} = chunk;
 
-              const numPositions = positions.length;
-              const numLightmaps = numPositions / 3;
-              const lightmapsBuffer = new ArrayBuffer(numLightmaps * 2);
-              const skyLightmaps = new Uint8Array(lightmapsBuffer, 0, numLightmaps);
-              const torchLightmaps = new Uint8Array(lightmapsBuffer, numLightmaps, numLightmaps);
-
-              vxl.lightmap(chunk.x, chunk.z, positions, numPositions, staticHeightfield, lights, skyLightmaps, torchLightmaps);
-
-              return {
-                skyLightmaps,
-                torchLightmaps,
-              };
-            };
-            const _getObjectLightmaps = () => {
-              const geometryBuffer = chunk.getGeometryBuffer();
-              const {positions} = protocolUtils.parseGeometry(geometryBuffer.buffer, geometryBuffer.byteOffset);
-
-              const terrainBuffer = chunk.getTerrainBuffer();
-              const {staticHeightfield} = protocolUtils.parseTerrainData(terrainBuffer.buffer, terrainBuffer.byteOffset);
-              const {[lightsSymbol]: lights} = chunk;
-
-              const numPositions = positions.length;
-              const numLightmaps = numPositions / 3;
-              const lightmapsBuffer = new ArrayBuffer(numLightmaps * 2);
-              const skyLightmaps = new Uint8Array(lightmapsBuffer, 0, numLightmaps);
-              const torchLightmaps = new Uint8Array(lightmapsBuffer, numLightmaps, numLightmaps);
-
-              vxl.lightmap(chunk.x, chunk.z, positions, numPositions, staticHeightfield, lights, skyLightmaps, torchLightmaps);
-
-              return {
-                skyLightmaps,
-                torchLightmaps,
-              };
-            };
-
-            chunk[lightmapsSymbol] = {
-              terrain: _getTerrainLightmaps(),
-              objects: _getObjectLightmaps(),
-            };
-
-            return Promise.resolve(chunk);
+            return Promise.all([
+              _requestComputeLightmaps(chunk, terrainPositions, staticHeightfield, lights),
+              _requestComputeLightmaps(chunk, objectPositions, staticHeightfield, lights),
+            ])
+              .then(([
+                terrain,
+                objects,
+              ]) => {
+                chunk[lightmapsSymbol] = {
+                  terrain,
+                  objects,
+                };
+                return chunk;
+              });
           }
         };
         const _requestChunkWithBlockfield = chunk => {
@@ -684,18 +663,7 @@ class Generator {
                 const {staticHeightfield} = protocolUtils.parseTerrainData(terrainBuffer.buffer, terrainBuffer.byteOffset);
                 const {[lightsSymbol]: lights} = chunk;
 
-                const numPositions = positions.length;
-                const numLightmaps = numPositions / 3;
-                const lightmapsBuffer = new ArrayBuffer(numLightmaps * 2);
-                const skyLightmaps = new Uint8Array(lightmapsBuffer, 0, numLightmaps);
-                const torchLightmaps = new Uint8Array(lightmapsBuffer, numLightmaps, numLightmaps);
-
-                vxl.lightmap(chunk.x, chunk.z, positions, numPositions, staticHeightfield, lights, skyLightmaps, torchLightmaps);
-
-                return {
-                  skyLightmaps,
-                  torchLightmaps,
-                };
+                return _requestComputeLightmaps(chunk, positions, staticHeightfield, lights);
               });
           }
           requestRelight(x, y, z) {

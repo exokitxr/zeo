@@ -15,6 +15,17 @@ let numMethods = 0;
 const METHODS = {
   generateTerrain: numMethods++,
   generateObjects: numMethods++,
+  light: numMethods++,
+  lightmap: numMethods++,
+};
+
+const _alignData = (data, alignment) => {
+  if ((data.byteOffset % alignment) !== 0) {
+    const newData = new Buffer(new ArrayBuffer(data.length));
+    data.copy(newData);
+    data = newData;
+  }
+  return data;
 };
 
 const _instantiate = (o, arg) => {
@@ -74,11 +85,13 @@ const _init = () => _requestPlugins([
         if (i < constructors.length) {
           pullstream.pull(4, (err, data) => {
             if (!err) {
-              const numBytes = new Uint32Array(data.buffer, data.byteOffset, 1)[0];
+              data = _alignData(data, Uint32Array.BYTES_PER_ELEMENT);
+              let numBytes = new Uint32Array(data.buffer, data.byteOffset, 1)[0];
               pullstream.pull(numBytes, (err, data) => {
                 if (!err) {
                   const constructor = constructors[i];
-                  result[i] = new constructor(data.buffer, data.byteOffset, data.byteLength / constructor.BYTES_PER_ELEMENT);
+                  data = _alignData(data, constructor.BYTES_PER_ELEMENT);
+                  result[i] = new constructor(data.buffer, data.byteOffset, data.length / constructor.BYTES_PER_ELEMENT);
 
                   _recurse(i + 1);
                 } else {
@@ -166,11 +179,73 @@ const _init = () => _requestPlugins([
           cb(null, new Uint8Array(protocolUtils.stringifyGeometry(result)[0]));
         });
       },
+      [METHODS.light]: cb => {
+        _readArgs([
+          Int32Array, // header
+          Uint32Array, // objects
+          Uint32Array, // blocks
+          Uint8Array, // geometry buffer
+          Uint32Array, // geometry types
+          Uint32Array, // block types
+          Uint8Array, // transparent voxels
+          Uint8Array, // translucent voxels
+          Float32Array, // face uvs
+        ], (err, [
+          header,
+          src,
+          blocks,
+          geometriesBuffer,
+          geometryTypes,
+          blockTypes,
+          transparentVoxels,
+          translucentVoxels,
+          faceUvs,
+        ]) => {
+          const [ox, oz] = header;
+          vxl.light(
+            ox, oz,
+            minX, maxX, minY, maxY, minZ, maxZ,
+            relight,
+            lavaArray,
+            objectLightsArray,
+            etherArray,
+            blocksArray,
+            lightsArray,
+          );
+          // XXX
+        });
+      },
+      [METHODS.lightmap]: cb => {
+        _readArgs([
+          Int32Array, // header
+          Float32Array, // positions
+          Float32Array, // static heightfield
+          Uint8Array, // lights
+        ], (err, [
+          header,
+          positions,
+          staticHeightfield,
+          lights,
+        ]) => {
+          const [ox, oz] = header;
+
+          const numPositions = positions.length;
+          const numLightmaps = numPositions / 3;
+          const lightmapsBuffer = new ArrayBuffer(numLightmaps * 2);
+          const skyLightmaps = new Uint8Array(lightmapsBuffer, 0, numLightmaps);
+          const torchLightmaps = new Uint8Array(lightmapsBuffer, numLightmaps, numLightmaps);
+
+          vxl.lightmap(ox, oz, positions, numPositions, staticHeightfield, lights, skyLightmaps, torchLightmaps);
+
+          cb(null, new Uint8Array(protocolUtils.stringifyLightmaps(skyLightmaps, torchLightmaps)[0]));
+        });
+      },
     };
 
     const _recurse = () => {
       pullstream.pull(2 * 4, (err, data) => {
         if (!err) {
+          data = _alignData(data, Uint32Array.BYTES_PER_ELEMENT);
           const [method, id] = new Uint32Array(data.buffer, data.byteOffset, 2);
 
           methods[method]((err, result) => {
