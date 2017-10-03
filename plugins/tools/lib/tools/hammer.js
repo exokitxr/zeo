@@ -109,8 +109,7 @@ const hammer = ({recipes, data}) => {
         itemRemovedCallback(grabbable) {
           dotMesh.destroy();
 
-          const {[dataSymbol]: {cleanup}} = grabbable;
-          cleanup();
+          grabbable[dataSymbol].cleanup();
 
           delete grabbable[dataSymbol];
         },
