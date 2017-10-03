@@ -3,12 +3,27 @@ const FBXLoader = require('./FBXLoader');
 
 class Model {
   mount() {
-    const {three: {THREE, scene}, input, elements, hands, utils: {network: networkUtils}} = zeo;
+    const {three: {THREE, scene}, input, elements, hands, notification, utils: {network: networkUtils}} = zeo;
     const {AutoWs} = networkUtils;
 
     const THREEFBXLoader = FBXLoader({THREE, Zlib});
     const manager = new THREE.LoadingManager();
+    const _makeNotificationText = n => {
+      let s = 'Downloading ' + (n * 100).toFixed(1) + '% [';
+      let i;
+      const roundN = Math.round(n * 20);
+      for (i = 0; i < roundN; i++) {
+        s += '|';
+      }
+      for (; i < 20; i++) {
+        s += '.';
+      }
+      s += ']';
+      return s;
+    };
     const _loadModel = (value, position) => {
+      const note = notification.addNotification(_makeNotificationText(0));
+
       const loader = new THREEFBXLoader(manager);
       loader.load('/archae/fs/hash/' + value, object => {
         const parent = new THREE.Object3D();
@@ -20,10 +35,18 @@ class Model {
         parent.add(object);
         parent.updateMatrixWorld();
         scene.add(parent);
-      }, progress => {
-        // console.log('progress', progress);
+
+        notification.removeNotification(note);
+      }, e => {
+        if (e.lengthComputable) {
+          note.set(_makeNotificationText(e.loaded / e.total));
+        } else {
+          note.set(_makeNotificationText(0.5));
+        }
       }, err => {
         console.warn(err);
+
+        notification.removeNotification(note);
       });
     };
 
