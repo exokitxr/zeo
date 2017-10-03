@@ -19,6 +19,8 @@ const WORKER_HEADER_ENTRIES = 10;
 const WORKER_HEADER_SIZE = UINT32_SIZE * WORKER_HEADER_ENTRIES;
 const TEMPLATE_HEADER_ENTRIES = 5;
 const TEMPLATE_HEADER_SIZE = UINT32_SIZE * TEMPLATE_HEADER_ENTRIES;
+const LIGHTMAPS_HEADER_ENTRIES = 2;
+const LIGHTMAPS_HEADER_SIZE = UINT32_SIZE * LIGHTMAPS_HEADER_ENTRIES;
 const DECORATIONS_HEADER_ENTRIES = 5;
 const DECORATIONS_HEADER_SIZE = UINT32_SIZE * DECORATIONS_HEADER_ENTRIES;
 const TERRAIN_RENDER_HEADER_ENTRIES = 5 + (1 * NUM_CHUNKS_HEIGHT) + 3;
@@ -35,7 +37,7 @@ const OBJECTS_CULL_GROUP_LENGTH = (1 + NUM_RENDER_GROUPS * 2);
 // const OBJECTS_CULL_GROUP_SIZE = OBJECTS_CULL_GROUP_LENGTH * 4;
 
 const _getTerrainDataChunkSizeFromMetadata = metadata => {
-  const {numPositions, numColors, /*numSkyLightmaps, numTorchLightmaps, */numIndices, numPeeks, numHeightfield, numStaticHeightfield, numBiomes, numElevations, numWater, numLava} = metadata;
+  const {numPositions, numColors, /*numSkyLightmaps, numTorchLightmaps, */numIndices, numPeeks, numHeightfield, numStaticHeightfield, numBiomes, numElevations, numEther, numWater, numLava} = metadata;
 
   return TERRAIN_DATA_HEADER_SIZE + // header
     (FLOAT32_SIZE * numPositions) + // positions
@@ -44,7 +46,7 @@ const _getTerrainDataChunkSizeFromMetadata = metadata => {
     // _align(UINT8_SIZE * numTorchLightmaps, UINT32_SIZE) + // torch lightmaps
     (UINT32_SIZE * numIndices) + // indices
     (UINT32_SIZE * 6 * NUM_CHUNKS_HEIGHT) + // index range
-    (FLOAT32_SIZE * NUM_CHUNKS_HEIGHT) + // bounding sphere
+    (FLOAT32_SIZE * 4 * NUM_CHUNKS_HEIGHT) + // bounding sphere
     (UINT8_SIZE * _sum(numPeeks)) + // peeks
     (FLOAT32_SIZE * numHeightfield) + // heightfield
     (FLOAT32_SIZE * numStaticHeightfield) + // static heightfield
@@ -83,6 +85,7 @@ const _getTerrainDataChunkSize = mapChunk => {
     // numSkyLightmaps,
     // numTorchLightmaps,
     numIndices,
+    numPeeks,
     numHeightfield,
     numStaticHeightfield,
     numBiomes,
@@ -603,6 +606,77 @@ const parseTerrainsRenderChunk = (buffer, byteOffset) => {
   return mapChunks;
 };
 
+const _getLightmapsSizeFromMetadata = metadata => {
+  const {numSkyLightmaps, numTorchLightmaps} = metadata;
+
+  return LIGHTMAPS_HEADER_SIZE + // header
+    _align(UINT8_SIZE * numSkyLightmaps, FLOAT32_SIZE) + // sky lightmaps
+    _align(UINT8_SIZE * numTorchLightmaps, FLOAT32_SIZE); // torch lightmaps
+};
+
+const _getLightmapsSize = (skyLightmaps, torchLightmaps) => {
+  const numSkyLightmaps = skyLightmaps.length;
+  const numTorchLightmaps = torchLightmaps.length;
+
+  return _getLightmapsSizeFromMetadata({
+    numSkyLightmaps,
+    numTorchLightmaps,
+  });
+};
+
+const stringifyLightmaps = (skyLightmaps, torchLightmaps, arrayBuffer, byteOffset) => {
+  if (arrayBuffer === undefined || byteOffset === undefined) {
+    const bufferSize = _getLightmapsSize(skyLightmaps, torchLightmaps);
+    arrayBuffer = new ArrayBuffer(bufferSize);
+    byteOffset = 0;
+  }
+
+  const headerBuffer = new Uint32Array(arrayBuffer, byteOffset, LIGHTMAPS_HEADER_ENTRIES);
+  let index = 0;
+  headerBuffer[index++] = skyLightmaps.length;
+  headerBuffer[index++] = torchLightmaps.length;
+  byteOffset += LIGHTMAPS_HEADER_SIZE;
+
+  const skyLightmapsBuffer = new Uint8Array(arrayBuffer, byteOffset, skyLightmaps.length);
+  skyLightmapsBuffer.set(skyLightmaps);
+  byteOffset += UINT8_SIZE * skyLightmaps.length;
+  byteOffset = _align(byteOffset, FLOAT32_SIZE);
+
+  const torchLightmapsBuffer = new Uint8Array(arrayBuffer, byteOffset, torchLightmaps.length);
+  torchLightmapsBuffer.set(torchLightmaps);
+  byteOffset += UINT8_SIZE * torchLightmaps.length;
+  byteOffset = _align(byteOffset, FLOAT32_SIZE);
+
+  return [arrayBuffer, byteOffset];
+};
+
+const parseLightmaps = (buffer, byteOffset) => {
+  if (byteOffset === undefined) {
+    byteOffset = 0;
+  }
+
+  const headerBuffer = new Uint32Array(buffer, byteOffset, LIGHTMAPS_HEADER_ENTRIES);
+  let index = 0;
+  const numSkyLightmaps = headerBuffer[index++];
+  const numTorchLightmaps = headerBuffer[index++];
+  byteOffset += LIGHTMAPS_HEADER_SIZE;
+
+  const skyLightmapsBuffer = new Uint8Array(buffer, byteOffset, numSkyLightmaps);
+  const skyLightmaps = skyLightmapsBuffer;
+  byteOffset += UINT8_SIZE * numSkyLightmaps;
+  byteOffset = _align(byteOffset, FLOAT32_SIZE);
+
+  const torchLightmapsBuffer = new Uint8Array(buffer, byteOffset, numTorchLightmaps);
+  const torchLightmaps = torchLightmapsBuffer;
+  byteOffset += UINT8_SIZE * numTorchLightmaps;
+  byteOffset = _align(byteOffset, FLOAT32_SIZE);
+
+  return {
+    skyLightmaps,
+    torchLightmaps,
+  };
+};
+
 const _getDecorationsSizeFromMetadata = metadata => {
   const {numTerrainSkyLightmaps, numTerrainTorchLightmaps, numObjectsSkyLightmaps, numObjectsTorchLightmaps, numBlockfield} = metadata;
 
@@ -852,7 +926,7 @@ const _getGeometrySizeFromMetadata = metadata => {
     (UINT32_SIZE * numIndices) + // indices
     (UINT32_SIZE * numObjects) + // objects
     (UINT32_SIZE * 2 * NUM_CHUNKS_HEIGHT) + // index range
-    (FLOAT32_SIZE * NUM_CHUNKS_HEIGHT); // bounding sphere
+    (FLOAT32_SIZE * 4 * NUM_CHUNKS_HEIGHT); // bounding sphere
 };
 
 const _getGeometrySize = geometry => {
@@ -928,7 +1002,7 @@ const stringifyGeometry = (geometry, arrayBuffer, byteOffset) => {
 
   for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
     const geometry = geometries[i];
-    const {indexRange, boundingSphere, peeks} = geometry;
+    const {indexRange, boundingSphere} = geometry;
 
     const indexRangeBuffer = new Uint32Array(arrayBuffer, byteOffset, 2);
     indexRangeBuffer.set(Uint32Array.from([indexRange.start, indexRange.count]));
@@ -1562,6 +1636,9 @@ module.exports = {
 
   stringifyTerrainsRenderChunk,
   parseTerrainsRenderChunk,
+
+  stringifyLightmaps,
+  parseLightmaps,
 
   stringifyDecorations,
   parseDecorations,

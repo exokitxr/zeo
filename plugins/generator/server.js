@@ -1,5 +1,6 @@
 const path = require('path');
 const fs = require('fs');
+const child_process = require('child_process');
 
 const touch = require('touch');
 const zeode = require('zeode');
@@ -8,6 +9,9 @@ const {
   GEOMETRY_BUFFER_SIZE,
 } = zeode;
 const txtr = require('txtr');
+const Pullstream = require('pullstream');
+const servletPath = require.resolve('./servlet');
+const servlet = require(servletPath);
 const {
   NUM_CELLS,
   NUM_CELLS_OVERSCAN,
@@ -22,8 +26,6 @@ const {
   NUM_POSITIONS_CHUNK,
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
-const terrainTesselatorLib = require('./terrain-tesselator');
-const objectsTesselatorLib = require('./objects-tesselator');
 
 const DIRECTIONS = [
   [-1, -1],
@@ -45,13 +47,13 @@ class Generator {
 
   mount() {
     const {_archae: archae} = this;
-    const {dirname, dataDirectory} = archae;
+    const {dirname, dataDirectory, installDirectory} = archae;
     const {express, ws, app, wss} = archae.getCore();
     const {three, elements, utils: {js: jsUtils, hash: hashUtils, random: randomUtils, image: imageUtils}} = zeo;
     const {THREE} = three;
     const {mod} = jsUtils;
     const {murmur} = hashUtils;
-    const {alea, vxlPath, vxl} = randomUtils;
+    const {vxlPath, vxl} = randomUtils;
     const {jimp} = imageUtils;
 
     const zeroVector = new THREE.Vector3();
@@ -69,28 +71,13 @@ class Generator {
     const transparentVoxels = new Uint8Array(256);
     const translucentVoxels = new Uint8Array(256);
     const faceUvs = new Float32Array(256 * 6 * 4);
-    const lights = new Uint32Array(256);;
+    const lights = new Uint32Array(256);
+    const zeroBuffer = new Uint32Array(0);
     let lightsIndex = 0;
     const noiser = vxl.noiser({
       seed: murmur(DEFAULT_SEED),
     });
-    const terrainTesselator = terrainTesselatorLib({
-      THREE,
-      mod,
-      murmur,
-      alea,
-      vxl,
-      noiser,
-    });
-    const objectsTesselator = objectsTesselatorLib({
-      vxl,
-      geometriesBuffer,
-      geometryTypes,
-      blockTypes,
-      transparentVoxels,
-      translucentVoxels,
-      faceUvs,
-    });
+
     const zeodeDataPath = path.join(dirname, dataDirectory, 'zeode.dat');
     const texturesPngDataPath = path.join(dirname, dataDirectory, 'textures.png');
     const texturesJsonDataPath = path.join(dirname, dataDirectory, 'textures.json');
@@ -98,7 +85,15 @@ class Generator {
     const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
     // const _getLightsIndex = (x, y, z) => x + y * NUM_CELLS_OVERSCAN + z * NUM_CELLS_OVERSCAN * (NUM_CELLS_HEIGHT + 1);
     const _getLightsArrayIndex = (x, z) => x + z * 3;
-    const _findLight = n => {
+    const _alignData = (data, alignment) => {
+      if ((data.byteOffset % alignment) !== 0) {
+        const newData = new Buffer(new ArrayBuffer(data.length));
+        data.copy(newData);
+        data = newData;
+      }
+      return data;
+    };
+    const _findObjectLight = n => {
       for (let i = 0; i < 256; i++) {
         if (lights[i * 2 + 0] === n) {
           return lights[i * 2 + 1];
@@ -107,19 +102,96 @@ class Generator {
       return 0;
     };
 
-    const _generateChunk = chunk => {
-      _generateChunkTerrain(chunk);
-      _generateChunkObjects(chunk);
+    const childProcess = child_process.spawn(process.argv[0], [servletPath, path.join(dirname, installDirectory)], {
+      stdio: 'pipe',
+    });
+    let numRemovedQueues = 0;
+    const _cleanupQueues = () => {
+      if (++numRemovedQueues >= 16) {
+        const newQueues = {};
+        for (const id in queues) {
+          const entry = queues[id];
+          if (entry !== null) {
+            newQueues[id] = entry;
+          }
+        }
+        queues = newQueues;
+        numRemovedQueues = 0;
+      }
     };
-    const _generateChunkTerrain = (chunk, opts) => {
-      const uint32Buffer = chunk.getTerrainBuffer();
-      protocolUtils.stringifyTerrainData(terrainTesselator.generate(chunk.x, chunk.z, opts), uint32Buffer.buffer, uint32Buffer.byteOffset);
+    let ids = 0;
+    const queues = {};
+    childProcess.request = (method, args, cb) => {
+      let byteOffset = 0;
+
+      const id = ids++;
+      const headerBuffer = Uint32Array.from([method, id]);
+      childProcess.stdin.write(new Buffer(headerBuffer.buffer, headerBuffer.byteOffset, headerBuffer.byteLength));
+      byteOffset += headerBuffer.byteLength;
+
+      for (let i = 0; i < args.length; i++) {
+        const arg = args[i];
+        const headerBuffer = Uint32Array.from([arg.byteLength]);
+        childProcess.stdin.write(new Buffer(headerBuffer.buffer, headerBuffer.byteOffset, headerBuffer.byteLength));
+        byteOffset += headerBuffer.byteLength;
+        const argByteLength = arg.length * arg.constructor.BYTES_PER_ELEMENT;
+        childProcess.stdin.write(new Buffer(arg.buffer, arg.byteOffset, argByteLength));
+        byteOffset += argByteLength;
+      }
+
+      queues[id] = cb;
     };
+    const pullstream = new Pullstream();
+    childProcess.stdout.pipe(pullstream);
+    childProcess.stderr.pipe(process.stderr);
+    const _recurse = () => {
+      pullstream.pull(4 * 2, (err, data) => {
+        if (!err) {
+          data = _alignData(data, Uint32Array.BYTES_PER_ELEMENT);
+          const headerBufer = new Uint32Array(data.buffer, data.byteOffset, 2);
+          const [id, numBuffers] = headerBufer;
+          pullstream.pull(numBuffers, (err, result) => {
+            result = _alignData(result, Uint32Array.BYTES_PER_ELEMENT);
+            queues[id](result);
+
+            _recurse();
+          });
+        } else {
+          console.warn(err);
+
+          // _recurse();
+        }
+      });
+    };
+    _recurse();
+    childProcess.on('exit', (code, signal) => {
+      console.warn('generator child process exited with code', code, signal);
+    });
+
+    const _generateChunk = chunk => _generateChunkTerrain(chunk)
+      .then(chunk => _generateChunkObjects(chunk));
+    const _generateChunkTerrain = (chunk, oldBiomes, oldElevations, oldEther, oldWater, oldLava, newEther) => new Promise((accept, reject) => {
+      childProcess.request(servlet.METHODS.generateTerrain, [
+        Int32Array.from([chunk.x, chunk.z]),
+        oldBiomes || zeroBuffer,
+        oldElevations || zeroBuffer,
+        oldEther || zeroBuffer,
+        oldWater || zeroBuffer,
+        oldLava || zeroBuffer,
+        newEther || zeroBuffer,
+      ], result => {
+        const uint32Buffer = chunk.getTerrainBuffer();
+        result.copy(new Buffer(uint32Buffer.buffer, uint32Buffer.byteOffset, uint32Buffer.byteLength));
+        // protocolUtils.stringifyTerrainData(result, uint32Buffer.buffer, uint32Buffer.byteOffset);
+
+        accept(chunk);
+      });
+    });
     const _generateChunkObjects = chunk => {
       for (let i = 0; i < generators.length; i++) {
         _generateChunkObjectsWithGenerator(chunk, generators[i]);
       }
-      _decorateChunkObjectsGeometry(chunk);
+      return _decorateChunkObjectsGeometry(chunk);
     };
     const _generateChunkObjectsWithGenerator = (chunk, generator) => {
       const n = generator[0];
@@ -131,11 +203,55 @@ class Generator {
         return false;
       }
     };
-    const _decorateChunkObjectsGeometry = chunk => {
-      const geometryBuffer = chunk.getGeometryBuffer();
-      protocolUtils.stringifyGeometry(objectsTesselator.tesselate(chunk), geometryBuffer.buffer, geometryBuffer.byteOffset);
-      return Promise.resolve(chunk);
-    };
+
+    const _decorateChunkObjectsGeometry = chunk => new Promise((accept, reject) => {
+      childProcess.request(servlet.METHODS.generateObjects, [
+        Int32Array.from([chunk.x, chunk.z]),
+        chunk.getObjectBuffer(),
+        chunk.getBlockBuffer(),
+        geometriesBuffer,
+        geometryTypes,
+        blockTypes,
+        transparentVoxels,
+        translucentVoxels,
+        faceUvs,
+      ], result => {
+        const geometryBuffer = chunk.getGeometryBuffer();
+        result.copy(new Buffer(geometryBuffer.buffer, geometryBuffer.byteOffset, geometryBuffer.byteLength));
+        accept(chunk);
+      });
+    });
+    const _requestComputeLights = (
+      ox, oz,
+      minX, maxX, minY, maxY, minZ, maxZ,
+      relight,
+      lavaArray,
+      objectLightsArray,
+      etherArray,
+      blocksArray,
+      lightsArray,
+    ) => new Promise((accept, reject) => {
+      childProcess.request(servlet.METHODS.light, [
+        Int32Array.from([ox, oz, minX, maxX, minY, maxY, minZ, maxZ, +relight]),
+        lavaArray,
+        objectLightsArray,
+        etherArray,
+        blocksArray,
+        lightsArray,
+      ], result => {
+        accept(new Uint8Array(result.buffer, result.byteOffset, result.byteLength));
+      });
+    });
+    const _requestComputeLightmaps = (chunk, positions, staticHeightfield, lights) => new Promise((accept, reject) => {
+      childProcess.request(servlet.METHODS.lightmap, [
+        Int32Array.from([chunk.x, chunk.z]),
+        positions,
+        staticHeightfield,
+        lights,
+      ], result => {
+        accept(protocolUtils.parseLightmaps(result.buffer, result.byteOffset));
+      });
+    });
     const _symbolizeChunk = chunk => {
       if (chunk) {
         chunk[lightsSymbol] = new Uint8Array(NUM_CELLS_OVERSCAN * (NUM_CELLS_HEIGHT + 1) * NUM_CELLS_OVERSCAN);
@@ -236,11 +352,13 @@ class Generator {
           } else {
             const chunk = zde.makeChunk(x, z);
             _symbolizeChunk(chunk);
-            _generateChunk(chunk);
 
-            _saveChunks();
+            return _generateChunk(chunk)
+              .then(() => {
+                _saveChunks();
 
-            return Promise.resolve(chunk);
+                return chunk;
+              });
           }
         };
         const _decorateChunkLights = chunk => _decorateChunkLightsRange(
@@ -285,36 +403,43 @@ class Generator {
             const {x: ox, z: oz} = chunk;
             const updatingLights = chunk[lightsRenderedSymbol];
 
-            const lavaArray = Array(9);
-            const objectLightsArray = Array(9);
-            const etherArray = Array(9);
-            const blocksArray = Array(9);
-            const lightsArray = Array(9);
+            const lavaArraySize = (NUM_CELLS + 1) * (NUM_CELLS_HEIGHT + 1) * (NUM_CELLS + 1);
+            const lavaArray = new Float32Array(lavaArraySize * 9)
+            const objectLightsArraySize = 64 * 64 * 4;
+            const objectLightsArray = new Float32Array(objectLightsArraySize * 9)
+            const etherArraySize = (NUM_CELLS + 1) * (NUM_CELLS_HEIGHT + 1) * (NUM_CELLS + 1);
+            const etherArray = new Float32Array(etherArraySize * 9)
+            const blocksArraySize = NUM_CELLS * NUM_CELLS_HEIGHT * NUM_CELLS;
+            const blocksArray = new Uint32Array(blocksArraySize * 9)
+            const lightsArraySize = NUM_CELLS_OVERSCAN * (NUM_CELLS_HEIGHT + 1) * NUM_CELLS_OVERSCAN;
+            const lightsArray = new Uint8Array(lightsArraySize * 9);
+
+            let arrayIndex = 0;
             for (let doz = -1; doz <= 1; doz++) {
               for (let dox = -1; dox <= 1; dox++) {
-                const arrayIndex = _getLightsArrayIndex(dox + 1, doz + 1);
-
                 const aox = ox + dox;
                 const aoz = oz + doz;
                 const chunk = zde.getChunk(aox, aoz);
                 const uint32Buffer = chunk.getTerrainBuffer();
-                const {ether, lava} = protocolUtils.parseTerrainData(uint32Buffer.buffer, uint32Buffer.byteOffset); // XXX can be reduced to only parse the needed fields
-                lavaArray[arrayIndex] = lava;
+                const {ether, lava} = protocolUtils.parseTerrainData(uint32Buffer.buffer, uint32Buffer.byteOffset);
+                lavaArray.subarray(arrayIndex * lavaArraySize, (arrayIndex + 1) * lavaArraySize).set(lava);
 
                 const objectLights = chunk.getLightBuffer();
-                objectLightsArray[arrayIndex] = objectLights;
+                objectLightsArray.subarray(arrayIndex * objectLightsArraySize, (arrayIndex + 1) * objectLightsArraySize).set(objectLights);
 
-                etherArray[arrayIndex] = ether;
+                etherArray.subarray(arrayIndex * etherArraySize, (arrayIndex + 1) * etherArraySize).set(ether);
 
                 const blocks = chunk.getBlockBuffer();
-                blocksArray[arrayIndex] = blocks;
+                blocksArray.subarray(arrayIndex * blocksArraySize, (arrayIndex + 1) * blocksArraySize).set(blocks);
 
                 const {[lightsSymbol]: lights} = chunk;
-                lightsArray[arrayIndex] = lights;
+                lightsArray.subarray(arrayIndex * lightsArraySize, (arrayIndex + 1) * lightsArraySize).set(lights);
+
+                arrayIndex++;
               }
             }
 
-            vxl.light(
+            return _requestComputeLights(
               ox, oz,
               minX, maxX, minY, maxY, minZ, maxZ,
               relight,
@@ -322,73 +447,57 @@ class Generator {
               objectLightsArray,
               etherArray,
               blocksArray,
-              lightsArray,
-            );
-            chunk[lightsRenderedSymbol] = true;
-            chunk[lightmapsSymbol] = null;
+              lightsArray
+            ).then(result => {
+              const arrayIndex = _getLightsArrayIndex(1, 1);
+              chunk[lightsSymbol].set(result.subarray(arrayIndex * lightsArraySize, (arrayIndex + 1) * lightsArraySize));
+              chunk[lightsRenderedSymbol] = true;
+              chunk[lightmapsSymbol] = null;
 
-            return chunk;
+              return chunk;
+            });
           });
         const _requestChunkWithLights = chunk => chunk[lightsRenderedSymbol] ? Promise.resolve(chunk) : _decorateChunkLights(chunk);
         const _requestChunkWithLightmaps = chunk => {
           if (chunk[lightmapsSymbol]) {
             return Promise.resolve(chunk);
           } else {
-            const _getTerrainLightmaps = () => {
-              const terrainBuffer = chunk.getTerrainBuffer();
-              const {positions, staticHeightfield} = protocolUtils.parseTerrainData(terrainBuffer.buffer, terrainBuffer.byteOffset);
-              const {[lightsSymbol]: lights} = chunk;
+            const terrainBuffer = chunk.getTerrainBuffer();
+            const {positions: terrainPositions, staticHeightfield} = protocolUtils.parseTerrainData(terrainBuffer.buffer, terrainBuffer.byteOffset);
+            const geometryBuffer = chunk.getGeometryBuffer();
+            const {positions: objectPositions} = protocolUtils.parseGeometry(geometryBuffer.buffer, geometryBuffer.byteOffset);
+            const {[lightsSymbol]: lights} = chunk;
 
-              const numPositions = positions.length;
-              const numLightmaps = numPositions / 3;
-              const lightmapsBuffer = new ArrayBuffer(numLightmaps * 2);
-              const skyLightmaps = new Uint8Array(lightmapsBuffer, 0, numLightmaps);
-              const torchLightmaps = new Uint8Array(lightmapsBuffer, numLightmaps, numLightmaps);
-
-              vxl.lightmap(chunk.x, chunk.z, positions, numPositions, staticHeightfield, lights, skyLightmaps, torchLightmaps);
-
-              return {
-                skyLightmaps,
-                torchLightmaps,
-              };
-            };
-            const _getObjectLightmaps = () => {
-              const geometryBuffer = chunk.getGeometryBuffer();
-              const {positions} = protocolUtils.parseGeometry(geometryBuffer.buffer, geometryBuffer.byteOffset);
-
-              const terrainBuffer = chunk.getTerrainBuffer();
-              const {staticHeightfield} = protocolUtils.parseTerrainData(terrainBuffer.buffer, terrainBuffer.byteOffset);
-              const {[lightsSymbol]: lights} = chunk;
-
-              const numPositions = positions.length;
-              const numLightmaps = numPositions / 3;
-              const lightmapsBuffer = new ArrayBuffer(numLightmaps * 2);
-              const skyLightmaps = new Uint8Array(lightmapsBuffer, 0, numLightmaps);
-              const torchLightmaps = new Uint8Array(lightmapsBuffer, numLightmaps, numLightmaps);
-
-              vxl.lightmap(chunk.x, chunk.z, positions, numPositions, staticHeightfield, lights, skyLightmaps, torchLightmaps);
-
-              return {
-                skyLightmaps,
-                torchLightmaps,
-              };
-            };
-
-            chunk[lightmapsSymbol] = {
-              terrain: _getTerrainLightmaps(),
-              objects: _getObjectLightmaps(),
-            };
-
-            return Promise.resolve(chunk);
+            return Promise.all([
+              _requestComputeLightmaps(chunk, terrainPositions, staticHeightfield, lights),
+              _requestComputeLightmaps(chunk, objectPositions, staticHeightfield, lights),
+            ])
+              .then(([
+                terrain,
+                objects,
+              ]) => {
+                chunk[lightmapsSymbol] = {
+                  terrain,
+                  objects,
+                };
+                return chunk;
+              });
           }
         };
         const _requestChunkWithBlockfield = chunk => {
           if (chunk[blockfieldRenderedSymbol]) {
             return Promise.resolve(chunk);
           } else {
-            vxl.blockfield(chunk.getBlockBuffer(), chunk[blockfieldSymbol]);
-            chunk[blockfieldRenderedSymbol] = true;
-            return Promise.resolve(chunk);
+            return new Promise((accept, reject) => {
+              childProcess.request(servlet.METHODS.blockfield, [
+                chunk.getBlockBuffer(),
+              ], result => {
+                chunk[blockfieldSymbol].set(result);
+                chunk[blockfieldRenderedSymbol] = true;
+
+                accept(chunk);
+              });
+            });
           }
         };
         const _requestChunk = (x, z) => _requestChunkHard(x, z)
@@ -589,7 +698,7 @@ class Generator {
             const matrix = position.toArray().concat(rotation.toArray());
             const objectIndex = chunk.addObject(n, matrix, value);
 
-            const light = _findLight(n);
+            const light = _findObjectLight(n);
             if (light) {
               chunk.addLightAt(objectIndex, position.x, position.y, position.z, light);
             }
@@ -602,18 +711,7 @@ class Generator {
                 const {staticHeightfield} = protocolUtils.parseTerrainData(terrainBuffer.buffer, terrainBuffer.byteOffset);
                 const {[lightsSymbol]: lights} = chunk;
 
-                const numPositions = positions.length;
-                const numLightmaps = numPositions / 3;
-                const lightmapsBuffer = new ArrayBuffer(numLightmaps * 2);
-                const skyLightmaps = new Uint8Array(lightmapsBuffer, 0, numLightmaps);
-                const torchLightmaps = new Uint8Array(lightmapsBuffer, numLightmaps, numLightmaps);
-
-                vxl.lightmap(chunk.x, chunk.z, positions, numPositions, staticHeightfield, lights, skyLightmaps, torchLightmaps);
-
-                return {
-                  skyLightmaps,
-                  torchLightmaps,
-                };
+                return _requestComputeLightmaps(chunk, positions, staticHeightfield, lights);
               });
           }
           requestRelight(x, y, z) {
@@ -783,16 +881,17 @@ class Generator {
                       const oldWater = oldChunkData.water.slice();
                       const oldLava = oldChunkData.lava.slice();
 
-                      _generateChunkTerrain(chunk, {
-                        oldBiomes,
-                        oldElevations,
-                        oldEther,
-                        oldWater,
-                        oldLava,
-                        newEther,
-                      });
-
-                      regeneratePromises.push(generatorElement.requestRelight(x, y, z));
+                      regeneratePromises.push(
+                        _generateChunkTerrain(chunk, {
+                          oldBiomes,
+                          oldElevations,
+                          oldEther,
+                          oldWater,
+                          oldLava,
+                          newEther,
+                        })
+                          .then(() => generatorElement.requestRelight(x, y, z))
+                      );
                     }
 
                     seenIndex[index] = true;
