@@ -85,7 +85,15 @@ class Generator {
     const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
     // const _getLightsIndex = (x, y, z) => x + y * NUM_CELLS_OVERSCAN + z * NUM_CELLS_OVERSCAN * (NUM_CELLS_HEIGHT + 1);
     const _getLightsArrayIndex = (x, z) => x + z * 3;
-    const _findLight = n => {
+    const _alignData = (data, alignment) => {
+      if ((data.byteOffset % alignment) !== 0) {
+        const newData = new Buffer(new ArrayBuffer(data.length));
+        data.copy(newData);
+        data = newData;
+      }
+      return data;
+    };
+    const _findObjectLight = n => {
       for (let i = 0; i < 256; i++) {
         if (lights[i * 2 + 0] === n) {
           return lights[i * 2 + 1];
@@ -139,9 +147,11 @@ class Generator {
     const _recurse = () => {
       pullstream.pull(4 * 2, (err, data) => {
         if (!err) {
+          data = _alignData(data, Uint32Array.BYTES_PER_ELEMENT);
           const headerBufer = new Uint32Array(data.buffer, data.byteOffset, 2);
           const [id, numBuffers] = headerBufer;
           pullstream.pull(numBuffers, (err, result) => {
+            result = _alignData(result, Uint32Array.BYTES_PER_ELEMENT);
             queues[id](result);
 
             _recurse();
@@ -209,6 +219,27 @@ class Generator {
         const geometryBuffer = chunk.getGeometryBuffer();
         result.copy(new Buffer(geometryBuffer.buffer, geometryBuffer.byteOffset, geometryBuffer.byteLength));
         accept(chunk);
+      });
+    });
+    const _requestComputeLights = (
+      ox, oz,
+      minX, maxX, minY, maxY, minZ, maxZ,
+      relight,
+      lavaArray,
+      objectLightsArray,
+      etherArray,
+      blocksArray,
+      lightsArray,
+    ) => new Promise((accept, reject) => {
+      childProcess.request(servlet.METHODS.light, [
+        Int32Array.from([ox, oz, minX, maxX, minY, maxY, minZ, maxZ, +relight]),
+        lavaArray,
+        objectLightsArray,
+        etherArray,
+        blocksArray,
+        lightsArray,
+      ], result => {
+        accept(new Uint8Array(result.buffer, result.byteOffset, result.byteLength));
       });
     });
     const _requestComputeLightmaps = (chunk, positions, staticHeightfield, lights) => new Promise((accept, reject) => {
@@ -372,36 +403,43 @@ class Generator {
             const {x: ox, z: oz} = chunk;
             const updatingLights = chunk[lightsRenderedSymbol];
 
-            const lavaArray = Array(9);
-            const objectLightsArray = Array(9);
-            const etherArray = Array(9);
-            const blocksArray = Array(9);
-            const lightsArray = Array(9);
+            const lavaArraySize = (NUM_CELLS + 1) * (NUM_CELLS_HEIGHT + 1) * (NUM_CELLS + 1);
+            const lavaArray = new Float32Array(lavaArraySize * 9)
+            const objectLightsArraySize = 64 * 64 * 4;
+            const objectLightsArray = new Float32Array(objectLightsArraySize * 9)
+            const etherArraySize = (NUM_CELLS + 1) * (NUM_CELLS_HEIGHT + 1) * (NUM_CELLS + 1);
+            const etherArray = new Float32Array(etherArraySize * 9)
+            const blocksArraySize = NUM_CELLS * NUM_CELLS_HEIGHT * NUM_CELLS;
+            const blocksArray = new Uint32Array(blocksArraySize * 9)
+            const lightsArraySize = NUM_CELLS_OVERSCAN * (NUM_CELLS_HEIGHT + 1) * NUM_CELLS_OVERSCAN;
+            const lightsArray = new Uint8Array(lightsArraySize * 9);
+
+            let arrayIndex = 0;
             for (let doz = -1; doz <= 1; doz++) {
               for (let dox = -1; dox <= 1; dox++) {
-                const arrayIndex = _getLightsArrayIndex(dox + 1, doz + 1);
-
                 const aox = ox + dox;
                 const aoz = oz + doz;
                 const chunk = zde.getChunk(aox, aoz);
                 const uint32Buffer = chunk.getTerrainBuffer();
-                const {ether, lava} = protocolUtils.parseTerrainData(uint32Buffer.buffer, uint32Buffer.byteOffset); // XXX can be reduced to only parse the needed fields
-                lavaArray[arrayIndex] = lava;
+                const {ether, lava} = protocolUtils.parseTerrainData(uint32Buffer.buffer, uint32Buffer.byteOffset);
+                lavaArray.subarray(arrayIndex * lavaArraySize, (arrayIndex + 1) * lavaArraySize).set(lava);
 
                 const objectLights = chunk.getLightBuffer();
-                objectLightsArray[arrayIndex] = objectLights;
+                objectLightsArray.subarray(arrayIndex * objectLightsArraySize, (arrayIndex + 1) * objectLightsArraySize).set(objectLights);
 
-                etherArray[arrayIndex] = ether;
+                etherArray.subarray(arrayIndex * etherArraySize, (arrayIndex + 1) * etherArraySize).set(ether);
 
                 const blocks = chunk.getBlockBuffer();
-                blocksArray[arrayIndex] = blocks;
+                blocksArray.subarray(arrayIndex * blocksArraySize, (arrayIndex + 1) * blocksArraySize).set(blocks);
 
                 const {[lightsSymbol]: lights} = chunk;
-                lightsArray[arrayIndex] = lights;
+                lightsArray.subarray(arrayIndex * lightsArraySize, (arrayIndex + 1) * lightsArraySize).set(lights);
+
+                arrayIndex++;
               }
             }
 
-            vxl.light(
+            return _requestComputeLights(
               ox, oz,
               minX, maxX, minY, maxY, minZ, maxZ,
               relight,
@@ -409,12 +447,15 @@ class Generator {
               objectLightsArray,
               etherArray,
               blocksArray,
-              lightsArray,
-            );
-            chunk[lightsRenderedSymbol] = true;
-            chunk[lightmapsSymbol] = null;
+              lightsArray
+            ).then(result => {
+              const arrayIndex = _getLightsArrayIndex(1, 1);
+              chunk[lightsSymbol].set(result.subarray(arrayIndex * lightsArraySize, (arrayIndex + 1) * lightsArraySize));
+              chunk[lightsRenderedSymbol] = true;
+              chunk[lightmapsSymbol] = null;
 
-            return chunk;
+              return chunk;
+            });
           });
         const _requestChunkWithLights = chunk => chunk[lightsRenderedSymbol] ? Promise.resolve(chunk) : _decorateChunkLights(chunk);
         const _requestChunkWithLightmaps = chunk => {
@@ -657,7 +698,7 @@ class Generator {
             const matrix = position.toArray().concat(rotation.toArray());
             const objectIndex = chunk.addObject(n, matrix, value);
 
-            const light = _findLight(n);
+            const light = _findObjectLight(n);
             if (light) {
               chunk.addLightAt(objectIndex, position.x, position.y, position.z, light);
             }

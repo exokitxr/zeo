@@ -15,7 +15,7 @@ let numMethods = 0;
 const METHODS = {
   generateTerrain: numMethods++,
   generateObjects: numMethods++,
-  // light: numMethods++,
+  light: numMethods++,
   lightmap: numMethods++,
   blockfield: numMethods++,
 };
@@ -180,29 +180,25 @@ const _init = () => _requestPlugins([
           cb(null, new Uint8Array(protocolUtils.stringifyGeometry(result)[0]));
         });
       },
-      /* [METHODS.light]: cb => {
+      [METHODS.light]: cb => {
         _readArgs([
           Int32Array, // header
-          Uint32Array, // objects
+          Float32Array, // lava
+          Float32Array, // object lights
+          Float32Array, // ether
           Uint32Array, // blocks
-          Uint8Array, // geometry buffer
-          Uint32Array, // geometry types
-          Uint32Array, // block types
-          Uint8Array, // transparent voxels
-          Uint8Array, // translucent voxels
-          Float32Array, // face uvs
+          Uint8Array, // lights
         ], (err, [
           header,
-          src,
-          blocks,
-          geometriesBuffer,
-          geometryTypes,
-          blockTypes,
-          transparentVoxels,
-          translucentVoxels,
-          faceUvs,
+          lavaArray,
+          objectLightsArray,
+          etherArray,
+          blocksArray,
+          lightsArray,
         ]) => {
-          const [ox, oz] = header;
+          const [ox, oz, minX, maxX, minY, maxY, minZ, maxZ, relightValue] = header;
+          const relight = Boolean(relightValue);
+
           vxl.light(
             ox, oz,
             minX, maxX, minY, maxY, minZ, maxZ,
@@ -213,9 +209,10 @@ const _init = () => _requestPlugins([
             blocksArray,
             lightsArray,
           );
-          // XXX
+
+          cb(null, lightsArray);
         });
-      }, */
+      },
       [METHODS.lightmap]: cb => {
         _readArgs([
           Int32Array, // header
