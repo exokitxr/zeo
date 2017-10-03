@@ -30,10 +30,10 @@ test_script:
 after_test:
   - ps: |
       rm package-lock.json
-      wget "https://nodejs.org/dist/v8.5.0/node-v8.5.0-win-x64.zip" -OutFile node.zip
+      wget "https://nodejs.org/dist/v8.6.0/node-v8.6.0-win-x64.zip" -OutFile node.zip
       7z x node.zip
       rm node.zip
-      mv "node-v8.5.0-win-x64" node
+      mv "node-v8.6.0-win-x64" node
       cp node/node_modules/npm/bin/npm.cmd node/
       touch data/no-hotload.json
       cp scripts/lib/windows/start-windows.ps1 .
