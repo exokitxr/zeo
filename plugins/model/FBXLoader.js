@@ -1425,7 +1425,7 @@ module.exports = ({THREE, Zlib}) => {
 
 						} else {
 
-							material = new THREE.MeshBasicMaterial( { color: 0x3300ff } );
+							material = new THREE.MeshPhongMaterial( { color: 0x333333 } );
 							materials.push( material );
 
 						}
