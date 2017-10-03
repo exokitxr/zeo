@@ -883,6 +883,16 @@ class Zeo {
                         }
                       }
 
+                      class ZeoNotificationApi {
+                        addNotification(text) {
+                          return notification.addNotification(text);
+                        }
+
+                        removeNotification(n) {
+                          return notification.removeNotification(n);
+                        }
+                      }
+
                       class ZeoItemsApi {
                         getItem(id) {
                           return wallet.getAsset(id);
@@ -988,6 +998,7 @@ class Zeo {
                           this.teleport = new ZeoTeleportApi();
                           this.hands = new ZeoHandsApi();
                           this.transform = new ZeoTransformApi();
+                          this.notification = new ZeoNotificationApi();
                           this.animation = new ZeoAnimationApi();
                           this.items = new ZeoItemsApi();
                           this.utils = new ZeoUtilsApi();
