@@ -127,7 +127,7 @@ class Fs {
             .then(() => files);
         };
         const _makeNotificationText = n => {
-          let s = (n * 100).toFixed(1) + '% [';
+          let s = 'Uploading ' + (n * 100).toFixed(1) + '% [';
           let i;
           const roundN = Math.round(n * 20);
           for (i = 0; i < roundN; i++) {
