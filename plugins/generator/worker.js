@@ -8,12 +8,14 @@ importScripts('/archae/assets/alea.js');
 const {exports: alea} = self.module;
 self.module = {};
 
+let wasmInitialized = false;
 let slab = null;
 Module = {
   print(text) { console.log(text); },
   printErr(text) { console.warn(text); },
   wasmBinaryFile: '/archae/objects/objectize.wasm',
   onRuntimeInitialized: () => {
+    wasmInitialized = true;
     slab = (() => {
       const BIOMES_SIZE = _align(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN * Uint8Array.BYTES_PER_ELEMENT, Float32Array.BYTES_PER_ELEMENT);
       const ELEVATIONS_SIZE = NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN * Float32Array.BYTES_PER_ELEMENT;
@@ -2049,50 +2051,58 @@ self.onmessage = e => {
 };
 
 const _getTerrainCull = (hmdPosition, projectionMatrix, matrixWorldInverse) => {
-  const allocator = new Allocator();
+  if (wasmInitialized) {
+    const allocator = new Allocator();
 
-  const resultSize = NUM_MAP_CHUNK_MESHES * (1 + NUM_RENDER_GROUPS * 6);
-  const resultOffset = Module._malloc(resultSize * 4);
-  allocator.offsets.push(resultOffset);
-  const groups = new Uint32Array(Module.HEAP8.buffer, Module.HEAP8.byteOffset + resultOffset, resultSize);
+    const resultSize = NUM_MAP_CHUNK_MESHES * (1 + NUM_RENDER_GROUPS * 6);
+    const resultOffset = Module._malloc(resultSize * 4);
+    allocator.offsets.push(resultOffset);
+    const groups = new Uint32Array(Module.HEAP8.buffer, Module.HEAP8.byteOffset + resultOffset, resultSize);
 
-  const groupsIndex = Module._cllTerrain(
-    allocator.allocBuffer(Float32Array.from(hmdPosition)),
-    allocator.allocBuffer(Float32Array.from(projectionMatrix)),
-    allocator.allocBuffer(Float32Array.from(matrixWorldInverse)),
-    allocator.allocBuffer(terrainMapChunkMeshes),
-    terrainMapChunkMeshesIndex,
-    resultOffset
-  );
+    const groupsIndex = Module._cllTerrain(
+      allocator.allocBuffer(Float32Array.from(hmdPosition)),
+      allocator.allocBuffer(Float32Array.from(projectionMatrix)),
+      allocator.allocBuffer(Float32Array.from(matrixWorldInverse)),
+      allocator.allocBuffer(terrainMapChunkMeshes),
+      terrainMapChunkMeshesIndex,
+      resultOffset
+    );
 
-  const result = groups.slice(0, groupsIndex); // XXX can be optimized
+    const result = groups.slice(0, groupsIndex); // XXX can be optimized
 
-  allocator.destroy();
+    allocator.destroy();
 
-  return result;
+    return result;
+  } else {
+    return new Uint32Array(0);
+  }
 };
 const _getObjectsCull = (hmdPosition, projectionMatrix, matrixWorldInverse) => {
-  const allocator = new Allocator();
+  if (wasmInitialized) {
+    const allocator = new Allocator();
 
-  const resultSize = NUM_MAP_CHUNK_MESHES * (1 + NUM_RENDER_GROUPS * 2);
-  const resultOffset = Module._malloc(resultSize * 4);
-  allocator.offsets.push(resultOffset);
-  const groups = new Uint32Array(Module.HEAP8.buffer, Module.HEAP8.byteOffset + resultOffset, resultSize);
+    const resultSize = NUM_MAP_CHUNK_MESHES * (1 + NUM_RENDER_GROUPS * 2);
+    const resultOffset = Module._malloc(resultSize * 4);
+    allocator.offsets.push(resultOffset);
+    const groups = new Uint32Array(Module.HEAP8.buffer, Module.HEAP8.byteOffset + resultOffset, resultSize);
 
-  const groupsIndex = Module._cllObjects(
-    allocator.allocBuffer(Float32Array.from(hmdPosition)),
-    allocator.allocBuffer(Float32Array.from(projectionMatrix)),
-    allocator.allocBuffer(Float32Array.from(matrixWorldInverse)),
-    allocator.allocBuffer(objectsMapChunkMeshes),
-    objectsMapChunkMeshesIndex,
-    resultOffset
-  );
+    const groupsIndex = Module._cllObjects(
+      allocator.allocBuffer(Float32Array.from(hmdPosition)),
+      allocator.allocBuffer(Float32Array.from(projectionMatrix)),
+      allocator.allocBuffer(Float32Array.from(matrixWorldInverse)),
+      allocator.allocBuffer(objectsMapChunkMeshes),
+      objectsMapChunkMeshesIndex,
+      resultOffset
+    );
 
-  const result = groups.slice(0, groupsIndex); // XXX can be optimized
+    const result = groups.slice(0, groupsIndex); // XXX can be optimized
 
-  allocator.destroy();
+    allocator.destroy();
 
-  return result;
+    return result;
+  } else {
+    return new Uint32Array(0);
+  }
 };
 
 let _id = 0;
