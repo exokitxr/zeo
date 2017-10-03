@@ -3,11 +3,11 @@ const FBXLoader = require('./FBXLoader');
 
 class Model {
   mount() {
-    const {three: {THREE, scene}, input, elements, hands, notification, utils: {network: networkUtils}} = zeo;
+    const {three: {THREE, scene}, input, pose, elements, hands, notification, utils: {network: networkUtils}} = zeo;
     const {AutoWs} = networkUtils;
 
-    const THREEFBXLoader = FBXLoader({THREE, Zlib});
-    const manager = new THREE.LoadingManager();
+    const models = {};
+
     const _makeNotificationText = n => {
       let s = 'Downloading ' + (n * 100).toFixed(1) + '% [';
       let i;
@@ -21,20 +21,23 @@ class Model {
       s += ']';
       return s;
     };
-    const _loadModel = (value, position) => {
+
+    const THREEFBXLoader = FBXLoader({THREE, Zlib});
+    const manager = new THREE.LoadingManager();
+    const _loadModel = (id, value, position) => {
       const note = notification.addNotification(_makeNotificationText(0));
 
       const loader = new THREEFBXLoader(manager);
       loader.load('/archae/fs/hash/' + value, object => {
-        const parent = new THREE.Object3D();
-        parent.position.copy(position);
-        parent.quaternion.setFromUnitVectors(
+        object.position.copy(position);
+        object.quaternion.setFromUnitVectors(
           new THREE.Vector3(0, 0, 1),
           new THREE.Vector3(0, 1, 0)
         );
-        parent.add(object);
-        parent.updateMatrixWorld();
-        scene.add(parent);
+        object.updateMatrixWorld();
+        object.boundingBox = new THREE.Box3().setFromObject(object);
+        scene.add(object);
+        models[id] = object;
 
         notification.removeNotification(note);
       }, e => {
@@ -49,6 +52,25 @@ class Model {
         notification.removeNotification(note);
       });
     };
+    const _removeModel = id => {
+      const object = models[id];
+      scene.remove(object);
+      _dispose(object);
+      models[id] = null;
+    };
+    const _dispose = o => {
+      if (o.geometry) {
+        o.geometry.dispose();
+      }
+      if (o.material) {
+        o.material.dispose();
+      }
+      if (o.children) {
+        for (let i = 0; i < o.children.length; i++) {
+          _dispose(o.children[i]);
+        }
+      }
+    };
 
     const modelEntity = {
       attributes: {},
@@ -59,12 +81,28 @@ class Model {
 
           if (grabbable && grabbable.type === 'file') {
             const {value, position} = grabbable;
-            _loadModel(value, position.clone());
+            const id = Math.random();
+            _loadModel(id, value, position.clone());
             connection.send(JSON.stringify({
-              type: 'model',
+              type: 'add',
+              id,
               value,
               position: position.toArray(),
             }));
+          } else {
+            const {gamepads} = pose.getStatus();
+            const gamepad = gamepads[side];
+            const {worldPosition: controllerPosition} = gamepad;
+            for (const id in models) {
+              const model = models[id];
+              if (model && model.boundingBox.containsPoint(controllerPosition)) {
+                _removeModel(id);
+                connection.send(JSON.stringify({
+                  type: 'remove',
+                  id,
+                }));
+              }
+            }
           }
         };
         input.on('triggerdown', _triggerdown);
@@ -74,9 +112,12 @@ class Model {
           const e = JSON.parse(msg.data);
           const {type} = e;
 
-          if (type === 'model') {
-            const {value, position} = e;
-            _loadModel(value, new THREE.Vector3().fromArray(position));
+          if (type === 'add') {
+            const {id, value, position} = e;
+            _loadModel(id, value, new THREE.Vector3().fromArray(position));
+          } else if (type === 'remove') {
+            const {id} = e;
+            _removeModel(id);
           } else {
             console.warn('model plugin unknown model type', type);
           }
