@@ -18,10 +18,12 @@ class Fs {
     return archae.requestPlugins([
       '/core/engines/three',
       '/core/engines/webvr',
+      '/core/engines/notification',
       '/core/utils/js-utils',
     ]).then(([
       three,
       webvr,
+      notification,
       jsUtils,
     ]) => {
       if (live) {
@@ -93,43 +95,55 @@ class Fs {
           e.preventDefault();
         };
         document.addEventListener('dragover', dragover);
+        const _getFiles = items => {
+          const entries = Array.from(items)
+            .map(item => item.webkitGetAsEntry())
+            .filter(entry => entry !== null);
+
+          const files = [];
+          const _recurseEntries = entries => Promise.all(entries.map(_recurseEntry));
+          const _recurseEntry = entry => new Promise((accept, reject) => {
+            if (entry.isFile) {
+              entry.file(file => {
+                file.path = entry.fullPath;
+
+                files.push(file);
+
+                accept();
+              });
+            } else if (entry.isDirectory) {
+              const directoryReader = entry.createReader();
+              directoryReader.readEntries(entries => {
+                _recurseEntries(Array.from(entries))
+                  .then(() => {
+                    accept();
+                  });
+              });
+            } else {
+              accept();
+            }
+          });
+          return _recurseEntries(entries)
+            .then(() => files);
+        };
+        const _makeNotificationText = n => {
+          let s = (n * 100).toFixed(1) + '% [';
+          let i;
+          const roundN = Math.round(n * 20);
+          for (i = 0; i < roundN; i++) {
+            s += '|';
+          }
+          for (; i < 20; i++) {
+            s += '.';
+          }
+          s += ']';
+          return s;
+        };
         const drop = e => {
           e.preventDefault();
 
           const {dataTransfer: {items}} = e;
           if (items.length > 0) {
-            const _getFiles = items => {
-              const entries = Array.from(items)
-                .map(item => item.webkitGetAsEntry())
-                .filter(entry => entry !== null);
-
-              const files = [];
-              const _recurseEntries = entries => Promise.all(entries.map(_recurseEntry));
-              const _recurseEntry = entry => new Promise((accept, reject) => {
-                if (entry.isFile) {
-                  entry.file(file => {
-                    file.path = entry.fullPath;
-
-                    files.push(file);
-
-                    accept();
-                  });
-                } else if (entry.isDirectory) {
-                  const directoryReader = entry.createReader();
-                  directoryReader.readEntries(entries => {
-                    _recurseEntries(Array.from(entries))
-                      .then(() => {
-                        accept();
-                      });
-                  });
-                } else {
-                  accept();
-                }
-              });
-              return _recurseEntries(entries)
-                .then(() => files);
-            };
-
             _getFiles(items)
               .then(files => Promise.all(files.map((file, i) => {
                 const {type} = file;
@@ -148,13 +162,25 @@ class Fs {
                   return localVector.toArray().concat(hmdRotation.toArray()).concat(hmdScale.toArray());
                 })();
 
-                return remoteFile.write(file)
-                  .then(() => {
-                    fsApi.emit('upload', {
-                      file: remoteFile,
-                      dropMatrix,
-                    });
+                const note = notification.addNotification(_makeNotificationText(0));
+
+                const req = remoteFile.write(file);
+                req.onprogress = n => {
+                  note.set(_makeNotificationText(n));
+                };
+                req.then(() => {
+                  fsApi.emit('upload', {
+                    file: remoteFile,
+                    dropMatrix,
                   });
+
+                  notification.removeNotification(note);
+                })
+                .catch(err => {
+                  console.warn(err);
+
+                  notification.removeNotification(note);
+                });
               })));
           }
         };
@@ -391,12 +417,36 @@ class Fs {
           }
 
           write(d) {
-            return fetch(this.getUrl(), {
+            const result = new Promise((accept, reject) => {
+              const xhr = new XMLHttpRequest();
+              xhr.open('PUT', this.getUrl(), true);
+              xhr.withCredentials = true;
+              xhr.upload.addEventListener('progress', e => {
+                if (result.onprogress) {
+                  if (e.lengthComputable) {
+                    result.onprogress(e.loaded / e.total);
+                  } else {
+                    result.onprogress(0.5);
+                  }
+                }
+              });
+              xhr.addEventListener('load', () => {
+                accept();
+              });
+              xhr.addEventListener('error', err => {
+                reject(err);
+              });
+
+              xhr.send(d);
+            });
+            return result;
+
+            /* return fetch(, {
               method: 'PUT',
               body: d,
               credentials: 'include',
             })
-              .then(_resBlob);
+              .then(_resBlob); */
           }
 
           download() {

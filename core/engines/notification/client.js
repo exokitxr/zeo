@@ -167,6 +167,12 @@ class Notification {
           constructor(text) {
             this.text = text;
           }
+
+          set(text) {
+            this.text = text;
+
+            hudMesh.needsUpdate = true;
+          }
         }
 
         const _addNotification = text => {
