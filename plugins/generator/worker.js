@@ -1637,14 +1637,6 @@ self.onmessage = e => {
             args: [ox, oz],
           });
         }
-
-        const objectApi = objectApis[n];
-        if (objectApi && objectApi.added) {
-          postMessage({
-            type: 'objectAdded',
-            args: [n, ox, oz, objectIndex, matrix.slice(0, 3), matrix.slice(3, 7), value],
-          });
-        }
       }
       break;
     }
@@ -1750,14 +1742,6 @@ self.onmessage = e => {
           type: 'chunkUpdate',
           args: [ox, oz],
         });
-
-        const objectApi = objectApis[v];
-        if (objectApi && objectApi.set) {
-          postMessage({
-            type: 'blockSet',
-            args: [v, x, y, z],
-          });
-        }
       }
       break;
     }
