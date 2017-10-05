@@ -24,7 +24,6 @@ const DEFAULT_BROWSER_CONFIG = {
   stats: false,
 };
 const NUM_SERVERS = 5;
-
 const SIDES = ['left', 'right'];
 
 class Config {
@@ -38,9 +37,6 @@ class Config {
       metadata: {
         server: {
           url: serverUrl,
-        },
-        vrid: {
-          url: vridUrl,
         },
       },
     } = archae;
@@ -95,6 +91,7 @@ class Config {
         '/core/engines/resource',
         '/core/engines/rend',
         '/core/utils/js-utils',
+        '/core/utils/strg-utils',
       ]),
       _requestGetBrowserConfig(),
       _requestGetServerConfig(),
@@ -108,23 +105,17 @@ class Config {
         resource,
         rend,
         jsUtils,
+        strgUtils,
       ],
       browserConfigSpec,
       serverConfigSpec,
     ]) => {
       if (live) {
         const {THREE, scene} = three;
+        const {sfx} = resource;
         const {events} = jsUtils;
         const {EventEmitter} = events;
-        const {sfx} = resource;
-
-        const _decomposeObjectMatrixWorld = object => {
-          const position = new THREE.Vector3();
-          const rotation = new THREE.Quaternion();
-          const scale = new THREE.Vector3();
-          object.matrixWorld.decompose(position, rotation, scale);
-          return {position, rotation, scale};
-        };
+        const {strgApi} = strgUtils;
 
         const transparentImg = biolumi.getTransparentImg();
         const transparentMaterial = biolumi.getTransparentMaterial();
@@ -171,15 +162,7 @@ class Config {
             });
           }
         };
-        const _requestRegisterRecentServer = name => fetch(`${vridUrl}/id/api/cookie/servers`, {
-          credentials: 'include',
-        })
-          .then(_resJson)
-          .catch(err => {
-            console.warn(err);
-
-            return Promise.resolve();
-          })
+        const _requestRegisterRecentServer = name => strgApi.get('servers')
           .then(servers => {
             if (!Array.isArray(servers)) {
               servers = [];
@@ -198,17 +181,10 @@ class Config {
             servers.sort((a, b) => b.timestamp - a.timestamp);
             servers.length = Math.min(servers.length, NUM_SERVERS);
 
-            return fetch(`${vridUrl}/id/api/cookie/servers`, {
-              method: 'POST',
-              headers: (() => {
-                const headers = new Headers();
-                headers.append('Content-Type', 'application/json');
-                return headers;
-              })(),
-              body: JSON.stringify(servers),
-              credentials: 'include',
-            })
-              .then(_resBlob);
+            return strgApi.set('servers', servers);
+          })
+          .catch(err => {
+            console.warn(err);
           });
         const _applyName = name => {
           rend.setStatus('name', name);
