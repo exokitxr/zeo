@@ -1,4 +1,3 @@
-import strgLib from 'strg';
 import {
   WIDTH,
   HEIGHT,
@@ -43,7 +42,6 @@ const ASSET_SHADER = {
   ].join("\n")
 };
 const SIDES = ['left', 'right'];
-const STRG_URL = 'https://cdn.rawgit.com/modulesio/strg/486ed70c/iframe.html'
 
 class Wallet {
   constructor(archae) {
@@ -53,37 +51,6 @@ class Wallet {
   mount() {
     const {_archae: archae} = this;
     const {metadata: {site: {url: siteUrl}, vrid: {url: vridUrl}}} = archae;
-
-    const strg = strgLib(STRG_URL);
-    const _addStrgAsset = (asset, quantity) => strg.get('assets')
-      .then(assets => {
-        assets = assets || [];
-        let assetSpec = assets.find(assetSpec => assetSpec.asset === asset);
-        if (!assetSpec) {
-          assetSpec = {
-            id: asset,
-            asset,
-            quantity: 0,
-          };
-          assets.push(assetSpec);
-        }
-        assetSpec.quantity += quantity;
-
-        return strg.set('assets', assets);
-      });
-    const _removeStrgAsset = (asset, quantity) => strg.get('assets')
-      .then(assets => {
-        assets = assets || [];
-        const assetSpecIndex = assets.findIndex(assetSpec => assetSpec.asset === asset);
-        if (assetSpecIndex !== -1) {
-          const assetSpec = assets[assetSpecIndex];
-          assetSpec.quantity--;
-          if (assetSpec.quantity === 0) {
-            assets.splice(assetSpecIndex, 1);
-          }
-        }
-        return strg.set('assets', assets);
-      });
 
     const cleanups = [];
     this._cleanup = () => {
@@ -119,6 +86,7 @@ class Wallet {
       '/core/utils/network-utils',
       '/core/utils/creature-utils',
       '/core/utils/sprite-utils',
+      '/core/utils/strg-utils',
       '/core/utils/vrid-utils',
     ]).then(([
       bootstrap,
@@ -141,6 +109,7 @@ class Wallet {
       networkUtils,
       creatureUtils,
       spriteUtils,
+      strgUtils,
       vridUtils,
     ]) => {
       if (live) {
@@ -151,6 +120,7 @@ class Wallet {
         const {AutoWs} = networkUtils;
         const {Grabbable} = hand;
         const {sfx} = resource;
+        const {strgApi} = strgUtils;
 
         const walletRenderer = walletRender.makeRenderer({creatureUtils});
         const localUserId = multiplayer.getId();
@@ -177,13 +147,36 @@ class Wallet {
           // transparent: true,
           // depthTest: false,
         });
-        const mainFontSpec = {
-          fonts: biolumi.getFonts(),
-          fontSize: 36,
-          lineHeight: 1.4,
-          fontWeight: biolumi.getFontWeight(),
-          fontStyle: biolumi.getFontStyle(),
-        };
+
+        const _addStrgAsset = (asset, quantity) => strgApi.get('assets')
+          .then(assets => {
+            assets = assets || [];
+            let assetSpec = assets.find(assetSpec => assetSpec.asset === asset);
+            if (!assetSpec) {
+              assetSpec = {
+                id: asset,
+                asset,
+                quantity: 0,
+              };
+              assets.push(assetSpec);
+            }
+            assetSpec.quantity += quantity;
+
+            return strgApi.set('assets', assets);
+          });
+        const _removeStrgAsset = (asset, quantity) => strgApi.get('assets')
+          .then(assets => {
+            assets = assets || [];
+            const assetSpecIndex = assets.findIndex(assetSpec => assetSpec.asset === asset);
+            if (assetSpecIndex !== -1) {
+              const assetSpec = assets[assetSpecIndex];
+              assetSpec.quantity--;
+              if (assetSpec.quantity === 0) {
+                assets.splice(assetSpecIndex, 1);
+              }
+            }
+            return strgApi.set('assets', assets);
+          });
 
         const _addAsset = (id, type, value, n, physics, matrix) => {
           const position = new THREE.Vector3(matrix[0], matrix[1], matrix[2]);
@@ -681,9 +674,9 @@ class Wallet {
         })
           .then(_resJson)
           .then(equipments => equipments !== null ? equipments : _makeArray(4)); */
-        const _requestAssets = () => strg.get('assets')
+        const _requestAssets = () => strgApi.get('assets')
           .then(assets => assets || []);
-        const _requestEquipments = () => strg.get('equipments')
+        const _requestEquipments = () => strgApi.get('equipments')
           .then(equipments => equipments || _makeArray(4))
           .then(equipments => equipments.map((asset, i) => ({id: `equipment:${i}`, asset: asset})));
         const _refreshAssets = () => Promise.all([
@@ -760,7 +753,7 @@ class Wallet {
           })
             .then(_resBlob); */
 
-          strg.set('equipments', equipments)
+          strgApi.set('equipments', equipments)
             .then(() => {
               next();
             })
