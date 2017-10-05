@@ -34,6 +34,7 @@ function THREEMirror( width, height, options ) {
 	var textureMatrix = new THREE.Matrix4();
 
 	var mirrorCamera = new THREE.PerspectiveCamera();
+	mirrorCamera.name = 'left';
 	mirrorCamera.matrixAutoUpdate = false;
 
 	var parameters = {

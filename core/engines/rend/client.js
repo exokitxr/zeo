@@ -405,14 +405,20 @@ class Rend {
         };
         input.on('menudown', menudown);
 
+        scene.onBeforeRender = () => {
+          rendApi.emit('beforeRender');
+        };
+        scene.onAfterRender = () => {
+          rendApi.emit('afterRender');
+        };
         scene.onRenderEye = camera => {
-          rendApi.updateEye(camera);
+          rendApi.emit('updateEye', camera);
         };
         scene.onBeforeRenderEye = () => {
-          rendApi.updateEyeStart();
+          rendApi.emit('updateEyeStart');
         };
         scene.onAfterRenderEye = () => {
-          rendApi.updateEyeEnd();
+          rendApi.emit('updateEyeEnd');
         };
 
         cleanups.push(() => {
@@ -591,18 +597,6 @@ class Rend {
 
           updateEnd() {
             this.emit('updateEnd');
-          }
-
-          updateEye(camera) {
-            this.emit('updateEye', camera);
-          }
-
-          updateEyeStart() {
-            this.emit('updateEyeStart');
-          }
-
-          updateEyeEnd() {
-            this.emit('updateEyeEnd');
           }
 
           grab(options) {

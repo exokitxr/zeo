@@ -991,6 +991,14 @@ class Heightfield {
             };
             _recurseRefreshCull();
 
+            const _updateMatrices = () => {
+              modelViewMatricesValid.left = false;
+              modelViewMatricesValid.right = false;
+              normalMatricesValid.left = false;
+              normalMatricesValid.right = false;
+              uniformsNeedUpdate.left = true;
+              uniformsNeedUpdate.right = true;
+            };
             const _update = () => {
               const _updateMaterials = () => {
                 const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
@@ -1000,19 +1008,15 @@ class Heightfield {
                 oceanMaterial.uniforms.worldTime.value = world.getWorldTime();
                 oceanMaterial.uniforms.sunIntensity.value = sunIntensity;
               };
-              const _updateMatrices = () => {
-                modelViewMatricesValid.left = false;
-                modelViewMatricesValid.right = false;
-                normalMatricesValid.left = false;
-                normalMatricesValid.right = false;
-                uniformsNeedUpdate.left = true;
-                uniformsNeedUpdate.right = true;
-              };
 
               _updateMaterials();
-              _updateMatrices();
+              // _updateMatrices();
             };
             render.on('update', _update);
+            const _beforeRender = () => {
+              _updateMatrices();
+            };
+            render.on('beforeRender', _beforeRender);
 
             this._cleanup = () => {
               scene.remove(heightfieldObject);
@@ -1024,6 +1028,7 @@ class Heightfield {
               elements.unregisterEntity(this, heightfieldEntity);
 
               render.removeListener('update', _update);
+              render.removeListener('beforeRender', _beforeRender);
             };
           });
       });

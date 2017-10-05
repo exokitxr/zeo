@@ -608,25 +608,29 @@ class Grass {
                 _add(chunk);
               });
 
+              const _updateMatrices = () => {
+                modelViewMatricesValid.left = false;
+                modelViewMatricesValid.right = false;
+                normalMatricesValid.left = false;
+                normalMatricesValid.right = false;
+                uniformsNeedUpdate.left = true;
+                uniformsNeedUpdate.right = true;
+              };
               const _update = () => {
                 const _updateMaterial = () => {
                   const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
                   grassMaterial.uniforms.sunIntensity.value =
                     (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) ? dayNightSkyboxEntity.getSunIntensity() : 0;
                 };
-                const _updateMatrices = () => {
-                  modelViewMatricesValid.left = false;
-                  modelViewMatricesValid.right = false;
-                  normalMatricesValid.left = false;
-                  normalMatricesValid.right = false;
-                  uniformsNeedUpdate.left = true;
-                  uniformsNeedUpdate.right = true;
-                };
 
                 _updateMaterial();
-                _updateMatrices();
+                // _updateMatrices();
               };
               render.on('update', _update);
+              const _beforeRender = () => {
+                _updateMatrices();
+              };
+              render.on('beforeRender', _beforeRender);
 
               this._cleanup = () => {
                 scene.remove(grassMesh);
@@ -637,6 +641,7 @@ class Grass {
                 generatorElement.removeListener('remove', _remove);
 
                 render.removeListener('update', _update);
+                render.removeListener('beforeRender', _beforeRender);
               };
             }
           });

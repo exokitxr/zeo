@@ -933,6 +933,14 @@ void main() {
         };
         let updatingBody = false;
         let lastBodyUpdateTime = 0;
+        const _updateMatrices = () => {
+          modelViewMatricesValid.left = false;
+          modelViewMatricesValid.right = false;
+          normalMatricesValid.left = false;
+          normalMatricesValid.right = false;
+          uniformsNeedUpdate.left = true;
+          uniformsNeedUpdate.right = true;
+        };
         const _update = () => {
           const _updateHoveredTrackedObjects = () => {
             if (!updatingHover) {
@@ -1064,22 +1072,18 @@ void main() {
 
             objectsMaterial.uniforms.worldTime.value = world.getWorldTime();
           };
-          const _updateMatrices = () => {
-            modelViewMatricesValid.left = false;
-            modelViewMatricesValid.right = false;
-            normalMatricesValid.left = false;
-            normalMatricesValid.right = false;
-            uniformsNeedUpdate.left = true;
-            uniformsNeedUpdate.right = true;
-          };
 
           _updateHoveredTrackedObjects();
           _updateTeleport();
           _updateBody();
           _updateMaterial();
-          _updateMatrices();
+          // _updateMatrices();
         };
         render.on('update', _update);
+        const _beforeRender = () => {
+          _updateMatrices();
+        };
+        render.on('beforeRender', _beforeRender);
 
         cleanups.push(() => {
           scene.remove(objectsObject);
@@ -1095,6 +1099,7 @@ void main() {
           input.removeListener('gripdown', _gripdown);
 
           render.removeListener('update', _update);
+          render.removeListener('beforeRender', _beforeRender);
         });
 
         return Promise.all(
