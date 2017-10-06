@@ -51,7 +51,7 @@ const getAssetsPageSrc = ({loading, inputText, inputValue, asset, assets, equipm
           </div>
           <div style="display: flex; flex-direction: column">
             ${equipments
-              .map(equipmentSpec => getAssetSrc(equipmentSpec, {unequippable: equipmentSpec.asset !== null}))
+              .map((equipmentSpec, index) => getAssetSrc(equipmentSpec, {index, unequippable: equipmentSpec.asset !== null}))
               .join('\n')}
           </div>
         </div>`
@@ -86,14 +86,14 @@ const getAssetsPageSrc = ({loading, inputText, inputValue, asset, assets, equipm
     </div>
   `;
 };
-const getAssetSrc = (assetSpec, {focused = false, clickable = false, equippable = false, unequippable = false, equipPlaceholder = false} = {}) => {
+const getAssetSrc = (assetSpec, {index = 0, focused = false, clickable = false, equippable = false, unequippable = false, equipPlaceholder = false} = {}) => {
   const {id, asset, quantity} = assetSpec;
 
   const equipButtonSrc = (() => {
     if (equippable) {
        return `<a style="display: flex; width: 100px; height: 30px; margin-top: 10px; border: 2px solid; font-weight: 600; justify-content: center; align-items: center; box-sizing: border-box;" onclick="asset:equip:${id}">Equip</a>`;
     } else if (unequippable) {
-      return `<a style="position: absolute; top: 36px; right: -40px; display: flex; width: 100px; height: 30px; border: 2px solid; font-weight: 600; justify-content: center; align-items: center; transform: rotateZ(90deg); box-sizing: border-box;" onclick="asset:unequip:${id}">Un-equip</a>`;
+      return `<a style="position: absolute; top: 36px; right: -40px; display: flex; width: 100px; height: 30px; border: 2px solid; font-weight: 600; justify-content: center; align-items: center; transform: rotateZ(90deg); box-sizing: border-box;" onclick="asset:unequip:${index}">Un-equip</a>`;
     } else if (equipPlaceholder) {
       return `<div style="width: 100%; height: 30px; margin-top: 10px;"></div>`;
     } else {
