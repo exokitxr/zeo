@@ -691,11 +691,7 @@ class Wallet {
 
             walletState.page = 0;
             walletState.asset = null;
-            walletState.assets = assets.map(({asset, quantity}) => ({
-              id: asset,
-              asset: asset,
-              quantity: quantity,
-            }));
+            walletState.assets = assets;
             const newEquipments = equipments.filter(equipmentSpec =>
               equipmentSpec.asset === null || walletState.assets.some(assetSpec => assetSpec.asset === equipmentSpec.asset)
             );
@@ -824,15 +820,15 @@ class Wallet {
 
               return true;
             } else if (match = onclick.match(/^asset:main:(.+)$/)) {
-              const asset = match[1];
+              const id = match[1];
 
-              walletState.asset = walletState.asset !== asset ? asset : null;
+              walletState.asset = walletState.asset !== id ? id : null;
 
               _updatePages();
 
               return true;
             } else if (match = onclick.match(/^asset:equip:(.+)$/)) {
-              const asset = match[1];
+              const id = match[1];
 
               const {equipments: oldEquipments} = walletState;
               const index = (() => {
@@ -845,7 +841,7 @@ class Wallet {
                 return oldEquipments.length - 1;
               })();
               const newEquipments = _clone(oldEquipments);
-              newEquipments[index].asset = asset;
+              newEquipments[index].asset = id;
 
               _rebindEquipments(oldEquipments, newEquipments);
 

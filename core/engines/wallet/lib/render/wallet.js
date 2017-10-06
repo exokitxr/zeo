@@ -43,8 +43,8 @@ const getAssetsPageSrc = ({loading, inputText, inputValue, asset, assets, equipm
             ${assets
               .slice(page * numTagsPerPage, (page + 1) * numTagsPerPage)
               .map(assetSpec => {
-                const focused = assetSpec.asset === asset;
-                const equippable = focused && !equipments.some(equipmentSpec => equipmentSpec.asset === asset);
+                const focused = assetSpec.id === asset;
+                const equippable = focused && !equipments.some(equipmentSpec => equipmentSpec.id === asset);
                 return getAssetSrc(assetSpec, {focused, clickable: true, equippable, equipPlaceholder: true});
               })
               .join('\n')}
