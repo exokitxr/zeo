@@ -1,0 +1,8 @@
+{
+  "name": "tutorial",
+  "version": "0.0.1",
+  "description": "First time use tutorial.",
+  "client": "client.js",
+  "server": "server.js",
+  "dependencies": {}
+}
