@@ -114,7 +114,7 @@ class Generator {
       left: new ArrayBuffer((1 + 3 + 3 + 3 + 4 + 4) * 4),
       right: new ArrayBuffer((1 + 3 + 3 + 3 + 4 + 4) * 4),
     };
-    let bodyObjectBuffer = new ArrayBuffer(4 * 4);
+    let bodyObjectBuffer = new ArrayBuffer(6 * 4);
 
     const worker = new Worker('archae/plugins/_plugins_generator/build/worker.js');
     let queues = {};

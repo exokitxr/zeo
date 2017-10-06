@@ -1,6 +1,7 @@
 const GENERATOR_PLUGIN = 'plugins-generator';
 const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
 const DAY_NIGHT_SKYBOX_PLUGIN = 'plugins-day-night-skybox';
+const HEALTH_PLUGIN = 'plugins-health';
 const CRAFT_PLUGIN = 'plugins-craft';
 
 const {
@@ -1043,17 +1044,26 @@ void main() {
                 const {worldPosition: hmdPosition} = hmd;
                 generatorElement.requestBodyObject(hmdPosition, hoveredBodyBuffer => {
                   if (new Uint32Array(hoveredBodyBuffer, 0, 1)[0] !== 0) {
-                    const uint32Array = new Uint32Array(hoveredBodyBuffer, 0, 4);
-                    const int32Array = new Int32Array(hoveredBodyBuffer, 0, 4);
+                    const uint32Array = new Uint32Array(hoveredBodyBuffer, 0, 6);
+                    const int32Array = new Int32Array(hoveredBodyBuffer, 0, 6);
 
                     const n = uint32Array[0];
                     const x = int32Array[1];
                     const z = int32Array[2];
                     const objectIndex = uint32Array[3];
+                    const hadWater = Boolean(uint32Array[4]);
+                    const hadLava = Boolean(uint32Array[5]);
 
                     const objectApi = generatorElement.getObjectApi(n);
                     if (objectApi && objectApi.collideCallback) {
                       objectApi.collideCallback(_getObjectId(x, z, objectIndex), x, z, objectIndex);
+                    }
+
+                    if (hadLava) {
+                      const healthElement = elements.getEntitiesElement().querySelector(HEALTH_PLUGIN);
+                      if (healthElement) {
+                        healthElement.hurt(10);
+                      }
                     }
                   }
 

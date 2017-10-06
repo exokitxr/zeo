@@ -162,6 +162,7 @@ const _align = (n, alignment) => {
   }
   return n;
 };
+const _getEtherIndex = (x, y, z) => x + (z * NUM_CELLS_OVERSCAN) + (y * NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
 
 const zde = zeode();
 
@@ -716,47 +717,78 @@ const _getBodyObject = (x, y, z, buffer) => {
   let topChunkX = -1;
   let topChunkZ = -1;
   let topObjectIndex = -1;
+  let hadWater = false;
+  let hadLava = false;
 
   for (const index in zde.chunks) {
     const chunk = zde.chunks[index];
 
-    if (chunk && chunk[objectsDecorationsSymbol] && localCoord.set(chunk.x - ox, chunk.z - oz).lengthSq() <= 2) {
-      const chunkResult = chunk.forEachObject((n, matrix, value, objectIndex) => {
-        const position = localVector2.fromArray(matrix, 0);
-        const rotation = localQuaternion.fromArray(matrix, 3);
-        const rotationInverse = localQuaternion2.copy(rotation).inverse();
-        const objectArray = chunk.objectsMap[objectIndex];
-        localBox.min.fromArray(objectArray, 0);
-        localBox.max.fromArray(objectArray, 3);
+    if (chunk && chunk[objectsDecorationsSymbol]) {
+      const lengthSq = localCoord.set(chunk.x - ox, chunk.z - oz).lengthSq();
 
-        localVector3.copy(bodyCenterPoint)
-          .sub(position)
-          .applyQuaternion(rotationInverse);
-          // .add(position);
+      if (lengthSq <= 2) {
+        const chunkResult = chunk.forEachObject((n, matrix, value, objectIndex) => {
+          const position = localVector2.fromArray(matrix, 0);
+          const rotation = localQuaternion.fromArray(matrix, 3);
+          const rotationInverse = localQuaternion2.copy(rotation).inverse();
+          const objectArray = chunk.objectsMap[objectIndex];
+          localBox.min.fromArray(objectArray, 0);
+          localBox.max.fromArray(objectArray, 3);
 
-        const distance = localBox.distanceToPoint(localVector3);
-        if (distance < 0.3 && (distance < topDistance)) {
-          topDistance = distance;
-          topN = n;
-          topChunkX = chunk.x;
-          topChunkZ = chunk.z;
-          topObjectIndex = objectIndex;
-          return false;
-        } else {
+          localVector3.copy(bodyCenterPoint)
+            .sub(position)
+            .applyQuaternion(rotationInverse);
+            // .add(position);
+
+          // check objects
+          const distance = localBox.distanceToPoint(localVector3);
+          if (distance < 0.3 && (distance < topDistance)) {
+            topDistance = distance;
+            topN = n;
+            topChunkX = chunk.x;
+            topChunkZ = chunk.z;
+            topObjectIndex = objectIndex;
+            return false;
+          }
+
+          // check ethers
+          if (lengthSq === 0) {
+            const terrainBuffer = chunk.getTerrainBuffer();
+            const {water, lava} = protocolUtils.parseTerrainData(terrainBuffer.buffer, terrainBuffer.byteOffset);
+
+            const lx = Math.floor(x - ox * NUM_CELLS);
+            const ly = Math.floor(y);
+            const lz = Math.floor(z - oz * NUM_CELLS);
+            const waterValue = water[_getEtherIndex(lx, ly, lz)];
+            if (waterValue < 0) {
+              hadWater = true;
+            }
+            const lavaValue = lava[_getEtherIndex(lx, ly, lz)];
+            if (lavaValue < 0) {
+              hadLava = true;
+            }
+
+            if (hadWater || hadLava) {
+              return false;
+            }
+          }
+
           return true;
+        });
+
+        if (chunkResult === false) {
+          const uint32Array = new Uint32Array(buffer, 0, 6);
+          const int32Array = new Int32Array(buffer, 0, 6);
+
+          uint32Array[0] = topN;
+          int32Array[1] = topChunkX;
+          int32Array[2] = topChunkZ;
+          uint32Array[3] = topObjectIndex;
+          uint32Array[4] = +hadWater;
+          uint32Array[5] = +hadLava;
+
+          return;
         }
-      });
-
-      if (chunkResult === false) {
-        const uint32Array = new Uint32Array(buffer, 0, 4);
-        const int32Array = new Int32Array(buffer, 0, 4);
-
-        uint32Array[0] = topN;
-        int32Array[1] = topChunkX;
-        int32Array[2] = topChunkZ;
-        uint32Array[3] = topObjectIndex;
-
-        return;
       }
     }
   }
