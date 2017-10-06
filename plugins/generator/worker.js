@@ -1525,14 +1525,20 @@ self.onmessage = e => {
         entry.added++;
 
         if (entry.added === 1) {
-          zde.forEachObject((localN, matrix, value, objectIndex) => { // XXX also need to do this efficiently when the chunk loads
-            if (localN === n) {
-              postMessage({
-                type: 'objectAdded',
-                args: [localN, chunk.x, chunk.z, objectIndex, matrix.slice(0, 3), matrix.slice(3, 7), value],
+          for (const index in zde.chunks) {
+            const chunk = zde.chunks[index];
+
+            if (chunk) {
+              chunk.forEachObject((localN, matrix, value, objectIndex) => {
+                if (localN === n) {
+                  postMessage({
+                    type: 'objectAdded',
+                    args: [localN, chunk.x, chunk.z, objectIndex, matrix.slice(0, 3), matrix.slice(3, 7), value],
+                  });
+                }
               });
             }
-          });
+          }
         }
       }
       if (removed) {
