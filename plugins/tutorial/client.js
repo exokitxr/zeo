@@ -117,13 +117,13 @@ class Tutorial {
             [9, 0.05, -0.05, 0.02],
           ]);
           const rightControllerGeometry = _makeGeometry([
-            [0, 0, 0.022, 0.05],
-            [3, -0.08, -0.015, 0.07],
-            [4, 0, 0.022, 0.02],
             [6, 0, 0.12, 0],
             [7, 0, 0.09, 0],
             [8, 0, 0.06, 0],
             [11, -0.05, -0.05, 0.02],
+            [4, 0, 0.022, 0.02],
+            [0, 0, 0.022, 0.05],
+            [3, -0.08, -0.015, 0.07],
           ]);
 
           const texture = new THREE.Texture(
@@ -141,6 +141,8 @@ class Tutorial {
           const material = new THREE.MeshBasicMaterial({
             // color: 0x333333,
             map: texture,
+            transparent: true,
+            depthWrite: false,
           });
 
           const hmdMesh = new THREE.Mesh(hmdGeometry, material);
