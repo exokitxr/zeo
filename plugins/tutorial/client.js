@@ -9,6 +9,7 @@ class Tutorial {
     const {THREE, scene} = three;
 
     const upVector = new THREE.Vector3(0, 1, 0);
+    const localVector = new THREE.Vector3();
 
     const _requestImage = url => new Promise((accept, reject) => {
       const img = new Image();
@@ -38,15 +39,31 @@ class Tutorial {
     return _requestImageBitmap('/archae/tutorial/img/controls-atlas.png')
       .then(controlsAtlasImg => {
         if (live) {
-          const geometry = (() => {
-            const width = 0.2;
-            const height = width * 2 * (74 / 1024);
-            const planeGeometry = new THREE.PlaneBufferGeometry(width, height);
-            const planeGeometryPositions = planeGeometry.getAttribute('position').array;
-            const planeGeometryUvs = planeGeometry.getAttribute('uv').array;
-            const planeGeometryIndex = planeGeometry.index.array;
+          const width = 0.2;
+          const height = width * 2 * (74 / 1024);
+          const planeGeometry = new THREE.PlaneBufferGeometry(width, height);
+          const planeGeometryPositions = planeGeometry.getAttribute('position').array;
+          const planeGeometryUvs = planeGeometry.getAttribute('uv').array;
+          const planeGeometryIndex = planeGeometry.index.array;
 
-            const numPlanes = 12;
+          const totalNumPlanes = 12;
+          const widths = [
+            0.65,
+            0.75,
+            0.7,
+            0.55,
+            0.55,
+            0.35,
+            0.55,
+            0.9,
+            0.85,
+            0.5,
+            0.55,
+            0.55,
+          ];
+
+          const _makeGeometry = planes => {
+            const numPlanes = planes.length;
             const positions = new Float32Array(planeGeometryPositions.length * numPlanes);
             const uvs = new Float32Array(planeGeometryUvs.length * numPlanes);
             const indices = new Uint16Array(planeGeometryIndex.length * numPlanes);
@@ -54,35 +71,21 @@ class Tutorial {
             let uvIndex = 0;
             let indexIndex = 0;
 
-            const widths = [
-              0.65,
-              0.75,
-              0.7,
-              0.55,
-              0.55,
-              0.35,
-              0.55,
-              0.9,
-              0.85,
-              0.5,
-              0.55,
-              0.55,
-            ];
-
-            for (let i = 0; i < numPlanes; i++) {
+            for (let i = 0; i < planes.length; i++) {
+              const planeIndex = planes[i];
               const newPositions = planeGeometryPositions.slice();
               const numNewPositions = newPositions.length / 3;
               for (let j = 0; j < numNewPositions; j++) {
-                newPositions[j * 3 + 0] *= widths[i];
-                newPositions[j * 3 + 1] += 0.5 - (i / numPlanes);
+                newPositions[j * 3 + 0] *= widths[planeIndex];
+                newPositions[j * 3 + 1] += (height * numPlanes / 2) - (i * height);
               }
               positions.set(newPositions, attributeIndex);
 
               const newUvs = planeGeometryUvs.slice();
               const numNewUvs = newUvs.length / 2;
               for (let j = 0; j < numNewUvs; j++) {
-                newUvs[j * 2 + 0] *= widths[i];
-                newUvs[j * 2 + 1] = 1 - (i / numPlanes + (1 - newUvs[j * 2 + 1]) / numPlanes);
+                newUvs[j * 2 + 0] *= widths[planeIndex];
+                newUvs[j * 2 + 1] = 1 - (planeIndex / totalNumPlanes + (1 - newUvs[j * 2 + 1]) / totalNumPlanes);
               }
               uvs.set(newUvs, uvIndex);
 
@@ -99,7 +102,25 @@ class Tutorial {
             geometry.addAttribute('uv', new THREE.BufferAttribute(uvs, 2));
             geometry.setIndex(new THREE.BufferAttribute(indices, 1));
             return geometry;
-          })();
+          };
+          const hmdGeometry = _makeGeometry([
+            0,
+          ]);
+          const leftControllerGeometry = _makeGeometry([
+            1,
+            2,
+            3,
+            4,
+            5,
+          ]);
+          const rightControllerGeometry = _makeGeometry([
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+          ]);
 
           const texture = new THREE.Texture(
             controlsAtlasImg,
@@ -118,22 +139,39 @@ class Tutorial {
             map: texture,
           });
 
-          const mesh = new THREE.Mesh(geometry, material);
-          scene.add(mesh);
+          const hmdMesh = new THREE.Mesh(hmdGeometry, material);
+          scene.add(hmdMesh);
+          const leftControllerMesh = new THREE.Mesh(leftControllerGeometry, material);
+          scene.add(leftControllerMesh);
+          const rightControllerMesh = new THREE.Mesh(rightControllerGeometry, material);
+          scene.add(rightControllerMesh);
 
           const _update = () => {
-            const {gamepads} = pose.getStatus();
-            const gamepad = gamepads.right;
-            const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
+            const {hmd, gamepads} = pose.getStatus();
+            const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmd;
+            const {left: leftGamepad, right: rightGamepad} = gamepads;
+            const {worldPosition: leftControllerPosition, worldRotation: leftControllerRotation} = leftGamepad;
+            const {worldPosition: rightControllerPosition, worldRotation: rightControllerRotation} = rightGamepad;
 
-            mesh.position.copy(controllerPosition);
-            mesh.quaternion.copy(controllerRotation);
-            mesh.updateMatrixWorld();
+            hmdMesh.position.copy(hmdPosition)
+              .add(localVector.set(-0.16, 0.135, -0.2).applyQuaternion(hmdRotation));
+            hmdMesh.quaternion.copy(hmdRotation);
+            hmdMesh.updateMatrixWorld();
+
+            leftControllerMesh.position.copy(leftControllerPosition);
+            leftControllerMesh.quaternion.copy(leftControllerRotation);
+            leftControllerMesh.updateMatrixWorld();
+
+            rightControllerMesh.position.copy(rightControllerPosition);
+            rightControllerMesh.quaternion.copy(rightControllerRotation);
+            rightControllerMesh.updateMatrixWorld();
           };
           render.on('update', _update);
 
           this._cleanup = () => {
-            scene.remove(mesh);
+            scene.remove(hmdMesh);
+            scene.remove(leftControllerMesh);
+            scene.remove(rightControllerMesh);
 
             render.removeListener('update', _update);
           };
