@@ -72,12 +72,16 @@ class Tutorial {
             let indexIndex = 0;
 
             for (let i = 0; i < planes.length; i++) {
-              const planeIndex = planes[i];
+              const [planeIndex, dx, dy, dz] = planes[i];
               const newPositions = planeGeometryPositions.slice();
               const numNewPositions = newPositions.length / 3;
               for (let j = 0; j < numNewPositions; j++) {
                 newPositions[j * 3 + 0] *= widths[planeIndex];
-                newPositions[j * 3 + 1] += (height * numPlanes / 2) - (i * height);
+                // newPositions[j * 3 + 1] += (height * numPlanes / 2) - (i * height);
+
+                newPositions[j * 3 + 0] += dx;
+                newPositions[j * 3 + 1] += dy;
+                newPositions[j * 3 + 2] += dz;
               }
               positions.set(newPositions, attributeIndex);
 
@@ -104,22 +108,22 @@ class Tutorial {
             return geometry;
           };
           const hmdGeometry = _makeGeometry([
-            0,
+            [5, -0.2, 0.15, -0.2],
+            [1, 0, -0.08, -0.2],
+            [2, 0, -0.12, -0.2],
+            [10, 0, -0.16, -0.2],
           ]);
           const leftControllerGeometry = _makeGeometry([
-            1,
-            2,
-            3,
-            4,
-            5,
+            [9, 0.05, -0.05, 0.02],
           ]);
           const rightControllerGeometry = _makeGeometry([
-            6,
-            7,
-            8,
-            9,
-            10,
-            11,
+            [0, 0, 0.022, 0.05],
+            [3, -0.08, -0.015, 0.07],
+            [4, 0, 0.022, 0.02],
+            [6, 0, 0.12, 0],
+            [7, 0, 0.09, 0],
+            [8, 0, 0.06, 0],
+            [11, -0.05, -0.05, 0.02],
           ]);
 
           const texture = new THREE.Texture(
@@ -153,8 +157,7 @@ class Tutorial {
             const {worldPosition: leftControllerPosition, worldRotation: leftControllerRotation} = leftGamepad;
             const {worldPosition: rightControllerPosition, worldRotation: rightControllerRotation} = rightGamepad;
 
-            hmdMesh.position.copy(hmdPosition)
-              .add(localVector.set(-0.16, 0.135, -0.2).applyQuaternion(hmdRotation));
+            hmdMesh.position.copy(hmdPosition);
             hmdMesh.quaternion.copy(hmdRotation);
             hmdMesh.updateMatrixWorld();
 
