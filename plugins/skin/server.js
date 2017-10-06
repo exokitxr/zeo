@@ -1,6 +1,6 @@
 const path = require('path');
 
-class Sprite {
+class Skin {
   constructor(archae) {
     this._archae = archae;
   }
@@ -33,4 +33,4 @@ class Sprite {
   }
 }
 
-module.exports = Sprite;
+module.exports = Skin;
