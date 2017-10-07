@@ -124,7 +124,6 @@ const firework = objectApi => {
     geometry.setDrawRange(0, 0);
     const particlesMesh = new THREE.Mesh(geometry, material);
     particlesMesh.frustumCulled = false;
-    scene.add(particlesMesh);
 
     let lastUpdateTime = Date.now();
     const _update = () => {
@@ -234,11 +233,19 @@ const firework = objectApi => {
         colorsAttribute.needsUpdate = true;
         indexAttribute.needsUpdate = true;
       };
+      const _updateParticlesMesh = () => {
+        if (particles.length > 0 && !particlesMesh.parent) {
+          scene.add(particlesMesh);
+        } else if (particles.length === 0 && particlesMesh.parent) {
+          scene.remove(particlesMesh);
+        }
+      };
 
       _updateFireworks();
       _addParticles();
       _updateParticles();
       _renderParticles();
+      _updateParticlesMesh();
 
       lastUpdateTime = now;
     };
@@ -248,9 +255,11 @@ const firework = objectApi => {
       fireworkGeometry.dispose();
       material.dispose();
 
-      items.unregisterItem(this, fireworkItemApi);
+      if (particlesMesh.parent) {
+        scene.remove(particlesMesh);
+      }
 
-      scene.remove(particlesMesh);
+      items.unregisterItem(this, fireworkItemApi);
       render.removeListener('update', _update);
     });
   });
