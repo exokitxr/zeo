@@ -15,6 +15,7 @@ const camera = require('./camera');
 const videoCamera = require('./video-camera');
 const torch = require('./torch');
 const fire = require('./fire');
+const firework = require('./firework');
 const house = require('./house');
 const bigHouse = require('./big-house');
 
@@ -36,6 +37,7 @@ const objectsLib = options => [
   videoCamera,
   torch,
   fire,
+  firework,
   house,
   bigHouse,
 ].map(objectLib => objectLib(options));
