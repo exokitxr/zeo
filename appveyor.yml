@@ -29,7 +29,6 @@ test_script:
 
 after_test:
   - ps: |
-      rm package-lock.json
       wget "https://nodejs.org/dist/v8.6.0/node-v8.6.0-win-x64.zip" -OutFile node.zip
       7z x node.zip
       rm node.zip
