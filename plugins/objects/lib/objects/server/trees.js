@@ -5,7 +5,6 @@ const {
   NUM_CELLS_OVERSCAN,
 } = require('../../constants/constants');
 const NUM_POSITIONS = 30 * 1024;
-const CAMERA_ROTATION_ORDER = 'YXZ';
 
 const {three: {THREE}, utils: {image: {jimp}}} = zeo;
 
