@@ -151,17 +151,6 @@
       "attributes": {},
       "metadata": {}
     },
-    "u3xua": {
-      "type": "entity",
-      "id": "u3xua",
-      "name": "/plugins/grass",
-      "displayName": "grass",
-      "version": "0.0.1",
-      "module": "/plugins/grass",
-      "tagName": "plugins-grass",
-      "attributes": {},
-      "metadata": {}
-    },
     "u3xub": {
       "type": "entity",
       "id": "u3xub",
