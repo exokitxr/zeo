@@ -1316,7 +1316,9 @@ const _decorateObjectsChunk = (chunk, index, numPositions, numObjectIndices, num
     const {objectIndices} = chunk.chunkData.objects;
     const objectIndexOffset = index * numObjectIndices;
     for (let i = 0; i < objectIndices.length; i++) {
-      objectIndices[i] += objectIndexOffset;
+      if (objectIndices[i] >= 0) {
+        objectIndices[i] += objectIndexOffset;
+      }
     }
 
     const objectsMapChunkMeshIndex = _findFreeObjectsMapChunkMeshIndex();
