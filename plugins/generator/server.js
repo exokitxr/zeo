@@ -1,8 +1,10 @@
 const path = require('path');
 const fs = require('fs');
 const child_process = require('child_process');
+const zlib = require('zlib');
 
 const touch = require('touch');
+const accepts = require('accept-encoding');
 const zeode = require('zeode');
 const {
   BLOCK_BUFFER_SIZE,
@@ -767,6 +769,13 @@ class Generator {
         }
         app.get('/archae/objects/objectize.wasm', serveObjectsObjectizeWasm);
         function serveObjectsTemplates(req, res, next) {
+          if (accepts(req, 'gzip')) {
+            res.set('Content-Encoding', 'gzip');
+            const zs = zlib.createGzip();
+            zs.pipe(res);
+            res = zs;
+          }
+
           res.write(new Buffer(geometriesBuffer.buffer, geometriesBuffer.byteOffset, geometriesBuffer.byteLength));
           res.write(new Buffer(geometryTypes.buffer, geometryTypes.byteOffset, geometryTypes.byteLength));
           res.write(new Buffer(blockTypes.buffer, blockTypes.byteOffset, blockTypes.byteLength));
@@ -784,21 +793,17 @@ class Generator {
           const z = parseInt(zs, 10);
 
           if (!isNaN(x) && !isNaN(z)) {
-            /* new Promise((accept, reject) => {
-              let chunk = zde.getChunk(x, z);
-              if (!chunk) {
-                chunk = _generateChunk(zde.makeChunk(x, z));
-                _saveChunks();
-              }
-              accept(chunk);
-            })
-              .then(chunk => !chunk[lightsRenderedSymbol] ? _decorateChunkLights(chunk) : Promise.resolve(chunk))
-              .then(chunk => !chunk[lightmapsSymbol] ? _decorateChunkLightmaps(chunk) : Promise.resolve(chunk)) */
             _requestChunk(x, z)
               .then(chunk => {
                 res.type('application/octet-stream');
                 res.set('Texture-Atlas-Version', textureImg.version);
                 res.set('Geometry-Version', geometriesBuffer.version);
+                if (accepts(req, 'gzip')) {
+                  res.set('Content-Encoding', 'gzip');
+                  const zs = zlib.createGzip();
+                  zs.pipe(res);
+                  res = zs;
+                }
 
                 const terrainBuffer = chunk.getTerrainBuffer();
                 res.write(new Buffer(terrainBuffer.buffer, terrainBuffer.byteOffset, terrainBuffer.byteLength));
