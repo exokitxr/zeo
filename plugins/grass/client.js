@@ -399,8 +399,8 @@ class Grass {
               THREE.UVMapping,
               THREE.ClampToEdgeWrapping,
               THREE.ClampToEdgeWrapping,
-              THREE.NearestMipMapLinearFilter,
-              THREE.NearestMipMapLinearFilter,
+              THREE.NearestFilter,
+              THREE.LinearMipMapLinearFilter,
               THREE.RGBAFormat,
               THREE.UnsignedByteType,
               16
