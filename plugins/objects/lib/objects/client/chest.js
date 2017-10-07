@@ -16,8 +16,6 @@ const chest = objectApi => {
   const localQuaternion = new THREE.Quaternion();
   const localEuler = new THREE.Euler();
 
-  const _getFaceUvIndex = (c, d) => c * 6 * 4 + d * 4;
-
   const chests = [];
 
   return () => new Promise((accept, reject) => {
@@ -58,55 +56,12 @@ const chest = objectApi => {
     const chestObjectApi = {
       object: 'chest',
       addedCallback(id, position, rotation, value, x, z, objectIndex) {
-        /* const lidGeometry = (() => {
-          const geometry = new THREE.BoxBufferGeometry(1, 0.2, 1)
-            .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromAxisAngle(
-              new THREE.Vector3(1, 0, 0),
-              -Math.PI / 2
-            )))
-            .applyMatrix(new THREE.Matrix4().makeTranslation(0, 1, -1/2 - 0.2/2));
-          const uvs = geometry.getAttribute('uv').array;
-          const numUvs = uvs.length / 2;
-          const numFaces = numUvs / 4;
-          for (let i = 0; i < numFaces; i++) {
-            const faceIndex = i >> 2;
-
-            let chestUvs;
-            if (faceIndex === 0) { // right
-              chestUvs = chestSideUvs;
-            } else if (faceIndex === 1) { // left
-              chestUvs = chestSideUvs;
-            } else if (faceIndex === 2) { // top
-              chestUvs = chestTopUvs;
-            } else if (faceIndex === 3) { // bottom
-              chestUvs = chestInsideUvs;
-            } else if (faceIndex === 4) { // front
-              chestUvs = chestFrontUvs;
-            } else {
-              chestUvs = chestSideUvs;
-            }
-            const uvWidth = chestUvs[2] - chestUvs[0];
-            const uvHeight = chestUvs[3] - chestUvs[1];
-            uvs[i * 2 + 0] = chestUvs[0] + (uvs[i * 2 + 0] * uvWidth);
-            uvs[i * 2 + 1] = (chestUvs[1] + uvHeight) - (uvs[i * 2 + 1] * uvHeight);
-          }
-
-          return geometry;
-        })();
-        const material = objectApi.getMaterial();
-        const mesh = new THREE.Mesh(geometry, material);
-        scene.add(mesh); */
-
         const chest = {
           x,
           z,
           objectIndex,
-          // id,
           position: position.clone(),
           rotation: rotation.clone(),
-          /* destroy: () => {
-            scene.remove(mesh);
-          }, */
         };
 
         chests[id] = chest;
@@ -151,63 +106,17 @@ const chest = objectApi => {
     const chestOpenObjectApi = {
       object: 'chest-open',
       addedCallback(id, position, rotation, value, x, z, objectIndex) {
-        /* const lidGeometry = (() => {
-          const geometry = new THREE.BoxBufferGeometry(1, 0.2, 1)
-            .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromAxisAngle(
-              new THREE.Vector3(1, 0, 0),
-              -Math.PI / 2
-            )))
-            .applyMatrix(new THREE.Matrix4().makeTranslation(0, 1, -1/2 - 0.2/2));
-          const uvs = geometry.getAttribute('uv').array;
-          const numUvs = uvs.length / 2;
-          const numFaces = numUvs / 4;
-          for (let i = 0; i < numFaces; i++) {
-            const faceIndex = i >> 2;
-
-            let chestUvs;
-            if (faceIndex === 0) { // right
-              chestUvs = chestSideUvs;
-            } else if (faceIndex === 1) { // left
-              chestUvs = chestSideUvs;
-            } else if (faceIndex === 2) { // top
-              chestUvs = chestTopUvs;
-            } else if (faceIndex === 3) { // bottom
-              chestUvs = chestInsideUvs;
-            } else if (faceIndex === 4) { // front
-              chestUvs = chestFrontUvs;
-            } else {
-              chestUvs = chestSideUvs;
-            }
-            const uvWidth = chestUvs[2] - chestUvs[0];
-            const uvHeight = chestUvs[3] - chestUvs[1];
-            uvs[i * 2 + 0] = chestUvs[0] + (uvs[i * 2 + 0] * uvWidth);
-            uvs[i * 2 + 1] = (chestUvs[1] + uvHeight) - (uvs[i * 2 + 1] * uvHeight);
-          }
-
-          return geometry;
-        })();
-        const material = objectApi.getMaterial();
-        const mesh = new THREE.Mesh(geometry, material);
-        scene.add(mesh); */
-
         const chest = {
           x,
           z,
           objectIndex,
-          // id,
           position: position.clone(),
           rotation: rotation.clone(),
-          /* destroy: () => {
-            scene.remove(mesh);
-          }, */
         };
 
         chests[id] = chest;
       },
       removedCallback(id) {
-        /* const chest = chests[id];
-        chest.destroy(); */
-
         chests[id] = null;
       },
       triggerCallback(id, side, x, z, objectIndex) {
