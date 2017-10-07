@@ -1,15 +1,8 @@
 class Tutorial {
-  constructor(archae) {
-    this._archae = archae;
-  }
-
   mount() {
-    const {_archae: archae} = this;
-    const {three, render, pose} = zeo;
+    const {three, render, input, pose, utils: {strg: strgUtils}} = zeo;
     const {THREE, scene} = three;
-
-    const upVector = new THREE.Vector3(0, 1, 0);
-    const localVector = new THREE.Vector3();
+    const {strgApi} = strgUtils;
 
     const _requestImage = url => new Promise((accept, reject) => {
       const img = new Image();
@@ -30,13 +23,7 @@ class Tutorial {
         dst[startIndexIndex + i] = src[i] + startAttributeIndex;
       }
     };
-
-    let live = true;
-    this._cleanup = () => {
-      live = false;
-    };
-
-    return _requestImageBitmap('/archae/tutorial/img/controls-atlas.png')
+    const _loadTutorial = () => _requestImageBitmap('/archae/tutorial/img/controls-atlas.png')
       .then(controlsAtlasImg => {
         if (live) {
           const width = 0.2;
@@ -77,7 +64,6 @@ class Tutorial {
               const numNewPositions = newPositions.length / 3;
               for (let j = 0; j < numNewPositions; j++) {
                 newPositions[j * 3 + 0] *= widths[planeIndex];
-                // newPositions[j * 3 + 1] += (height * numPlanes / 2) - (i * height);
 
                 newPositions[j * 3 + 0] += dx;
                 newPositions[j * 3 + 1] += dy;
@@ -173,15 +159,84 @@ class Tutorial {
           };
           render.on('update', _update);
 
-          this._cleanup = () => {
+          _destroy = () => {
             scene.remove(hmdMesh);
             scene.remove(leftControllerMesh);
             scene.remove(rightControllerMesh);
+
+            hmdGeometry.dispose();
+            leftControllerGeometry.dispose();
+            rightControllerGeometry.dispose();
+            texture.dispose();
+            material.dispose();
 
             render.removeListener('update', _update);
           };
         }
       });
+    const _unloadTutorial = () => {
+      _destroy();
+      _destroy = null;
+
+      return Promise.resolve();
+    };
+
+    let loading = true;
+    strgApi.get('tutorial')
+      .then(tutorialFlag => {
+        if (tutorialFlag || tutorialFlag === undefined) {
+          _loadTutorial()
+            .then(() => {
+              loading = false;
+            });
+        } else {
+          loading = false;
+        }
+      });
+
+    const _keydown = e => {
+      if (e.event.key === 'F1') {
+        if (!loading) {
+          loading = true;
+
+          strgApi.get('tutorial')
+            .then(tutorialFlag => {
+              tutorialFlag = !tutorialFlag;
+
+              (tutorialFlag ? _loadTutorial : _unloadTutorial)()
+                .then(() => {
+                  strgApi.set('tutorial', tutorialFlag)
+                    .then(() => {
+                      loading = false;
+                    })
+                    .catch(err => {
+                      console.warn(err);
+
+                      loading = false;
+                    });
+                });
+            })
+            .catch(err => {
+              console.warn(err);
+
+              loading = false;
+            });
+        }
+
+        e.preventDefault();
+      }
+    };
+    input.on('keydown', _keydown);
+
+    let live = true;
+    this._cleanup = () => {
+      live = false;
+
+      __destroy && destroy();
+
+      input.removeListener('_keydown', _keydown);
+    };
+    let _destroy = null;
   }
 
   unmount() {
