@@ -1,3 +1,7 @@
+const zlib = require('zlib');
+
+const accepts = require('accept-encoding');
+
 const {
   NUM_CELLS,
   NUM_CELLS_OVERSCAN,
@@ -286,7 +290,13 @@ class Grass {
 
             function serveGrassImg(req, res, next) {
               res.type('image/png');
-              res.send(textureAtlasData);
+              if (accepts(req, 'gzip')) {
+                res.set('Content-Encoding', 'gzip');
+                const zs = zlib.createGzip();
+                zs.pipe(res);
+                res = zs;
+              }
+              res.end(textureAtlasData);
             }
             app.get('/archae/grass/img/texture-atlas.png', serveGrassImg);
 
@@ -311,7 +321,13 @@ class Grass {
                     const [_, byteOffset] = protocolUtils.stringifyDataGeometry(geometry, generateBuffer.buffer, generateBuffer.byteOffset);
 
                     res.type('application/octet-stream');
-                    res.send(new Buffer(generateBuffer.buffer, generateBuffer.byteOffset, byteOffset));
+                    if (accepts(req, 'gzip')) {
+                      res.set('Content-Encoding', 'gzip');
+                      const zs = zlib.createGzip();
+                      zs.pipe(res);
+                      res = zs;
+                    }
+                    res.end(new Buffer(generateBuffer.buffer, generateBuffer.byteOffset, byteOffset));
                   })
                   .catch(err => {
                     res.status(500);

@@ -7,5 +7,7 @@
   "builds": {
     "worker": "worker.js"
   },
-  "dependencies": {}
+  "dependencies": {
+    "accept-encoding": "^0.1.0"
+  }
 }
