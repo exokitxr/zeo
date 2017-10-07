@@ -253,7 +253,7 @@ const grass = objectApi => {
                 localQuaternion.setFromAxisAngle(upVector, objectApi.getHash(v + ':angle') / 0xFFFFFFFF * Math.PI * 2);
                 const grassTemplateIndex = Math.floor(objectApi.getHash(v + ':template') / 0xFFFFFFFF * numGrassTemplates);
 
-                objectApi.addObject(chunk, 'grass-' + grassTemplateIndex, localVector, localQuaternion, 0);
+                objectApi.addVegetation(chunk, 'grass-' + grassTemplateIndex, localVector, localQuaternion);
               }
             }
           }

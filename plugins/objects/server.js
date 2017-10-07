@@ -104,6 +104,9 @@ class Objects {
             addObject(chunk, name, position, rotation, value) {
               generatorElement.addObject(chunk, name, position, rotation, value);
             },
+            addVegetation(chunk, name, position, rotation) {
+              generatorElement.addVegetation(chunk, name, position, rotation);
+            },
           };
           objectApi.registerNoise('grass', { // XXX move these into the objects lib
             seed: DEFAULT_SEED + ':grass',

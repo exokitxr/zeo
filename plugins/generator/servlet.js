@@ -145,7 +145,8 @@ const _init = () => _requestPlugins([
       [METHODS.generateObjects]: cb => {
         _readArgs([
           Int32Array, // header
-          Uint32Array, // objects
+          Uint32Array, // objects src
+          Uint32Array, // vegetations src
           Uint32Array, // blocks
           Uint8Array, // geometry buffer
           Uint32Array, // geometry types
@@ -155,7 +156,8 @@ const _init = () => _requestPlugins([
           Float32Array, // face uvs
         ], (err, [
           header,
-          src,
+          objectsSrc,
+          vegetationsSrc,
           blocks,
           geometriesBuffer,
           geometryTypes,
@@ -168,7 +170,8 @@ const _init = () => _requestPlugins([
           const result = objectsTesselator.tesselate(
             ox,
             oz,
-            src,
+            objectsSrc,
+            vegetationsSrc,
             blocks,
             geometriesBuffer,
             geometryTypes,

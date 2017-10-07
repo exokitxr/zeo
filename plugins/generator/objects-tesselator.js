@@ -38,7 +38,7 @@ const boundingSpheres = (() => {
   }
   return result;
 })();
-const tesselate = (x, z, src, blocks, geometriesBuffer, geometryTypes, blockTypes, transparentVoxels, translucentVoxels, faceUvs) => {
+const tesselate = (x, z, objectsSrc, vegetationsSrc, blocks, geometriesBuffer, geometryTypes, blockTypes, transparentVoxels, translucentVoxels, faceUvs) => {
   _makeGeometeriesBuffer.reset();
   const geometriesPositions = _makeGeometeriesBuffer(Float32Array);
   const geometriesUvs = _makeGeometeriesBuffer(Float32Array);
@@ -57,7 +57,8 @@ const tesselate = (x, z, src, blocks, geometriesBuffer, geometryTypes, blockType
     indices: numNewIndices,
     objects: numNewObjects,
   } = vxl.objectize({
-    src,
+    objectsSrc,
+    vegetationsSrc,
     geometries: geometriesBuffer,
     geometryIndex: geometryTypes,
     blocks,

@@ -210,6 +210,7 @@ class Generator {
       childProcess.request(servlet.METHODS.generateObjects, [
         Int32Array.from([chunk.x, chunk.z]),
         chunk.getObjectBuffer(),
+        chunk.getVegetationBuffer(),
         chunk.getBlockBuffer(),
         geometriesBuffer,
         geometryTypes,
@@ -705,6 +706,9 @@ class Generator {
               chunk.addLightAt(objectIndex, position.x, position.y, position.z, light);
             }
           }
+          addVegetation(chunk, name, position, rotation) {
+            chunk.addVegetation(murmur(name), position.toArray().concat(rotation.toArray()));
+          }
           requestLightmaps(x, z, positions) {
             return _requestChunkHard(x, z)
               .then(chunk => _requestChunkWithLights(chunk))
@@ -810,6 +814,9 @@ class Generator {
 
                 const objectBuffer = chunk.getObjectBuffer();
                 res.write(new Buffer(objectBuffer.buffer, objectBuffer.byteOffset, objectBuffer.byteLength));
+
+                const vegetationBuffer = chunk.getVegetationBuffer();
+                res.write(new Buffer(vegetationBuffer.buffer, vegetationBuffer.byteOffset, vegetationBuffer.byteLength));
 
                 const blockBuffer = chunk.getBlockBuffer();
                 res.write(new Buffer(blockBuffer.buffer, blockBuffer.byteOffset, blockBuffer.byteLength));

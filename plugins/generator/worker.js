@@ -98,6 +98,7 @@ const zeode = require('zeode');
 const {
   TERRAIN_BUFFER_SIZE,
   OBJECT_BUFFER_SIZE,
+  VEGETATION_BUFFER_SIZE,
   BLOCK_BUFFER_SIZE,
   LIGHT_BUFFER_SIZE,
   GEOMETRY_BUFFER_SIZE,
@@ -377,6 +378,7 @@ const _retesselateObjects = chunk => {
 
   Module._objectize(
     allocator.allocBuffer(chunk.getObjectBuffer()),
+    allocator.allocBuffer(chunk.getVegetationBuffer()),
     allocator.allocBuffer(geometriesBuffer),
     allocator.allocBuffer(geometryTypes),
     allocator.allocBuffer(chunk.getBlockBuffer()),
@@ -1203,6 +1205,8 @@ const _requestChunk = (x, z) => {
         index += TERRAIN_BUFFER_SIZE;
         const objectBuffer = new Uint32Array(buffer, index, OBJECT_BUFFER_SIZE / Uint32Array.BYTES_PER_ELEMENT);
         index += OBJECT_BUFFER_SIZE;
+        const vegetationBuffer = new Uint32Array(buffer, index, VEGETATION_BUFFER_SIZE / Uint32Array.BYTES_PER_ELEMENT);
+        index += VEGETATION_BUFFER_SIZE;
         const blockBuffer = new Uint32Array(buffer, index, BLOCK_BUFFER_SIZE / Uint32Array.BYTES_PER_ELEMENT);
         index += BLOCK_BUFFER_SIZE;
         const lightBuffer = new Float32Array(buffer, index, LIGHT_BUFFER_SIZE / Float32Array.BYTES_PER_ELEMENT);
@@ -1211,7 +1215,7 @@ const _requestChunk = (x, z) => {
         index += GEOMETRY_BUFFER_SIZE;
         const decorationsBuffer = new Uint8Array(buffer, index);
 
-        const chunk = new zeode.Chunk(x, z, 0, terrainBuffer, objectBuffer, blockBuffer, lightBuffer, geometryBuffer);
+        const chunk = new zeode.Chunk(x, z, 0, terrainBuffer, objectBuffer, vegetationBuffer, blockBuffer, lightBuffer, geometryBuffer);
         chunk.chunkData = {
           terrain: protocolUtils.parseTerrainData(terrainBuffer.buffer, terrainBuffer.byteOffset),
           objects: protocolUtils.parseGeometry(geometryBuffer.buffer, geometryBuffer.byteOffset),
