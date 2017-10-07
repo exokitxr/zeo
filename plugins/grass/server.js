@@ -11,11 +11,9 @@ const {
 const protocolUtils = require('./lib/utils/protocol-utils');
 
 const NUM_POSITIONS_CHUNK = 200 * 1024;
-const LIGHTMAP_BUFFER_SIZE = 100 * 1024 * 4;
 const TEXTURE_SIZE = 1024;
 const TEXTURE_CHUNK_SIZE = 512;
 const NUM_TEXTURE_CHUNKS_WIDTH = TEXTURE_SIZE / TEXTURE_CHUNK_SIZE;
-const HEIGHTFIELD_DEPTH = 8;
 const GENERATOR_PLUGIN = 'plugins-generator';
 
 class Grass {
@@ -245,7 +243,6 @@ class Grass {
                   const v = grassNoise.in2D(ax + 1000, az + 1000);
 
                   if (v < grassProbability) {
-                    // const elevation = heightfield[(dx + (dz * NUM_CELLS_OVERSCAN)) * HEIGHTFIELD_DEPTH];
                     const elevation = generatorElement.getElevation(ax, az);
 
                     if (elevation > 64) {
