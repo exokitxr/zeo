@@ -54,8 +54,12 @@ class Input {
 
         this.reset();
       }
-      preventDefault() {}
-      stopPropagation() {}
+      preventDefault() {
+        this.event.preventDefault();
+      }
+      stopPropagation() {
+        this.event.stopPropagation();
+      }
       stopImmediatePropagation() {
         this.live = false;
       }
