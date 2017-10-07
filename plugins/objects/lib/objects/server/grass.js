@@ -3,9 +3,7 @@ const {
   NUM_CELLS_OVERSCAN,
 } = require('../../constants/constants');
 const NUM_POSITIONS_CHUNK = 200 * 1024;
-const TEXTURE_SIZE = 1024;
-const TEXTURE_CHUNK_SIZE = 512;
-const NUM_TEXTURE_CHUNKS_WIDTH = TEXTURE_SIZE / TEXTURE_CHUNK_SIZE;
+const TEXTURE_SIZE = 512;
 
 const {three: {THREE}, utils: {image: {jimp}}} = zeo;
 
@@ -18,8 +16,6 @@ const grass = objectApi => {
   })();
 
   const _requestGrassImg = () => {
-return Promise.resolve(new jimp(2, 2)); // XXX
-
     class Triangle {
       constructor(a, b, c) {
         this.a = a;
@@ -49,68 +45,61 @@ return Promise.resolve(new jimp(2, 2)); // XXX
     };
 
     const img = new jimp(TEXTURE_SIZE, TEXTURE_SIZE);
-    for (let y = 0; y < NUM_TEXTURE_CHUNKS_WIDTH; y++) {
-      for (let x = 0; x < NUM_TEXTURE_CHUNKS_WIDTH; x++) {
-        const numBlades = Math.floor(5 + (rng() * 5));
-        const numTrianglesPerBlade = 5;
-        const numTriangles = numBlades * numTrianglesPerBlade;
-        const triangles = Array(numTriangles);
-        for (let i = 0; i < numBlades; i++) {
-          const type = rng() < 0.5 ? -1 : 0;
-          const flip = rng() < 0.5 ? -1 : 1;
-          const w = (type === -1) ? 0.3 : 0.4;
-          const h = type === -1 ? 0.6 : 0.25;
-          const ox = (rng() * (1 - w)) + (flip === -1 ? w : 0);
-          const sy = (1 / h) * (0.25 + rng() * 0.75);
-          const points = (type === -1 ? [
-            new THREE.Vector2(0, 0),
-            new THREE.Vector2(0.1, 0),
-            new THREE.Vector2(0.05, 0.2),
-            new THREE.Vector2(0.15, 0.2),
-            new THREE.Vector2(0.125, 0.4),
-            new THREE.Vector2(0.2, 0.4),
-            new THREE.Vector2(0.3, 0.6),
-          ] : [
-            new THREE.Vector2(0, 0.2),
-            new THREE.Vector2(0.125, 0.125),
-            new THREE.Vector2(0.1, 0),
-            new THREE.Vector2(0.2, 0),
-            new THREE.Vector2(0.2, 0.13),
-            new THREE.Vector2(0.3, 0.13),
-            new THREE.Vector2(0.4, 0.25),
-          ]).map(v => v
-            .multiply(new THREE.Vector2(flip, sy))
-            .add(new THREE.Vector2(ox, 0))
-          );
+    const numBlades = 7;
+    const numTrianglesPerBlade = 5;
+    const numTriangles = numBlades * numTrianglesPerBlade;
+    const triangles = Array(numTriangles);
+    for (let i = 0; i < numBlades; i++) {
+      const type = rng() < 0.5 ? -1 : 0;
+      const flip = rng() < 0.5 ? -1 : 1;
+      const w = (type === -1) ? 0.3 : 0.4;
+      const h = type === -1 ? 0.6 : 0.25;
+      const ox = (rng() * (1 - w)) + (flip === -1 ? w : 0);
+      const sy = (1 / h) * (0.25 + rng() * 0.75);
+      const points = (type === -1 ? [
+        new THREE.Vector2(0, 0),
+        new THREE.Vector2(0.1, 0),
+        new THREE.Vector2(0.05, 0.2),
+        new THREE.Vector2(0.15, 0.2),
+        new THREE.Vector2(0.125, 0.4),
+        new THREE.Vector2(0.2, 0.4),
+        new THREE.Vector2(0.3, 0.6),
+      ] : [
+        new THREE.Vector2(0, 0.2),
+        new THREE.Vector2(0.125, 0.125),
+        new THREE.Vector2(0.1, 0),
+        new THREE.Vector2(0.2, 0),
+        new THREE.Vector2(0.2, 0.13),
+        new THREE.Vector2(0.3, 0.13),
+        new THREE.Vector2(0.4, 0.25),
+      ]).map(v => v
+        .multiply(new THREE.Vector2(flip, sy))
+        .add(new THREE.Vector2(ox, 0))
+      );
 
-          for (let j = 0; j < numTrianglesPerBlade; j++) {
-            const triangle = new Triangle(
-              points[j + 0],
-              points[j + 1],
-              points[j + 2]
-            );
-            triangles[i * numTrianglesPerBlade + j] = triangle;
-          }
-        }
+      for (let j = 0; j < numTrianglesPerBlade; j++) {
+        const triangle = new Triangle(
+          points[j + 0],
+          points[j + 1],
+          points[j + 2]
+        );
+        triangles[i * numTrianglesPerBlade + j] = triangle;
+      }
+    }
 
-        for (let dy = 0; dy < TEXTURE_CHUNK_SIZE; dy++) {
-          for (let dx = 0; dx < TEXTURE_CHUNK_SIZE; dx++) {
-            const ax = (x * TEXTURE_CHUNK_SIZE) + dx;
-            const ay = (y * TEXTURE_CHUNK_SIZE) + dy;
-
-            img.setPixelColor(
-              _isPointInTriangles(
-                new THREE.Vector2(dx / TEXTURE_CHUNK_SIZE, 1 - (dy / TEXTURE_CHUNK_SIZE)),
-                triangles
-              ) ?
-                ((baseColor.clone().multiplyScalar(0.3 + ((1 - (dy / TEXTURE_CHUNK_SIZE)) * 1)).getHex() << 8) | 0xFF)
-              :
-                0x00000000,
-              ax,
-              ay
-            );
-          }
-        }
+    for (let dy = 0; dy < TEXTURE_SIZE; dy++) {
+      for (let dx = 0; dx < TEXTURE_SIZE; dx++) {
+        img.setPixelColor(
+          _isPointInTriangles(
+            new THREE.Vector2(dx / TEXTURE_SIZE, 1 - (dy / TEXTURE_SIZE)),
+            triangles
+          ) ?
+            ((baseColor.clone().multiplyScalar(0.3 + ((1 - (dy / TEXTURE_SIZE)) * 1)).getHex() << 8) | 0xFF)
+          :
+            0x00000000,
+          dx,
+          dy
+        );
       }
     }
     return Promise.resolve(img);
@@ -167,8 +156,12 @@ return Promise.resolve(new jimp(2, 2)); // XXX
   })();
 
   return () => _requestGrassImg()
-    .then(img => objectApi.registerTexture('grass', img, {fourTap: true}))
+    .then(img => objectApi.registerTexture('grass', img))
     .then(() => {
+      const grassUvs = objectApi.getUv('grass');
+      const uvWidth = grassUvs[2] - grassUvs[0];
+      const uvHeight = grassUvs[3] - grassUvs[1];
+
       const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
         for (let i = 0; i < src.length; i++) {
           dst[startIndexIndex + i] = src[i] + startAttributeIndex;
@@ -201,12 +194,16 @@ return Promise.resolve(new jimp(2, 2)); // XXX
           positions.set(newPositions, attributeIndex);
           const newUvs = geometry.getAttribute('uv').array;
           const numNewUvs = newUvs.length / 2;
-          const tx = Math.floor(rng() * NUM_TEXTURE_CHUNKS_WIDTH);
-          const ty = Math.floor(rng() * NUM_TEXTURE_CHUNKS_WIDTH);
+
           for (let j = 0; j < numNewUvs; j++) {
             const baseIndex = j * 2;
-            newUvs[baseIndex + 0] = ((tx + (0.02 + newUvs[baseIndex + 0] * 0.96)) / NUM_TEXTURE_CHUNKS_WIDTH);
-            newUvs[baseIndex + 1] = 1 - ((tx + (1 - (0.02 + newUvs[baseIndex + 1] * 0.96))) / NUM_TEXTURE_CHUNKS_WIDTH);
+            let u = 0.02 + newUvs[baseIndex + 0] * 0.96;
+            u = grassUvs[0] + u * uvWidth;
+            let v = 0.02 + (1 - newUvs[baseIndex + 1]) * 0.96;
+            v = grassUvs[0] + v * uvHeight;
+
+            newUvs[baseIndex + 0] = u;
+            newUvs[baseIndex + 1] = v;
           }
           uvs.set(newUvs, uvIndex);
           const newIndices = geometry.index.array;

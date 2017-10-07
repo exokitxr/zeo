@@ -11,7 +11,7 @@ const HEIGHTFIELD_DEPTH = 8;
 
 const RANGE = 11;
 
-const TEXTURE_SIZE = 512;
+const TEXTURE_SIZE = 1024;
 
 const DEFAULT_SEED = 'a';
 

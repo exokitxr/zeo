@@ -747,7 +747,7 @@ class Generator {
           textureImg.getBuffer('image/png', (err, buffer) => {
             if (!err) {
               res.type('image/png');
-              res.send(buffer);
+              res.end(buffer);
             } else {
               res.status(500);
               res.json({
@@ -833,7 +833,7 @@ class Generator {
               });
           } else {
             res.status(400);
-            res.send();
+            res.end();
           }
         }
         app.get('/archae/generator/chunks', serveGeneratorChunks);
