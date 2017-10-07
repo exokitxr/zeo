@@ -8,9 +8,6 @@ const terrainTesselatorLib = require('./terrain-tesselator');
 const objectsTesselatorLib = require('./objects-tesselator');
 const Pullstream = require('pullstream');
 
-const installDirectory = process.argv[2];
-const prefix = path.join(installDirectory, 'plugins');
-
 let numMethods = 0;
 const METHODS = {
   generateTerrain: numMethods++,
@@ -41,6 +38,8 @@ const _instantiate = (o, arg) => {
   }
 };
 const _requestPlugin = p => {
+  const installDirectory = process.argv[2];
+  const prefix = path.join(installDirectory, 'plugins');
   const constructor = require(`${prefix}/${p.replace(/\//g, '_')}/node_modules/${p.match(/\/([^\/]+)$/)[1]}/server.js`);
   const m = _instantiate(constructor);
   return Promise.resolve(m.mount());
