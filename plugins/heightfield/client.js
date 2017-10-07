@@ -221,8 +221,14 @@ class Heightfield {
           right: false,
         };
         const uniformsNeedUpdate = {
-          left: true,
-          right: true,
+          heightfield: {
+            left: true,
+            right: true,
+          },
+          ocean: {
+            left: true,
+            right: true,
+          },
         };
         function _updateModelViewMatrix(camera) {
           if (!modelViewMatricesValid[camera.name]) {
@@ -238,9 +244,17 @@ class Heightfield {
           }
           this.normalMatrix = normalMatrices[camera.name];
         }
-        function _uniformsNeedUpdate(camera) {
-          if (uniformsNeedUpdate[camera.name]) {
-            uniformsNeedUpdate[camera.name] = false;
+        function _uniformsNeedUpdateHeightfield(camera) {
+          if (uniformsNeedUpdate.heightfield[camera.name]) {
+            uniformsNeedUpdate.heightfield[camera.name] = false;
+            return true;
+          } else {
+            return false;
+          }
+        }
+        function _uniformsNeedUpdateOcean(camera) {
+          if (uniformsNeedUpdate.ocean[camera.name]) {
+            uniformsNeedUpdate.ocean[camera.name] = false;
             return true;
           } else {
             return false;
@@ -253,9 +267,6 @@ class Heightfield {
         const localVector = new THREE.Vector3();
         const localVector2 = new THREE.Vector3();
         const localEuler = new THREE.Euler();
-        const localArray3 = Array(3);
-        const localArray16 = Array(16);
-        const localArray162 = Array(16);
 
         const _requestImage = src => new Promise((accept, reject) => {
           const img = new Image();
@@ -567,7 +578,7 @@ class Heightfield {
               // polygonOffsetFactor: -1,
               // polygonOffsetUnits: 0,
             });
-            // oceanMaterial.uniformsNeedUpdate = _uniformsNeedUpdate; // XXX separate from the heightfield shader
+            oceanMaterial.uniformsNeedUpdate = _uniformsNeedUpdateOcean;
 
             let mapChunkMeshes = {};
 
@@ -592,7 +603,7 @@ class Heightfield {
                 derivatives: true,
               },
             });
-            heightfieldMaterial.uniformsNeedUpdate = _uniformsNeedUpdate;
+            heightfieldMaterial.uniformsNeedUpdate = _uniformsNeedUpdateHeightfield;
 
             let running = false;
             const queue = [];
@@ -996,8 +1007,10 @@ class Heightfield {
               modelViewMatricesValid.right = false;
               normalMatricesValid.left = false;
               normalMatricesValid.right = false;
-              uniformsNeedUpdate.left = true;
-              uniformsNeedUpdate.right = true;
+              uniformsNeedUpdate.heightfield.left = true;
+              uniformsNeedUpdate.heightfield.right = true;
+              uniformsNeedUpdate.ocean.left = true;
+              uniformsNeedUpdate.ocean.right = true;
             };
             const _update = () => {
               const _updateMaterials = () => {
