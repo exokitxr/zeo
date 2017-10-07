@@ -174,6 +174,7 @@ class Zeo {
             '/core/utils/skin-utils',
             '/core/utils/creature-utils',
             '/core/utils/sprite-utils',
+            '/core/utils/strg-utils',
             '/core/utils/vrid-utils',
           ]);
 
@@ -224,6 +225,7 @@ class Zeo {
                 skinUtils,
                 creatureUtils,
                 spriteUtils,
+                strgUtils,
                 vridUtils,
               ],
             ]) => {
@@ -977,6 +979,7 @@ class Zeo {
                           this.skin = skinUtils;
                           this.creature = creatureUtils;
                           this.sprite = spriteUtils;
+                          this.strg = strgUtils;
                         }
                       }
 
