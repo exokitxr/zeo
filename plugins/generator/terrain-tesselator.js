@@ -244,8 +244,7 @@ const _generateMapChunk = (ox, oy, opts) => {
     newEther = new Float32Array(0);
   }
 
-  const {staticHeightfield, colors, attributeRanges, indexRanges, peeks} = slab;
-  noiser.fill(
+  noiser.apply(
     ox,
     oy,
     biomes,
@@ -258,7 +257,18 @@ const _generateMapChunk = (ox, oy, opts) => {
     lava,
     fillLiquid,
     newEther,
-    numNewEthers,
+    numNewEthers
+  );
+
+  const {staticHeightfield, colors, attributeRanges, indexRanges, peeks} = slab;
+  noiser.fill(
+    ox,
+    oy,
+    biomes,
+    elevations,
+    ether,
+    water,
+    lava,
     slab.positions,
     slab.indices,
     attributeRanges,

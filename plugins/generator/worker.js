@@ -276,23 +276,43 @@ const _retesselateTerrain = (chunk, newEther) => {
 
   const allocator = new Allocator();
 
+  const oldBiomesAddress = allocator.allocShadowBuffer(oldBiomes);
+  const oldElevationsAddress = allocator.allocShadowBuffer(oldElevations);
+  const oldEtherAddress = allocator.allocShadowBuffer(oldEther);
+  const oldWaterAddress = allocator.allocShadowBuffer(oldWater);
+  const oldLavaAddress = allocator.allocShadowBuffer(oldLava);
+  const newEtherAddress = allocator.allocBuffer(newEther);
+  Module._noiser_apply(
+    noiser,
+    chunk.x,
+    chunk.z,
+    oldBiomesAddress,
+    oldElevationsAddress,
+    oldEtherAddress,
+    oldWaterAddress,
+    oldLavaAddress,
+    newEtherAddress,
+    newEther.length,
+    slab.positions.offset,
+    slab.indices.offset,
+    attributeRanges.offset,
+    indexRanges.offset,
+    staticHeightfield.offset,
+    slab.colors.offset,
+    peeks.offset
+  );
+
   const {attributeRanges, indexRanges, staticHeightfield, peeks} = slab;
   const noiser = Module._make_noiser(murmur(DEFAULT_SEED));
   Module._noiser_fill(
     noiser,
     chunk.x,
     chunk.z,
-    allocator.allocShadowBuffer(oldBiomes),
-    +false,
-    allocator.allocShadowBuffer(oldElevations),
-    +false,
-    allocator.allocShadowBuffer(oldEther),
-    +false,
-    allocator.allocShadowBuffer(oldWater),
-    allocator.allocShadowBuffer(oldLava),
-    +false,
-    allocator.allocBuffer(newEther),
-    newEther.length,
+    oldBiomesAddress,
+    oldElevationsAddress,
+    oldEtherAddress,
+    oldWaterAddress,
+    oldLavaAddress,
     slab.positions.offset,
     slab.indices.offset,
     attributeRanges.offset,
