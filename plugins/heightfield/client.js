@@ -5,8 +5,6 @@ const {
   NUM_CHUNKS_HEIGHT,
   NUM_RENDER_GROUPS,
 
-  HEIGHTFIELD_DEPTH,
-
   RANGE,
 
   NUM_POSITIONS_CHUNK,
@@ -467,10 +465,9 @@ class Heightfield {
                 skyLightmaps: gbuffer.slices.skyLightmaps,
                 torchLightmaps: gbuffer.slices.torchLightmaps,
                 // offset: new THREE.Vector2(chunk.x, chunk.z),
-                heightfield: null,
                 stckBody: null,
                 update: chunkData => {
-                  const {positions: newPositions, colors: newColors, skyLightmaps: newSkyLightmaps, torchLightmaps: newTorchLightmaps, indices: newIndices, heightfield, ether} = chunkData;
+                  const {positions: newPositions, colors: newColors, skyLightmaps: newSkyLightmaps, torchLightmaps: newTorchLightmaps, indices: newIndices, ether} = chunkData;
 
                   if (newPositions.length > 0) {
                     version++;
@@ -482,8 +479,6 @@ class Heightfield {
                     skyLightmaps.set(newSkyLightmaps);
                     torchLightmaps.set(newTorchLightmaps);
                     indices.set(newIndices);
-
-                    meshes.heightfield = heightfield.slice();
 
                     // XXX preallocate stck buffers
                     if (!meshes.stckBody) {
@@ -532,7 +527,7 @@ class Heightfield {
                   }
                 },
                 updateImmediate: chunkData => {
-                  const {positions: newPositions, colors: newColors, skyLightmaps: newSkyLightmaps, torchLightmaps: newTorchLightmaps, indices: newIndices, heightfield, ether} = chunkData;
+                  const {positions: newPositions, colors: newColors, skyLightmaps: newSkyLightmaps, torchLightmaps: newTorchLightmaps, indices: newIndices, ether} = chunkData;
 
                   if (newPositions.length > 0) {
                     // geometry
@@ -542,8 +537,6 @@ class Heightfield {
                     skyLightmaps.set(newSkyLightmaps);
                     torchLightmaps.set(newTorchLightmaps);
                     indices.set(newIndices);
-
-                    meshes.heightfield = heightfield.slice();
 
                     // XXX preallocate stck buffers
                     if (!meshes.stckBody) {
@@ -795,98 +788,6 @@ class Heightfield {
             const p = new THREE.Vector3();
             const triangle = new THREE.Triangle(a, b, c);
             const baryCoord = new THREE.Vector3();
-            const _getHeightfieldIndex = (x, z) => (x + (z * (NUM_CELLS + 1))) * HEIGHTFIELD_DEPTH;
-            /* const _getElevation = (x, z) => {
-              const ox = Math.floor(x / NUM_CELLS);
-              const oz = Math.floor(z / NUM_CELLS);
-              const mapChunkMesh = mapChunkMeshes[_getChunkIndex(ox, oz)];
-
-              return mapChunkMesh ?
-                _getTopHeightfieldTriangleElevation(mapChunkMesh.heightfield, x - (ox * NUM_CELLS), z - (ox * NUM_CELLS))
-              :
-                0;
-            };
-            const _getBestElevation = (x, z, y) => {
-              const ox = Math.floor(x / NUM_CELLS);
-              const oz = Math.floor(z / NUM_CELLS);
-              const mapChunkMesh = mapChunkMeshes[_getChunkIndex(ox, oz)];
-
-              return mapChunkMesh ?
-                _getBestHeightfieldTriangleElevation(
-                  mapChunkMesh.heightfield,
-                  x - (ox * NUM_CELLS),
-                  z - (oz * NUM_CELLS),
-                  y
-                )
-              :
-                0;
-            };
-            const _getTopHeightfieldTriangleElevation = (heightfield, x, z) => {
-              const ax = Math.floor(x);
-              const az = Math.floor(z);
-              if ((x - ax) <= (1 - (z - az))) { // top left triangle
-                a.set(ax, 0, az);
-                b.set(ax + 1, 0, az);
-                c.set(ax, 0, az + 1);
-              } else { // bottom right triangle
-                a.set(ax + 1, 0, az);
-                b.set(ax, 0, az + 1);
-                c.set(ax + 1, 0, az + 1);
-              };
-              const ea = heightfield[_getHeightfieldIndex(a.x, a.z)];
-              const eb = heightfield[_getHeightfieldIndex(b.x, b.z)];
-              const ec = heightfield[_getHeightfieldIndex(c.x, c.z)];
-
-              p.set(x, 0, z);
-              triangle.barycoordFromPoint(p, baryCoord);
-
-              return baryCoord.x * ea +
-                baryCoord.y * eb +
-                baryCoord.z * ec;
-            }; */
-            const _getBestHeightfieldTriangleElevation = (heightfield, x, z, y) => {
-              const ax = Math.floor(x);
-              const az = Math.floor(z);
-              if ((x - ax) <= (1 - (z - az))) { // top left triangle
-                a.set(ax, 0, az);
-                b.set(ax + 1, 0, az);
-                c.set(ax, 0, az + 1);
-              } else { // bottom right triangle
-                a.set(ax + 1, 0, az);
-                b.set(ax, 0, az + 1);
-                c.set(ax + 1, 0, az + 1);
-              };
-              const ea = _getBestHeightfieldPointElevation(heightfield, a.x, a.z, y);
-              const eb = _getBestHeightfieldPointElevation(heightfield, b.x, b.z, y);
-              const ec = _getBestHeightfieldPointElevation(heightfield, c.x, c.z, y);
-
-              triangle.barycoordFromPoint(p.set(x, 0, z), baryCoord);
-
-              return baryCoord.x * ea +
-                baryCoord.y * eb +
-                baryCoord.z * ec;
-            };
-            const _getBestHeightfieldPointElevation = (heightfield, x, z, y) => {
-              let bestY = -1024;
-              let bestYDistance = Infinity;
-              for (let i = 0; i < HEIGHTFIELD_DEPTH; i++) {
-                const localY = heightfield[_getHeightfieldIndex(x, z) + i];
-
-                if (localY !== -1024) {
-                  const distance = Math.abs(y - localY);
-
-                  if (distance < bestYDistance) {
-                    bestY = localY;
-                    bestYDistance = distance;
-                  } else {
-                    continue;
-                  }
-                } else {
-                  break;
-                }
-              }
-              return bestY;
-            };
 
             let frameRunning = false;
             const frameQueue = [];

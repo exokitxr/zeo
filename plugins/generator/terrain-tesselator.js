@@ -6,8 +6,6 @@ const {
   NUM_CELLS_HEIGHT,
   NUM_CHUNKS_HEIGHT,
 
-  HEIGHTFIELD_DEPTH,
-
   NUM_POSITIONS_CHUNK,
 
   DEFAULT_SEED,
@@ -41,7 +39,6 @@ const slab = (() => {
   const POSITIONS_SIZE = NUM_POSITIONS_CHUNK * Float32Array.BYTES_PER_ELEMENT;
   const INDICES_SIZE = NUM_POSITIONS_CHUNK * Uint32Array.BYTES_PER_ELEMENT;
   const COLORS_SIZE = NUM_POSITIONS_CHUNK * Float32Array.BYTES_PER_ELEMENT;
-  const HEIGHTFIELD_SIZE = NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN * HEIGHTFIELD_DEPTH * Float32Array.BYTES_PER_ELEMENT;
   const STATIC_HEIGHTFIELD_SIZE = NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN * Float32Array.BYTES_PER_ELEMENT;
   const ATTRIBUTE_RANGES_SIZE = NUM_CHUNKS_HEIGHT * 6 * Uint32Array.BYTES_PER_ELEMENT;
   const INDEX_RANGES_SIZE = NUM_CHUNKS_HEIGHT * 6 * Uint32Array.BYTES_PER_ELEMENT;
@@ -57,7 +54,6 @@ const slab = (() => {
     POSITIONS_SIZE +
     INDICES_SIZE +
     COLORS_SIZE +
-    HEIGHTFIELD_SIZE +
     STATIC_HEIGHTFIELD_SIZE +
     ATTRIBUTE_RANGES_SIZE +
     INDEX_RANGES_SIZE +
@@ -81,8 +77,6 @@ const slab = (() => {
   index += INDICES_SIZE;
   const colors = new Float32Array(buffer, index, COLORS_SIZE / Float32Array.BYTES_PER_ELEMENT);
   index += COLORS_SIZE;
-  const heightfield = new Float32Array(buffer, index, HEIGHTFIELD_SIZE / Float32Array.BYTES_PER_ELEMENT);
-  index += HEIGHTFIELD_SIZE;
   const staticHeightfield = new Float32Array(buffer, index, STATIC_HEIGHTFIELD_SIZE / Float32Array.BYTES_PER_ELEMENT);
   index += STATIC_HEIGHTFIELD_SIZE;
   const attributeRanges = new Uint32Array(ATTRIBUTE_RANGES_SIZE / Uint32Array.BYTES_PER_ELEMENT);
@@ -105,7 +99,6 @@ const slab = (() => {
     positions,
     indices,
     colors,
-    heightfield,
     staticHeightfield,
     attributeRanges,
     indexRanges,
@@ -251,7 +244,7 @@ const _generateMapChunk = (ox, oy, opts) => {
     newEther = new Float32Array(0);
   }
 
-  const {heightfield, staticHeightfield, colors, attributeRanges, indexRanges, peeks} = slab;
+  const {staticHeightfield, colors, attributeRanges, indexRanges, peeks} = slab;
   noiser.fill(
     ox,
     oy,
@@ -270,7 +263,6 @@ const _generateMapChunk = (ox, oy, opts) => {
     slab.indices,
     attributeRanges,
     indexRanges,
-    heightfield,
     staticHeightfield,
     colors,
     peeks
@@ -315,7 +307,6 @@ const _generateMapChunk = (ox, oy, opts) => {
     colors: new Float32Array(colors.buffer, colors.byteOffset, attributeIndex),
     indices,
     geometries,
-    heightfield,
     staticHeightfield,
     biomes,
     elevations,

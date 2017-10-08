@@ -25,7 +25,6 @@ Module = {
       const POSITIONS_SIZE = NUM_POSITIONS_CHUNK * Float32Array.BYTES_PER_ELEMENT;
       const INDICES_SIZE = NUM_POSITIONS_CHUNK * Uint32Array.BYTES_PER_ELEMENT;
       const COLORS_SIZE = NUM_POSITIONS_CHUNK * Float32Array.BYTES_PER_ELEMENT;
-      const HEIGHTFIELD_SIZE = NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN * HEIGHTFIELD_DEPTH * Float32Array.BYTES_PER_ELEMENT;
       const STATIC_HEIGHTFIELD_SIZE = NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN * Float32Array.BYTES_PER_ELEMENT;
       const ATTRIBUTE_RANGES_SIZE = NUM_CHUNKS_HEIGHT * 6 * Uint32Array.BYTES_PER_ELEMENT;
       const INDEX_RANGES_SIZE = NUM_CHUNKS_HEIGHT * 6 * Uint32Array.BYTES_PER_ELEMENT;
@@ -47,7 +46,6 @@ Module = {
       const positions = _alloc(Float32Array, POSITIONS_SIZE);
       const indices = _alloc(Uint32Array, INDICES_SIZE);
       const colors = _alloc(Float32Array, COLORS_SIZE);
-      const heightfield = _alloc(Float32Array, HEIGHTFIELD_SIZE);
       const staticHeightfield = _alloc(Float32Array, STATIC_HEIGHTFIELD_SIZE);
       const attributeRanges = _alloc(Uint32Array, ATTRIBUTE_RANGES_SIZE);
       const indexRanges = _alloc(Uint32Array, INDEX_RANGES_SIZE);
@@ -74,7 +72,6 @@ Module = {
         positions,
         indices,
         colors,
-        heightfield,
         staticHeightfield,
         attributeRanges,
         indexRanges,
@@ -279,7 +276,7 @@ const _retesselateTerrain = (chunk, newEther) => {
 
   const allocator = new Allocator();
 
-  const {attributeRanges, indexRanges, heightfield, staticHeightfield, peeks} = slab;
+  const {attributeRanges, indexRanges, staticHeightfield, peeks} = slab;
   const noiser = Module._make_noiser(murmur(DEFAULT_SEED));
   Module._noiser_fill(
     noiser,
@@ -300,7 +297,6 @@ const _retesselateTerrain = (chunk, newEther) => {
     slab.indices.offset,
     attributeRanges.offset,
     indexRanges.offset,
-    heightfield.offset,
     staticHeightfield.offset,
     slab.colors.offset,
     peeks.offset
@@ -348,7 +344,6 @@ const _retesselateTerrain = (chunk, newEther) => {
     colors,
     indices,
     geometries,
-    heightfield,
     staticHeightfield,
     biomes: oldBiomes,
     elevations: oldElevations,
@@ -1921,40 +1916,6 @@ self.onmessage = e => {
       });
       break;
     }
-    /* case 'update': {
-      const {id, args} = data;
-      const {x, z} = args;
-      let {buffer} = args;
-
-      const chunk = zde.getChunk(x, z);
-      protocolUtils.stringifyWorker(chunk.chunkData, chunk.chunkData.decorations, buffer, 0);
-      postMessage({
-        type: 'response',
-        args: [id],
-        result: buffer,
-      }, [buffer]);
-      break;
-    }
-    case 'heightfield': {
-      const {id, args} = data;
-      const {x, y, buffer} = args;
-
-      const chunk = zde.getChunk(x, y);
-
-      const heightfield = new Float32Array(buffer, 0, newHeightfield.length);
-      if (chunk) {
-        heightfield.set(chunk.chunkData.heightfield);
-      } else {
-        heightfield.fill(0);
-      }
-
-      postMessage({
-        type: 'response',
-        args: [id],
-        result: heightfield,
-      }, [heightfield.buffer]);
-      break;
-    } */
     case 'mutateVoxel': {
       const {id, args} = data;
       const {position: [x, y, z, v]} = args;
