@@ -165,18 +165,59 @@ const OCEAN_SHADER = {
     varying float vTorchLightmap;
     varying float fogDepth;
     float speed = 2.0;
+
+    vec4 twoTapSample(
+      float tileOffset,
+      vec2 tileUV,
+      float tileSize,
+      sampler2D atlas
+    ) {
+      //Initialize accumulators
+      vec4 color = vec4(0.0, 0.0, 0.0, 0.0);
+      float totalWeight = 0.0;
+
+      for(int dx=0; dx<2; ++dx) {
+        //Compute coordinate in 2x2 tile patch
+        vec2 tileCoord = vec2(2.0 * fract(0.5 * (tileUV.x + float(dx))), tileUV.y);
+
+        //Weight sample based on distance to center
+        float w = pow(1.0 - abs(tileCoord.x-1.0), 16.0);
+
+        //Compute atlas coord
+        vec2 atlasUV = vec2(tileOffset + tileSize * tileCoord.x, tileCoord.y);
+
+        //Sample and accumulate
+        color += w * texture2D(atlas, atlasUV);
+        totalWeight += w;
+      }
+
+      //Return weighted color
+      return color / totalWeight;
+    }
+
     void main() {
       float animationFactor = (speed - abs(mod(worldTime / 1000.0, speed*2.0) - speed)) / speed;
       float frame1 = mod(floor(animationFactor / 16.0), 1.0);
       float frame2 = mod(frame1 + 1.0/16.0, 1.0);
       float mixFactor = fract(animationFactor / 16.0) * 16.0;
-      vec2 baseUv = vColor.rg + vec2(
-        mod(abs(vPosition.x) / 4.0, 1.0),
-        mod(abs(vPosition.z) / 4.0 / 16.0, 1.0)
-      ) / 2.0;
-      vec2 uv1 = baseUv * vec2(1.0, 1.0 - frame1);
-      vec2 uv2 = baseUv * vec2(1.0, 1.0 - frame2);
-      vec3 diffuseColor = mix(texture2D( map, uv1 ), texture2D( map, uv2 ), mixFactor).rgb;
+
+      vec2 tileUv = vec2(
+        mod(vPosition.x / 4.0, 1.0),
+        mod(vPosition.z / 4.0 / 16.0, 1.0)
+      );
+      vec3 diffuseColor1 = twoTapSample(
+        vColor.r,
+        tileUv * vec2(1.0, 1.0 - frame1),
+        0.25,
+        map
+      ).rgb;
+      vec3 diffuseColor2 = twoTapSample(
+        vColor.r,
+        tileUv * vec2(1.0, 1.0 - frame2),
+        0.25,
+        map
+      ).rgb;
+      vec3 diffuseColor = mix(diffuseColor1, diffuseColor2, mixFactor).rgb;
       // diffuseColor *= (0.2 + 0.8 * sunIntensity);
       float fogFactor = whiteCompliment( exp2( - fogDensity * fogDensity * fogDepth * fogDepth * LOG2 ) );
       diffuseColor = mix(diffuseColor, fogColor, fogFactor);
@@ -562,7 +603,7 @@ class Heightfield {
               THREE.LinearMipMapLinearFilter,
               THREE.RGBAFormat,
               THREE.UnsignedByteType,
-              1
+              16
             );
             liquidTexture.needsUpdate = true;
             const uniforms = THREE.UniformsUtils.clone(OCEAN_SHADER.uniforms);
