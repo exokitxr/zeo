@@ -621,16 +621,21 @@ class Heightfield {
             uniforms.map.value = liquidTexture;
             // uniforms.fogColor.value = scene.fog.color;
             // uniforms.fogDensity.value = scene.fog.density;
-            const oceanMaterial = new THREE.ShaderMaterial({
+            const oceanMaterial = new THREE.ShaderMaterial({ // XXX writes need to be sorted for transparency
               uniforms,
               vertexShader: OCEAN_SHADER.vertexShader,
               fragmentShader: OCEAN_SHADER.fragmentShader,
+              side: THREE.DoubleSide,
               transparent: true,
-              // polygonOffset: true,
-              // polygonOffsetFactor: -1,
-              // polygonOffsetUnits: 0,
+              polygonOffset: true,
+              polygonOffsetFactor: -1,
+              polygonOffsetUnits: -1,
             });
-            oceanMaterial.uniformsNeedUpdate = _uniformsNeedUpdateOcean;
+            /* oceanMaterial.blending = THREE.CustomBlending;
+            oceanMaterial.blendEquation = THREE.AddEquation; //default
+            oceanMaterial.blendSrc = THREE.SrcAlphaFactor; //default
+            oceanMaterial.blendDst = THREE.ZeroFactor; //default
+            oceanMaterial.uniformsNeedUpdate = _uniformsNeedUpdateOcean; */
 
             let mapChunkMeshes = {};
 
