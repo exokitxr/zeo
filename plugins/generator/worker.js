@@ -297,19 +297,16 @@ const _retesselateTerrain = (chunk, newEther) => {
       chunk.x,
       chunk.z,
       oldBiomesAddress,
+      +false,
       oldElevationsAddress,
+      +false,
       oldEtherAddress,
+      +false,
       oldWaterAddress,
       oldLavaAddress,
+      +false,
       newEtherAddress,
-      newEther.length,
-      slab.positions.offset,
-      slab.indices.offset,
-      attributeRanges.offset,
-      indexRanges.offset,
-      staticHeightfield.offset,
-      slab.colors.offset,
-      peeks.offset
+      newEther.length
     );
   }
 
