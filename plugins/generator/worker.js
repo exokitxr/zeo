@@ -281,6 +281,8 @@ const _retesselateTerrain = (chunk, newEther) => {
   const oldWater = oldTerrainData.water.slice();
   const oldLava = oldTerrainData.lava.slice();
 
+  const noiser = Module._make_noiser(murmur(DEFAULT_SEED));
+
   const allocator = new Allocator();
 
   const oldBiomesAddress = allocator.allocShadowBuffer(oldBiomes);
@@ -312,7 +314,6 @@ const _retesselateTerrain = (chunk, newEther) => {
   }
 
   const {attributeRanges, indexRanges, staticHeightfield, peeks} = slab;
-  const noiser = Module._make_noiser(murmur(DEFAULT_SEED));
   Module._noiser_fill(
     noiser,
     chunk.x,
