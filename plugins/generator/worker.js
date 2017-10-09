@@ -379,6 +379,7 @@ const _retesselateTerrain = (chunk, newEther) => {
 
   chunk.chunkData.terrain = { // XXX the slab-and-copy can be optimized
     ether: oldEther,
+    lava: oldLava,
     positions: positions.slice(),
     colors: colors.slice(),
     indices: indices.slice(),
