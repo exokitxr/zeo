@@ -950,7 +950,9 @@ class Heightfield {
             generatorElement.on('refreshes', _refreshes);
             const _redecorate = ({x, z, decorations}) => {
               const oldMapChunkMeshes = mapChunkMeshes[_getChunkIndex(x, z)];
-              oldMapChunkMeshes.updateLightmap(decorations.terrain);
+              if (oldMapChunkMeshes) {
+                oldMapChunkMeshes.updateLightmap(decorations.terrain);
+              }
             };
             generatorElement.on('redecorate', _redecorate);
             generatorElement.forEachChunk(chunk => {

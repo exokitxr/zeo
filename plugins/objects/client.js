@@ -1172,7 +1172,9 @@ void main() {
             generatorElement.on('refresh', _refresh);
             const _redecorate = ({x, z, decorations}) => {
               const trackedObjectChunkMeshes = objectsChunkMeshes[_getChunkIndex(x, z)];
-              trackedObjectChunkMeshes.updateLightmap(decorations.objects);
+              if (trackedObjectChunkMeshes) {
+                trackedObjectChunkMeshes.updateLightmap(decorations.objects);
+              }
             };
             generatorElement.on('redecorate', _redecorate);
             generatorElement.forEachChunk(chunk => {
