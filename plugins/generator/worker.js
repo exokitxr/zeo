@@ -275,12 +275,12 @@ class Allocator {
 
 const _retesselateTerrain = (chunk, newEther) => {
   const oldTerrainBuffer = chunk.getTerrainBuffer();
-  const oldChunkData = protocolUtils.parseTerrainData(oldTerrainBuffer.buffer, oldTerrainBuffer.byteOffset);
-  const oldBiomes = oldChunkData.biomes.slice();
-  const oldElevations = oldChunkData.elevations.slice();
-  const oldEther = oldChunkData.ether.slice();
-  const oldWater = oldChunkData.water.slice();
-  const oldLava = oldChunkData.lava.slice();
+  const oldTerrainData = protocolUtils.parseTerrainData(oldTerrainBuffer.buffer, oldTerrainBuffer.byteOffset);
+  const oldBiomes = oldTerrainData.biomes.slice();
+  const oldElevations = oldTerrainData.elevations.slice();
+  const oldEther = oldTerrainData.ether.slice();
+  const oldWater = oldTerrainData.water.slice();
+  const oldLava = oldTerrainData.lava.slice();
 
   const allocator = new Allocator();
 
@@ -369,27 +369,26 @@ const _retesselateTerrain = (chunk, newEther) => {
     };
   }
 
-  const chunkDataSpec = {
-    positions,
-    colors,
-    indices,
-    geometries,
-    staticHeightfield,
+  const terrainBuffer = chunk.getTerrainBuffer();
+  protocolUtils.stringifyTerrainData({
     biomes: oldBiomes,
     elevations: oldElevations,
     ether: oldEther,
     water: oldWater,
     lava: oldLava,
+  }, terrainBuffer.buffer, terrainBuffer.byteOffset);
+
+  chunk.chunkData.terrain = { // XXX the slab-and-copy can be optimized
+    ether: oldEther,
+    positions: positions.slice(),
+    colors: colors.slice(),
+    indices: indices.slice(),
+    geometries: geometries.slice(),
+    staticHeightfield: staticHeightfield.slice(),
   };
-
-  const terrainBuffer = chunk.getTerrainBuffer();
-  protocolUtils.stringifyTerrainData(chunkDataSpec, terrainBuffer.buffer, terrainBuffer.byteOffset);
-
-  const chunkData = protocolUtils.parseTerrainData(terrainBuffer.buffer, terrainBuffer.byteOffset);
-  chunk.chunkData.terrain = chunkData;
   chunk.chunkData.decorations.terrain = {
-    skyLightmaps: new Uint8Array(chunkData.positions.length / 3),
-    torchLightmaps: new Uint8Array(chunkData.positions.length / 3),
+    skyLightmaps: new Uint8Array(positions.length / 3),
+    torchLightmaps: new Uint8Array(positions.length / 3),
   };
   _undecorateTerrainChunk(chunk);
 
@@ -521,8 +520,7 @@ const _decorateChunkLightsRange = (chunk, minX, maxX, minY, maxY, minZ, maxZ, re
       if (chunk) {
         const arrayIndex = _getLightsArrayIndex(dox + 1, doz + 1);
 
-        const uint32Buffer = chunk.getTerrainBuffer();
-        const {ether, lava} = protocolUtils.parseTerrainData(uint32Buffer.buffer, uint32Buffer.byteOffset); // XXX can be reduced to only parse the needed fields
+        const {ether, lava} = chunk.chunkData.terrain;
         lavaArray[arrayIndex] = lava;
 
         const objectLights = chunk.getLightBuffer();
@@ -562,8 +560,7 @@ const _decorateChunkLightsRange = (chunk, minX, maxX, minY, maxY, minZ, maxZ, re
 };
 const _relightmap = chunk => {
   const _relightmapTerrain = () => {
-    const terrainBuffer = chunk.getTerrainBuffer();
-    const {positions} = protocolUtils.parseTerrainData(terrainBuffer.buffer, terrainBuffer.byteOffset);
+    const {positions} = chunk.chunkData.terrain;
     const {skyLightmaps, torchLightmaps} = chunk.chunkData.decorations.terrain;
     _relightmapSpec({positions, skyLightmaps, torchLightmaps});
   };
@@ -573,8 +570,7 @@ const _relightmap = chunk => {
     _relightmapSpec({positions, skyLightmaps, torchLightmaps});
   };
   const _relightmapSpec = ({positions, skyLightmaps, torchLightmaps}) => {
-    const terrainBuffer = chunk.getTerrainBuffer();
-    const {staticHeightfield} = protocolUtils.parseTerrainData(terrainBuffer.buffer, terrainBuffer.byteOffset);
+    const {staticHeightfield} = chunk.chunkData.terrain;
     const {[lightsSymbol]: lights} = chunk;
 
     const numPositions = positions.length;

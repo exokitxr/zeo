@@ -36,28 +36,13 @@ const slab = (() => {
   const ETHER_SIZE = ((NUM_CELLS + 1) * (NUM_CELLS_HEIGHT + 1) * (NUM_CELLS + 1)) * Float32Array.BYTES_PER_ELEMENT;
   const WATER_SIZE  = ((NUM_CELLS + 1) * (NUM_CELLS_HEIGHT + 1) * (NUM_CELLS + 1)) * Float32Array.BYTES_PER_ELEMENT;
   const LAVA_SIZE = ((NUM_CELLS + 1) * (NUM_CELLS_HEIGHT + 1) * (NUM_CELLS + 1)) * Float32Array.BYTES_PER_ELEMENT;
-  const POSITIONS_SIZE = NUM_POSITIONS_CHUNK * Float32Array.BYTES_PER_ELEMENT;
-  const INDICES_SIZE = NUM_POSITIONS_CHUNK * Uint32Array.BYTES_PER_ELEMENT;
-  const COLORS_SIZE = NUM_POSITIONS_CHUNK * Float32Array.BYTES_PER_ELEMENT;
-  const STATIC_HEIGHTFIELD_SIZE = NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN * Float32Array.BYTES_PER_ELEMENT;
-  const ATTRIBUTE_RANGES_SIZE = NUM_CHUNKS_HEIGHT * 6 * Uint32Array.BYTES_PER_ELEMENT;
-  const INDEX_RANGES_SIZE = NUM_CHUNKS_HEIGHT * 6 * Uint32Array.BYTES_PER_ELEMENT;
-  const PEEK_SIZE = 16 * Uint8Array.BYTES_PER_ELEMENT;
-  const PEEKS_ARRAY_SIZE = PEEK_SIZE * NUM_CHUNKS_HEIGHT;
 
   const buffer = new ArrayBuffer(
     BIOMES_SIZE +
     ELEVATIONS_SIZE +
     ETHER_SIZE +
     WATER_SIZE +
-    LAVA_SIZE +
-    POSITIONS_SIZE +
-    INDICES_SIZE +
-    COLORS_SIZE +
-    STATIC_HEIGHTFIELD_SIZE +
-    ATTRIBUTE_RANGES_SIZE +
-    INDEX_RANGES_SIZE +
-    PEEKS_ARRAY_SIZE
+    LAVA_SIZE
   );
 
   let index = 0;
@@ -71,24 +56,6 @@ const slab = (() => {
   index += WATER_SIZE;
   const lava = new Float32Array(buffer, index, LAVA_SIZE / Float32Array.BYTES_PER_ELEMENT);
   index += LAVA_SIZE;
-  const positions = new Float32Array(buffer, index, POSITIONS_SIZE / Float32Array.BYTES_PER_ELEMENT);
-  index += POSITIONS_SIZE;
-  const indices = new Uint32Array(buffer, index, INDICES_SIZE / Uint32Array.BYTES_PER_ELEMENT);
-  index += INDICES_SIZE;
-  const colors = new Float32Array(buffer, index, COLORS_SIZE / Float32Array.BYTES_PER_ELEMENT);
-  index += COLORS_SIZE;
-  const staticHeightfield = new Float32Array(buffer, index, STATIC_HEIGHTFIELD_SIZE / Float32Array.BYTES_PER_ELEMENT);
-  index += STATIC_HEIGHTFIELD_SIZE;
-  const attributeRanges = new Uint32Array(ATTRIBUTE_RANGES_SIZE / Uint32Array.BYTES_PER_ELEMENT);
-  index += ATTRIBUTE_RANGES_SIZE;
-  const indexRanges = new Uint32Array(INDEX_RANGES_SIZE / Uint32Array.BYTES_PER_ELEMENT);
-  index += INDEX_RANGES_SIZE;
-  const peeks = new Uint8Array(buffer, index, PEEK_SIZE * NUM_CHUNKS_HEIGHT);
-  const peeksArray = Array(NUM_CHUNKS_HEIGHT);
-  for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
-    peeksArray[i] = new Uint8Array(buffer, index, PEEK_SIZE / Uint8Array.BYTES_PER_ELEMENT);
-    index += PEEK_SIZE;
-  }
 
   return {
     biomes,
@@ -96,14 +63,6 @@ const slab = (() => {
     ether,
     water,
     lava,
-    positions,
-    indices,
-    colors,
-    staticHeightfield,
-    attributeRanges,
-    indexRanges,
-    peeks,
-    peeksArray,
   };
 })();
 
@@ -260,64 +219,7 @@ const _generateMapChunk = (ox, oy, opts) => {
     numNewEthers
   );
 
-  const {staticHeightfield, colors, attributeRanges, indexRanges, peeks} = slab;
-  noiser.fill(
-    ox,
-    oy,
-    biomes,
-    elevations,
-    ether,
-    water,
-    lava,
-    slab.positions,
-    slab.indices,
-    attributeRanges,
-    indexRanges,
-    staticHeightfield,
-    colors,
-    peeks
-  );
-
-  const attributeIndex = attributeRanges[attributeRanges.length - 2] + attributeRanges[attributeRanges.length - 1];
-  const indexIndex = indexRanges[indexRanges.length - 2] + indexRanges[indexRanges.length - 1];
-  const positions = slab.positions.subarray(0, attributeIndex);
-  const indices = slab.indices.subarray(0, indexIndex);
-
-  const geometries = Array(NUM_CHUNKS_HEIGHT);
-  for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
-    geometries[i] = {
-      /* attributeRange: {
-        landStart: attributeRanges[i * 6 + 0],
-        landCount: attributeRanges[i * 6 + 1],
-        waterStart: attributeRanges[i * 6 + 2],
-        waterCount: attributeRanges[i * 6 + 3],
-        lavaStart: attributeRanges[i * 6 + 4],
-        lavaCount: attributeRanges[i * 6 + 5],
-      }, */
-      indexRange: {
-        landStart: indexRanges[i * 6 + 0],
-        landCount: indexRanges[i * 6 + 1],
-        waterStart: indexRanges[i * 6 + 2],
-        waterCount: indexRanges[i * 6 + 3],
-        lavaStart: indexRanges[i * 6 + 4],
-        lavaCount: indexRanges[i * 6 + 5],
-      },
-      boundingSphere: Float32Array.from([
-        ox * NUM_CELLS + NUM_CELLS_HALF,
-        i * NUM_CELLS + NUM_CELLS_HALF,
-        oy * NUM_CELLS + NUM_CELLS_HALF,
-        NUM_CELLS_CUBE,
-      ]),
-      peeks: slab.peeksArray[i],
-    };
-  }
-
   return {
-    positions,
-    colors: new Float32Array(colors.buffer, colors.byteOffset, attributeIndex),
-    indices,
-    geometries,
-    staticHeightfield,
     biomes,
     elevations,
     ether,

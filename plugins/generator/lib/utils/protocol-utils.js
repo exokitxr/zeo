@@ -11,7 +11,7 @@ const INT32_SIZE = 4;
 const FLOAT32_SIZE = 4;
 const UINT8_SIZE = 1;
 const INT8_SIZE = 1;
-const TERRAIN_DATA_HEADER_ENTRIES = 3 + (1 * NUM_CHUNKS_HEIGHT) + 6;
+const TERRAIN_DATA_HEADER_ENTRIES = 5;
 const TERRAIN_DATA_HEADER_SIZE = UINT32_SIZE * TERRAIN_DATA_HEADER_ENTRIES;
 const GEOMETRY_HEADER_ENTRIES = 7;
 const GEOMETRY_HEADER_SIZE = UINT32_SIZE * GEOMETRY_HEADER_ENTRIES;
@@ -37,18 +37,9 @@ const OBJECTS_CULL_GROUP_LENGTH = (1 + NUM_RENDER_GROUPS * 2);
 // const OBJECTS_CULL_GROUP_SIZE = OBJECTS_CULL_GROUP_LENGTH * 4;
 
 const _getTerrainDataChunkSizeFromMetadata = metadata => {
-  const {numPositions, numColors, /*numSkyLightmaps, numTorchLightmaps, */numIndices, numPeeks, numStaticHeightfield, numBiomes, numElevations, numEther, numWater, numLava} = metadata;
+  const {numBiomes, numElevations, numEther, numWater, numLava} = metadata;
 
   return TERRAIN_DATA_HEADER_SIZE + // header
-    (FLOAT32_SIZE * numPositions) + // positions
-    (FLOAT32_SIZE * numColors) + // colors
-    // _align(UINT8_SIZE * numSkyLightmaps, UINT32_SIZE) + // sky lightmaps
-    // _align(UINT8_SIZE * numTorchLightmaps, UINT32_SIZE) + // torch lightmaps
-    (UINT32_SIZE * numIndices) + // indices
-    (UINT32_SIZE * 6 * NUM_CHUNKS_HEIGHT) + // index range
-    (FLOAT32_SIZE * 4 * NUM_CHUNKS_HEIGHT) + // bounding sphere
-    (UINT8_SIZE * _sum(numPeeks)) + // peeks
-    (FLOAT32_SIZE * numStaticHeightfield) + // static heightfield
     _align(UINT8_SIZE * numBiomes, FLOAT32_SIZE) + // biomes
     (FLOAT32_SIZE * numElevations) + // elevations
     (FLOAT32_SIZE * numEther) + // ethers
@@ -57,20 +48,8 @@ const _getTerrainDataChunkSizeFromMetadata = metadata => {
 };
 
 const _getTerrainDataChunkSize = mapChunk => {
-  const {positions, colors, /*skyLightmaps, torchLightmaps, */indices, geometries, staticHeightfield, biomes, elevations, ether, water, lava} = mapChunk;
+  const {biomes, elevations, ether, water, lava} = mapChunk;
 
-  const numPositions = positions.length;
-  const numColors = colors.length;
-  // const numSkyLightmaps = skyLightmaps.length;
-  // const numTorchLightmaps = torchLightmaps.length;
-  const numIndices = indices.length;
-  const numPeeks = Array(NUM_CHUNKS_HEIGHT);
-  for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
-    const geometry = geometries[i];
-    const {peeks} = geometry;
-    numPeeks[i] = peeks.length;
-  }
-  const numStaticHeightfield = staticHeightfield.length;
   const numBiomes = biomes.length;
   const numElevations = elevations.length;
   const numEther = ether.length;
@@ -78,13 +57,6 @@ const _getTerrainDataChunkSize = mapChunk => {
   const numLava = lava.length;
 
   return _getTerrainDataChunkSizeFromMetadata({
-    numPositions,
-    numColors,
-    // numSkyLightmaps,
-    // numTorchLightmaps,
-    numIndices,
-    numPeeks,
-    numStaticHeightfield,
     numBiomes,
     numElevations,
     numEther,
@@ -94,7 +66,7 @@ const _getTerrainDataChunkSize = mapChunk => {
 };
 
 const stringifyTerrainData = (mapChunk, arrayBuffer, byteOffset) => {
-  const {positions, colors, /*skyLightmaps, torchLightmaps, */indices, geometries, staticHeightfield, biomes, elevations, ether, water, lava} = mapChunk;
+  const {biomes, elevations, ether, water, lava} = mapChunk;
 
   if (arrayBuffer === undefined || byteOffset === undefined) {
     const bufferSize = _getTerrainDataChunkSize(mapChunk);
@@ -104,73 +76,12 @@ const stringifyTerrainData = (mapChunk, arrayBuffer, byteOffset) => {
 
   const headerBuffer = new Uint32Array(arrayBuffer, byteOffset, TERRAIN_DATA_HEADER_ENTRIES);
   let index = 0;
-  headerBuffer[index++] = positions.length;
-  headerBuffer[index++] = colors.length;
-  // headerBuffer[index++] = skyLightmaps.length;
-  // headerBuffer[index++] = torchLightmaps.length;
-  headerBuffer[index++] = indices.length;
-  for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
-    const geometry = geometries[i];
-    const {peeks} = geometry;
-    headerBuffer[index++] = peeks.length;
-  }
-  headerBuffer[index++] = staticHeightfield.length;
   headerBuffer[index++] = biomes.length;
   headerBuffer[index++] = elevations.length;
   headerBuffer[index++] = ether.length;
   headerBuffer[index++] = water.length;
   headerBuffer[index++] = lava.length;
   byteOffset += TERRAIN_DATA_HEADER_SIZE;
-
-  const positionsBuffer = new Float32Array(arrayBuffer, byteOffset, positions.length);
-  positionsBuffer.set(positions);
-  byteOffset += FLOAT32_SIZE * positions.length;
-
-  const colorsBuffer = new Float32Array(arrayBuffer, byteOffset, colors.length);
-  colorsBuffer.set(colors);
-  byteOffset += FLOAT32_SIZE * colors.length;
-
-  /* const skyLightmapsBuffer = new Uint8Array(arrayBuffer, byteOffset, skyLightmaps.length);
-  skyLightmapsBuffer.set(skyLightmaps);
-  byteOffset += UINT8_SIZE * skyLightmaps.length;
-  byteOffset = _align(byteOffset, UINT32_SIZE);
-
-  const torchLightmapsBuffer = new Uint8Array(arrayBuffer, byteOffset, torchLightmaps.length);
-  torchLightmapsBuffer.set(torchLightmaps);
-  byteOffset += UINT8_SIZE * torchLightmaps.length;
-  byteOffset = _align(byteOffset, UINT32_SIZE); */
-
-  const indicesBuffer = new Uint32Array(arrayBuffer, byteOffset, indices.length);
-  indicesBuffer.set(indices);
-  byteOffset += UINT32_SIZE * indices.length;
-
-  for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
-    const geometry = geometries[i];
-    const {indexRange, boundingSphere, peeks} = geometry;
-
-    const indexRangeBuffer = new Uint32Array(arrayBuffer, byteOffset, 6);
-    indexRangeBuffer.set(Uint32Array.from([
-      indexRange.landStart,
-      indexRange.landCount,
-      indexRange.waterStart,
-      indexRange.waterCount,
-      indexRange.lavaStart,
-      indexRange.lavaCount,
-    ]));
-    byteOffset += UINT32_SIZE * 6;
-
-    const boundingSphereBuffer = new Float32Array(arrayBuffer, byteOffset, 4);
-    boundingSphereBuffer.set(boundingSphere);
-    byteOffset += FLOAT32_SIZE * 4;
-
-    const peeksBuffer = new Uint8Array(arrayBuffer, byteOffset, peeks.length);
-    peeksBuffer.set(peeks);
-    byteOffset += UINT8_SIZE * peeks.length;
-  }
-
-  const staticHeightfieldBuffer = new Float32Array(arrayBuffer, byteOffset, staticHeightfield.length);
-  staticHeightfieldBuffer.set(staticHeightfield);
-  byteOffset += FLOAT32_SIZE * staticHeightfield.length;
 
   const biomesBuffer = new Uint8Array(arrayBuffer, byteOffset, biomes.length);
   biomesBuffer.set(biomes);
@@ -203,76 +114,12 @@ const parseTerrainData = (buffer, byteOffset) => {
 
   const headerBuffer = new Uint32Array(buffer, byteOffset, TERRAIN_DATA_HEADER_ENTRIES);
   let index = 0;
-  const numPositions = headerBuffer[index++];
-  const numColors = headerBuffer[index++];
-  // const numSkyLightmaps = headerBuffer[index++];
-  // const numTorchLightmaps = headerBuffer[index++];
-  const numIndices = headerBuffer[index++];
-  const numPeeks = Array(NUM_CHUNKS_HEIGHT);
-  for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
-    numPeeks[i] = headerBuffer[index++];
-  }
-  const numStaticHeightfield = headerBuffer[index++];
   const numBiomes = headerBuffer[index++];
   const numElevations = headerBuffer[index++];
   const numEther = headerBuffer[index++];
   const numWater = headerBuffer[index++];
   const numLava = headerBuffer[index++];
   byteOffset += TERRAIN_DATA_HEADER_SIZE;
-
-  const positionsBuffer = new Float32Array(buffer, byteOffset, numPositions);
-  const positions = positionsBuffer;
-  byteOffset += FLOAT32_SIZE * numPositions;
-
-  const colorsBuffer = new Float32Array(buffer, byteOffset, numColors);
-  const colors = colorsBuffer;
-  byteOffset += FLOAT32_SIZE * numColors;
-
-  /* const skyLightmapsBuffer = new Uint8Array(buffer, byteOffset, numSkyLightmaps);
-  const skyLightmaps = skyLightmapsBuffer;
-  byteOffset += UINT8_SIZE * numSkyLightmaps;
-  byteOffset = _align(byteOffset, UINT32_SIZE);
-
-  const torchLightmapsBuffer = new Uint8Array(buffer, byteOffset, numTorchLightmaps);
-  const torchLightmaps = torchLightmapsBuffer;
-  byteOffset += UINT8_SIZE * numTorchLightmaps;
-  byteOffset = _align(byteOffset, UINT32_SIZE); */
-
-  const indicesBuffer = new Uint32Array(buffer, byteOffset, numIndices);
-  const indices = indicesBuffer;
-  byteOffset += UINT32_SIZE * numIndices;
-
-  const geometries = Array(NUM_CHUNKS_HEIGHT);
-  for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
-    const indexRangeBuffer = new Uint32Array(buffer, byteOffset, 6);
-    const indexRange = {
-      landStart: indexRangeBuffer[0],
-      landCount: indexRangeBuffer[1],
-      waterStart: indexRangeBuffer[2],
-      waterCount: indexRangeBuffer[3],
-      lavaStart: indexRangeBuffer[4],
-      lavaCount: indexRangeBuffer[5],
-    };
-    byteOffset += UINT32_SIZE * 6;
-
-    const boundingSphereBuffer = new Float32Array(buffer, byteOffset, 4);
-    const boundingSphere = boundingSphereBuffer;
-    byteOffset += FLOAT32_SIZE * 4;
-
-    const peeksBuffer = new Uint8Array(buffer, byteOffset, numPeeks[i]);
-    const peeks = peeksBuffer;
-    byteOffset += UINT8_SIZE * numPeeks[i];
-
-    geometries[i] = {
-      indexRange,
-      boundingSphere,
-      peeks,
-    };
-  }
-
-  const staticHeightfieldBuffer = new Float32Array(buffer, byteOffset, numStaticHeightfield);
-  const staticHeightfield = staticHeightfieldBuffer;
-  byteOffset += FLOAT32_SIZE * numStaticHeightfield;
 
   const biomesBuffer = new Uint8Array(buffer, byteOffset, numBiomes);
   const biomes = biomesBuffer;
@@ -297,13 +144,6 @@ const parseTerrainData = (buffer, byteOffset) => {
 
   return {
     buffer,
-    positions,
-    colors,
-    // skyLightmaps,
-    // torchLightmaps,
-    indices,
-    geometries,
-    staticHeightfield,
     biomes,
     elevations,
     ether,
