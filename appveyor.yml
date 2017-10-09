@@ -33,7 +33,7 @@ after_test:
       7z x node.zip
       rm node.zip
       mv "node-v8.6.0-win-x64" node
-      cp node/node_modules/npm/bin/npm.cmd node/
+      rm -R node/node_modules
       touch data/no-hotload.json
       cp scripts/lib/windows/start-windows.ps1 .
       cp 'scripts/lib/windows/Zeo VR.lnk' .
