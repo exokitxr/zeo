@@ -988,6 +988,26 @@ connection.on('message', e => {
           args: [v, x, y, z],
         });
       }
+
+      const seenUpdates = {};
+      for (let i = 0; i < CROSS_DIRECTIONS.length; i++) {
+        const [dx, dz] = CROSS_DIRECTIONS[i];
+        const aox = ox + dx;
+        const aoz = oz + dz;
+        const index = _getChunkIndex(aox, aoz);
+        if (!seenUpdates[index]) {
+          seenUpdates[index] = true;
+
+          const chunk = zde.getChunk(aox, aoz);
+          _relightmap(chunk);
+
+          const arrayBuffer = protocolUtils.stringifyDecorations(chunk.chunkData.decorations, chunk.chunkData.decorations.objects.blockfield)[0];
+          postMessage({
+            type: 'redecorate',
+            args: [aox, aoz, arrayBuffer],
+          }, [arrayBuffer]);
+        }
+      }
     }
   } else if (type === 'clearBlock') {
     const {args: {x, y, z}} = m;
@@ -1013,6 +1033,26 @@ connection.on('message', e => {
           type: 'blockCleared',
           args: [n, x, y, z],
         });
+      }
+
+      const seenUpdates = {};
+      for (let i = 0; i < CROSS_DIRECTIONS.length; i++) {
+        const [dx, dz] = CROSS_DIRECTIONS[i];
+        const aox = ox + dx;
+        const aoz = oz + dz;
+        const index = _getChunkIndex(aox, aoz);
+        if (!seenUpdates[index]) {
+          seenUpdates[index] = true;
+
+          const chunk = zde.getChunk(aox, aoz);
+          _relightmap(chunk);
+
+          const arrayBuffer = protocolUtils.stringifyDecorations(chunk.chunkData.decorations, chunk.chunkData.decorations.objects.blockfield)[0];
+          postMessage({
+            type: 'redecorate',
+            args: [aox, aoz, arrayBuffer],
+          }, [arrayBuffer]);
+        }
       }
     }
   } else if (type === 'mutateVoxel') {
@@ -1720,36 +1760,37 @@ self.onmessage = e => {
         const y = Math.floor(positions[1]);
         const z = Math.floor(positions[2]);
 
-        const updateSpecs = [[ox, oz]];
-
         const light = _findLight(n);
         if (light) {
           oldChunk.addLightAt(objectIndex, positions[0], positions[1], positions[2], light);
-
-          for (let i = 0; i < CROSS_DIRECTIONS.length; i++) {
-            const [dx, dz] = CROSS_DIRECTIONS[i];
-            const ox = Math.floor((x + dx * light) / NUM_CELLS);
-            const oz = Math.floor((z + dz * light) / NUM_CELLS);
-            if (!updateSpecs.some(update => update[0] === ox && update[1] === oz)) {
-              updateSpecs.push([ox, oz]);
-            }
-          }
         }
 
         _retesselateObjects(oldChunk);
         _relight(oldChunk, x, y, z);
+        _relightmap(oldChunk);
+        postMessage({
+          type: 'chunkUpdate',
+          args: [ox, oz],
+        });
 
-        for (let i = 0; i < updateSpecs.length; i++) {
-          const updateSpec = updateSpecs[i];
-          const [ox, oz] = updateSpec;
+        const seenUpdates = {};
+        for (let i = 0; i < CROSS_DIRECTIONS.length; i++) {
+          const [dx, dz] = CROSS_DIRECTIONS[i];
+          const aox = ox + dx;
+          const aoz = oz + dz;
+          const index = _getChunkIndex(aox, aoz);
+          if (!seenUpdates[index]) {
+            seenUpdates[index] = true;
 
-          const chunk = zde.getChunk(ox, oz);
-          _relightmap(chunk);
+            const chunk = zde.getChunk(aox, aoz);
+            _relightmap(chunk);
 
-          postMessage({
-            type: 'chunkUpdate',
-            args: [ox, oz],
-          });
+            const arrayBuffer = protocolUtils.stringifyDecorations(chunk.chunkData.decorations, chunk.chunkData.decorations.objects.blockfield)[0];
+            postMessage({
+              type: 'redecorate',
+              args: [aox, aoz, arrayBuffer],
+            }, [arrayBuffer]);
+          }
         }
       }
       break;
@@ -1771,34 +1812,9 @@ self.onmessage = e => {
           const y = Math.floor(matrix[1]);
           const z = Math.floor(matrix[2]);
 
-          const updateSpecs = [[ox, oz]];
-          if (light) {
-            for (let i = 0; i < CROSS_DIRECTIONS.length; i++) {
-              const [dx, dz] = CROSS_DIRECTIONS[i];
-              const ox = Math.floor((x + dx * light) / NUM_CELLS);
-              const oz = Math.floor((z + dz * light) / NUM_CELLS);
-              if (!updateSpecs.some(update => update[0] === ox && update[1] === oz)) {
-                updateSpecs.push([ox, oz]);
-              }
-            }
-          }
-
           _retesselateObjects(oldChunk);
           _relight(oldChunk, x, y, z);
-
-          for (let i = 0; i < updateSpecs.length; i++) {
-            const updateSpec = updateSpecs[i];
-            const [ox, oz] = updateSpec;
-
-            const chunk = zde.getChunk(ox, oz);
-            _relightmap(chunk);
-
-            postMessage({
-              type: 'chunkUpdate',
-              args: [ox, oz],
-            });
-          }
-
+          _relightmap(oldChunk);
           postMessage({
             type: 'chunkUpdate',
             args: [ox, oz],
@@ -1810,6 +1826,26 @@ self.onmessage = e => {
               type: 'objectRemoved',
               args: [n, ox, oz, objectIndex],
             });
+          }
+
+          const seenUpdates = {};
+          for (let i = 0; i < CROSS_DIRECTIONS.length; i++) {
+            const [dx, dz] = CROSS_DIRECTIONS[i];
+            const aox = ox + dx;
+            const aoz = oz + dz;
+            const index = _getChunkIndex(aox, aoz);
+            if (!seenUpdates[index]) {
+              seenUpdates[index] = true;
+
+              const chunk = zde.getChunk(aox, aoz);
+              _relightmap(chunk);
+
+              const arrayBuffer = protocolUtils.stringifyDecorations(chunk.chunkData.decorations, chunk.chunkData.decorations.objects.blockfield)[0];
+              postMessage({
+                type: 'redecorate',
+                args: [aox, aoz, arrayBuffer],
+              }, [arrayBuffer]);
+            }
           }
         }
       }
@@ -1856,6 +1892,26 @@ self.onmessage = e => {
           type: 'chunkUpdate',
           args: [ox, oz],
         });
+
+        const seenUpdates = {};
+        for (let i = 0; i < CROSS_DIRECTIONS.length; i++) {
+          const [dx, dz] = CROSS_DIRECTIONS[i];
+          const aox = ox + dx;
+          const aoz = oz + dz;
+          const index = _getChunkIndex(aox, aoz);
+          if (!seenUpdates[index]) {
+            seenUpdates[index] = true;
+
+            const chunk = zde.getChunk(aox, aoz);
+            _relightmap(chunk);
+
+            const arrayBuffer = protocolUtils.stringifyDecorations(chunk.chunkData.decorations, chunk.chunkData.decorations.objects.blockfield)[0];
+            postMessage({
+              type: 'redecorate',
+              args: [aox, aoz, arrayBuffer],
+            }, [arrayBuffer]);
+          }
+        }
       }
       break;
     }
@@ -1885,6 +1941,26 @@ self.onmessage = e => {
             type: 'blockCleared',
             args: [n, x, y, z],
           });
+        }
+
+        const seenUpdates = {};
+        for (let i = 0; i < CROSS_DIRECTIONS.length; i++) {
+          const [dx, dz] = CROSS_DIRECTIONS[i];
+          const aox = ox + dx;
+          const aoz = oz + dz;
+          const index = _getChunkIndex(aox, aoz);
+          if (!seenUpdates[index]) {
+            seenUpdates[index] = true;
+
+            const chunk = zde.getChunk(aox, aoz);
+            _relightmap(chunk);
+
+            const arrayBuffer = protocolUtils.stringifyDecorations(chunk.chunkData.decorations, chunk.chunkData.decorations.objects.blockfield)[0];
+            postMessage({
+              type: 'redecorate',
+              args: [aox, aoz, arrayBuffer],
+            }, [arrayBuffer]);
+          }
         }
       }
       break;
