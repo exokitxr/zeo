@@ -11,6 +11,8 @@ const {
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
+const HEALTH_PLUGIN = 'plugins-health';
+
 const dataSymbol = Symbol();
 
 class Generator {
@@ -398,13 +400,6 @@ class Generator {
         },
       });
     };
-    /* worker.respond = (id, result, transfers) => {
-      worker.postMessage({
-        type: 'response',
-        id,
-        result,
-      }, transfers);
-    }; */
     worker.onmessage = e => {
       const {data} = e;
       const {type, args} = data;
@@ -516,9 +511,6 @@ class Generator {
           entry.splice(entry.indexOf(listener), 1);
         };
 
-        /* generatorElement.getChunk = (x, z) => chunker.getChunk(x, z);
-        generatorElement.getElevation = _getElevation;
-        generatorElement.getBestElevation = _getBestElevation; */
         generatorElement.forEachChunk = fn => {
           for (const index in mapChunkMeshes) {
             const mapChunkMesh = mapChunkMeshes[index];
@@ -611,9 +603,7 @@ class Generator {
         generatorElement.requestTeleportObject = (position, side, cb) => {
           worker.requestTeleportObject(position, side, cb);
         };
-        generatorElement.requestBodyObject = (position, cb) => {
-          worker.requestBodyObject(position, cb);
-        };
+        generatorElement.getBodyObject = () => bodyObject;
       },
     };
     elements.registerEntity(this, generatorEntity);
@@ -717,6 +707,48 @@ class Generator {
         doneAddChunks();
       }
     });
+
+    let updatingBody = false;
+    let lastBodyUpdateTime = 0;
+    const bodyObject = {
+      n: 0,
+      x: 0,
+      z: 0,
+      objectIndex: -1,
+      hadWater: false,
+      hadLava: false,
+    };
+    const _updateBody = () => {
+      if (!updatingBody) {
+        const now = Date.now();
+        const timeDiff = now - lastBodyUpdateTime;
+
+        if (timeDiff > 1000 / 60) {
+          const {hmd} = pose.getStatus();
+          const {worldPosition: hmdPosition} = hmd;
+          worker.requestBodyObject(hmdPosition, hoveredBodyBuffer => {
+            const uint32Array = new Uint32Array(hoveredBodyBuffer, 0, 6);
+            const int32Array = new Int32Array(hoveredBodyBuffer, 0, 6);
+
+            bodyObject.n = uint32Array[0];
+            bodyObject.x = int32Array[1];
+            bodyObject.z = int32Array[2];
+            bodyObject.objectIndex = uint32Array[3];
+            bodyObject.hadWater = Boolean(uint32Array[4]);
+            bodyObject.hadLava = Boolean(uint32Array[5]);
+
+            updatingBody = false;
+            lastBodyUpdateTime = Date.now();
+          });
+
+          updatingBody = true;
+        }
+      }
+    };
+    const _update = () => {
+      _updateBody();
+    };
+    render.on('update', _update);
 
     let refreshChunksTimeout = null;
     const _recurseRefreshChunks = () => {

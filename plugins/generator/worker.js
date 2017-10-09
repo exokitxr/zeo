@@ -739,9 +739,9 @@ const _getBodyObject = (x, y, z, buffer) => {
   const oz = Math.floor(bodyCenterPoint.z / NUM_CELLS);
 
   let topDistance = Infinity;
-  let topN = -1;
-  let topChunkX = -1;
-  let topChunkZ = -1;
+  let topN = 0;
+  let topChunkX = 0;
+  let topChunkZ = 0;
   let topObjectIndex = -1;
   let hadWater = false;
   let hadLava = false;
@@ -766,7 +766,6 @@ const _getBodyObject = (x, y, z, buffer) => {
             .applyQuaternion(rotationInverse);
             // .add(position);
 
-          // check objects
           const distance = localBox.distanceToPoint(localVector3);
           if (distance < 0.3 && (distance < topDistance)) {
             topDistance = distance;
@@ -777,48 +776,42 @@ const _getBodyObject = (x, y, z, buffer) => {
             return false;
           }
 
-          // check ethers
-          if (lengthSq === 0) {
-            const terrainBuffer = chunk.getTerrainBuffer();
-            const {water, lava} = protocolUtils.parseTerrainData(terrainBuffer.buffer, terrainBuffer.byteOffset);
-
-            const lx = Math.floor(x - ox * NUM_CELLS);
-            const ly = Math.floor(y);
-            const lz = Math.floor(z - oz * NUM_CELLS);
-            const waterValue = water[_getEtherIndex(lx, ly, lz)];
-            if (waterValue < 0) {
-              hadWater = true;
-            }
-            const lavaValue = lava[_getEtherIndex(lx, ly, lz)];
-            if (lavaValue < 0) {
-              hadLava = true;
-            }
-
-            if (hadWater || hadLava) {
-              return false;
-            }
-          }
-
           return true;
         });
 
         if (chunkResult === false) {
-          const uint32Array = new Uint32Array(buffer, 0, 6);
-          const int32Array = new Int32Array(buffer, 0, 6);
-
-          uint32Array[0] = topN;
-          int32Array[1] = topChunkX;
-          int32Array[2] = topChunkZ;
-          uint32Array[3] = topObjectIndex;
-          uint32Array[4] = +hadWater;
-          uint32Array[5] = +hadLava;
-
-          return;
+          break;
         }
       }
     }
   }
-  new Uint32Array(buffer, 0, 1)[0] = 0;
+
+  const chunk = zde.getChunk(ox, oz);
+  if (chunk) {
+    const terrainBuffer = chunk.getTerrainBuffer();
+    const {water, lava} = protocolUtils.parseTerrainData(terrainBuffer.buffer, terrainBuffer.byteOffset);
+
+    const lx = Math.floor(x - ox * NUM_CELLS);
+    const ly = Math.floor(y + 0.5);
+    const lz = Math.floor(z - oz * NUM_CELLS);
+    const waterValue = water[_getEtherIndex(lx, ly, lz)];
+    if (waterValue < 0) {
+      hadWater = true;
+    }
+    const lavaValue = lava[_getEtherIndex(lx, ly, lz)];
+    if (lavaValue < 0) {
+      hadLava = true;
+    }
+  }
+
+  const uint32Array = new Uint32Array(buffer, 0, 6);
+  const int32Array = new Int32Array(buffer, 0, 6);
+  uint32Array[0] = topN;
+  int32Array[1] = topChunkX;
+  int32Array[2] = topChunkZ;
+  uint32Array[3] = topObjectIndex;
+  uint32Array[4] = +hadWater;
+  uint32Array[5] = +hadLava;
 };
 
 const queue = [];

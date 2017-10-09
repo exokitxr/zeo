@@ -127,6 +127,21 @@ class Somnifer {
                     audio.play();
                   }
                 };
+                audio.start = () => {
+                  audio.currentTime = 0;
+                  audio.loop = true;
+
+                  if (audio.paused) {
+                    audio.play();
+                  }
+                };
+                audio.stop = () => {
+                  audio.loop = false;
+
+                  if (!audio.paused) {
+                    audio.pause();
+                  }
+                };
 
                 accept(audio);
               };

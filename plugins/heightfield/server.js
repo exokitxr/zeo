@@ -25,10 +25,17 @@ class Heightfield {
     }
     app.use('/archae/heightfield/img', serveHeightfieldImg);
 
+    const heightfieldSfxStatic = express.static(path.join(__dirname, 'lib', 'sfx'));
+    function serveHeightfieldSfx(req, res, next) {
+      heightfieldSfxStatic(req, res, next);
+    }
+    app.use('/archae/heightfield/sfx', serveHeightfieldSfx);
+
     this._cleanup = () => {
       function removeMiddlewares(route, i, routes) {
         if (
-          route.handle.name === 'serveHeightfieldImg'
+          route.handle.name === 'serveHeightfieldImg' ||
+          route.handle.name === 'serveHeightfieldSfx'
         ) {
           routes.splice(i, 1);
         }

@@ -633,48 +633,6 @@ void main() {
           teleportPositions[e.side] = null;
         }
         teleport.on('end', _teleportEnd);
-        /* const _teleportTarget = (position, rotation, scale, side) => {
-          localEuler.setFromQuaternion(rotation, camera.rotation.order);
-          const angleFactor = Math.min(Math.pow(Math.max(localEuler.x + Math.PI * 0.45, 0) / (Math.PI * 0.8), 2), 1);
-          localEuler.x = 0;
-          localEuler.z = 0;
-          localRay.origin.set(position.x, 1000, position.z)
-            .add(
-              localVector.copy(forwardVector)
-                .applyEuler(localEuler)
-                .multiplyScalar(15 * angleFactor)
-            );
-
-          teleportPositions[side].copy(localRay.origin);
-
-          const teleportSpec = teleportSpecs[side];
-          if (teleportSpec.hit) {
-            const {
-              box: teleportBox,
-              position: teleportPosition,
-              rotation: teleportRotation,
-              rotationInverse: teleportRotationInverse,
-            } = teleportSpec;
-
-            localRay.origin.sub(teleportPosition)
-              .applyQuaternion(teleportRotationInverse)
-              // .add(teleportPosition);
-            localRay.direction.set(0, -1, 0);
-
-            const targetPosition = localRay.intersectBox(teleportBox, localVector2);
-            if (targetPosition) {
-              return targetPosition
-                // .sub(teleportPosition)
-                .applyQuaternion(teleportRotation)
-                .add(teleportPosition);
-            } else {
-              return null;
-            }
-          } else {
-            return null;
-          }
-        };
-        teleport.addTarget(_teleportTarget); */
 
         class ObjectApi {
            getHash(s) {
@@ -1050,44 +1008,11 @@ void main() {
             }
           };
           const _updateBody = () => {
-            if (!updatingBody) {
-              const now = Date.now();
-              const timeDiff = now - lastBodyUpdateTime;
+            const {n, x, z, objectIndex} = generatorElement.getBodyObject();
 
-              if (timeDiff > 1000 / 30) {
-                const {hmd} = pose.getStatus();
-                const {worldPosition: hmdPosition} = hmd;
-                generatorElement.requestBodyObject(hmdPosition, hoveredBodyBuffer => {
-                  if (new Uint32Array(hoveredBodyBuffer, 0, 1)[0] !== 0) {
-                    const uint32Array = new Uint32Array(hoveredBodyBuffer, 0, 6);
-                    const int32Array = new Int32Array(hoveredBodyBuffer, 0, 6);
-
-                    const n = uint32Array[0];
-                    const x = int32Array[1];
-                    const z = int32Array[2];
-                    const objectIndex = uint32Array[3];
-                    const hadWater = Boolean(uint32Array[4]);
-                    const hadLava = Boolean(uint32Array[5]);
-
-                    const objectApi = generatorElement.getObjectApi(n);
-                    if (objectApi && objectApi.collideCallback) {
-                      objectApi.collideCallback(_getObjectId(x, z, objectIndex), x, z, objectIndex);
-                    }
-
-                    if (hadLava) {
-                      const healthElement = elements.getEntitiesElement().querySelector(HEALTH_PLUGIN);
-                      if (healthElement) {
-                        healthElement.hurt(10);
-                      }
-                    }
-                  }
-
-                  updatingBody = false;
-                  lastBodyUpdateTime = Date.now();
-                });
-
-                updatingBody = true;
-              }
+            const objectApi = generatorElement.getObjectApi(n);
+            if (objectApi && objectApi.collideCallback) {
+              objectApi.collideCallback(_getObjectId(x, z, objectIndex), x, z, objectIndex);
             }
           };
           const _updateMaterial = () => {
@@ -1113,12 +1038,10 @@ void main() {
         cleanups.push(() => {
           scene.remove(objectsObject);
 
-          // elements.destroyListener(lightmapElementListener);
           elements.destroyListener(craftElementListener);
 
           teleport.removeListener('start', _teleportStart);
           teleport.removeListener('end', _teleportEnd);
-          // teleport.removeTarget(_teleportTarget);
 
           input.removeListener('triggerdown', _triggerdown);
           input.removeListener('gripdown', _gripdown);

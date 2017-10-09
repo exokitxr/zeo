@@ -12,6 +12,7 @@ const {
 
 const GENERATOR_PLUGIN = 'plugins-generator';
 const DAY_NIGHT_SKYBOX_PLUGIN = 'plugins-day-night-skybox';
+const HEALTH_PLUGIN = 'plugins-health';
 
 const dataSymbol = Symbol();
 
@@ -238,7 +239,7 @@ class Heightfield {
 
   mount() {
     const {_archae: archae} = this;
-    const {three, render, pose, input, world, elements, teleport, stck, utils: {js: {mod, sbffr}, random: {chnkr}}} = zeo;
+    const {three, render, pose, input, world, elements, teleport, stck, sound, utils: {js: {mod, sbffr}, random: {chnkr}}} = zeo;
     const {THREE, scene, camera, renderer} = three;
 
     return elements.requestElement(GENERATOR_PLUGIN)
@@ -329,10 +330,12 @@ class Heightfield {
             });
           }),
           _requestImageBitmap('/archae/heightfield/img/liquid.png'),
+          sound.requestSfx('archae/heightfield/sfx/underwater.ogg'),
         ])
           .then(([
             setSpawnMatrixResult,
             liquidImg,
+            underwaterSfx,
           ]) => {
             const NUM_GEOMETRIES = 4;
             const _makeGeometryBuffer = () => sbffr(
@@ -966,6 +969,29 @@ class Heightfield {
             };
             _recurseRefreshCull();
 
+            let lastBodyUpdateTime = Date.now();
+            const _updateBody = () => {
+              const now = Date.now();
+              const timeDiff = now - lastBodyUpdateTime;
+
+              if (timeDiff > 1000 / 10) {
+                const {hadLava, hadWater} = generatorElement.getBodyObject();
+
+                if (hadLava) {
+                  const healthElement = elements.getEntitiesElement().querySelector(HEALTH_PLUGIN);
+                  if (healthElement) {
+                    healthElement.hurt(10);
+                  }
+                }
+                if (hadWater && underwaterSfx.paused) {
+                  underwaterSfx.start();
+                } else if (!hadWater && !underwaterSfx.paused) {
+                  underwaterSfx.stop();
+                }
+
+                lastBodyUpdateTime = Date.now();
+              }
+            };
             const _updateMatrices = () => {
               modelViewMatricesValid.left = false;
               modelViewMatricesValid.right = false;
@@ -987,6 +1013,7 @@ class Heightfield {
               };
 
               _updateMaterials();
+              _updateBody();
               // _updateMatrices();
             };
             render.on('update', _update);
