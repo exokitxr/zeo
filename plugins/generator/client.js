@@ -480,6 +480,14 @@ class Generator {
         if (objectApi) {
           objectApi.clearCallback(_getObjectId(x, y, z), x, y, z);
         }
+      } else if (type === 'redecorate') {
+        const [x, z, arrayBuffer] = args;
+        const decorations = protocolUtils.parseDecorations(arrayBuffer);
+        _emit('redecorate', {
+          x,
+          z,
+          decorations,
+        });
       } else {
         console.warn('generator got unknown worker message type:', JSON.stringify(type));
       }

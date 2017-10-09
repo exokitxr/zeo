@@ -543,7 +543,7 @@ const _decorateChunkLightsRange = (chunk, minX, maxX, minY, maxY, minZ, maxZ, re
 
   const allocator = new Allocator();
 
-  Module._lght(
+  const relighted = Boolean(Module._lght(
     ox, oz,
     minX, maxX, minY, maxY, minZ, maxZ,
     +relight,
@@ -552,11 +552,13 @@ const _decorateChunkLightsRange = (chunk, minX, maxX, minY, maxY, minZ, maxZ, re
     allocator.allocBufferArray(etherArray),
     allocator.allocBufferArray(blocksArray),
     allocator.allocShadowBufferArray(lightsArray),
-  );
+  ));
 
   allocator.unshadow();
 
   allocator.destroy();
+
+  return relighted;
 };
 const _relightmap = chunk => {
   const _relightmapTerrain = () => {
@@ -1267,8 +1269,25 @@ const _requestChunk = (x, z) => {
 
             _retesselateTerrain(chunk);
             _retesselateObjects(chunk);
-            _relight(chunk);
+            const relighted = _relight(chunk);
             _relightmap(chunk);
+            if (relighted) {
+              for (let i = 0; i < CROSS_DIRECTIONS.length; i++) {
+                const [dx, dz] = CROSS_DIRECTIONS[i];
+                const aox = x + dx;
+                const aoz = z + dz;
+                const chunk = zde.getChunk(aox, aoz);
+                if (chunk) {
+                  _relightmap(chunk);
+
+                  const arrayBuffer = protocolUtils.stringifyDecorations(chunk.chunkData.decorations, chunk.chunkData.decorations.objects.blockfield)[0];
+                  postMessage({
+                    type: 'redecorate',
+                    args: [chunk.x, chunk.z, arrayBuffer],
+                  }, [arrayBuffer]);
+                }
+              }
+            }
 
             return chunk;
           });

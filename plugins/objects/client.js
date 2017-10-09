@@ -458,6 +458,21 @@ void main() {
                 });
               }
             },
+            updateLightmap: chunkData => {
+              const {skyLightmaps: newSkyLightmaps, torchLightmaps: newTorchLightmaps} = chunkData;
+
+              if (newSkyLightmaps.length > 0) {
+                skyLightmaps.set(newSkyLightmaps);
+                torchLightmaps.set(newTorchLightmaps);
+
+                const newSkyLightmapsLength = newSkyLightmaps.length;
+                const newTorchLightmapsLength = newTorchLightmaps.length;
+
+                renderer.updateAttribute(geometry.attributes.skyLightmap, index * skyLightmaps.length, newSkyLightmapsLength, false);
+                renderer.updateAttribute(geometry.attributes.torchLightmap, index * torchLightmaps.length, newTorchLightmapsLength, false);
+                renderer.getContext().flush();
+              }
+            },
             destroy: () => {
               version++;
 
@@ -1155,6 +1170,11 @@ void main() {
               _refreshChunk(chunk);
             };
             generatorElement.on('refresh', _refresh);
+            const _redecorate = ({x, z, decorations}) => {
+              const trackedObjectChunkMeshes = objectsChunkMeshes[_getChunkIndex(x, z)];
+              trackedObjectChunkMeshes.updateLightmap(decorations.objects);
+            };
+            generatorElement.on('redecorate', _redecorate);
             generatorElement.forEachChunk(chunk => {
               _add(chunk);
             });
