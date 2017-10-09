@@ -178,16 +178,15 @@ class Generator {
       ], result => {
         const uint32Buffer = chunk.getTerrainBuffer();
         result.copy(new Buffer(uint32Buffer.buffer, uint32Buffer.byteOffset, uint32Buffer.byteLength));
-        // protocolUtils.stringifyTerrainData(result, uint32Buffer.buffer, uint32Buffer.byteOffset);
 
         accept(chunk);
       });
     });
-    const _generateChunkObjects = chunk => {
+    const _generateChunkObjects = chunk => { // XXX this can be moved to the servlet for better performance
       for (let i = 0; i < generators.length; i++) {
         _generateChunkObjectsWithGenerator(chunk, generators[i]);
       }
-      return _decorateChunkObjectsGeometry(chunk);
+      return Promise.resolve(chunk);
     };
     const _generateChunkObjectsWithGenerator = (chunk, generator) => {
       const n = generator[0];
@@ -199,25 +198,6 @@ class Generator {
         return false;
       }
     };
-
-    const _decorateChunkObjectsGeometry = chunk => new Promise((accept, reject) => {
-      childProcess.request(servlet.METHODS.generateObjects, [
-        Int32Array.from([chunk.x, chunk.z]),
-        chunk.getObjectBuffer(),
-        chunk.getVegetationBuffer(),
-        chunk.getBlockBuffer(),
-        geometriesBuffer,
-        geometryTypes,
-        blockTypes,
-        transparentVoxels,
-        translucentVoxels,
-        faceUvs,
-      ], result => {
-        const geometryBuffer = chunk.getGeometryBuffer();
-        result.copy(new Buffer(geometryBuffer.buffer, geometryBuffer.byteOffset, geometryBuffer.byteLength));
-        accept(chunk);
-      });
-    });
 
     const _readEnsureFile = (p, opts) => new Promise((accept, reject) => {
       fs.readFile(p, opts, (err, d) => {
@@ -480,12 +460,7 @@ class Generator {
               for (let i = 0; i < zde.chunks.length; i++) {
                 const chunk = zde.chunks[i];
                 if (_generateChunkObjectsWithGenerator(chunk, generator)) {
-                  promises.push(
-                    _decorateChunkObjectsGeometry(chunk)
-                      .then(() => {
-                        chunk.dirty = true;
-                      })
-                  );
+                  chunk.dirty = true;
                 }
               }
               if (promises.length > 0) {
@@ -702,26 +677,19 @@ class Generator {
                   const matrix = positions.concat(rotations).concat(zeroVectorArray);
                   const objectIndex = chunk.addObject(n, matrix, value);
 
-                  _decorateChunkObjectsGeometry(chunk)
-                    .then(() => {
-                      _saveChunks();
-                    })
-                    .then(() => {
-                      c.send(JSON.stringify({
-                        type: 'response',
-                        id,
-                        result: objectIndex,
-                      }));
+                  _saveChunks();
 
-                      _broadcast({
-                        type: 'addObject',
-                        args,
-                        result: objectIndex,
-                      });
-                    })
-                    .catch(err => {
-                      console.warn(err);
-                    });
+                  c.send(JSON.stringify({
+                    type: 'response',
+                    id,
+                    result: objectIndex,
+                  }));
+
+                  _broadcast({
+                    type: 'addObject',
+                    args,
+                    result: objectIndex,
+                  });
                 }
               } else if (method === 'removeObject') {
                 const {id, args} = m;
@@ -733,26 +701,19 @@ class Generator {
                   const n = chunk.removeObject(index);
                   chunk.removeLight(index);
 
-                  _decorateChunkObjectsGeometry(chunk)
-                    .then(() => {
-                      _saveChunks();
-                    })
-                    .then(() => {
-                      c.send(JSON.stringify({
-                        type: 'response',
-                        id,
-                        result: n,
-                      }));
+                  _saveChunks();
 
-                      _broadcast({
-                        type: 'removeObject',
-                        args,
-                        result: n,
-                      });
-                    })
-                    .catch(err => {
-                      console.warn(err);
-                    });
+                  c.send(JSON.stringify({
+                    type: 'response',
+                    id,
+                    result: n,
+                  }));
+
+                  _broadcast({
+                    type: 'removeObject',
+                    args,
+                    result: n,
+                  });
                 }
               } else if (method === 'setObjectData') {
                 const {id, args} = m;
@@ -786,26 +747,19 @@ class Generator {
                 if (chunk) {
                   chunk.setBlock(x - ox * NUM_CELLS, y, z - oz * NUM_CELLS, v);
 
-                  _decorateChunkObjectsGeometry(chunk)
-                    .then(() => {
-                      _saveChunks();
-                    })
-                    .then(() => {
-                      c.send(JSON.stringify({
-                        type: 'response',
-                        id,
-                        result: null,
-                      }));
+                  _saveChunks();
 
-                      _broadcast({
-                        type: 'setBlock',
-                        args,
-                        result: null,
-                      });
-                    })
-                    .catch(err => {
-                      console.warn(err);
-                    });
+                  c.send(JSON.stringify({
+                    type: 'response',
+                    id,
+                    result: null,
+                  }));
+
+                  _broadcast({
+                    type: 'setBlock',
+                    args,
+                    result: null,
+                  });
                 }
               } else if (method === 'clearBlock') {
                 const {id, args} = m;
@@ -817,26 +771,19 @@ class Generator {
                 if (chunk) {
                   chunk.clearBlock(x - ox * NUM_CELLS, y, z - oz * NUM_CELLS);
 
-                  _decorateChunkObjectsGeometry(chunk)
-                    .then(() => {
-                      _saveChunks();
-                    })
-                    .then(() => {
-                      c.send(JSON.stringify({
-                        type: 'response',
-                        id,
-                        result: null,
-                      }));
+                  _saveChunks();
 
-                      _broadcast({
-                        type: 'clearBlock',
-                        args,
-                        result: null,
-                      });
-                    })
-                    .catch(err => {
-                      console.warn(err);
-                    });
+                  c.send(JSON.stringify({
+                    type: 'response',
+                    id,
+                    result: null,
+                  }));
+
+                  _broadcast({
+                    type: 'clearBlock',
+                    args,
+                    result: null,
+                  });
                 }
               } else {
                 console.warn('objects server got unknown method:', JSON.stringify(method));

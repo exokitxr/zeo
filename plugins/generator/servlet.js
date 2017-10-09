@@ -11,10 +11,6 @@ const Pullstream = require('pullstream');
 let numMethods = 0;
 const METHODS = {
   generateTerrain: numMethods++,
-  generateObjects: numMethods++,
-  light: numMethods++,
-  lightmap: numMethods++,
-  blockfield: numMethods++,
 };
 
 const _alignData = (data, alignment) => {
@@ -140,47 +136,6 @@ const _init = () => _requestPlugins([
           };
           const result = terrainTesselator.generate(ox, oz, opts);
           cb(null, new Uint8Array(protocolUtils.stringifyTerrainData(result)[0]));
-        });
-      },
-      [METHODS.generateObjects]: cb => {
-        _readArgs([
-          Int32Array, // header
-          Uint32Array, // objects src
-          Uint32Array, // vegetations src
-          Uint32Array, // blocks
-          Uint8Array, // geometry buffer
-          Uint32Array, // geometry types
-          Uint32Array, // block types
-          Uint8Array, // transparent voxels
-          Uint8Array, // translucent voxels
-          Float32Array, // face uvs
-        ], (err, [
-          header,
-          objectsSrc,
-          vegetationsSrc,
-          blocks,
-          geometriesBuffer,
-          geometryTypes,
-          blockTypes,
-          transparentVoxels,
-          translucentVoxels,
-          faceUvs,
-        ]) => {
-          const [ox, oz] = header;
-          const result = objectsTesselator.tesselate(
-            ox,
-            oz,
-            objectsSrc,
-            vegetationsSrc,
-            blocks,
-            geometriesBuffer,
-            geometryTypes,
-            blockTypes,
-            transparentVoxels,
-            translucentVoxels,
-            faceUvs
-          );
-          cb(null, new Uint8Array(protocolUtils.stringifyGeometry(result)[0]));
         });
       },
     };
