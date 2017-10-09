@@ -632,14 +632,15 @@ class Generator {
                       const oldLava = oldChunkData.lava.slice();
 
                       regeneratePromises.push(
-                        _generateChunkTerrain(chunk, {
+                        _generateChunkTerrain(
+                          chunk,
                           oldBiomes,
                           oldElevations,
                           oldEther,
                           oldWater,
                           oldLava,
                           newEther,
-                        })
+                        )
                       );
                     }
 
@@ -661,6 +662,9 @@ class Generator {
                       args,
                       result: {x, y, z, v},
                     });
+                  })
+                  .catch(err => {
+                    console.warn(err);
                   });
               } else if (method === 'addObject') {
                 const {id, args} = m;
