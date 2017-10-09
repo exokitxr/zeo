@@ -28,35 +28,6 @@ const wood = objectApi => {
           if (grabbable.getGrabberSide() === side) {
             const hoveredBlock = objectApi.getHoveredBlock(side);
 
-            /* const hoveredObject = objectApi.getHoveredObject(side);
-
-            if (hoveredObject && (hoveredObject.is('wood-wall') || hoveredObject.is('wood-wall-2'))) {
-              localVector.copy(hoveredObject.position).add(upVector);
-
-              // if (!objectApi.getObjectAt(localVector, hoveredObject.rotation)) {
-                objectApi.removeObject(hoveredObject.x, hoveredObject.z, hoveredObject.objectIndex);
-                objectApi.addObject('wood-wall-2', hoveredObject.position, hoveredObject.rotation);
-
-                objectApi.addObject('wood-wall-2', localVector, hoveredObject.rotation);
-
-                items.destroyItem(grabbable);
-              // }
-            } else {
-              const heightfieldElement = elements.getEntitiesElement().querySelector(HEIGHTFIELD_PLUGIN);
-              localVector.set(
-                grabbable.position.x,
-                heightfieldElement ? heightfieldElement.getBestElevation(grabbable.position.x, grabbable.position.z, grabbable.position.y) : 0,
-                grabbable.position.z
-              );
-              localEuler.setFromQuaternion(grabbable.rotation, camera.rotation.order);
-              localEuler.x = 0;
-              localEuler.z = 0;
-              localQuaternion.setFromEuler(localEuler);
-              objectApi.addObject('wood-wall', localVector, localQuaternion);
-
-              items.destroyItem(grabbable);
-            } */
-
             if (hoveredBlock === treeHash) {
               objectApi.setBlock(Math.floor(grabbable.position.x), Math.floor(grabbable.position.y), Math.floor(grabbable.position.z), 'crafting-table');
               items.destroyItem(grabbable);

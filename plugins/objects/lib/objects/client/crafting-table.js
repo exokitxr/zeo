@@ -50,17 +50,6 @@ const craftingTable = objectApi => {
           const {side} = e;
 
           if (grabbable.getGrabberSide() === side) {
-            /* const heightfieldElement = elements.getEntitiesElement().querySelector(HEIGHTFIELD_PLUGIN);
-            localVector.set(
-              grabbable.position.x,
-              heightfieldElement ? heightfieldElement.getBestElevation(grabbable.position.x, grabbable.position.z, grabbable.position.y) : 0,
-              grabbable.position.z
-            );
-            localEuler.setFromQuaternion(grabbable.rotation, camera.rotation.order);
-            localEuler.x = 0;
-            localEuler.z = 0;
-            localQuaternion.setFromEuler(localEuler);
-            objectApi.addObject('craftingTable', localVector, localQuaternion); */
             objectApi.setBlock(Math.floor(grabbable.position.x), Math.floor(grabbable.position.y), Math.floor(grabbable.position.z), 'crafting-table');
 
             items.destroyItem(grabbable);

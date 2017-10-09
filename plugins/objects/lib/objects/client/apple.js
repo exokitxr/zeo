@@ -30,11 +30,7 @@ const apple = objectApi => {
 
             if (grabbable.getGrabberSide() === side) {
               const heightfieldElement = elements.getEntitiesElement().querySelector(HEIGHTFIELD_PLUGIN);
-              localVector.set(
-                grabbable.position.x,
-                heightfieldElement ? heightfieldElement.getBestElevation(grabbable.position.x, grabbable.position.z, grabbable.position.y) : 0,
-                grabbable.position.z
-              );
+              localVector.copy(grabbable.position);
               localEuler.setFromQuaternion(grabbable.rotation, camera.rotation.order);
               localEuler.x = 0;
               localEuler.z = 0;
