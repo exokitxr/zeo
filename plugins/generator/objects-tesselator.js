@@ -1,17 +1,13 @@
-const zeode = require('zeode');
-const {
-  GEOMETRY_BUFFER_SIZE,
-  BLOCK_BUFFER_SIZE,
-} = zeode;
 const {
   NUM_CELLS,
 
   NUM_CHUNKS_HEIGHT,
+
+  GEOMETRY_BUFFER_SIZE,
 } = require('./lib/constants/constants');
 
 const NUM_CELLS_HALF = NUM_CELLS / 2;
 const NUM_CELLS_CUBE = Math.sqrt((NUM_CELLS_HALF + 16) * (NUM_CELLS_HALF + 16) * 3); // larger than the actual bounding box to account for geometry overflow
-// const NUM_VOXELS_CHUNK_HEIGHT = BLOCK_BUFFER_SIZE / 4 / NUM_CHUNKS_HEIGHT;
 
 module.exports = ({
   vxl,

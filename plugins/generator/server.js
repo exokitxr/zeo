@@ -566,10 +566,7 @@ class Generator {
                 res.write(new Buffer(blockBuffer.buffer, blockBuffer.byteOffset, blockBuffer.byteLength));
 
                 const lightBuffer = chunk.getLightBuffer();
-                res.write(new Buffer(lightBuffer.buffer, lightBuffer.byteOffset, lightBuffer.byteLength));
-
-                const geometryBuffer = chunk.getGeometryBuffer();
-                res.end(new Buffer(geometryBuffer.buffer, geometryBuffer.byteOffset, geometryBuffer.byteLength));
+                res.end(new Buffer(lightBuffer.buffer, lightBuffer.byteOffset, lightBuffer.byteLength));
               })
               .catch(err => {
                 console.warn(err);

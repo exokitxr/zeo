@@ -98,7 +98,6 @@ const {
   VEGETATION_BUFFER_SIZE,
   BLOCK_BUFFER_SIZE,
   LIGHT_BUFFER_SIZE,
-  GEOMETRY_BUFFER_SIZE,
 } = zeode;
 const {
   NUM_CELLS,
@@ -109,7 +108,7 @@ const {
 
   NUM_RENDER_GROUPS,
 
-  HEIGHTFIELD_DEPTH,
+  GEOMETRY_BUFFER_SIZE,
 
   TEXTURE_SIZE,
 
@@ -457,25 +456,20 @@ const _retesselateObjects = chunk => {
       boundingSphere,
     };
   };
-  const chunkDataSpec = {
-    positions: new Float32Array(geometriesPositions.buffer, geometriesPositions.byteOffset, numNewPositions[NUM_CHUNKS_HEIGHT - 1]),
-    uvs: new Float32Array(geometriesUvs.buffer, geometriesUvs.byteOffset, numNewUvs[NUM_CHUNKS_HEIGHT - 1]),
-    ssaos: new Uint8Array(geometriesSsaos.buffer, geometriesSsaos.byteOffset, numNewSsaos[NUM_CHUNKS_HEIGHT - 1]),
-    frames: new Float32Array(geometriesFrames.buffer, geometriesFrames.byteOffset, numNewFrames[NUM_CHUNKS_HEIGHT - 1]),
-    objectIndices: new Float32Array(geometriesObjectIndices.buffer, geometriesObjectIndices.byteOffset, numNewObjectIndices[NUM_CHUNKS_HEIGHT - 1]),
-    indices: new Uint32Array(geometriesIndices.buffer, geometriesIndices.byteOffset, numNewIndices[NUM_CHUNKS_HEIGHT - 1]),
-    objects: new Uint32Array(geometriesObjects.buffer, geometriesObjects.byteOffset, numNewObjects[NUM_CHUNKS_HEIGHT - 1]),
+
+  chunk.chunkData.objects = {
+    positions: geometriesPositions.slice(0, numNewPositions[NUM_CHUNKS_HEIGHT - 1]),
+    uvs: geometriesUvs.slice(0, numNewUvs[NUM_CHUNKS_HEIGHT - 1]),
+    ssaos: geometriesSsaos.slice(0, numNewSsaos[NUM_CHUNKS_HEIGHT - 1]),
+    frames: geometriesFrames.slice(0, numNewFrames[NUM_CHUNKS_HEIGHT - 1]),
+    objectIndices: geometriesObjectIndices.slice(0, numNewObjectIndices[NUM_CHUNKS_HEIGHT - 1]),
+    indices: geometriesIndices.slice(0, numNewIndices[NUM_CHUNKS_HEIGHT - 1]),
+    objects: geometriesObjects.slice(0, numNewObjects[NUM_CHUNKS_HEIGHT - 1]),
     geometries: localGeometries,
   };
-
-  const geometryBuffer = chunk.getGeometryBuffer();
-  protocolUtils.stringifyGeometry(chunkDataSpec, geometryBuffer.buffer, geometryBuffer.byteOffset);
-
-  const chunkData = protocolUtils.parseGeometry(geometryBuffer.buffer, geometryBuffer.byteOffset);
-  chunk.chunkData.objects = chunkData;
   chunk.chunkData.decorations.objects = {
-    skyLightmaps: new Uint8Array(chunkData.positions.length / 3),
-    torchLightmaps: new Uint8Array(chunkData.positions.length / 3),
+    skyLightmaps: new Uint8Array(chunk.chunkData.objects.positions.length / 3),
+    torchLightmaps: new Uint8Array(chunk.chunkData.objects.positions.length / 3),
     blockfield: new Uint8Array(NUM_CELLS * NUM_CELLS_HEIGHT * NUM_CELLS),
   };
   _undecorateObjectsChunkSoft(chunk);
@@ -1291,11 +1285,8 @@ const _requestChunk = (x, z) => {
             index += BLOCK_BUFFER_SIZE;
             const lightBuffer = new Float32Array(buffer, index, LIGHT_BUFFER_SIZE / Float32Array.BYTES_PER_ELEMENT);
             index += LIGHT_BUFFER_SIZE;
-            const geometryBuffer = new Uint8Array(buffer, index, GEOMETRY_BUFFER_SIZE / Uint8Array.BYTES_PER_ELEMENT);
-            index += GEOMETRY_BUFFER_SIZE;
-            const decorationsBuffer = new Uint8Array(buffer, index);
 
-            const chunk = new zeode.Chunk(x, z, 0, terrainBuffer, objectBuffer, vegetationBuffer, blockBuffer, lightBuffer, geometryBuffer);
+            const chunk = new zeode.Chunk(x, z, 0, terrainBuffer, objectBuffer, vegetationBuffer, blockBuffer, lightBuffer);
             chunk.chunkData = {
               terrain: null,
               objects: null,
