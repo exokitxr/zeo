@@ -1224,12 +1224,16 @@ const _requestChunk = (x, z) => {
           textureAtlasVersion = newTextureAtlasVersion;
 
           promises.push(_requestUpdateTextureAtlas());
+        } else if (updateTextureAtlasPromise) {
+          promises.push(updateTextureAtlasPromise);
         }
         const newGeometryVersion = headers.get('Geometry-Version');
         if (newGeometryVersion !== geometryVersion) {
           geometryVersion = newGeometryVersion;
 
           promises.push(_requestUpdateGeometries());
+        } else if (updateGeometriesPromise) {
+          promises.push(updateGeometriesPromise);
         }
 
         return Promise.all(promises)
@@ -1456,22 +1460,29 @@ const _undecorateObjectsChunkSoft = chunk => {
     chunk[objectsDecorationsSymbol] = null;
   }
 };
-const _requestUpdateTextureAtlas = () => fetch(`/archae/objects/texture-atlas.png`, {
-  credentials: 'include',
-})
-  .then(_resBlob)
-  .then(blob => createImageBitmap(blob, 0, 0, TEXTURE_SIZE, TEXTURE_SIZE, {
-    imageOrientation: 'flipY',
-  }))
-  .then(imageBitmap => {
-    postMessage({
-      type: 'textureAtlas',
-      args: [imageBitmap],
-    }, [imageBitmap]);
+let updateTextureAtlasPromise = null;
+const _requestUpdateTextureAtlas = () => {
+  return updateTextureAtlasPromise = fetch(`/archae/objects/texture-atlas.png`, {
+    credentials: 'include',
   })
-  .catch(err => {
-    console.warn(err);
-  });
+    .then(_resBlob)
+    .then(blob => createImageBitmap(blob, 0, 0, TEXTURE_SIZE, TEXTURE_SIZE, {
+      imageOrientation: 'flipY',
+    }))
+    .then(imageBitmap => {
+      postMessage({
+        type: 'textureAtlas',
+        args: [imageBitmap],
+      }, [imageBitmap]);
+
+      updateTextureAtlasPromise = null;
+    })
+    .catch(err => {
+      console.warn(err);
+
+      updateTextureAtlasPromise = null;
+    });
+}
 let geometriesBuffer = null;
 let geometryTypes = null;
 let blockTypes = null;
@@ -1487,23 +1498,30 @@ const _findLight = n => {
   }
   return 0;
 };
-const _requestUpdateGeometries = () => fetch(`/archae/objects/geometry.bin`, {
-  credentials: 'include',
-})
-  .then(_resArrayBuffer)
-  .then(arrayBuffer => {
-    const templates = protocolUtils.parseTemplates(arrayBuffer);
-    geometriesBuffer = templates.geometriesBuffer;
-    geometryTypes = templates.geometryTypes;
-    blockTypes = templates.blockTypes;
-    transparentVoxels = templates.transparentVoxels;
-    translucentVoxels = templates.translucentVoxels;
-    faceUvs = templates.faceUvs;
-    lights = templates.lights;
+let updateGeometriesPromise = null;
+const _requestUpdateGeometries = () => {
+  return updateGeometriesPromise = fetch(`/archae/objects/geometry.bin`, {
+    credentials: 'include',
   })
-  .catch(err => {
-    console.warn(err);
-  });
+    .then(_resArrayBuffer)
+    .then(arrayBuffer => {
+      const templates = protocolUtils.parseTemplates(arrayBuffer);
+      geometriesBuffer = templates.geometriesBuffer;
+      geometryTypes = templates.geometryTypes;
+      blockTypes = templates.blockTypes;
+      transparentVoxels = templates.transparentVoxels;
+      translucentVoxels = templates.translucentVoxels;
+      faceUvs = templates.faceUvs;
+      lights = templates.lights;
+
+      updateGeometriesPromise = null;
+    })
+    .catch(err => {
+      console.warn(err);
+
+      updateGeometriesPromise = null;
+    });
+};
 const _unrequestChunk = (x, z) => {
   const oldChunk = zde.removeChunk(x, z);
   _undecorateTerrainChunk(oldChunk);
