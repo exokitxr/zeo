@@ -1764,6 +1764,14 @@ self.onmessage = e => {
           args: [ox, oz],
         });
 
+        const objectApi = objectApis[n];
+        if (objectApi && objectApi.removed) {
+          postMessage({
+            type: 'objectAdded',
+            args: [n, x, z, objectIndex, matrix.slice(0, 3), matrix.slice(3, 7), value],
+          });
+        }
+
         const seenUpdates = {};
         for (let i = 0; i < CROSS_DIRECTIONS.length; i++) {
           const [dx, dz] = CROSS_DIRECTIONS[i];
@@ -1883,6 +1891,14 @@ self.onmessage = e => {
           type: 'chunkUpdate',
           args: [ox, oz],
         });
+
+        const objectApi = objectApis[v];
+        if (objectApi && objectApi.set) {
+          postMessage({
+            type: 'blockSet',
+            args: [v, x, y, z],
+          });
+        }
 
         const seenUpdates = {};
         for (let i = 0; i < CROSS_DIRECTIONS.length; i++) {
