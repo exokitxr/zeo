@@ -210,11 +210,15 @@ class Allocator {
     const array = new Uint32Array(Module.HEAP8.buffer, Module.HEAP8.byteOffset + offset, bs.length);
     for (let i = 0; i < bs.length; i++) {
       const b = bs[i];
-      const offset = Module._malloc(b.byteLength);
-      this.offsets.push(offset);
-      const shadowBuffer = new b.constructor(Module.HEAP8.buffer, Module.HEAP8.byteOffset + offset, b.length);
-      shadowBuffer.set(b);
-      array[i] = offset;
+      if (b) {
+        const offset = Module._malloc(b.byteLength);
+        this.offsets.push(offset);
+        const shadowBuffer = new b.constructor(Module.HEAP8.buffer, Module.HEAP8.byteOffset + offset, b.length);
+        shadowBuffer.set(b);
+        array[i] = offset;
+      } else {
+        array[i] = 0;
+      }
     }
     return offset;
   }
@@ -237,15 +241,19 @@ class Allocator {
     const array = new Uint32Array(Module.HEAP8.buffer, Module.HEAP8.byteOffset + offset, bs.length);
     for (let i = 0; i < bs.length; i++) {
       const b = bs[i];
-      const offset = Module._malloc(b.byteLength);
-      this.offsets.push(offset);
-      const shadowBuffer = new b.constructor(Module.HEAP8.buffer, Module.HEAP8.byteOffset + offset, b.length);
-      shadowBuffer.set(b);
-      this.backbuffers.push([
-        b,
-        shadowBuffer
-      ]);
-      array[i] = offset;
+      if (b) {
+        const offset = Module._malloc(b.byteLength);
+        this.offsets.push(offset);
+        const shadowBuffer = new b.constructor(Module.HEAP8.buffer, Module.HEAP8.byteOffset + offset, b.length);
+        shadowBuffer.set(b);
+        this.backbuffers.push([
+          b,
+          shadowBuffer
+        ]);
+        array[i] = offset;
+      } else {
+        array[i] = 0;
+      }
     }
     return offset;
   }
@@ -281,26 +289,28 @@ const _retesselateTerrain = (chunk, newEther) => {
   const oldEtherAddress = allocator.allocShadowBuffer(oldEther);
   const oldWaterAddress = allocator.allocShadowBuffer(oldWater);
   const oldLavaAddress = allocator.allocShadowBuffer(oldLava);
-  const newEtherAddress = allocator.allocBuffer(newEther);
-  Module._noiser_apply(
-    noiser,
-    chunk.x,
-    chunk.z,
-    oldBiomesAddress,
-    oldElevationsAddress,
-    oldEtherAddress,
-    oldWaterAddress,
-    oldLavaAddress,
-    newEtherAddress,
-    newEther.length,
-    slab.positions.offset,
-    slab.indices.offset,
-    attributeRanges.offset,
-    indexRanges.offset,
-    staticHeightfield.offset,
-    slab.colors.offset,
-    peeks.offset
-  );
+  if (newEther) {
+    const newEtherAddress = allocator.allocBuffer(newEther);
+    Module._noiser_apply(
+      noiser,
+      chunk.x,
+      chunk.z,
+      oldBiomesAddress,
+      oldElevationsAddress,
+      oldEtherAddress,
+      oldWaterAddress,
+      oldLavaAddress,
+      newEtherAddress,
+      newEther.length,
+      slab.positions.offset,
+      slab.indices.offset,
+      attributeRanges.offset,
+      indexRanges.offset,
+      staticHeightfield.offset,
+      slab.colors.offset,
+      peeks.offset
+    );
+  }
 
   const {attributeRanges, indexRanges, staticHeightfield, peeks} = slab;
   const noiser = Module._make_noiser(murmur(DEFAULT_SEED));
@@ -473,33 +483,44 @@ const _retesselateObjects = chunk => {
 
   allocator.destroy();
 };
-const _relight = (chunk, x, y, z) => {
-  const _decorateChunkLightsSub = (chunk, x, y, z) => _decorateChunkLightsRange(
-    chunk,
-    Math.max(x - 15, (chunk.x - 1) * NUM_CELLS),
-    Math.min(x + 15, (chunk.x + 2) * NUM_CELLS),
-    Math.max(y - 15, 0),
-    Math.min(y + 15, NUM_CELLS_HEIGHT),
-    Math.max(z - 15, (chunk.z - 1) * NUM_CELLS),
-    Math.min(z + 15, (chunk.z + 2) * NUM_CELLS),
-    true
-  );
-  const _decorateChunkLightsRange = (chunk, minX, maxX, minY, maxY, minZ, maxZ, relight) => {
-    const {x: ox, z: oz} = chunk;
-    const updatingLights = chunk[lightsRenderedSymbol];
+const _relight = chunk => _decorateChunkLightsRange(
+  chunk,
+  (chunk.x - 1) * NUM_CELLS,
+  (chunk.x + 2) * NUM_CELLS,
+  0,
+  NUM_CELLS_HEIGHT + 1,
+  (chunk.z - 1) * NUM_CELLS,
+  (chunk.z + 2) * NUM_CELLS,
+  false
+);
+const _relightSub = (chunk, x, y, z) => _decorateChunkLightsRange(
+  chunk,
+  Math.max(x - 15, (chunk.x - 1) * NUM_CELLS),
+  Math.min(x + 15, (chunk.x + 2) * NUM_CELLS),
+  Math.max(y - 15, 0),
+  Math.min(y + 15, NUM_CELLS_HEIGHT),
+  Math.max(z - 15, (chunk.z - 1) * NUM_CELLS),
+  Math.min(z + 15, (chunk.z + 2) * NUM_CELLS),
+  true
+);
+const _decorateChunkLightsRange = (chunk, minX, maxX, minY, maxY, minZ, maxZ, relight) => {
+  const {x: ox, z: oz} = chunk;
+  const updatingLights = chunk[lightsRenderedSymbol];
 
-    const lavaArray = Array(9);
-    const objectLightsArray = Array(9);
-    const etherArray = Array(9);
-    const blocksArray = Array(9);
-    const lightsArray = Array(9);
-    for (let doz = -1; doz <= 1; doz++) { // XXX can be reduced to use only the relight range
-      for (let dox = -1; dox <= 1; dox++) {
+  const lavaArray = Array(9);
+  const objectLightsArray = Array(9);
+  const etherArray = Array(9);
+  const blocksArray = Array(9);
+  const lightsArray = Array(9);
+  for (let doz = -1; doz <= 1; doz++) { // XXX can be reduced to use only the relight range
+    for (let dox = -1; dox <= 1; dox++) {
+      const aox = ox + dox;
+      const aoz = oz + doz;
+      const chunk = zde.getChunk(aox, aoz);
+
+      if (chunk) {
         const arrayIndex = _getLightsArrayIndex(dox + 1, doz + 1);
 
-        const aox = ox + dox;
-        const aoz = oz + doz;
-        const chunk = zde.getChunk(aox, aoz);
         const uint32Buffer = chunk.getTerrainBuffer();
         const {ether, lava} = protocolUtils.parseTerrainData(uint32Buffer.buffer, uint32Buffer.byteOffset); // XXX can be reduced to only parse the needed fields
         lavaArray[arrayIndex] = lava;
@@ -520,26 +541,24 @@ const _relight = (chunk, x, y, z) => {
         lightsArray[arrayIndex] = lights;
       }
     }
+  }
 
-    const allocator = new Allocator();
+  const allocator = new Allocator();
 
-    Module._lght(
-      ox, oz,
-      minX, maxX, minY, maxY, minZ, maxZ,
-      +relight,
-      allocator.allocBufferArray(lavaArray),
-      allocator.allocBufferArray(objectLightsArray),
-      allocator.allocBufferArray(etherArray),
-      allocator.allocBufferArray(blocksArray),
-      allocator.allocShadowBufferArray(lightsArray),
-    );
+  Module._lght(
+    ox, oz,
+    minX, maxX, minY, maxY, minZ, maxZ,
+    +relight,
+    allocator.allocBufferArray(lavaArray),
+    allocator.allocBufferArray(objectLightsArray),
+    allocator.allocBufferArray(etherArray),
+    allocator.allocBufferArray(blocksArray),
+    allocator.allocShadowBufferArray(lightsArray),
+  );
 
-    allocator.unshadow();
+  allocator.unshadow();
 
-    allocator.destroy();
-  };
-
-  _decorateChunkLightsSub(chunk, x, y, z);
+  allocator.destroy();
 };
 const _relightmap = chunk => {
   const _relightmapTerrain = () => {
@@ -1202,42 +1221,57 @@ const _requestChunk = (x, z) => {
     })
       .then(_resArrayBufferHeaders)
       .then(({buffer, headers}) => {
+        const promises = [];
+
         const newTextureAtlasVersion = headers.get('Texture-Atlas-Version');
         if (newTextureAtlasVersion !== textureAtlasVersion) {
           textureAtlasVersion = newTextureAtlasVersion;
 
-          _updateTextureAtlas();
+          promises.push(_requestUpdateTextureAtlas());
         }
         const newGeometryVersion = headers.get('Geometry-Version');
         if (newGeometryVersion !== geometryVersion) {
           geometryVersion = newGeometryVersion;
 
-          _updateGeometries();
+          promises.push(_requestUpdateGeometries());
         }
 
-        let index = 0;
-        const terrainBuffer = new Uint32Array(buffer, index, TERRAIN_BUFFER_SIZE / Uint32Array.BYTES_PER_ELEMENT);
-        index += TERRAIN_BUFFER_SIZE;
-        const objectBuffer = new Uint32Array(buffer, index, OBJECT_BUFFER_SIZE / Uint32Array.BYTES_PER_ELEMENT);
-        index += OBJECT_BUFFER_SIZE;
-        const vegetationBuffer = new Uint32Array(buffer, index, VEGETATION_BUFFER_SIZE / Uint32Array.BYTES_PER_ELEMENT);
-        index += VEGETATION_BUFFER_SIZE;
-        const blockBuffer = new Uint32Array(buffer, index, BLOCK_BUFFER_SIZE / Uint32Array.BYTES_PER_ELEMENT);
-        index += BLOCK_BUFFER_SIZE;
-        const lightBuffer = new Float32Array(buffer, index, LIGHT_BUFFER_SIZE / Float32Array.BYTES_PER_ELEMENT);
-        index += LIGHT_BUFFER_SIZE;
-        const geometryBuffer = new Uint8Array(buffer, index, GEOMETRY_BUFFER_SIZE / Uint8Array.BYTES_PER_ELEMENT);
-        index += GEOMETRY_BUFFER_SIZE;
-        const decorationsBuffer = new Uint8Array(buffer, index);
+        return Promise.all(promises)
+          .then(() => {
+            let index = 0;
+            const terrainBuffer = new Uint32Array(buffer, index, TERRAIN_BUFFER_SIZE / Uint32Array.BYTES_PER_ELEMENT);
+            index += TERRAIN_BUFFER_SIZE;
+            const objectBuffer = new Uint32Array(buffer, index, OBJECT_BUFFER_SIZE / Uint32Array.BYTES_PER_ELEMENT);
+            index += OBJECT_BUFFER_SIZE;
+            const vegetationBuffer = new Uint32Array(buffer, index, VEGETATION_BUFFER_SIZE / Uint32Array.BYTES_PER_ELEMENT);
+            index += VEGETATION_BUFFER_SIZE;
+            const blockBuffer = new Uint32Array(buffer, index, BLOCK_BUFFER_SIZE / Uint32Array.BYTES_PER_ELEMENT);
+            index += BLOCK_BUFFER_SIZE;
+            const lightBuffer = new Float32Array(buffer, index, LIGHT_BUFFER_SIZE / Float32Array.BYTES_PER_ELEMENT);
+            index += LIGHT_BUFFER_SIZE;
+            const geometryBuffer = new Uint8Array(buffer, index, GEOMETRY_BUFFER_SIZE / Uint8Array.BYTES_PER_ELEMENT);
+            index += GEOMETRY_BUFFER_SIZE;
+            const decorationsBuffer = new Uint8Array(buffer, index);
 
-        const chunk = new zeode.Chunk(x, z, 0, terrainBuffer, objectBuffer, vegetationBuffer, blockBuffer, lightBuffer, geometryBuffer);
-        chunk.chunkData = {
-          terrain: protocolUtils.parseTerrainData(terrainBuffer.buffer, terrainBuffer.byteOffset),
-          objects: protocolUtils.parseGeometry(geometryBuffer.buffer, geometryBuffer.byteOffset),
-          decorations: protocolUtils.parseDecorations(decorationsBuffer.buffer, decorationsBuffer.byteOffset),
-        };
-        zde.pushChunk(chunk);
-        return chunk;
+            const chunk = new zeode.Chunk(x, z, 0, terrainBuffer, objectBuffer, vegetationBuffer, blockBuffer, lightBuffer, geometryBuffer);
+            chunk.chunkData = {
+              terrain: null,
+              objects: null,
+              decorations: {
+                terrain: null,
+                objects: null,
+              },
+            };
+
+            zde.pushChunk(chunk);
+
+            _retesselateTerrain(chunk);
+            _retesselateObjects(chunk);
+            _relight(chunk);
+            _relightmap(chunk);
+
+            return chunk;
+          });
       });
   }
 };
@@ -1426,28 +1460,22 @@ const _undecorateObjectsChunkSoft = chunk => {
     chunk[objectsDecorationsSymbol] = null;
   }
 };
-const _updateTextureAtlas = _debounce(next => {
-  return fetch(`/archae/objects/texture-atlas.png`, {
-    credentials: 'include',
+const _requestUpdateTextureAtlas = () => fetch(`/archae/objects/texture-atlas.png`, {
+  credentials: 'include',
+})
+  .then(_resBlob)
+  .then(blob => createImageBitmap(blob, 0, 0, TEXTURE_SIZE, TEXTURE_SIZE, {
+    imageOrientation: 'flipY',
+  }))
+  .then(imageBitmap => {
+    postMessage({
+      type: 'textureAtlas',
+      args: [imageBitmap],
+    }, [imageBitmap]);
   })
-    .then(_resBlob)
-    .then(blob => createImageBitmap(blob, 0, 0, TEXTURE_SIZE, TEXTURE_SIZE, {
-      imageOrientation: 'flipY',
-    }))
-    .then(imageBitmap => {
-      postMessage({
-        type: 'textureAtlas',
-        args: [imageBitmap],
-      }, [imageBitmap]);
-
-      next();
-    })
-    .catch(err => {
-      console.warn(err);
-
-      next();
-    });
-});
+  .catch(err => {
+    console.warn(err);
+  });
 let geometriesBuffer = null;
 let geometryTypes = null;
 let blockTypes = null;
@@ -1463,29 +1491,23 @@ const _findLight = n => {
   }
   return 0;
 };
-const _updateGeometries = _debounce(next => {
-  fetch(`/archae/objects/geometry.bin`, {
-    credentials: 'include',
+const _requestUpdateGeometries = () => fetch(`/archae/objects/geometry.bin`, {
+  credentials: 'include',
+})
+  .then(_resArrayBuffer)
+  .then(arrayBuffer => {
+    const templates = protocolUtils.parseTemplates(arrayBuffer);
+    geometriesBuffer = templates.geometriesBuffer;
+    geometryTypes = templates.geometryTypes;
+    blockTypes = templates.blockTypes;
+    transparentVoxels = templates.transparentVoxels;
+    translucentVoxels = templates.translucentVoxels;
+    faceUvs = templates.faceUvs;
+    lights = templates.lights;
   })
-    .then(_resArrayBuffer)
-    .then(arrayBuffer => {
-      const templates = protocolUtils.parseTemplates(arrayBuffer);
-      geometriesBuffer = templates.geometriesBuffer;
-      geometryTypes = templates.geometryTypes;
-      blockTypes = templates.blockTypes;
-      transparentVoxels = templates.transparentVoxels;
-      translucentVoxels = templates.translucentVoxels;
-      faceUvs = templates.faceUvs;
-      lights = templates.lights;
-
-      next();
-    })
-    .catch(err => {
-      console.warn(err);
-
-      next();
-    });
-});
+  .catch(err => {
+    console.warn(err);
+  });
 const _unrequestChunk = (x, z) => {
   const oldChunk = zde.removeChunk(x, z);
   _undecorateTerrainChunk(oldChunk);
@@ -2120,11 +2142,16 @@ const _makeId = () => {
   _id = (_id + 1) | 0;
   return result;
 };
-function _debounce(fn) {
+/* function _debounce(fn) {
   let running = false;
   let queued = false;
+  let cbs = [];
 
-  const _go = () => {
+  const _go = cb => {
+    if (cb) {
+      cbs.push(cb);
+    }
+
     if (!running) {
       running = true;
 
@@ -2135,6 +2162,10 @@ function _debounce(fn) {
           queued = false;
 
           _go();
+        } else {
+          for (let i = 0; i < cbs.length; i++) {
+            cbs[i]();
+          }
         }
       });
     } else {
@@ -2142,4 +2173,4 @@ function _debounce(fn) {
     }
   };
   return _go;
-}
+} */
