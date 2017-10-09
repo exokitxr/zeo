@@ -62,6 +62,7 @@ Module = {
       const geometriesIndices = _alloc(Uint32Array, GEOMETRY_BUFFER_SIZE * NUM_CHUNKS_HEIGHT);
       const geometriesObjects = _alloc(Uint32Array, GEOMETRY_BUFFER_SIZE * NUM_CHUNKS_HEIGHT);
       const tesselateObjectsResult = _alloc(Uint32Array, 7 * 8 * 4);
+      const cullGroups = _alloc(Uint32Array, NUM_MAP_CHUNK_MESHES * (1 + NUM_RENDER_GROUPS * 6));
 
       return {
         biomes,
@@ -85,6 +86,7 @@ Module = {
         geometriesIndices,
         geometriesObjects,
         tesselateObjectsResult,
+        cullGroups,
       };
     })();
   },
@@ -2192,10 +2194,7 @@ const _getTerrainCull = (hmdPosition, projectionMatrix, matrixWorldInverse) => {
   if (wasmInitialized) {
     const allocator = new Allocator();
 
-    const resultSize = NUM_MAP_CHUNK_MESHES * (1 + NUM_RENDER_GROUPS * 6);
-    const resultOffset = Module._malloc(resultSize * 4);
-    allocator.offsets.push(resultOffset);
-    const groups = new Uint32Array(Module.HEAP8.buffer, Module.HEAP8.byteOffset + resultOffset, resultSize);
+    const {cullGroups} = slab;
 
     const groupsIndex = Module._cllTerrain(
       allocator.allocBuffer(Float32Array.from(hmdPosition)),
@@ -2203,10 +2202,10 @@ const _getTerrainCull = (hmdPosition, projectionMatrix, matrixWorldInverse) => {
       allocator.allocBuffer(Float32Array.from(matrixWorldInverse)),
       allocator.allocBuffer(terrainMapChunkMeshes),
       terrainMapChunkMeshesIndex,
-      resultOffset
+      cullGroups.offset
     );
 
-    const result = groups.slice(0, groupsIndex); // XXX can be optimized
+    const result = cullGroups.slice(0, groupsIndex);
 
     allocator.destroy();
 
@@ -2220,9 +2219,7 @@ const _getObjectsCull = (hmdPosition, projectionMatrix, matrixWorldInverse) => {
     const allocator = new Allocator();
 
     const resultSize = NUM_MAP_CHUNK_MESHES * (1 + NUM_RENDER_GROUPS * 2);
-    const resultOffset = Module._malloc(resultSize * 4);
-    allocator.offsets.push(resultOffset);
-    const groups = new Uint32Array(Module.HEAP8.buffer, Module.HEAP8.byteOffset + resultOffset, resultSize);
+    const {cullGroups} = slab;
 
     const groupsIndex = Module._cllObjects(
       allocator.allocBuffer(Float32Array.from(hmdPosition)),
@@ -2230,10 +2227,10 @@ const _getObjectsCull = (hmdPosition, projectionMatrix, matrixWorldInverse) => {
       allocator.allocBuffer(Float32Array.from(matrixWorldInverse)),
       allocator.allocBuffer(objectsMapChunkMeshes),
       objectsMapChunkMeshesIndex,
-      resultOffset
+      cullGroups.offset
     );
 
-    const result = groups.slice(0, groupsIndex); // XXX can be optimized
+    const result = cullGroups.slice(0, groupsIndex);
 
     allocator.destroy();
 
