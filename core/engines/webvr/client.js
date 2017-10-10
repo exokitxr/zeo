@@ -950,9 +950,6 @@ class WebVR {
                   case 16: // Shift
                     keys.shift = true;
                     break;
-                  case 18: // Alt
-                    keys.alt = true;
-                    break;
                   case 86: // V
                     keys.axis = true;
                     break;
@@ -1274,7 +1271,7 @@ class WebVR {
 
                 if (e.event.ctrlKey) {
                   this.move(-e.event.movementX, -e.event.movementY, 0, _isReversed());
-                } else if (e.altKey) {
+                } else if (e.event.altKey) {
                   this.move(-e.event.movementX, 0, -e.event.movementY, _isReversed());
                 } else if (this._parent.keys.axis) {
                   this.axis(-e.event.movementX, -e.event.movementY, _isReversed());
