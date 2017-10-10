@@ -1142,18 +1142,21 @@ class WebVR {
             const timeDiff = now - this.lastPoseUpdateTime;
 
             localVector.copy(this.velocity).multiplyScalar(timeDiff);
-            const speed = (this.keys.shift ? POSITION_SPEED_FAST : POSITION_SPEED) * timeDiff;
-            if (this.keys.up) {
-              localVector.z -= speed;
-            }
-            if (this.keys.down) {
-              localVector.z += speed;
-            }
-            if (this.keys.left) {
-              localVector.x -= speed;
-            }
-            if (this.keys.right) {
-              localVector.x += speed;
+            if (this.keys.up || this.keys.down || this.keys.left || this.keys.right) {
+              const speed = (this.keys.shift ? POSITION_SPEED_FAST : POSITION_SPEED) * timeDiff *
+                (((this.keys.up || this.keys.down) && (this.keys.left || this.keys.right)) ? (1 / Math.sqrt(2)) : 1);
+              if (this.keys.up) {
+                localVector.z -= speed;
+              }
+              if (this.keys.down) {
+                localVector.z += speed;
+              }
+              if (this.keys.left) {
+                localVector.x -= speed;
+              }
+              if (this.keys.right) {
+                localVector.x += speed;
+              }
             }
 
             if (!localVector.equals(zeroVector)) {
