@@ -16,7 +16,6 @@ import worldRender from './lib/render/world';
 import menuUtils from './lib/utils/menu';
 
 const SIDES = ['left', 'right'];
-const NUM_POSITIONS = 100 * 1024;
 
 class World {
   constructor(archae) {
