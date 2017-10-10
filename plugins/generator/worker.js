@@ -1170,7 +1170,18 @@ connection.clearBlock = (x, y, z, cb) => {
   }));
   queues[id] = cb;
 };
-const _getOriginHeight = () => 64;
+const _requestOriginHeight = () => fetch(`/archae/generator/originHeight`)
+  .then(_resJson);
+const _resJson = res => {
+  if (res.status >= 200 && res.status < 300) {
+    return res.json();
+  } else {
+    return Promise.reject({
+      status: res.status,
+      stack: 'API returned invalid status code: ' + res.status,
+    });
+  }
+};
 const _resArrayBuffer = res => {
   if (res.status >= 200 && res.status < 300) {
     return res.arrayBuffer();
@@ -1605,11 +1616,17 @@ self.onmessage = e => {
     case 'getOriginHeight': {
       const {id} = data;
 
-      postMessage({
-        type: 'response',
-        args: [id],
-        result: _getOriginHeight(),
-      });
+      _requestOriginHeight()
+        .then(originHeight => {
+          postMessage({
+            type: 'response',
+            args: [id],
+            result: originHeight,
+          });
+        })
+        .catch(err => {
+          console.warn(err);
+        });
       break;
     }
     case 'registerObject': {

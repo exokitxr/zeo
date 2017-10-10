@@ -583,6 +583,12 @@ class Generator {
         }
         app.get('/archae/generator/chunks', serveGeneratorChunks);
 
+        function serveGeneratorOriginHeight(req, res, next) {
+          res.type('application/json');
+          res.json(noiser.getElevation(0, 0));
+        }
+        app.get('/archae/generator/originHeight', serveGeneratorOriginHeight);
+
         const connections = [];
         const _connection = c => {
           const {url} = c.upgradeReq;
@@ -807,7 +813,7 @@ class Generator {
               route.handle.name === 'serveObjectsObjectizeWasm' ||
               route.handle.name === 'serveObjectsTemplates' ||
               route.handle.name === 'serveGeneratorChunks' ||
-              route.handle.name === 'serveGeneratorVoxels'
+              route.handle.name === 'serveGeneratorOriginHeight'
             ) {
               routes.splice(i, 1);
             }
