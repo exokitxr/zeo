@@ -50,6 +50,8 @@ class Bootstrap {
           const siteSpec = _parseUrlSpec(siteUrl);
           const serverSpec = _parseUrlSpec(serverUrl);
 
+          const startTime = Date.now();
+
           const cleanups = [];
           this._cleanup = () => {
             for (let i = 0; i < cleanups.length; i++) {
@@ -65,10 +67,10 @@ class Bootstrap {
             let match;
             if (match = url.match(/\/archae\/bootstrapWs$/)) {
               const _sendInit = () => {
-                const e = connectionState;
-                const es = JSON.stringify(e);
-
-                c.send(es);
+                c.send(JSON.stringify({
+                  connectionState,
+                  startTime,
+                }));
               };
               _sendInit();
 
@@ -86,8 +88,9 @@ class Bootstrap {
             }
           });
           const _broadcastUpdate = () => {
-            const e = connectionState;
-            const es = JSON.stringify(e);
+            const es = JSON.stringify({
+              connectionState,
+            });
 
             for (let i = 0; i < connections.length; i++) {
               const connection = connections[i];

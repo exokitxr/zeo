@@ -31,9 +31,13 @@ class Bootstrap {
           const connection = (() => {
             const connection = new AutoWs(_relativeWsUrl('archae/bootstrapWs'));
             connection.on('message', msg => {
-              const newConnectionState = JSON.parse(msg.data);
+              const {
+                connectionState: newConnectionState,
+                startTime: newStartTime,
+              } = JSON.parse(msg.data);
 
-              bootstrapApi.setConnectionState(newConnectionState);
+              newConnectionState !== undefined && bootstrapApi.setConnectionState(newConnectionState);
+              newStartTime !== undefined && worldTimer.setStartTime(newStartTime);
             });
             return connection;
           })();
@@ -43,15 +47,18 @@ class Bootstrap {
 
           let vrMode = null;
           class WorldTimer {
-            constructor() {
-              this.startTime = Date.now();
+            constructor(startTime = Date.now()) {
+              this.startTime = startTime;
             }
 
             getWorldTime() {
-              const {startTime} = this;
               const now = Date.now();
-              const worldTime = now - startTime;
+              const worldTime = now - this.startTime;
               return worldTime;
+            }
+
+            setStartTime(startTime) {
+              this.startTime = startTime;
             }
           }
           const worldTimer = new WorldTimer();
