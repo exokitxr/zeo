@@ -62,7 +62,9 @@ Module = {
       const geometriesIndices = _alloc(Uint32Array, GEOMETRY_BUFFER_SIZE * NUM_CHUNKS_HEIGHT);
       const geometriesObjects = _alloc(Uint32Array, GEOMETRY_BUFFER_SIZE * NUM_CHUNKS_HEIGHT);
       const tesselateObjectsResult = _alloc(Uint32Array, 7 * 8 * 4);
-      const cullGroups = _alloc(Uint32Array, NUM_MAP_CHUNK_MESHES * (1 + NUM_RENDER_GROUPS * 6));
+      const cullGroups = _alloc(Int32Array, NUM_MAP_CHUNK_MESHES * (1 + NUM_RENDER_GROUPS * 2));
+      const cullGroups2 = _alloc(Int32Array, NUM_MAP_CHUNK_MESHES * (1 + NUM_RENDER_GROUPS * 4));
+      const groupsIndices = _alloc(Uint32Array, 2 * 4);
 
       return {
         biomes,
@@ -87,6 +89,8 @@ Module = {
         geometriesObjects,
         tesselateObjectsResult,
         cullGroups,
+        cullGroups2,
+        groupsIndices,
       };
     })();
   },
@@ -2195,7 +2199,7 @@ const _getTerrainCull = (hmdPosition, projectionMatrix, matrixWorldInverse) => {
   if (wasmInitialized) {
     const allocator = new Allocator();
 
-    const {cullGroups} = slab;
+    const {cullGroups, cullGroups2, groupsIndices} = slab;
 
     const groupsIndex = Module._cllTerrain(
       allocator.allocBuffer(Float32Array.from(hmdPosition)),
@@ -2203,16 +2207,25 @@ const _getTerrainCull = (hmdPosition, projectionMatrix, matrixWorldInverse) => {
       allocator.allocBuffer(Float32Array.from(matrixWorldInverse)),
       allocator.allocBuffer(terrainMapChunkMeshes),
       terrainMapChunkMeshesIndex,
-      cullGroups.offset
+      cullGroups.offset,
+      cullGroups2.offset,
+      groupsIndices.offset
     );
 
-    const result = cullGroups.slice(0, groupsIndex);
+    const landGroups = cullGroups.slice(0, groupsIndices[0]);
+    const liquidGroups = cullGroups2.slice(0, groupsIndices[1]);
 
     allocator.destroy();
 
-    return result;
+    return [
+      landGroups,
+      liquidGroups,
+    ];
   } else {
-    return new Uint32Array(0);
+    return [
+      new Int32Array(0),
+      new Int32Array(0),
+    ];
   }
 };
 const _getObjectsCull = (hmdPosition, projectionMatrix, matrixWorldInverse) => {

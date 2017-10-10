@@ -436,21 +436,21 @@ class Heightfield {
 
               const renderListEntries = [
                 {
-                  object: heightfieldObject,
+                  object: landObject,
                   geometry,
                   material: heightfieldMaterial,
                   groups: [],
                   visible: false,
                 },
                 {
-                  object: heightfieldObject,
+                  object: liquidObject,
                   geometry,
                   material: oceanMaterial,
                   groups: [],
                   visible: false,
                 },
                 {
-                  object: heightfieldObject,
+                  object: liquidObject,
                   geometry,
                   material: oceanMaterial,
                   groups: [],
@@ -639,14 +639,22 @@ class Heightfield {
 
             let mapChunkMeshes = {};
 
-            const heightfieldObject = (() => {
+            const landObject = (() => {
               const mesh = new THREE.Object3D();
               mesh.updateModelViewMatrix = _updateModelViewMatrix;
               mesh.updateNormalMatrix = _updateNormalMatrix;
               mesh.renderList = [];
               return mesh;
             })();
-            scene.add(heightfieldObject);
+            scene.add(landObject);
+            const liquidObject = (() => {
+              const mesh = new THREE.Object3D();
+              mesh.updateModelViewMatrix = _updateModelViewMatrix;
+              mesh.updateNormalMatrix = _updateNormalMatrix;
+              mesh.renderList = [];
+              return mesh;
+            })();
+            scene.add(liquidObject);
 
             const heightfieldMaterial = new THREE.ShaderMaterial({
               uniforms: Object.assign(
@@ -679,7 +687,7 @@ class Heightfield {
                 const index = _getChunkIndex(x, z);
                 const oldMapChunkMeshes = mapChunkMeshes[index];
                 if (oldMapChunkMeshes) {
-                  heightfieldObject.renderList.splice(heightfieldObject.renderList.indexOf(oldMapChunkMeshes.renderListEntries[0]), 3);
+                  // heightfieldObject.renderList.splice(heightfieldObject.renderList.indexOf(oldMapChunkMeshes.renderListEntries[0]), 3);
 
                   oldMapChunkMeshes.destroy();
 
@@ -691,7 +699,7 @@ class Heightfield {
                   const newMapChunkMeshes = _makeMapChunkMeshes(chunk, gbuffer);
                   newMapChunkMeshes.update(chunkData);
 
-                  heightfieldObject.renderList.push(newMapChunkMeshes.renderListEntries[0], newMapChunkMeshes.renderListEntries[1], newMapChunkMeshes.renderListEntries[2]);
+                  // heightfieldObject.renderList.push(newMapChunkMeshes.renderListEntries[0], newMapChunkMeshes.renderListEntries[1], newMapChunkMeshes.renderListEntries[2]);
 
                   mapChunkMeshes[index] = newMapChunkMeshes;
                   chunk[dataSymbol] = newMapChunkMeshes;
@@ -707,7 +715,7 @@ class Heightfield {
                 running = true;
 
                 const {x, z, [dataSymbol]: oldMapChunkMeshes} = chunk;
-                heightfieldObject.renderList.splice(heightfieldObject.renderList.indexOf(oldMapChunkMeshes.renderListEntries[0]), 3);
+                // heightfieldObject.renderList.splice(heightfieldObject.renderList.indexOf(oldMapChunkMeshes.renderListEntries[0]), 3);
 
                 oldMapChunkMeshes.destroy();
 
@@ -924,16 +932,34 @@ class Heightfield {
               const {projectionMatrix, matrixWorldInverse} = camera;
               _requestCull(hmdPosition, projectionMatrix, matrixWorldInverse, culls => {
                 if (cullEnabled) {
-                  for (let i = 0; i < culls.length; i++) {
-                    const {index, landGroups, waterGroups, lavaGroups} = culls[i];
+                  const [landCulls, liquidCulls] = culls;
+
+                  let landRenderListIndex = 0;
+                  for (let i = 0; i < landCulls.length; i++) {
+                    const {index, land} = landCulls[i];
 
                     const trackedMapChunkMeshes = mapChunkMeshes[index];
                     if (trackedMapChunkMeshes) {
-                      trackedMapChunkMeshes.renderListEntries[0].groups = landGroups;
-                      trackedMapChunkMeshes.renderListEntries[1].groups = waterGroups;
-                      trackedMapChunkMeshes.renderListEntries[2].groups = lavaGroups;
+                      trackedMapChunkMeshes.renderListEntries[0].groups = land;
+                      landObject.renderList[landRenderListIndex++] = trackedMapChunkMeshes.renderListEntries[0];
                     }
                   }
+                  landObject.renderList.length = landRenderListIndex;
+
+                  let liquidRenderListIndex = 0;
+                  for (let i = 0; i < liquidCulls.length; i++) {
+                    const {index, water, lava} = liquidCulls[i];
+
+                    const trackedMapChunkMeshes = mapChunkMeshes[index];
+                    if (trackedMapChunkMeshes) {
+                      trackedMapChunkMeshes.renderListEntries[1].groups = water;
+                      liquidObject.renderList[liquidRenderListIndex++] = trackedMapChunkMeshes.renderListEntries[1];
+
+                      trackedMapChunkMeshes.renderListEntries[2].groups = lava;
+                      liquidObject.renderList[liquidRenderListIndex++] = trackedMapChunkMeshes.renderListEntries[2];
+                    }
+                  }
+                  liquidObject.renderList.length = liquidRenderListIndex;
                 }
 
                 next();
@@ -1028,7 +1054,8 @@ class Heightfield {
             render.on('beforeRender', _beforeRender);
 
             this._cleanup = () => {
-              scene.remove(heightfieldObject);
+              scene.remove(landObject);
+              scene.remove(liquidObject);
 
               generatorElement.removeListener('add', _add);
               generatorElement.removeListener('remove', _remove);

@@ -27,14 +27,13 @@ const TERRAIN_RENDER_HEADER_ENTRIES = 5 + (1 * NUM_CHUNKS_HEIGHT) + 2;
 const TERRAIN_RENDER_HEADER_SIZE = UINT32_SIZE * TERRAIN_RENDER_HEADER_ENTRIES;
 const TERRAINS_RENDER_HEADER_ENTRIES = 1;
 const TERRAINS_RENDER_HEADER_SIZE = UINT32_SIZE * TERRAINS_RENDER_HEADER_ENTRIES;
-const TERRAIN_CULL_HEADER_ENTRIES = 1;
+const TERRAIN_CULL_HEADER_ENTRIES = 2;
 const TERRAIN_CULL_HEADER_SIZE = UINT32_SIZE * TERRAIN_CULL_HEADER_ENTRIES;
 const OBJECTS_CULL_HEADER_ENTRIES = 1;
 const OBJECTS_CULL_HEADER_SIZE = UINT32_SIZE * OBJECTS_CULL_HEADER_ENTRIES;
-const TERRAIN_CULL_GROUP_LENGTH = (1 + NUM_RENDER_GROUPS * 6);
-// const TERRAIN_CULL_GROUP_SIZE = TERRAIN_CULL_GROUP_LENGTH * 4;
+const TERRAIN_CULL_LAND_GROUP_LENGTH = (1 + NUM_RENDER_GROUPS * 2);
+const TERRAIN_CULL_LIQUID_GROUP_LENGTH = (1 + NUM_RENDER_GROUPS * 4);
 const OBJECTS_CULL_GROUP_LENGTH = (1 + NUM_RENDER_GROUPS * 2);
-// const OBJECTS_CULL_GROUP_SIZE = OBJECTS_CULL_GROUP_LENGTH * 4;
 
 const _getTerrainDataChunkSizeFromMetadata = metadata => {
   const {numBiomes, numElevations, numEther, numWater, numLava} = metadata;
@@ -635,14 +634,16 @@ const parseDecorations = (buffer, byteOffset) => {
 };
 
 const _getTerrainCullSizeFromMetadata = metadata => {
-  const {numGroups} = metadata;
+  const {numLandGroups, numLiquidGroups} = metadata;
 
   return TERRAIN_CULL_HEADER_SIZE + // header
-    (numGroups * (1 + NUM_RENDER_GROUPS * 6) * INT32_SIZE); // groups
+    (numLandGroups * (1 + NUM_RENDER_GROUPS * 2) * INT32_SIZE) + // land groups
+    (numLiquidGroups * (1 + NUM_RENDER_GROUPS * 4) * INT32_SIZE); // liquid groups
 };
 
-const _getTerrainCullSize = mapChunks => _getTerrainCullSizeFromMetadata({
-  numGroups: groups.length / (1 + NUM_RENDER_GROUPS * 6),
+const _getTerrainCullSize = groups => _getTerrainCullSizeFromMetadata({
+  numLandGroups: groups[0].length / (1 + NUM_RENDER_GROUPS * 2),
+  numLiquidGroups: groups[1].length / (1 + NUM_RENDER_GROUPS * 4),
 });
 
 const stringifyTerrainCull = (groups, arrayBuffer, byteOffset) => {
@@ -652,15 +653,22 @@ const stringifyTerrainCull = (groups, arrayBuffer, byteOffset) => {
     byteOffset = 0;
   }
 
-  const numGroups = groups.length / TERRAIN_CULL_GROUP_LENGTH;
+  const [landGroups, liquidGroups] = groups;
+
+  const numLandGroups = landGroups.length / TERRAIN_CULL_LAND_GROUP_LENGTH;
+  const numLiquidGroups = liquidGroups.length / TERRAIN_CULL_LIQUID_GROUP_LENGTH;
 
   const headerBuffer = new Uint32Array(arrayBuffer, byteOffset, TERRAIN_CULL_HEADER_ENTRIES);
   let index = 0;
-  headerBuffer[index++] = numGroups;
+  headerBuffer[index++] = numLandGroups;
+  headerBuffer[index++] = numLiquidGroups;
   byteOffset += TERRAIN_CULL_HEADER_SIZE;
 
-  new Int32Array(arrayBuffer, byteOffset, groups.length).set(groups);
-  byteOffset += groups.byteLength;
+  new Int32Array(arrayBuffer, byteOffset, landGroups.length).set(landGroups);
+  byteOffset += landGroups.byteLength;
+
+  new Int32Array(arrayBuffer, byteOffset, liquidGroups.length).set(liquidGroups);
+  byteOffset += liquidGroups.byteLength;
 
   return arrayBuffer;
 };
@@ -672,58 +680,80 @@ const parseTerrainCull = (buffer, byteOffset) => {
 
   const headerBuffer = new Uint32Array(buffer, byteOffset, TERRAIN_CULL_HEADER_ENTRIES);
   let index = 0;
-  const numGroups = headerBuffer[index++];
+  const numLandGroups = headerBuffer[index++];
+  const numLiquidGroups = headerBuffer[index++];
   byteOffset += TERRAIN_CULL_HEADER_SIZE;
 
-  const mapChunks = Array(numGroups);
-  for (let i = 0; i < numGroups; i++) {
+  const landGroups = Array(numLandGroups);
+  for (let i = 0; i < numLandGroups; i++) {
     const indexArray = new Int32Array(buffer, byteOffset, 1);
     const index = indexArray[0];
     byteOffset += INT32_SIZE;
 
-    const landGroups = [];
-    const waterGroups = [];
-    const lavaGroups = [];
-    const groupsArray = new Int32Array(buffer, byteOffset, NUM_RENDER_GROUPS * 6);
+    const land = [];
+    const groupsArray = new Int32Array(buffer, byteOffset, NUM_RENDER_GROUPS * 2);
     for (let i = 0; i < NUM_RENDER_GROUPS; i++) {
-      const baseIndex = i * 6;
+      const baseIndex = i * 2;
       const landStart = groupsArray[baseIndex + 0];
       if (landStart !== -1) {
-        landGroups.push({
+        land.push({
           start: landStart,
           count: groupsArray[baseIndex + 1],
           materialIndex: 0,
         });
       }
+    }
+    byteOffset += INT32_SIZE * 2 * NUM_RENDER_GROUPS;
 
-      const waterStart = groupsArray[baseIndex + 2];
+    landGroups[i] = {
+      index,
+      land,
+    };
+  }
+
+  const liquidGroups = Array(numLiquidGroups);
+  for (let i = 0; i < numLiquidGroups; i++) {
+    const indexArray = new Int32Array(buffer, byteOffset, 1);
+    const index = indexArray[0];
+    byteOffset += INT32_SIZE;
+
+    const water = [];
+    const lava = [];
+    const groupsArray = new Int32Array(buffer, byteOffset, NUM_RENDER_GROUPS * 4);
+    for (let i = 0; i < NUM_RENDER_GROUPS; i++) {
+      const baseIndex = i * 4;
+
+      const waterStart = groupsArray[baseIndex + 0];
       if (waterStart !== -1) {
-        waterGroups.push({
+        water.push({
           start: waterStart,
+          count: groupsArray[baseIndex + 1],
+          materialIndex: 0,
+        });
+      }
+
+      const lavaStart = groupsArray[baseIndex + 2];
+      if (lavaStart !== -1) {
+        lava.push({
+          start: lavaStart,
           count: groupsArray[baseIndex + 3],
           materialIndex: 0,
         });
       }
-
-      const lavaStart = groupsArray[baseIndex + 4];
-      if (lavaStart !== -1) {
-        lavaGroups.push({
-          start: lavaStart,
-          count: groupsArray[baseIndex + 5],
-          materialIndex: 0,
-        });
-      }
     }
-    byteOffset += INT32_SIZE * 6 * NUM_RENDER_GROUPS;
+    byteOffset += INT32_SIZE * 4 * NUM_RENDER_GROUPS;
 
-    mapChunks[i] = {
+    liquidGroups[i] = {
       index,
-      landGroups,
-      waterGroups,
-      lavaGroups,
+      water,
+      lava,
     };
   }
-  return mapChunks;
+
+  return [
+    landGroups,
+    liquidGroups,
+  ];
 };
 
 const _getGeometrySizeFromMetadata = metadata => {
