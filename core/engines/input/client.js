@@ -222,6 +222,5 @@ class Input {
     this._cleanup();
   }
 }
-const nop = () => {};
 
 module.exports = Input;
