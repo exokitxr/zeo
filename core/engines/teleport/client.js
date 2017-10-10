@@ -42,6 +42,7 @@ class Teleport {
         const forwardVector = new THREE.Vector3(0, 0, -1);
         const localVector = new THREE.Vector3();
         const localVector2 = new THREE.Vector3();
+        const localQuaternion = new THREE.Quaternion();
         const localEuler = new THREE.Euler();
         const localMatrix = new THREE.Matrix4();
         const localMatrix2 = new THREE.Matrix4();
@@ -241,6 +242,7 @@ class Teleport {
                     const hmdLocalEuler = localEuler.setFromQuaternion(hmd.rotation, 'YXZ');
                     hmdLocalEuler.y = 0;
 
+                    webvr.normalizePosition();
                     webvr.setStageMatrix(
                       localMatrix.copy(camera.matrixWorldInverse)
                         .multiply(webvr.getStageMatrix()) // move back to origin
@@ -281,6 +283,7 @@ class Teleport {
                   } else if (vrMode === 'keyboard') {
                     const hmdLocalEuler = new THREE.Euler().setFromQuaternion(hmd.rotation, 'YXZ');
 
+                    webvr.normalizePosition();
                     webvr.setStageMatrix(
                       camera.matrixWorldInverse.clone()
                         .multiply(webvr.getStageMatrix()) // move back to origin

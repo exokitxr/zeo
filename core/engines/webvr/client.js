@@ -48,8 +48,8 @@ const DEFAULT_GAMEPAD_POSES = [
 ];
 
 const MOVE_FACTOR = 0.001;
-const POSITION_SPEED = 0.05;
-const POSITION_SPEED_FAST = POSITION_SPEED * 5;
+const POSITION_SPEED = 4 / 1000;
+const POSITION_SPEED_FAST = POSITION_SPEED * 2;
 const ROTATION_SPEED = 0.02 / (Math.PI * 2);
 
 const BUTTONS = {
@@ -146,6 +146,7 @@ class WebVR {
         const zeroQuaternion = new THREE.Quaternion();
         const oneVector = new THREE.Vector3(1, 1, 1);
         const localVector = new THREE.Vector3();
+        const localVector2 = new THREE.Vector3();
         const localQuaternion = new THREE.Quaternion();
         const localEuler = new THREE.Euler();
         const localMatrix = new THREE.Matrix4();
@@ -790,19 +791,26 @@ class WebVR {
             this.display.resetPose();
           }
 
+          normalizePosition() {
+            if (this.display instanceof FakeVRDisplay) {
+              this.stageMatrix.decompose(localVector, localQuaternion, localVector2);
+              localVector.add(this.display.position);
+              this.stageMatrix.compose(localVector, localQuaternion, localVector2);
+              this.display.position.set(0, 0, 0);
+            }
+          }
+
           getMode() {
-            const {display} = this;
-            if (display instanceof FakeVRDisplay) {
-              return display.getMode();
+            if (this.display instanceof FakeVRDisplay) {
+              return this.display.getMode();
             } else {
               return null;
             }
           }
 
           getKeys() {
-            const {display} = this;
-            if (display instanceof FakeVRDisplay) {
-              return display.getKeys();
+            if (this.display instanceof FakeVRDisplay) {
+              return this.display.getKeys();
             } else {
               return null;
             }
@@ -897,6 +905,7 @@ class WebVR {
               grip: false,
               menu: false,
               shift: false,
+              space: false,
               axis: false,
             };
             this.keys = keys;
@@ -912,8 +921,12 @@ class WebVR {
               keys.grip = false;
               keys.menu = false;
               keys.shift = false;
+              keys.space = false;
               keys.axis = false;
             };
+
+            this.velocity = new THREE.Vector3(0, 0, 0);
+            this.lastPoseUpdateTime = Date.now();
 
             const gamepads = [new FakeVRGamepad(this, 0), new FakeVRGamepad(this, 1)];
             this.gamepads = gamepads;
@@ -949,6 +962,9 @@ class WebVR {
                     break;
                   case 16: // Shift
                     keys.shift = true;
+                    break;
+                  case 32: // Space
+                    keys.space = true;
                     break;
                   case 86: // V
                     keys.axis = true;
@@ -997,6 +1013,9 @@ class WebVR {
                     break;
                   case 16: // Shift
                     keys.shift = false;
+                    break;
+                  case 32: // Space
+                    keys.space = false;
                     break;
                 }
               }
@@ -1082,44 +1101,9 @@ class WebVR {
             this.rotationOffset.set(0, 0, 0, camera.rotation.order);
 
             this.poseNeedsUpdate = true;
-            /* localEuler.setFromQuaternion(this.rotation, camera.rotation.order);
-            localEuler.y = 0;
-            this.rotation.setFromEuler(localEuler); */
-
-            // this.updateMatrix();
-            // this.updateGamepads();
           }
 
-          /* resetPoseHard() {
-            this.position.copy(new THREE.Vector3());
-            this.rotation.copy(new THREE.Quaternion());
-
-            this.updateMatrix();
-            this.updateGamepads();
-          } */
-
           getFrameData(frameData) {
-            /* const eyeCamera = new THREE.PerspectiveCamera(camera.fov, camera.aspect, camera.near, camera.far);
-            eyeCamera.fov = DEFAULT_USER_FOV;
-            eyeCamera.aspect = DEFAULT_ASPECT_RATIO;
-            eyeCamera.updateProjectionMatrix();
-            const eyeCameraProjectionMatrixArray = eyeCamera.projectionMatrix.toArray();
-
-            frameData.leftViewMatrix.set(new THREE.Matrix4().compose(
-              camera.position.clone().add(new THREE.Vector3(-(DEFAULT_USER_IPD / 2), 0, 0).applyQuaternion(camera.quaternion)),
-              camera.quaternion,
-              camera.scale
-            ).toArray());
-            frameData.leftProjectionMatrix.set(eyeCameraProjectionMatrixArray);
-
-            frameData.rightViewMatrix.set(new THREE.Matrix4().compose(
-              camera.position.clone().add(new THREE.Vector3(DEFAULT_USER_IPD / 2, 0, 0).applyQuaternion(camera.quaternion)),
-              camera.quaternion,
-              camera.scale
-            ).toArray());
-            frameData.rightProjectionMatrix.set(eyeCameraProjectionMatrixArray); */
-
-            // const {position, rotation} = this;
             frameData.pose.set(this.position, this.rotation);
           }
 
@@ -1154,29 +1138,42 @@ class WebVR {
           updatePose() {
             let matrixNeedsUpdate = false;
 
-            localVector.set(0, 0, 0);
-            const speed = this.keys.shift ? POSITION_SPEED_FAST : POSITION_SPEED;
-            let moved = false;
+            const now = Date.now();
+            const timeDiff = now - this.lastPoseUpdateTime;
+
+            localVector.copy(this.velocity).multiplyScalar(timeDiff);
+            const speed = (this.keys.shift ? POSITION_SPEED_FAST : POSITION_SPEED) * timeDiff;
             if (this.keys.up) {
               localVector.z -= speed;
-              moved = true;
             }
             if (this.keys.down) {
               localVector.z += speed;
-              moved = true;
             }
             if (this.keys.left) {
               localVector.x -= speed;
-              moved = true;
             }
             if (this.keys.right) {
               localVector.x += speed;
-              moved = true;
             }
-            if (moved) {
-              this.position.add(localVector.applyQuaternion(this.rotation));
+
+            if (!localVector.equals(zeroVector)) {
+              localEuler.setFromQuaternion(this.rotation, camera.rotation.order);
+              localEuler.x = 0;
+              localEuler.z = 0;
+              localQuaternion.setFromEuler(localEuler);
+              this.position.add(localVector.applyQuaternion(localQuaternion));
               matrixNeedsUpdate = true;
             }
+
+            if (this.position.y > 0) {
+              this.velocity.y += (-9.8 / 1000 / 1000 * 2) * timeDiff;
+            } else if (this.keys.space) {
+              this.velocity.y = 7 / 1000;
+            } else {
+              this.position.y = 0;
+              this.velocity.y = 0;
+            }
+            this.lastPoseUpdateTime = now;
 
             if (this.poseNeedsUpdate) {
               this.rotation.setFromEuler(this.rotationOffset);
