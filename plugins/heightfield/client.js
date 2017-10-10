@@ -621,21 +621,21 @@ class Heightfield {
             uniforms.map.value = liquidTexture;
             // uniforms.fogColor.value = scene.fog.color;
             // uniforms.fogDensity.value = scene.fog.density;
-            const oceanMaterial = new THREE.ShaderMaterial({ // XXX writes need to be sorted for transparency
+            const oceanMaterial = new THREE.ShaderMaterial({
               uniforms,
               vertexShader: OCEAN_SHADER.vertexShader,
               fragmentShader: OCEAN_SHADER.fragmentShader,
-              side: THREE.DoubleSide,
+              // side: THREE.DoubleSide,
               transparent: true,
               polygonOffset: true,
               polygonOffsetFactor: -1,
               polygonOffsetUnits: -1,
             });
             /* oceanMaterial.blending = THREE.CustomBlending;
-            oceanMaterial.blendEquation = THREE.AddEquation; //default
-            oceanMaterial.blendSrc = THREE.SrcAlphaFactor; //default
-            oceanMaterial.blendDst = THREE.ZeroFactor; //default
-            oceanMaterial.uniformsNeedUpdate = _uniformsNeedUpdateOcean; */
+            oceanMaterial.blendEquation = THREE.AddEquation;
+            oceanMaterial.blendSrc = THREE.SrcAlphaFactor;/
+            oceanMaterial.blendDst = THREE.ZeroFactor; */
+            oceanMaterial.uniformsNeedUpdate = _uniformsNeedUpdateOcean;
 
             let mapChunkMeshes = {};
 
@@ -1015,8 +1015,10 @@ class Heightfield {
                   }
                 }
                 if (hadWater && underwaterSfx.paused) {
+                  oceanMaterial.side = THREE.DoubleSide;
                   underwaterSfx.start();
                 } else if (!hadWater && !underwaterSfx.paused) {
+                  oceanMaterial.side = THREE.FrontSide;
                   underwaterSfx.stop();
                 }
 
