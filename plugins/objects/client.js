@@ -1044,8 +1044,8 @@ void main() {
         pose.addCollider((position, velocity, worldPosition) => {
           const bodyVector = localVector.set(worldPosition.x, worldPosition.y - DEFAULT_USER_HEIGHT, worldPosition.z);
 
-          const ox = bodyVector.x >> 4;
-          const oz = bodyVector.z >> 4;
+          const ox = Math.floor(bodyVector.x / NUM_CELLS);
+          const oz = Math.floor(bodyVector.z / NUM_CELLS);
 
           const index = _getChunkIndex(ox, oz);
           const meshes = objectsChunkMeshes[index];
