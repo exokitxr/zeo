@@ -7,6 +7,7 @@ branches:
     - master
     - beta
     - demo
+    - hack
 
 # Test against the latest version of this Node.js version
 environment:
