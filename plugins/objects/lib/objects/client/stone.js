@@ -58,11 +58,36 @@ const stone = objectApi => {
     };
     items.registerItem(this, stoneItemApi);
 
+    const stoneObjectApi = {
+      object: 'stone',
+      gripCallback(id, side, x, z, objectIndex) {
+        const itemId = _makeId();
+        const asset = 'ITEM.STONE';
+        const assetInstance = items.makeItem({
+          type: 'asset',
+          id: itemId,
+          name: asset,
+          displayName: asset,
+          attributes: {
+            type: {value: 'asset'},
+            value: {value: asset},
+            position: {value: DEFAULT_MATRIX},
+            quantity: {value: 1},
+            owner: {value: null},
+            bindOwner: {value: null},
+            physics: {value: false},
+          },
+        });
+        assetInstance.grab(side);
+
+        objectApi.removeObject(x, z, objectIndex);
+      },
+    };
+    objectApi.registerObject(stoneObjectApi);
+
     accept(() => {
       items.unregisterItem(this, stoneItemApi);
       objectApi.unregisterObject(stoneObjectApi);
-      objectApi.unregisterObject(stoneWallObjectApi);
-      objectApi.unregisterObject(stoneWall2ObjectApi);
     });
   });
 };
