@@ -1053,22 +1053,33 @@ void main() {
           const meshes = objectsChunkMeshes[index];
           if (meshes && meshes.blockfield) {
             {
-              const ax = Math.floor(bodyVector.x);
-              const ay = Math.floor(bodyVector.y + 0.1);
-              const az = Math.floor(bodyVector.z);
-              const lx = ax - ox * NUM_CELLS;
-              const lz = az - oz * NUM_CELLS;
+              const _isFilled = (x, y, z) => {
+                const ax = Math.floor(x);
+                const ay = Math.floor(y + 0.1);
+                const az = Math.floor(z);
+                const lx = ax - ox * NUM_CELLS;
+                const lz = az - oz * NUM_CELLS;
 
-              for (let dy = ay; dy < Math.ceil(worldPosition.y); dy++) {
-                const block = meshes.blockfield[_getBlockIndex(lx, dy, lz)];
-                if (block) {
-                  const positionOffset = localVector2.copy(oldPosition).sub(position);
-                  positionOffset.y = 0;
-                  position.add(positionOffset);
-                  worldPosition.add(positionOffset);
-                  bodyVector.add(positionOffset);
-                  break;
+                for (let dy = ay; dy < Math.ceil(y + DEFAULT_USER_HEIGHT); dy++) {
+                  const block = meshes.blockfield[_getBlockIndex(lx, dy, lz)];
+                  if (block) {
+                    return true;
+                  }
                 }
+                return false;
+              };
+
+              if (_isFilled(bodyVector.x, bodyVector.y + 0.1, bodyVector.z)) {
+                const positionOffset = localVector2.copy(oldPosition).sub(position);
+                positionOffset.y = 0;
+                if (!_isFilled(bodyVector.x, bodyVector.y + 0.1, bodyVector.z + positionOffset.z)) {
+                  positionOffset.x = 0;
+                } else if (!_isFilled(bodyVector.x + positionOffset.x, bodyVector.y + 0.1, bodyVector.z)) {
+                  positionOffset.z = 0;
+                }
+                position.add(positionOffset);
+                worldPosition.add(positionOffset);
+                bodyVector.add(positionOffset);
               }
             }
 
