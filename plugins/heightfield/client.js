@@ -1078,10 +1078,8 @@ class Heightfield {
             };
             render.on('beforeRender', _beforeRender);
 
-            pose.addCollider((position, velocity, worldPosition) => {
-              let collided = false;
-
-              const min = localVector.set(worldPosition.x - 1.5, worldPosition.y - DEFAULT_USER_HEIGHT - 1.5, worldPosition.z - 1.5).ceil();
+            pose.addCollider((position, velocity, worldPosition, oldPosition) => {
+              const min = localVector.set(worldPosition.x - 1.5, worldPosition.y - DEFAULT_USER_HEIGHT - 9, worldPosition.z - 1.5).ceil();
               const max = localVector2.set(worldPosition.x + 1.5, worldPosition.y + 1.5, worldPosition.z + 1.5).floor();
               const bodyVector = localVector3.set(worldPosition.x, worldPosition.y - DEFAULT_USER_HEIGHT, worldPosition.z);
               let numFloorPoints = 0;
@@ -1108,8 +1106,8 @@ class Heightfield {
                         } else {
                           floorPoints[3].set(ax, dy, az);
                           floorPoints.sort((a, b) =>
-                            localCoord.set(a.x - bodyVector.x, a.z - bodyVector.z).length() -
-                            localCoord.set(b.x - bodyVector.x, b.z - bodyVector.z).length()
+                            localVector4.set(a.x - bodyVector.x, a.y - bodyVector.y, a.z - bodyVector.z).length() -
+                            localVector4.set(b.x - bodyVector.x, a.y - bodyVector.y, b.z - bodyVector.z).length()
                           );
                         }
                         break;
@@ -1118,6 +1116,7 @@ class Heightfield {
                   }
                 }
               }
+              let collided = false;
               if (numFloorPoints === 3) {
                 const plane = localPlane.setFromNormalAndCoplanarPoint(
                   localTriangle.set(floorPoints[0], floorPoints[1], floorPoints[2]).normal(localVector4),
@@ -1132,11 +1131,43 @@ class Heightfield {
                   const bodyYDiff = floorPoint.y - bodyVector.y;
                   if (bodyYDiff >= 0) {
                     position.y += bodyYDiff;
+                    worldPosition.y += bodyYDiff;
+                    bodyVector.y += bodyYDiff;
                     velocity.y = 0;
                     collided = true;
                   }
                 }
               }
+
+              for (let az = min.z; az <= max.z; az++) {
+                for (let ax = min.x; ax <= max.x; ax++) {
+                  const ox = ax >> 4;
+                  const oz = az >> 4;
+                  const index = _getChunkIndex(ox, oz);
+                  const meshes = mapChunkMeshes[index];
+
+                  if (meshes && meshes.ether) {
+                    const lx = ax - ox * NUM_CELLS;
+                    const lz = az - oz * NUM_CELLS;
+
+                    for (let ay = Math.floor(bodyVector.y + DEFAULT_USER_HEIGHT); ay < Math.floor(bodyVector.y + DEFAULT_USER_HEIGHT + 0.2); ay++) {
+                      const ly = ay;
+
+                      const etherValue = meshes.ether[_getEtherIndex(lx, ly, lz)];
+                      if (etherValue < 0) {
+                        if (localCoord.set(bodyVector.x - ax, bodyVector.z - az).length() < -etherValue) {
+                          const positionOffset = localVector4.copy(oldPosition).sub(position);
+                          positionOffset.y = 0;
+                          position.add(positionOffset);
+                          worldPosition.add(positionOffset);
+                          bodyVector.add(positionOffset);
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+
               return collided;
             }, {
               priority: 1,
