@@ -1087,20 +1087,19 @@ class Heightfield {
               let numFloorPoints = 0;
               for (let az = min.z; az <= max.z; az++) {
                 for (let ax = min.x; ax <= max.x; ax++) {
-                  for (let ay = max.y; ay >= min.y; ay--) {
-                    const ox = ax >> 4;
-                    const oz = az >> 4;
-                    const index = _getChunkIndex(ox, oz);
-                    const meshes = mapChunkMeshes[index];
+                  const ox = ax >> 4;
+                  const oz = az >> 4;
+                  const index = _getChunkIndex(ox, oz);
+                  const meshes = mapChunkMeshes[index];
 
-                    if (meshes) {
-                      const {ether} = meshes;
+                  if (meshes && meshes.ether) {
+                    const lx = ax - ox * NUM_CELLS;
+                    const lz = az - oz * NUM_CELLS;
 
-                      const lx = ax - ox * NUM_CELLS;
+                    for (let ay = max.y; ay >= min.y; ay--) {
                       const ly = ay;
-                      const lz = az - oz * NUM_CELLS;
 
-                      const etherValue = ether[_getEtherIndex(lx, ly, lz)];
+                      const etherValue = meshes.ether[_getEtherIndex(lx, ly, lz)];
                       if (etherValue < 0) {
                         const dy = ly - etherValue;
 
@@ -1139,6 +1138,8 @@ class Heightfield {
                 }
               }
               return collided;
+            }, {
+              priority: 1,
             });
 
             this._cleanup = () => {

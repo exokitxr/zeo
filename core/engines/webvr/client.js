@@ -808,7 +808,7 @@ class WebVR {
 
               let collided = false;
               for (let i = 0; i < this.colliders.length; i++) {
-                if (this.colliders[i](position, velocity, worldPosition)) {
+                if (this.colliders[i].fn(position, velocity, worldPosition)) {
                   collided = true;
                 }
               }
@@ -823,8 +823,12 @@ class WebVR {
             }
           }
 
-          addCollider(collider) {
-            this.colliders.push(collider);
+          addCollider(fn, {priority = 0} = {}) {
+            this.colliders.push({
+              fn,
+              priority,
+            });
+            this.colliders.sort((a, b) => b.priority - a.priority);
           }
 
           getMode() {

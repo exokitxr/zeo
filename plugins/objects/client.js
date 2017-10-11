@@ -17,6 +17,7 @@ const {
 const objectsLib = require('./lib/objects/client/index');
 
 const SIDES = ['left', 'right'];
+const DEFAULT_USER_HEIGHT = 1.6;
 
 const dataSymbol = Symbol();
 
@@ -83,6 +84,10 @@ class Objects {
 
         const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
         const _getObjectId = (x, z, i) => (mod(x, 0xFF) << 24) | (mod(z, 0xFF) << 16) | (i & 0xFFFF);
+        const _getBlockIndex = (x, y, z) => {
+          const oy = y >> 4;
+          return oy * 16 * 16 * 16 + x + (y - (oy * 16)) * 16 + z * 16 * 16;
+        };
 
         const OBJECTS_SHADER = {
           uniforms: {
@@ -374,8 +379,6 @@ void main() {
           generatorElement.requestObjectsGenerate(x, z, index, numPositions, numObjectIndices, numIndices, cb);
         };
         const _makeObjectsChunkMesh = (chunk, gbuffer) => {
-          // const {x, z} = chunk;
-
           const {index, geometry, slices: {positions, uvs, ssaos, frames, skyLightmaps, torchLightmaps, objectIndices, indices}} = gbuffer;
           const material = objectsMaterial;
 
@@ -395,6 +398,7 @@ void main() {
             // offset: new THREE.Vector2(x, z),
             skyLightmaps,
             torchLightmaps,
+            blockfield: null,
             stckBody: null,
             update: chunkData => {
               const {positions: newPositions, uvs: newUvs, ssaos: newSsaos, frames: newFrames, skyLightmaps: newSkyLightmaps, torchLightmaps: newTorchLightmaps, objectIndices: newObjectIndices, indices: newIndices, blockfield} = chunkData;
@@ -410,6 +414,8 @@ void main() {
                 torchLightmaps.set(newTorchLightmaps);
                 indices.set(newIndices);
                 objectIndices.set(newObjectIndices);
+
+                mesh.blockfield = blockfield.slice();
 
                 if (!mesh.stckBody) {
                   mesh.stckBody = stck.makeStaticBlockfieldBody(
@@ -1034,6 +1040,39 @@ void main() {
           _updateMatrices();
         };
         render.on('beforeRender', _beforeRender);
+
+        pose.addCollider((position, velocity, worldPosition) => {
+          const bodyVector = localVector.set(worldPosition.x, worldPosition.y - DEFAULT_USER_HEIGHT, worldPosition.z);
+
+          const ox = bodyVector.x >> 4;
+          const oz = bodyVector.z >> 4;
+
+          const index = _getChunkIndex(ox, oz);
+          const meshes = objectsChunkMeshes[index];
+          if (meshes && meshes.blockfield) {
+            const ax = Math.floor(bodyVector.x);
+            const ay = Math.floor(bodyVector.y);
+            const az = Math.floor(bodyVector.z);
+            const lx = ax - ox * NUM_CELLS;
+            const lz = az - oz * NUM_CELLS;
+
+            for (let ly = ay; ly >= ay - 2; ly--) {
+              const block = meshes.blockfield[_getBlockIndex(lx, ly, lz)];
+
+              if (block) {
+                const bodyYDiff = (ly + 1) - bodyVector.y;
+                if (bodyYDiff >= 0) {
+                  position.y += bodyYDiff;
+                  velocity.y = 0;
+                  return true;
+                }
+              }
+            }
+          }
+          return false;
+        }, {
+          priority: 2,
+        });
 
         cleanups.push(() => {
           scene.remove(objectsObject);
