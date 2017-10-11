@@ -172,6 +172,17 @@
       "tagName": "plugins-model",
       "attributes": {},
       "metadata": {}
+    },
+   "ji5a4i": {
+      "type": "entity",
+      "id": "ji5a4i",
+      "name": "/plugins/tutorial",
+      "displayName": "tutorial",
+      "version": "0.0.1",
+      "module": "/plugins/tutorial",
+      "tagName": "plugins-tutorial",
+      "attributes": {},
+      "metadata": {}
     }
   }
 }
