@@ -1084,6 +1084,25 @@ void main() {
             }
 
             {
+              if (velocity.y > 0) {
+                const ax = Math.floor(bodyVector.x);
+                const ay = Math.floor(bodyVector.y + DEFAULT_USER_HEIGHT + 0.2);
+                const az = Math.floor(bodyVector.z);
+                const lx = ax - ox * NUM_CELLS;
+                const ly = ay;
+                const lz = az - oz * NUM_CELLS;
+                const block = meshes.blockfield[_getBlockIndex(lx, ly, lz)];
+                if (block) {
+                  const positionOffset = localVector2.copy(oldPosition).sub(position);
+                  position.add(positionOffset);
+                  worldPosition.add(positionOffset);
+                  bodyVector.add(positionOffset);
+                  velocity.y = 0;
+                }
+              }
+            }
+
+            {
               const ax = Math.floor(bodyVector.x);
               const ay = Math.floor(bodyVector.y);
               const az = Math.floor(bodyVector.z);
