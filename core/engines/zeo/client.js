@@ -532,6 +532,10 @@ class Zeo {
                           webvr.resetPose();
                         }
 
+                        addCollider(collider) {
+                          webvr.addCollider(collider);
+                        }
+
                         getControllerLinearVelocity(side) {
                           const player = cyborg.getPlayer();
                           return player.getControllerLinearVelocity(side);

@@ -325,6 +325,8 @@ class WebVR {
               )
             );
 
+            this.colliders = [];
+
             this._frameData = null;
           }
 
@@ -800,6 +802,31 @@ class WebVR {
             }
           }
 
+          collide(position, velocity) {
+            if (this.colliders.length > 0) {
+              const worldPosition = localVector.copy(position).applyMatrix4(this.stageMatrix);
+
+              let collided = false;
+              for (let i = 0; i < this.colliders.length; i++) {
+                if (this.colliders[i](position, velocity, worldPosition)) {
+                  collided = true;
+                }
+              }
+              return collided;
+            } else {
+              if (position.y <= 0) {
+                position.y = 0;
+                return true;
+              } else {
+                return false;
+              }
+            }
+          }
+
+          addCollider(collider) {
+            this.colliders.push(collider);
+          }
+
           getMode() {
             if (this.display instanceof FakeVRDisplay) {
               return this.display.getMode();
@@ -927,6 +954,7 @@ class WebVR {
 
             this.velocity = new THREE.Vector3(0, 0, 0);
             this.lastPoseUpdateTime = Date.now();
+            this.lastCollideTime = 0;
 
             const gamepads = [new FakeVRGamepad(this, 0), new FakeVRGamepad(this, 1)];
             this.gamepads = gamepads;
@@ -1142,21 +1170,18 @@ class WebVR {
             const timeDiff = now - this.lastPoseUpdateTime;
 
             localVector.copy(this.velocity).multiplyScalar(timeDiff);
-            if (this.keys.up || this.keys.down || this.keys.left || this.keys.right) {
-              const speed = (this.keys.shift ? POSITION_SPEED_FAST : POSITION_SPEED) * timeDiff *
-                (((this.keys.up || this.keys.down) && (this.keys.left || this.keys.right)) ? (1 / Math.sqrt(2)) : 1);
-              if (this.keys.up) {
-                localVector.z -= speed;
-              }
-              if (this.keys.down) {
-                localVector.z += speed;
-              }
-              if (this.keys.left) {
-                localVector.x -= speed;
-              }
-              if (this.keys.right) {
-                localVector.x += speed;
-              }
+            const speed = (this.keys.shift ? POSITION_SPEED_FAST : POSITION_SPEED) * timeDiff;
+            if (this.keys.up) {
+              localVector.z -= speed;
+            }
+            if (this.keys.down) {
+              localVector.z += speed;
+            }
+            if (this.keys.left) {
+              localVector.x -= speed;
+            }
+            if (this.keys.right) {
+              localVector.x += speed;
             }
 
             if (!localVector.equals(zeroVector)) {
@@ -1168,22 +1193,25 @@ class WebVR {
               matrixNeedsUpdate = true;
             }
 
-            if (this.position.y > 0) {
-              this.velocity.y += (-9.8 / 1000 / 1000 * 2) * timeDiff;
-            } else if (this.keys.space) {
-              this.velocity.y = 7 / 1000;
-            } else {
-              this.position.y = 0;
-              this.velocity.y = 0;
-            }
-            this.lastPoseUpdateTime = now;
-
             if (this.poseNeedsUpdate) {
               this.rotation.setFromEuler(this.rotationOffset);
 
               this.poseNeedsUpdate = false;
               matrixNeedsUpdate = true;
             }
+
+            if (webvrInstance.collide(this.position, this.velocity)) {
+              matrixNeedsUpdate = true;
+
+              this.lastCollideTime = now;
+            } else {
+              this.velocity.y += (-9.8 / 1000 / 1000 * 2) * timeDiff;
+            }
+            if (this.keys.space && (now - this.lastCollideTime) < 200) {
+              this.velocity.y = 7 / 1000;
+              this.lastCollideTime = 0;
+            }
+            this.lastPoseUpdateTime = now;
 
             if (matrixNeedsUpdate) {
               this.matrix.compose(this.position, this.rotation, this.scale);

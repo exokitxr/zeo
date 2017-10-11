@@ -1,5 +1,6 @@
 const {
   NUM_CELLS,
+  NUM_CELLS_OVERSCAN,
   NUM_CELLS_HEIGHT,
 
   NUM_CHUNKS_HEIGHT,
@@ -13,6 +14,7 @@ const {
 const GENERATOR_PLUGIN = 'plugins-generator';
 const DAY_NIGHT_SKYBOX_PLUGIN = 'plugins-day-night-skybox';
 const HEALTH_PLUGIN = 'plugins-health';
+const DEFAULT_USER_HEIGHT = 1.6;
 
 const dataSymbol = Symbol();
 
@@ -302,11 +304,27 @@ class Heightfield {
         }
 
         const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
+        const _getEtherIndex = (x, y, z) => x + (z * NUM_CELLS_OVERSCAN) + (y * NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
 
         const forwardVector = new THREE.Vector3(0, 0, -1);
+        const downKmVector = new THREE.Vector3(0, -1024, 0);
         const localVector = new THREE.Vector3();
         const localVector2 = new THREE.Vector3();
+        const localVector3 = new THREE.Vector3();
+        const localVector4 = new THREE.Vector3();
+        const localVector5 = new THREE.Vector3();
+        const localCoord = new THREE.Vector2();
+        const localCoord2 = new THREE.Vector2();
         const localEuler = new THREE.Euler();
+        const localTriangle = new THREE.Triangle();
+        const localPlane = new THREE.Plane();
+        const localRay = new THREE.Ray();
+        const floorPoints = [
+          new THREE.Vector3(),
+          new THREE.Vector3(),
+          new THREE.Vector3(),
+          new THREE.Vector3(),
+        ];
 
         const _requestImage = src => new Promise((accept, reject) => {
           const img = new Image();
@@ -468,6 +486,7 @@ class Heightfield {
                 skyLightmaps: gbuffer.slices.skyLightmaps,
                 torchLightmaps: gbuffer.slices.torchLightmaps,
                 // offset: new THREE.Vector2(chunk.x, chunk.z),
+                ether: null,
                 stckBody: null,
                 update: chunkData => {
                   const {positions: newPositions, colors: newColors, skyLightmaps: newSkyLightmaps, torchLightmaps: newTorchLightmaps, indices: newIndices, ether} = chunkData;
@@ -482,6 +501,8 @@ class Heightfield {
                     skyLightmaps.set(newSkyLightmaps);
                     torchLightmaps.set(newTorchLightmaps);
                     indices.set(newIndices);
+
+                    meshes.ether = ether.slice();
 
                     // XXX preallocate stck buffers
                     if (!meshes.stckBody) {
@@ -540,6 +561,8 @@ class Heightfield {
                     skyLightmaps.set(newSkyLightmaps);
                     torchLightmaps.set(newTorchLightmaps);
                     indices.set(newIndices);
+
+                    meshes.ether = ether.slice();
 
                     // XXX preallocate stck buffers
                     if (!meshes.stckBody) {
@@ -1054,6 +1077,69 @@ class Heightfield {
               _updateMatrices();
             };
             render.on('beforeRender', _beforeRender);
+
+            pose.addCollider((position, velocity, worldPosition) => {
+              let collided = false;
+
+              const min = localVector.set(worldPosition.x - 1.5, worldPosition.y - DEFAULT_USER_HEIGHT - 1.5, worldPosition.z - 1.5).ceil();
+              const max = localVector2.set(worldPosition.x + 1.5, worldPosition.y + 1.5, worldPosition.z + 1.5).floor();
+              const bodyVector = localVector3.set(worldPosition.x, worldPosition.y - DEFAULT_USER_HEIGHT, worldPosition.z);
+              let numFloorPoints = 0;
+              for (let az = min.z; az <= max.z; az++) {
+                for (let ax = min.x; ax <= max.x; ax++) {
+                  for (let ay = max.y; ay >= min.y; ay--) {
+                    const ox = ax >> 4;
+                    const oz = az >> 4;
+                    const index = _getChunkIndex(ox, oz);
+                    const meshes = mapChunkMeshes[index];
+
+                    if (meshes) {
+                      const {ether} = meshes;
+
+                      const lx = ax - ox * NUM_CELLS;
+                      const ly = ay;
+                      const lz = az - oz * NUM_CELLS;
+
+                      const etherValue = ether[_getEtherIndex(lx, ly, lz)];
+                      if (etherValue < 0) {
+                        const dy = ly - etherValue;
+
+                        if (numFloorPoints < 3) {
+                          floorPoints[numFloorPoints++].set(ax, dy, az);
+                        } else {
+                          floorPoints[3].set(ax, dy, az);
+                          floorPoints.sort((a, b) =>
+                            localCoord.set(a.x - bodyVector.x, a.z - bodyVector.z).length() -
+                            localCoord.set(b.x - bodyVector.x, b.z - bodyVector.z).length()
+                          );
+                        }
+                        break;
+                      }
+                    }
+                  }
+                }
+              }
+              if (numFloorPoints === 3) {
+                const plane = localPlane.setFromNormalAndCoplanarPoint(
+                  localTriangle.set(floorPoints[0], floorPoints[1], floorPoints[2]).normal(localVector4),
+                  floorPoints[0]
+                );
+                const ray = localRay.set(
+                  worldPosition,
+                  downKmVector
+                );
+                const floorPoint = ray.intersectPlane(plane, localVector5);
+                if (floorPoint) {
+                  const bodyYDiff = floorPoint.y - bodyVector.y;
+                  if (bodyYDiff >= 0) {
+                    position.y += bodyYDiff;
+                    velocity.y = 0;
+                    collided = true;
+                  }
+                }
+              }
+              return collided;
+            });
 
             this._cleanup = () => {
               scene.remove(landObject);
