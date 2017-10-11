@@ -322,6 +322,8 @@ void main() {
         const zeroQuaternion = new THREE.Quaternion();
         const localVector = new THREE.Vector3();
         const localVector2 = new THREE.Vector3();
+        const localCoord = new THREE.Vector2();
+        const localCoord2 = new THREE.Vector2();
         const localQuaternion = new THREE.Quaternion();
         const localEuler = new THREE.Euler();
         const localRay = new THREE.Ray();
@@ -1041,7 +1043,7 @@ void main() {
         };
         render.on('beforeRender', _beforeRender);
 
-        pose.addCollider((position, velocity, worldPosition) => {
+        pose.addCollider((position, velocity, worldPosition, oldPosition) => {
           const bodyVector = localVector.set(worldPosition.x, worldPosition.y - DEFAULT_USER_HEIGHT, worldPosition.z);
 
           const ox = Math.floor(bodyVector.x / NUM_CELLS);
@@ -1050,21 +1052,43 @@ void main() {
           const index = _getChunkIndex(ox, oz);
           const meshes = objectsChunkMeshes[index];
           if (meshes && meshes.blockfield) {
-            const ax = Math.floor(bodyVector.x);
-            const ay = Math.floor(bodyVector.y);
-            const az = Math.floor(bodyVector.z);
-            const lx = ax - ox * NUM_CELLS;
-            const lz = az - oz * NUM_CELLS;
+            {
+              const ax = Math.floor(bodyVector.x);
+              const ay = Math.floor(bodyVector.y + 0.1);
+              const az = Math.floor(bodyVector.z);
+              const lx = ax - ox * NUM_CELLS;
+              const lz = az - oz * NUM_CELLS;
 
-            for (let ly = ay; ly >= ay - 2; ly--) {
-              const block = meshes.blockfield[_getBlockIndex(lx, ly, lz)];
+              for (let dy = ay; dy < Math.ceil(worldPosition.y); dy++) {
+                const block = meshes.blockfield[_getBlockIndex(lx, dy, lz)];
+                if (block) {
+                  const positionOffset = localVector2.copy(oldPosition).sub(position);
+                  positionOffset.y = 0;
+                  position.add(positionOffset);
+                  worldPosition.add(positionOffset);
+                  bodyVector.add(positionOffset);
+                  break;
+                }
+              }
+            }
 
-              if (block) {
-                const bodyYDiff = (ly + 1) - bodyVector.y;
-                if (bodyYDiff >= 0) {
-                  position.y += bodyYDiff;
-                  velocity.y = 0;
-                  return true;
+            {
+              const ax = Math.floor(bodyVector.x);
+              const ay = Math.floor(bodyVector.y);
+              const az = Math.floor(bodyVector.z);
+              const lx = ax - ox * NUM_CELLS;
+              const lz = az - oz * NUM_CELLS;
+
+              for (let ly = ay; ly >= ay - 2; ly--) {
+                const block = meshes.blockfield[_getBlockIndex(lx, ly, lz)];
+
+                if (block) {
+                  const bodyYDiff = (ly + 1) - bodyVector.y;
+                  if (bodyYDiff >= 0) {
+                    position.y += bodyYDiff;
+                    velocity.y = 0;
+                    return true;
+                  }
                 }
               }
             }

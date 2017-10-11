@@ -147,6 +147,7 @@ class WebVR {
         const oneVector = new THREE.Vector3(1, 1, 1);
         const localVector = new THREE.Vector3();
         const localVector2 = new THREE.Vector3();
+        const localVector3 = new THREE.Vector3();
         const localQuaternion = new THREE.Quaternion();
         const localEuler = new THREE.Euler();
         const localMatrix = new THREE.Matrix4();
@@ -802,13 +803,13 @@ class WebVR {
             }
           }
 
-          collide(position, velocity) {
+          collide(position, velocity, oldPosition) {
             if (this.colliders.length > 0) {
-              const worldPosition = localVector.copy(position).applyMatrix4(this.stageMatrix);
+              const worldPosition = localVector3.copy(position).applyMatrix4(this.stageMatrix);
 
               let collided = false;
               for (let i = 0; i < this.colliders.length; i++) {
-                if (this.colliders[i].fn(position, velocity, worldPosition)) {
+                if (this.colliders[i].fn(position, velocity, worldPosition, oldPosition)) {
                   collided = true;
                 }
               }
@@ -1173,27 +1174,28 @@ class WebVR {
             const now = Date.now();
             const timeDiff = now - this.lastPoseUpdateTime;
 
-            localVector.copy(this.velocity).multiplyScalar(timeDiff);
+            const oldPosition = localVector.copy(this.position);
+            const offsetVector = localVector2.copy(this.velocity).multiplyScalar(timeDiff);
             const speed = (this.keys.shift ? POSITION_SPEED_FAST : POSITION_SPEED) * timeDiff;
             if (this.keys.up) {
-              localVector.z -= speed;
+              offsetVector.z -= speed;
             }
             if (this.keys.down) {
-              localVector.z += speed;
+              offsetVector.z += speed;
             }
             if (this.keys.left) {
-              localVector.x -= speed;
+              offsetVector.x -= speed;
             }
             if (this.keys.right) {
-              localVector.x += speed;
+              offsetVector.x += speed;
             }
 
-            if (!localVector.equals(zeroVector)) {
+            if (!offsetVector.equals(zeroVector)) {
               localEuler.setFromQuaternion(this.rotation, camera.rotation.order);
               localEuler.x = 0;
               localEuler.z = 0;
               localQuaternion.setFromEuler(localEuler);
-              this.position.add(localVector.applyQuaternion(localQuaternion));
+              this.position.add(offsetVector.applyQuaternion(localQuaternion));
               matrixNeedsUpdate = true;
             }
 
@@ -1204,7 +1206,7 @@ class WebVR {
               matrixNeedsUpdate = true;
             }
 
-            if (webvrInstance.collide(this.position, this.velocity)) {
+            if (webvrInstance.collide(this.position, this.velocity, oldPosition)) {
               matrixNeedsUpdate = true;
 
               this.lastCollideTime = now;
