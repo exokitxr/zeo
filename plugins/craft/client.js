@@ -218,18 +218,18 @@ class Craft {
       const result = [];
       for (let x = 0; x < (gridWidth - width + 1); x++) {
         for (let y = 0; y < (gridWidth - height + 1); y++) {
-          const fullInput = _makeNullInput(gridWidth, gridWidth);
+          let fullInput = _makeNullInput(gridWidth, gridWidth);
           _drawInput(fullInput, gridWidth, gridWidth, input, x, y, width, height);
 
-          result.push(fullInput.slice());
+          result.push(fullInput);
 
-          matrixRotate(fullInput);
-          result.push(fullInput.slice());
+          fullInput = matrixRotate(fullInput);
+          result.push(fullInput);
 
-          matrixRotate(fullInput);
-          result.push(fullInput.slice());
+          fullInput = matrixRotate(fullInput);
+          result.push(fullInput);
 
-          matrixRotate(fullInput);
+          fullInput = matrixRotate(fullInput);
           result.push(fullInput);
         }
       }
