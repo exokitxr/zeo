@@ -1,0 +1,11 @@
+{
+  "name": "particle",
+  "description": "Basic particle system.",
+  "version": "0.0.1",
+  "keywords": [],
+  "client": "client.js",
+  "server": "server.js",
+  "dependencies": {
+    "txtr": "0.0.2"
+  }
+}
