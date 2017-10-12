@@ -22,11 +22,7 @@ const torch = objectApi => {
           const {side} = e;
 
           if (grabbable.getGrabberSide() === side) {
-            localVector.set(
-              grabbable.position.x,
-              grabbable.position.y,
-              grabbable.position.z
-            );
+            localVector.copy(grabbable.position);
             localEuler.setFromQuaternion(grabbable.rotation, camera.rotation.order);
             localEuler.x = 0;
             localEuler.z = 0;

@@ -16,17 +16,6 @@ const stone = objectApi => {
   const localQuaternion = new THREE.Quaternion();
   const localEuler = new THREE.Euler();
 
-  const _requestImage = src => new Promise((accept, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      accept(img);
-    };
-    img.onerror = err => {
-      reject(img);
-    };
-    img.src = src;
-  });
-
   return () => new Promise((accept, reject) => {
     const stoneItemApi = {
       asset: 'ITEM.STONE',
