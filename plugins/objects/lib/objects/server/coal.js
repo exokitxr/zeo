@@ -8,13 +8,13 @@ const {
 const {three: {THREE}, utils: {image: {jimp}}} = zeo;
 
 const coal = objectApi => {
-  return () => jimp.read(path.join(__dirname, '../../img/wood.png'))
+  return () => jimp.read(path.join(__dirname, '../../img/coal.png'))
     .then(coalImg => objectApi.registerTexture('coal', coalImg))
     .then(() => {
       const coalGeometry = (() => {
         const coalUvs = objectApi.getUv('coal');
-        const uvWidth = coalUvs[2] - coalUvs[0];
-        const uvHeight = coalUvs[3] - coalUvs[1];
+        const uvWidth = (coalUvs[2] - coalUvs[0]) * 0.25;
+        const uvHeight = (coalUvs[3] - coalUvs[1]) * 0.25;
 
         const geometry = new THREE.OctahedronBufferGeometry(0.1, 0);
         const positions = geometry.getAttribute('position').array;
