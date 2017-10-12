@@ -14,7 +14,6 @@ const {
 
   NUM_POSITIONS_CHUNK,
 } = require('./lib/constants/constants');
-const protocolUtils = require('./lib/utils/protocol-utils');
 const objectsLib = require('./lib/objects/server/index');
 
 const GENERATOR_PLUGIN = 'plugins-generator';
@@ -33,7 +32,6 @@ class Objects {
     const {mod} = jsUtils;
     const {murmur} = hashUtils;
     const {alea, vxl} = randomUtils;
-    const {jimp} = imageUtils;
 
     const rng = new alea(DEFAULT_SEED);
     const noises = {};
