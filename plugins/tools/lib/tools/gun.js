@@ -195,10 +195,11 @@ const gun = ({recipes, data}) => {
 
       const gunRecipe = {
         output: 'ITEM.GUN',
-        width: 1,
-        height: 1,
+        width: 3,
+        height: 2,
         input: [
-          'ITEM.STONE',
+          'ITEM.FLINTSTEEL', 'ITEM.WOOD', 'ITEM.STONE',
+          null, 'ITEM.STONE', 'ITEM.WOOD',
         ],
       };
       recipes.register(gunRecipe);
