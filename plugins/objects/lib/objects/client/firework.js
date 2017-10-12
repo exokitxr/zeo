@@ -251,15 +251,28 @@ const firework = objectApi => {
     };
     render.on('update', _update);
 
+    const fireworkRecipe = {
+      output: 'ITEM.FIREWORK',
+      width: 1,
+      height: 3,
+      input: [
+        'ITEM.COAL',
+        'ITEM.COAL',
+        'ITEM.WOOD',
+      ],
+    };
+    objectApi.registerRecipe(fireworkRecipe);
+
     accept(() => {
       fireworkGeometry.dispose();
       material.dispose();
-
       if (particlesMesh.parent) {
         scene.remove(particlesMesh);
       }
 
       items.unregisterItem(this, fireworkItemApi);
+      objectApi.unregisterRecipe(fireworkRecipe);
+
       render.removeListener('update', _update);
     });
   });
