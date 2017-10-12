@@ -60,6 +60,12 @@ class Objects {
               const az = (oz * NUM_CELLS) + z;
               return noises[name].in2D(ax + 1000, az + 1000);
             },
+            getNoise3D(name, ox, oz, x, y, z) {
+              const ax = (ox * NUM_CELLS) + x;
+              const ay = y;
+              const az = (oz * NUM_CELLS) + z;
+              return noises[name].in3D(ax + 1000, ay + 1000, az + 1000);
+            },
             getElevation(x, z) {
               return generatorElement.getElevation(x, z);
             },
@@ -119,6 +125,11 @@ class Objects {
           objectApi.registerNoise('items', {
             seed: DEFAULT_SEED + ':items',
             frequency: 0.2,
+            octaves: 4,
+          });
+          objectApi.registerNoise('minerals', {
+            seed: DEFAULT_SEED + ':minerals',
+            frequency: 0.05,
             octaves: 4,
           });
 
