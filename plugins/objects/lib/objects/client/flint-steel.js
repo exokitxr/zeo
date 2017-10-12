@@ -1,4 +1,5 @@
 const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
+const PARTICLE_PLUGIN = 'plugins-particle';
 
 const dataSymbol = Symbol();
 
@@ -114,6 +115,9 @@ const flintSteel = objectApi => {
               const heightfieldElement = elements.getEntitiesElement().querySelector(HEIGHTFIELD_PLUGIN);
               localVector.copy(grabbable.position);
               objectApi.addObject('fire', localVector, zeroQuaternion);
+
+              const particleElement = elements.getEntitiesElement().querySelector(PARTICLE_PLUGIN);
+              particleElement.addExplosion(localVector);
 
               items.destroyItem(grabbable);
             }
