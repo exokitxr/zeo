@@ -1,6 +1,6 @@
 {
-  "name": "particle",
-  "description": "A simple 3D particle field.",
+  "name": "triangle-particle",
+  "description": "Simple 3D triangle particle field.",
   "version": "0.0.1",
   "keywords": [],
   "client": "client.js",
