@@ -12,8 +12,8 @@ class Particle {
 
     const oneVector = new THREE.Vector3(1, 1, 1);
     const particleOffsetVector = new THREE.Vector3(0, -0.2/2, 0);
-    const gravity = -9.8 / 100;
-    const fireworkSpeed = 0.2;
+    const gravity = -9.8 / 1000 / 1000;
+    const explosionTime = 1000;
     const localVector = new THREE.Vector3();
     const localQuaternion = new THREE.Quaternion();
     const localEuler = new THREE.Euler();
@@ -42,7 +42,14 @@ class Particle {
         }, */
       },
       vertexShader: `\
+        uniform float worldTime;
+        attribute vec3 delta;
+        attribute vec3 velocity;
+        attribute float startTime;
+        attribute float endTime;
         varying vec2 vUv;
+        varying float vStartTime;
+        varying float vEndTime;
         void main() {
           mat4 modelView = modelViewMatrix;
           modelView[0][0] = 1.0;
@@ -54,9 +61,20 @@ class Particle {
           modelView[2][0] = 0.0;
           modelView[2][1] = 0.0;
           modelView[2][2] = 1.0;
+          modelView[3][0] = 0.0;
+          modelView[3][1] = 0.0;
+          modelView[3][2] = 0.0;
+          modelView[3][3] = 1.0;
 
-          gl_Position = projectionMatrix * modelView * vec4(position.xyz, 1.0);
+          float animationFactor = (worldTime - startTime) / (endTime - startTime);
+          gl_Position = projectionMatrix * vec4(
+            (modelViewMatrix * vec4(position.xyz + (velocity * 8.0 * pow(animationFactor, 0.4)), 1.0)).xyz +
+            (modelView * vec4(delta, 1.0)).xyz,
+            1.0
+          );
           vUv = uv;
+          vStartTime = startTime;
+          vEndTime = endTime;
         }
       `,
       fragmentShader: `\
@@ -67,20 +85,27 @@ class Particle {
         uniform vec3 fogColor;
         uniform float fogDensity;
         varying vec2 vUv;
+        varying float vStartTime;
+        varying float vEndTime;
         float speed = 2.0;
+        float tileSize = 480.0 / 512.0;
+        float numFrames = 30.0;
 
         void main() {
-          float animationFactor = (speed - abs(mod(worldTime / 1000.0, speed*2.0) - speed)) / speed;
-          float frame1 = mod(floor(animationFactor / 16.0), 1.0);
-          float frame2 = mod(frame1 + 1.0/16.0, 1.0);
-          float mixFactor = fract(animationFactor / 16.0) * 16.0;
+          float animationFactor = (worldTime - vStartTime) / (vEndTime - vStartTime);
+          float frame1 = mod(floor(animationFactor * numFrames), numFrames);
+          float frame2 = mod(frame1 + 1.0, numFrames);
+          float mixFactor = fract(animationFactor / numFrames) * numFrames;
 
-          vec4 diffuseColor1 = texture2D(map, vUv * vec2(1.0, 1.0 - frame1));
-          vec4 diffuseColor2 = texture2D(map, vUv * vec2(1.0, 1.0 - frame2));
+          vec4 diffuseColor1 = texture2D(map, vUv * vec2(1.0, tileSize / numFrames) + vec2(0.0, 1.0 - (tileSize * frame1 / numFrames)));
+          vec4 diffuseColor2 = texture2D(map, vUv * vec2(1.0, tileSize / numFrames) + vec2(0.0, 1.0 - (tileSize * frame2 / numFrames)));
           vec4 diffuseColor = mix(diffuseColor1, diffuseColor2, mixFactor);
 
-          // gl_FragColor = diffuseColor;
-          gl_FragColor = vec4(1.0, 0.5, 0.5, 1.0);
+          if (diffuseColor.a < 0.1) {
+            discard;
+          }
+
+          gl_FragColor = diffuseColor;
         }
       `
     };
@@ -157,20 +182,6 @@ class Particle {
       return [-u, 1 - v, -u, 1 - v];
     };
 
-    const particleGeometry = (() => {
-      const geometry = new THREE.PlaneBufferGeometry(1, 1);
-      /* const colors = new Float32Array(geometry.getAttribute('position').array.length);
-      geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
-      const numColors = colors.length / 3;
-      for (let i = 0; i < numColors; i++) {
-        const baseIndex = i * 3;
-        colors[baseIndex + 0] = fireworkColor.r;
-        colors[baseIndex + 1] = fireworkColor.g;
-        colors[baseIndex + 2] = fireworkColor.b;
-      } */
-      return geometry;
-    })();
-
     let live = true;
     this._cleanup = () => {
       live = false;
@@ -180,9 +191,9 @@ class Particle {
       .then(() => {
         if (live) {
           class Particle {
-            constructor(position, uvs, velocity, startTime, endTime) {
+            constructor(position, uv, velocity, startTime, endTime) {
               this.position = position;
-              this.uvs = uvs;
+              this.uv = uv;
               this.velocity = velocity;
               this.startTime = startTime;
               this.endTime = endTime;
@@ -191,6 +202,7 @@ class Particle {
           const particles = [];
 
           const uniforms = THREE.UniformsUtils.clone(PARTICLE_SHADER.uniforms);
+          uniforms.map.value = textureAtlas;
           const material = new THREE.ShaderMaterial({
             uniforms,
             vertexShader: PARTICLE_SHADER.vertexShader,
@@ -199,7 +211,7 @@ class Particle {
             transparent: true,
           });
 
-          const particleGeometry = new THREE.BoxBufferGeometry(0.02, 0.02, 0.02);
+          const particleGeometry = new THREE.PlaneBufferGeometry(2, 2);
           const particleGeometryPositions = particleGeometry.getAttribute('position').array;
           const numParticleGeometryPositions = particleGeometryPositions.length / 3;
           const particleGeometryUvs = particleGeometry.getAttribute('uv').array;
@@ -211,6 +223,9 @@ class Particle {
           const positions = new Float32Array(NUM_POSITIONS);
           const positionsAttribute = new THREE.BufferAttribute(positions, 3);
           geometry.addAttribute('position', positionsAttribute);
+          const deltas = new Float32Array(NUM_POSITIONS);
+          const deltasAttribute = new THREE.BufferAttribute(deltas, 3);
+          geometry.addAttribute('delta', deltasAttribute);
           const uvs = new Float32Array(NUM_POSITIONS);
           const uvsAttribute = new THREE.BufferAttribute(uvs, 2);
           geometry.addAttribute('uv', uvsAttribute);
@@ -220,6 +235,9 @@ class Particle {
           const startTimes = new Float32Array(NUM_POSITIONS);
           const startTimesAttribute = new THREE.BufferAttribute(startTimes, 1);
           geometry.addAttribute('startTime', startTimesAttribute);
+          const endTimes = new Float32Array(NUM_POSITIONS);
+          const endTimesAttribute = new THREE.BufferAttribute(endTimes, 1);
+          geometry.addAttribute('endTime', endTimesAttribute);
           const indices = new Uint16Array(NUM_POSITIONS / 3);
           const indexAttribute = new THREE.BufferAttribute(indices, 1);
           geometry.setIndex(indexAttribute);
@@ -227,31 +245,46 @@ class Particle {
           const particlesMesh = new THREE.Mesh(geometry, material);
           particlesMesh.frustumCulled = false;
 
+          const _getWorldTime = (() => {
+            let worldTimeOffset = 0;
+            return () => {
+              const worldTime = world.getWorldTime();
+              if (particles.length === 0) {
+                worldTimeOffset = worldTime;
+                return 0;
+              } else {
+                return worldTime - worldTimeOffset;
+              }
+            };
+          })();
+
+          let particlesNeedsUpdate = false;
+
           setInterval(() => {
             particles.length = 0;
 
-            const startTime = Date.now();
+            const startTime = _getWorldTime();
 
-            const numParticles = Math.floor(200 + Math.random() * 200);
+            const numParticles = 300;
             for (let j = 0; j < numParticles; j++) {
-              const endTime = startTime + 1500 + Math.random() * 1500;
+              const endTime = startTime + explosionTime * (0.75 + Math.random() * 0.75);
               const particle = new Particle(
-                new THREE.Vector3(0, 68, 0).add(
-                  new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize().multiplyScalar(Math.random() * 0.2)
-                ),
-                _getUv('explosion'),
-                new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize().multiplyScalar(Math.random() * 0.2),
+                new THREE.Vector3(0, 68, 0),
+                _getUv(Math.random() < 0.5 ? 'explosion' : 'smoke'),
+                new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize()
+                  .multiplyScalar(Math.random()),
                 startTime,
                 endTime
               );
               particles.push(particle);
             }
+            particlesNeedsUpdate = true;
           }, 2000);
 
-          let lastUpdateTime = Date.now();
+          let lastUpdateTime = _getWorldTime();
           const _update = () => {
-            const now = Date.now();
-            const timeDiff = (now - lastUpdateTime) / 1000;
+            const now = _getWorldTime();
+            const timeDiff = now - lastUpdateTime;
 
             const _updateParticles = () => {
               if (particles.length > 0) {
@@ -260,73 +293,83 @@ class Particle {
                   const particle = particles[i];
                   const {endTime} = particle;
 
-                  if (now < endTime) {
-                    const {position, velocity} = particle;
-                    position.add(velocity);
-                    velocity.y += gravity * timeDiff;
-                  } else {
+                  if (now >= endTime) {
                     removedParticles.push(particle);
                   }
                 }
-                for (let i = 0; i < removedParticles.length; i++) {
-                  particles.splice(particles.indexOf(removedParticles[i]), 1);
+                if (removedParticles.length > 0) {
+                  for (let i = 0; i < removedParticles.length; i++) {
+                    particles.splice(particles.indexOf(removedParticles[i]), 1);
+                  }
+                  particlesNeedsUpdate = true;
                 }
               }
             };
             const _renderParticles = () => {
-              let attributeIndex = 0;
-              let uvIndex = 0;
-              let velocityIndex = 0;
-              let startTimeIndex = 0;
-              let indexIndex = 0;
+              if (particlesNeedsUpdate) {
+                let attributeIndex = 0;
+                let uvIndex = 0;
+                let velocityIndex = 0;
+                let startTimeIndex = 0;
+                let indexIndex = 0;
 
-              for (let i = 0; i < particles.length; i++) {
-                const {position, uvs, velocity, startTime} = particles[i];
-                const uvWidth = uvs[2] - uvs[0];
-                const uvHeight = uvs[3] - uvs[1];
-                const newGeometryPositions = particleGeometryPositions;
-                const newGeometryUvs = particleGeometryUvs;
-                const newGeometryIndices = particleGeometryIndices;
+                for (let i = 0; i < particles.length; i++) {
+                  const {position, uv, velocity, startTime, endTime} = particles[i];
+                  const uvWidth = uv[2] - uv[0];
+                  const uvHeight = uv[3] - uv[1];
+                  const newGeometryPositions = particleGeometryPositions;
+                  const newGeometryUvs = particleGeometryUvs;
+                  const newGeometryIndices = particleGeometryIndices;
 
-                for (let j = 0; j < numParticleGeometryPositions; j++) {
-                  const basePositionIndex = attributeIndex + j * 3;
-                  const srcBasePositionIndex = j * 3;
-                  positions[basePositionIndex + 0] = newGeometryPositions[srcBasePositionIndex + 0] + position.x;
-                  positions[basePositionIndex + 1] = newGeometryPositions[srcBasePositionIndex + 1] + position.y;
-                  positions[basePositionIndex + 2] = newGeometryPositions[srcBasePositionIndex + 2] + position.z;
+                  for (let j = 0; j < numParticleGeometryPositions; j++) {
+                    const basePositionIndex = attributeIndex + j * 3;
+                    const srcBasePositionIndex = j * 3;
+                    positions[basePositionIndex + 0] = position.x;
+                    positions[basePositionIndex + 1] = position.y;
+                    positions[basePositionIndex + 2] = position.z;
 
-                  const baseUvIndex = uvIndex + j * 2;
-                  const srcBaseUvIndex = j * 2;
-                  uvs[baseUvIndex + 0] = uvs[0] + newGeometryUvs[srcBaseUvIndex + 0] * uvWidth;
-                  uvs[baseUvIndex + 1] = uvs[1] + newGeometryUvs[srcBaseUvIndex + 1] * uvHeight;
+                    deltas[basePositionIndex + 0] = newGeometryPositions[srcBasePositionIndex + 0];
+                    deltas[basePositionIndex + 1] = newGeometryPositions[srcBasePositionIndex + 1];
+                    deltas[basePositionIndex + 2] = newGeometryPositions[srcBasePositionIndex + 2];
 
-                  velocity[basePositionIndex + 0] = velocity.x;
-                  velocity[basePositionIndex + 1] = velocity.y;
-                  velocity[basePositionIndex + 2] = velocity.z;
+                    const baseUvIndex = uvIndex + j * 2;
+                    const srcBaseUvIndex = j * 2;
+                    uvs[baseUvIndex + 0] = uv[0] + newGeometryUvs[srcBaseUvIndex + 0] * uvWidth;
+                    uvs[baseUvIndex + 1] = 1 - (uv[1] + newGeometryUvs[srcBaseUvIndex + 1] * uvHeight);
 
-                  const baseStartTimeIndex = startTimeIndex + j;
-                  startTimes[basePositionIndex] = now;
+                    velocities[basePositionIndex + 0] = velocity.x;
+                    velocities[basePositionIndex + 1] = velocity.y;
+                    velocities[basePositionIndex + 2] = velocity.z;
+
+                    const baseStartTimeIndex = startTimeIndex + j;
+                    startTimes[baseStartTimeIndex] = startTime;
+                    endTimes[baseStartTimeIndex] = endTime;
+                  }
+
+                  for (let j = 0; j < numParticleGeometryIndices; j++) {
+                    const baseIndex = indexIndex + j;
+                    const baseAttributeIndex = attributeIndex / 3;
+                    indices[baseIndex] = newGeometryIndices[j] + baseAttributeIndex;
+                  }
+
+                  attributeIndex += numParticleGeometryPositions * 3;
+                  uvIndex += numParticleGeometryUvs * 2;
+                  velocityIndex += numParticleGeometryPositions * 3;
+                  startTimeIndex += numParticleGeometryPositions;
+                  indexIndex += numParticleGeometryIndices;
                 }
+                geometry.setDrawRange(0, indexIndex);
 
-                for (let j = 0; j < numParticleGeometryIndices; j++) {
-                  const baseIndex = indexIndex + j;
-                  const baseAttributeIndex = attributeIndex / 3;
-                  indices[baseIndex] = newGeometryIndices[j] + baseAttributeIndex;
-                }
+                positionsAttribute.needsUpdate = true;
+                deltasAttribute.needsUpdate = true;
+                uvsAttribute.needsUpdate = true;
+                velocitiesAttribute.needsUpdate = true;
+                startTimesAttribute.needsUpdate = true;
+                endTimesAttribute.needsUpdate = true;
+                indexAttribute.needsUpdate = true;
 
-                attributeIndex += numParticleGeometryPositions * 3;
-                uvIndex += numParticleGeometryUvs * 2;
-                velocityIndex += numParticleGeometryPositions * 3;
-                startTimeIndex += numParticleGeometryPositions;
-                indexIndex += numParticleGeometryIndices;
+                particlesNeedsUpdate = false;
               }
-              geometry.setDrawRange(0, indexIndex);
-
-              positionsAttribute.needsUpdate = true;
-              uvsAttribute.needsUpdate = true;
-              velocitiesAttribute.needsUpdate = true;
-              startTimesAttribute.needsUpdate = true;
-              indexAttribute.needsUpdate = true;
             };
             const _updateParticlesMesh = () => {
               if (particles.length > 0 && !particlesMesh.parent) {
@@ -336,7 +379,7 @@ class Particle {
               }
             };
             const _updateMaterials = () => {
-              material.uniforms.worldTime.value = world.getWorldTime();
+              material.uniforms.worldTime.value = _getWorldTime();
             };
 
             _updateParticles();

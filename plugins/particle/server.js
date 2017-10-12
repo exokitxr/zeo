@@ -32,8 +32,6 @@ class Particle {
       .then(img => {
         const n = murmur(name);
 
-        console.log('register file', n);
-
         if (!textureUvs[n]) {
           if (fourTap) {
             const srcImg = img;
@@ -90,8 +88,6 @@ class Particle {
             }
           }
           app._router.stack.forEach(removeMiddlewares);
-
-          elements.unregisterEntity(this, particleElement);
         };
       });
   }
