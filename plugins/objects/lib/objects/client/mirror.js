@@ -148,6 +148,18 @@ const mirror = objectApi => {
     };
     objectApi.registerObject(mirrorObjectApi);
 
+    const mirrorRecipe = {
+      output: 'ITEM.MIRROR',
+      width: 2,
+      height: 3,
+      input: [
+        'ITEM.WOOD', 'ITEM.WOOD',
+        'ITEM.WOOD', 'ITEM.WOOD',
+        'ITEM.WOOD', 'ITEM.WOOD',
+      ],
+    };
+    objectApi.registerRecipe(mirrorRecipe);
+
     const updateEyes = [];
     const _updateEye = camera => {
       for (let i = 0; i < updateEyes.length; i++) {
@@ -158,6 +170,7 @@ const mirror = objectApi => {
 
     accept(() => {
       objectApi.unregisterObject(mirrorObjectApi);
+      objectApi.unregisterRecipe(mirrorRecipe);
 
       render.removeListener('updateEye', _updateEye);
     });

@@ -150,9 +150,21 @@ const chest = objectApi => {
     };
     objectApi.registerObject(chestOpenObjectApi);
 
+    const chestRecipe = {
+      output: 'ITEM.CHEST',
+      width: 2,
+      height: 2,
+      input: [
+        'ITEM.WOOD', 'ITEM.WOOD',
+        'ITEM.WOOD', 'ITEM.WOOD',
+      ],
+    };
+    objectApi.registerRecipe(chestRecipe);
+
     accept(() => {
       items.unregisterItem(this, chestItemApi);
       objectApi.unregisterObject(chestObjectApi);
+      objectApi.unregisterRecipe(chestRecipe);
 
       // XXX unregister texture/geometry
     });
