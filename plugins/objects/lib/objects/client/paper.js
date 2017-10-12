@@ -1,4 +1,3 @@
-
 const PAPER_SIZE = 1;
 const STAND_SIZE = PAPER_SIZE * 2;
 const PAPER_BORDER_SIZE = PAPER_SIZE * 0.1;
@@ -490,8 +489,20 @@ const paper = objectApi => {
       };
       render.on('update', _update);
 
+      const paperRecipe = {
+        output: 'ITEM.PAPER',
+        width: 2,
+        height: 2,
+        input: [
+          'ITEM.STICK', 'ITEM.STICK',
+          'ITEM.WOOD', 'ITEM.WOOD',
+        ],
+      };
+      objectApi.registerRecipe(paperRecipe);
+
       return () => {
         objectApi.unregisterObject(paperObjectApi);
+        objectApi.unregisterRecipe(paperRecipe);
 
         input.removeListener('triggerdown', _triggerdown);
         input.removeListener('triggerup', _triggerup);
