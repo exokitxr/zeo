@@ -132,6 +132,17 @@
     "0pdq0am": {
       "type": "entity",
       "id": "0pdq0am",
+      "name": "/plugins/particle",
+      "displayName": "particle",
+      "version": "0.0.1",
+      "module": "/plugins/particle",
+      "tagName": "plugins-particle",
+      "attributes": {},
+      "metadata": {}
+    },
+    "0pdq0an": {
+      "type": "entity",
+      "id": "0pdq0an",
       "name": "/plugins/craft",
       "displayName": "craft",
       "version": "0.0.1",
@@ -173,7 +184,7 @@
       "attributes": {},
       "metadata": {}
     },
-   "ji5a4i": {
+    "ji5a4i": {
       "type": "entity",
       "id": "ji5a4i",
       "name": "/plugins/tutorial",
