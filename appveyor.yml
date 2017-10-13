@@ -35,9 +35,9 @@ after_test:
       rm node.zip
       mv "node-v8.6.0-win-x64" node
       rm -R node/node_modules
+      msbuild 'scripts/lib/windows/Zeo VR.sln'
+      cp 'scripts/lib/windows/Zeo VR/bin/Zeo VR.exe' .
       touch data/no-hotload.json
-      cp scripts/lib/windows/start-windows.ps1 .
-      cp 'scripts/lib/windows/Zeo VR.lnk' .
       7z a windows-release.zip * -xr'!.git'
 
 artifacts:
