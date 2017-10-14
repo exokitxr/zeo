@@ -95,7 +95,7 @@ const torch = objectApi => {
         'ITEM.WOOD',
       ],
     };
-    objectApi.registerRecipe(this, torchRecipe);
+    objectApi.registerRecipe(torchRecipe);
 
     accept(() => {
       elements.destroyListener(lightmapElementListener);
@@ -103,7 +103,7 @@ const torch = objectApi => {
       items.unregisterItem(this, torchItemApi);
       objectApi.unregisterObject(torchObjectApi);
 
-      objectApi.unregisterRecipe(this, torchRecipe);
+      objectApi.unregisterRecipe(torchRecipe);
     });
   });
 };
