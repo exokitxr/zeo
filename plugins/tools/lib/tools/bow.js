@@ -104,15 +104,6 @@ const bow = ({recipes, data}) => {
     vertexColors: THREE.VertexColors,
   });
 
-  let npcElement = null;
-  const elementListener = elements.makeListener(NPC_PLUGIN);
-  elementListener.on('add', entityElement => {
-    npcElement = entityElement;
-  });
-  elementListener.on('remove', () => {
-    npcElement = null;
-  });
-
   return () => {
     const bowApi = {
       asset: 'ITEM.BOW',
@@ -355,6 +346,7 @@ const bow = ({recipes, data}) => {
                 if (timeSinceStart < ARROW_TTL) {
                   if (!arrow.velocity.equals(zeroVector)) {
                     const _hitNpc = () => {
+                      const npcElement = elements.getEntitiesElement().querySelector(NPC_PLUGIN);
                       if (npcElement) {
                         localVector.copy(arrow.velocity).normalize();
                         localRay.set(arrow.position, arrow.velocity);
@@ -454,8 +446,6 @@ const bow = ({recipes, data}) => {
 
     return () => {
       stringMaterial.dispose();
-
-      elements.destroyListener(elementListener);
 
       items.unregisterItem(this, bowApi);
       recipes.unregister(bowRecipe);
