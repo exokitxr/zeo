@@ -101,6 +101,7 @@ const pickaxe = ({recipes, data}) => {
           grabbable[dataSymbol] = {
             cleanup: () => {
               scene.remove(dotMesh);
+              dotMesh.destroy();
 
               grabbable.removeListener('grab', _grab);
               grabbable.removeListener('release', _release);
@@ -112,8 +113,6 @@ const pickaxe = ({recipes, data}) => {
           };
         },
         itemRemovedCallback(grabbable) {
-          dotMesh.destroy();
-
           const {[dataSymbol]: {cleanup}} = grabbable;
           cleanup();
 
