@@ -174,11 +174,16 @@ class Multiplayer {
               this.remotePlayerSkinMeshes.delete(oldSkinMesh);
             }
 
+            const oldPlayerMesh = this.remotePlayerMeshes.get(n);
             if (skinImgBuffer) {
               const newSkinImg = _makeImg(skinImgBuffer, 64, 64);
               const newSkinMesh = skinUtils.makePlayerMesh(newSkinImg);
               scene.add(newSkinMesh);
               this.remotePlayerSkinMeshes.set(n, newSkinMesh);
+
+              oldPlayerMesh.visible = false;
+            } else {
+              oldPlayerMesh.visible = true;
             }
           }
 
