@@ -404,13 +404,16 @@ class WebVR {
 
                   cleanups.push(() => {
                     if (display) {
+                      this.normalizePosition();
+                      this.pauseMatrix.copy(this.getStageMatrix())
+                        .multiply(localMatrix.getInverse(this.getSpawnMatrix()))
+                        .multiply(localMatrix.getInverse(this.getSittingToStandingTransform()));
                       this.pauseMatrix.decompose(localVector, localQuaternion, localVector2);
-                      localVector2.copy(this.status.hmd.position).applyQuaternion(localQuaternion);
-                      localEuler.setFromQuaternion(this.status.hmd.rotation, camera.rotation.order);
+                      localEuler.setFromQuaternion(localQuaternion.premultiply(this.status.hmd.rotation), camera.rotation.order);
                       localEuler.x = 0;
                       localEuler.z = 0;
-                      localQuaternion2.setFromEuler(localEuler);
-                      this.pauseMatrix.compose(localVector.add(localVector2), localQuaternion.premultiply(localQuaternion2), oneVector);
+                      localQuaternion.setFromEuler(localEuler);
+                      this.pauseMatrix.compose(localVector, localQuaternion, localVector2);
                     }
                     this.setStageMatrix(localMatrix.copy(this.getSpawnMatrix()).multiply(this.pauseMatrix));
                     this.updateStatus();
@@ -791,7 +794,7 @@ class WebVR {
           normalizePosition() {
             if (this.display instanceof FakeVRDisplay) {
               this.stageMatrix.decompose(localVector, localQuaternion, localVector2);
-              localVector.add(this.display.position);
+              localVector.add(localVector3.copy(this.display.position).applyQuaternion(localQuaternion));
               this.stageMatrix.compose(localVector, localQuaternion, localVector2);
               this.display.position.set(0, 0, 0);
             }
