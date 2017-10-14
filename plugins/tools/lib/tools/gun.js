@@ -1,5 +1,7 @@
+const NPC_PLUGIN = 'plugins-npc';
 const BULLET_SPEED = 0.03;
 const BULLET_TTL = 5 * 1000;
+const BULLET_LENGTH = 1;
 
 const dataSymbol = Symbol();
 
@@ -48,6 +50,7 @@ const gun = ({recipes, data}) => {
   };
   const localTransformScaleVector = new THREE.Vector3(2, 2, 2);
   const localVector = new THREE.Vector3();
+  const localRay = new THREE.Ray();
 
   const _requestAudio = url => new Promise((accept, reject) => {
     const audio = document.createElement('audio');
@@ -149,30 +152,60 @@ const gun = ({recipes, data}) => {
           const _update = () => {
             const now = Date.now();
 
-            const removedBullets = [];
-            for (let i = 0; i < bullets.length; i++) {
-              const bullet = bullets[i];
-              const {startTime} = bullet;
-              const timeSinceStart = now - startTime;
+            if (bullets.length > 0) {
+              const removedBullets = [];
 
-              if (timeSinceStart < BULLET_TTL) {
-                const {lastTime} = bullet;
-                const timeDiff = now - lastTime;
+              for (let i = 0; i < bullets.length; i++) {
+                const bullet = bullets[i];
+                const {startTime} = bullet;
+                const timeSinceStart = now - startTime;
 
-                bullet.position.add(
-                  new THREE.Vector3(0, 0, -BULLET_SPEED * timeDiff)
-                    .applyQuaternion(bullet.quaternion)
-                );
-                bullet.updateMatrixWorld();
+                if (timeSinceStart < BULLET_TTL) {
+                  const _hitNpc = () => {
+                    const npcElement = elements.getEntitiesElement().querySelector(NPC_PLUGIN);
+                    if (npcElement) {
+                      localVector.copy(forwardVector).applyQuaternion(bullet.quaternion);
+                      localRay.set(bullet.position, localVector);
+                      const hitNpc = npcElement.getHitNpc(localRay, BULLET_LENGTH);
 
-                bullet.lastTime = now;
-              } else {
-                scene.remove(bullet);
-                removedBullets.push(bullet);
+                      if (hitNpc) {
+                        hitNpc.attack();
+
+                        scene.remove(bullet);
+                        removedBullets.push(bullet);
+
+                        return true;
+                      } else {
+                        return false;
+                      }
+                    } else {
+                      return false;
+                    }
+                  };
+                  const _advanceBullets = () => {
+                    const {lastTime} = bullet;
+                    const timeDiff = now - lastTime;
+
+                    bullet.position.add(
+                      localVector.copy(forwardVector)
+                        .multiplyScalar(BULLET_SPEED * timeDiff)
+                        .applyQuaternion(bullet.quaternion)
+                    );
+                    bullet.updateMatrixWorld();
+
+                    bullet.lastTime = now;
+                  };
+                  _hitNpc();
+                  _advanceBullets();
+                } else {
+                  scene.remove(bullet);
+                  removedBullets.push(bullet);
+                }
               }
-            }
-            for (let i = 0; i < removedBullets.length; i++) {
-              bullets.splice(bullets.indexOf(removedBullets[i]), 1);
+
+              for (let i = 0; i < removedBullets.length; i++) {
+                bullets.splice(bullets.indexOf(removedBullets[i]), 1);
+              }
             }
           };
           render.on('update', _update);
