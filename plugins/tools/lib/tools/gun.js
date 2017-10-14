@@ -4,7 +4,7 @@ const BULLET_TTL = 5 * 1000;
 const dataSymbol = Symbol();
 
 const gun = ({recipes, data}) => {
-  const {three, pose, input, render, elements, items, player, teleport, utils: {geometry: geometryUtils, sprite: spriteUtils}} = zeo;
+  const {three, pose, input, render, elements, items, player, teleport, sound, utils: {geometry: geometryUtils, sprite: spriteUtils}} = zeo;
   const {THREE, scene, camera} = three;
 
   const zeroVector = new THREE.Vector3();
@@ -74,8 +74,8 @@ const gun = ({recipes, data}) => {
     document.body.appendChild(audio);
   });
 
-  return () => _requestAudio('/archae/tools/sfx/gun.ogg')
-    .then(gunAudio => {
+  return () => sound.requestSfx('/archae/tools/sfx/gun.ogg')
+    .then(gunSfx => {
       const bulletMaterial = new THREE.MeshPhongMaterial({
         color: 0xFF0000,
         shading: THREE.FlatShading,
@@ -131,6 +131,8 @@ const gun = ({recipes, data}) => {
                 scene.add(bullet);
 
                 bullets.push(bullet);
+
+                gunSfx.trigger();
 
                 input.vibrate(side, 1, 20);
 
