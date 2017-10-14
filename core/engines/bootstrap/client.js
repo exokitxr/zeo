@@ -46,6 +46,7 @@ class Bootstrap {
           };
 
           let vrMode = null;
+          let roamMode = 'physical';
           class WorldTimer {
             constructor(startTime = Date.now()) {
               this.startTime = startTime;
@@ -90,8 +91,14 @@ class Bootstrap {
 
             setVrMode(newVrMode) {
               vrMode = newVrMode;
+            }
 
-              this.emit('vrModeChange', vrMode);
+            getRoamMode() {
+              return roamMode;
+            }
+
+            toggleRoamMode() {
+              roamMode = roamMode === 'free' ? 'physical' : 'free';
             }
 
             getWorldTime() {

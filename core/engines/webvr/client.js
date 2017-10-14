@@ -50,6 +50,8 @@ const DEFAULT_GAMEPAD_POSES = [
 const MOVE_FACTOR = 0.001;
 const POSITION_SPEED = 4 / 1000;
 const POSITION_SPEED_FAST = POSITION_SPEED * 2;
+const POSITION_SPEED_ROAM = 5 / 1000;
+const POSITION_SPEED_ROAM_FAST = POSITION_SPEED_ROAM * 5;
 const ROTATION_SPEED = 0.02 / (Math.PI * 2);
 
 const BUTTONS = {
@@ -1011,6 +1013,9 @@ class WebVR {
                   case 88: // X
                     this.mode = 'center';
                     break;
+                  case 192: // X
+                    bootstrap.toggleRoamMode();
+                    break;
                 }
               }
             };
@@ -1173,10 +1178,11 @@ class WebVR {
 
             const now = Date.now();
             const timeDiff = now - this.lastPoseUpdateTime;
+            const roamMode = bootstrap.getRoamMode();
 
             const oldPosition = localVector.copy(this.position);
             const offsetVector = localVector2.copy(this.velocity).multiplyScalar(timeDiff);
-            const speed = (this.keys.shift ? POSITION_SPEED_FAST : POSITION_SPEED) * timeDiff;
+            const speed = (roamMode === 'physical' ? (this.keys.shift ? POSITION_SPEED_FAST : POSITION_SPEED) : (this.keys.shift ? POSITION_SPEED_ROAM_FAST : POSITION_SPEED_ROAM)) * timeDiff;
             if (this.keys.up) {
               offsetVector.z -= speed;
             }
@@ -1192,7 +1198,9 @@ class WebVR {
 
             if (!offsetVector.equals(zeroVector)) {
               localEuler.setFromQuaternion(this.rotation, camera.rotation.order);
-              localEuler.x = 0;
+              if (roamMode === 'physical') {
+                localEuler.x = 0;
+              }
               localEuler.z = 0;
               localQuaternion.setFromEuler(localEuler);
               this.position.add(offsetVector.applyQuaternion(localQuaternion));
@@ -1206,18 +1214,21 @@ class WebVR {
               matrixNeedsUpdate = true;
             }
 
-            if (webvrInstance.collide(this.position, this.velocity, oldPosition)) {
-              matrixNeedsUpdate = true;
+            if (roamMode === 'physical') {
+              if (webvrInstance.collide(this.position, this.velocity, oldPosition)) {
+                matrixNeedsUpdate = true;
 
-              this.lastCollideTime = now;
+                this.lastCollideTime = now;
+              } else {
+                this.velocity.y += (-9.8 / 1000 / 1000 * 2) * timeDiff;
+              }
+              if (this.keys.space && (now - this.lastCollideTime) < 200) {
+                this.velocity.y = 7 / 1000;
+                this.lastCollideTime = 0;
+              }
             } else {
-              this.velocity.y += (-9.8 / 1000 / 1000 * 2) * timeDiff;
+              this.velocity.y = 0;
             }
-            if (this.keys.space && (now - this.lastCollideTime) < 200) {
-              this.velocity.y = 7 / 1000;
-              this.lastCollideTime = 0;
-            }
-            this.lastPoseUpdateTime = now;
 
             if (matrixNeedsUpdate) {
               this.matrix.compose(this.position, this.rotation, this.scale);
@@ -1225,6 +1236,8 @@ class WebVR {
               this.gamepads[0].poseNeedsUpdate = true;
               this.gamepads[1].poseNeedsUpdate = true;
             }
+
+            this.lastPoseUpdateTime = now;
           }
 
           getGamepads() {
