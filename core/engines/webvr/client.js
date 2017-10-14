@@ -151,6 +151,7 @@ class WebVR {
         const localVector2 = new THREE.Vector3();
         const localVector3 = new THREE.Vector3();
         const localQuaternion = new THREE.Quaternion();
+        const localQuaternion2 = new THREE.Quaternion();
         const localEuler = new THREE.Euler();
         const localMatrix = new THREE.Matrix4();
         const localMatrix2 = new THREE.Matrix4();
@@ -317,6 +318,9 @@ class WebVR {
             const spawnMatrix = new THREE.Matrix4();
             this.spawnMatrix = spawnMatrix;
 
+            const pauseMatrix = new THREE.Matrix4();
+            this.pauseMatrix = pauseMatrix;
+
             const lookMatrix = new THREE.Matrix4();
             this.lookMatrix = lookMatrix;
 
@@ -395,11 +399,20 @@ class WebVR {
                   if (display && display.stageParameters) {
                     displayStageMatrix.fromArray(display.stageParameters.sittingToStandingTransform);
                   }
-                  this.setStageMatrix(displayStageMatrix.premultiply(this.getSpawnMatrix()));
+                  this.setStageMatrix(displayStageMatrix.premultiply(this.getSpawnMatrix()).multiply(this.pauseMatrix));
                   this.updateStatus();
 
                   cleanups.push(() => {
-                    this.setStageMatrix(this.getSpawnMatrix());
+                    if (display) {
+                      this.pauseMatrix.decompose(localVector, localQuaternion, localVector2);
+                      localVector2.copy(this.status.hmd.position).applyQuaternion(localQuaternion);
+                      localEuler.setFromQuaternion(this.status.hmd.rotation, camera.rotation.order);
+                      localEuler.x = 0;
+                      localEuler.z = 0;
+                      localQuaternion2.setFromEuler(localEuler);
+                      this.pauseMatrix.compose(localVector.add(localVector2), localQuaternion.premultiply(localQuaternion2), oneVector);
+                    }
+                    this.setStageMatrix(localMatrix.copy(this.getSpawnMatrix()).multiply(this.pauseMatrix));
                     this.updateStatus();
 
                     this._frameData = null;
