@@ -349,7 +349,6 @@ class WebVR {
             display = null,
             stereoscopic = false,
             update = () => {},
-            // updateEye = () => {},
             updateStart = () => {},
             updateEnd = () => {},
             // renderStart = () => {},
@@ -366,8 +365,6 @@ class WebVR {
 
             const result = new Promise((accept, reject) => {
               if (!this.isOpen) {
-                // let effect = null;
-
                 const _initialize = () => {
                   this.display = display;
                   this.stereoscopic = stereoscopic;
@@ -409,7 +406,6 @@ class WebVR {
                   });
 
                   if (!display) {
-                    // const originalStageMatrix = stageMatrix.clone();
                     const {lookMatrix} = this;
                     const {position, rotation, scale} = _decomposeMatrix(lookMatrix);
                     const euler = new THREE.Euler().setFromQuaternion(rotation, camera.rotation.order);
@@ -442,19 +438,9 @@ class WebVR {
                       update(); // update plugins
 
                       if (renderer.vr.enabled) {
-                        /* const scale = (() => {
-                          const vector = new THREE.Vector3();
-                          const {elements} = camera.parent.matrix;
-                          const sx = vector.set(elements[0], elements[1], elements[2]).length();
-                          const sy = vector.set(elements[4], elements[5], elements[6]).length();
-                          const sz = vector.set(elements[8], elements[9], elements[10]).length();
-                          return vector.set(sx, sy, sz);
-                        })();
-                        effect.scale = (scale.x + scale.y + scale.z) / 3; */
                         renderer.render(scene, camera); // perform binocular render
                       } else {
                         // manual events since the effect won't call them
-                        // updateEye(camera);
                         renderer.render(scene, camera); // perform monocular eye render
                       }
 
@@ -487,7 +473,6 @@ class WebVR {
           requestEnterVR({
             stereoscopic = true,
             update = () => {},
-            // updateEye = () => {},
             updateStart = () => {},
             updateEnd = () => {},
             // renderStart = () => {},
@@ -601,7 +586,6 @@ class WebVR {
                         display,
                         stereoscopic,
                         update,
-                        // updateEye,
                         updateStart,
                         updateEnd,
                         // renderStart,
@@ -777,11 +761,6 @@ class WebVR {
             if (!this.display) {
               this.setStageMatrix(spawnMatrix);
             }
-          }
-
-          getSpawnTransform() {
-            return new THREE.Matrix4().fromArray(this.display.stageParameters.sittingToStandingTransform)
-              .premultiply(this.spawnMatrix);
           }
 
           getExternalMatrix() {
