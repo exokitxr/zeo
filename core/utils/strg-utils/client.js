@@ -1,6 +1,6 @@
 const strg = require('strg');
 
-const STRG_HASH = '8357f3144f67fca6d1d10f3a2a2f057666bc7815';
+const STRG_HASH = '0f08b1d486c793efeeb2b0d7fc8a36efa3d9b864';
 
 module.exports = {
   mount() {
