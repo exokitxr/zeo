@@ -1011,9 +1011,11 @@ class WebVR {
                     this.mode = 'right';
                     break;
                   case 88: // X
-                    this.mode = 'center';
+                    for (let i = 0; i < gamepads.length; i++) {
+                      gamepads[i].resetPose();
+                    }
                     break;
-                  case 192: // X
+                  case 192: // Tilde
                     bootstrap.toggleRoamMode();
                     break;
                 }
@@ -1289,12 +1291,8 @@ class WebVR {
             this.axes = [0, 0];
             this.hapticActuators = [];
 
-            const positionOffset = new THREE.Vector3(
-              CONTROLLER_DEFAULT_OFFSETS[0] * (index === 0 ? -1 : 1),
-              CONTROLLER_DEFAULT_OFFSETS[1],
-              CONTROLLER_DEFAULT_OFFSETS[2]
-            );
-            this.positionOffset = positionOffset;
+            this.positionOffset = new THREE.Vector3();
+            this.resetPose();
 
             const rotationOffset = new THREE.Euler();
             rotationOffset.order = camera.rotation.order;
@@ -1310,18 +1308,12 @@ class WebVR {
 
             const mousemove = e => {
               if (this.displayIsInControllerMode()) {
-                const _isReversed = () => {
-                  const {_parent: parent, _index: index} = this;
-                  const mode = parent.getMode();
-                  return mode === 'center' && index === 1;
-                };
-
                 if (e.event.ctrlKey) {
-                  this.move(-e.event.movementX, -e.event.movementY, 0, _isReversed());
+                  this.move(-e.event.movementX, -e.event.movementY, 0);
                 } else if (e.event.altKey) {
-                  this.move(-e.event.movementX, 0, -e.event.movementY, _isReversed());
+                  this.move(-e.event.movementX, 0, -e.event.movementY);
                 } else if (this._parent.keys.axis) {
-                  this.axis(-e.event.movementX, -e.event.movementY, _isReversed());
+                  this.axis(-e.event.movementX, -e.event.movementY);
                 }
               }
             };
@@ -1335,24 +1327,20 @@ class WebVR {
           displayIsInControllerMode() {
             const {_parent: parent, _index: index} = this;
             const mode = parent.getMode();
-            return parent.isPresenting && ((mode === 'center') || (mode === 'left' && index === 0) || (mode === 'right' && index === 1));
+            return parent.isPresenting && ((mode === 'left' && index === 0) || (mode === 'right' && index === 1));
           }
 
-          move(x, y, z, reverse) {
-            const reverseFactor = !reverse ? 1 : -1;
-            this.positionOffset.x += -x * MOVE_FACTOR * reverseFactor;
-            this.positionOffset.y += y * MOVE_FACTOR * reverseFactor;
-            this.positionOffset.z += -z * MOVE_FACTOR * reverseFactor;
+          move(x, y, z) {
+            this.positionOffset.x += -x * MOVE_FACTOR;
+            this.positionOffset.y += y * MOVE_FACTOR;
+            this.positionOffset.z += -z * MOVE_FACTOR;
 
             this.poseNeedsUpdate = true;
           }
 
-          axis(x, y, reverse) {
-            const {axes} = this;
-
-            const reverseFactor = !reverse ? 1 : -1;
-            axes[0] = _clampAxis(axes[0] - (x * MOVE_FACTOR * reverseFactor));
-            axes[1] = _clampAxis(axes[1] + (y * MOVE_FACTOR * reverseFactor));
+          axis(x, y) {
+            this.axes[0] = _clampAxis(axes[0] - (x * MOVE_FACTOR));
+            this.axes[1] = _clampAxis(axes[1] + (y * MOVE_FACTOR));
 
             this.poseNeedsUpdate = true;
           }
@@ -1383,6 +1371,16 @@ class WebVR {
 
               this.poseNeedsUpdate = false;
             }
+          }
+
+          resetPose() {
+            this.positionOffset.set(
+              CONTROLLER_DEFAULT_OFFSETS[0] * (this._index === 0 ? -1 : 1),
+              CONTROLLER_DEFAULT_OFFSETS[1],
+              CONTROLLER_DEFAULT_OFFSETS[2]
+            );
+
+            this.poseNeedsUpdate = true;
           }
 
           updateButtons() {
