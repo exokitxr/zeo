@@ -66,7 +66,7 @@ const port = flags.port || 8000;
 const secure = (typeof flags.secure === 'boolean') ? flags.secure : false;
 const dataDirectory = flags.dataDirectory || 'data';
 const cryptoDirectory = flags.cryptoDirectory || 'crypto';
-const installDirectory = flags.installDirectory || 'installed';
+const installDirectory = flags.installDirectory || 'data/installed';
 const defaultsDirectory = flags.defaultsDirectory || 'defaults';
 const password = (() => {
   try {
