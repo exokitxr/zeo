@@ -74,9 +74,10 @@ class Generator {
       seed: murmur(DEFAULT_SEED),
     });
 
-    const zeodeDataPath = path.join(dirname, dataDirectory, 'zeode.dat');
-    const texturesPngDataPath = path.join(dirname, dataDirectory, 'textures.png');
-    const texturesJsonDataPath = path.join(dirname, dataDirectory, 'textures.json');
+    const dataWorldPath = path.join(dirname, dataDirectory, 'world');
+    const zeodeDataPath = path.join(dataWorldPath, 'zeode.dat');
+    const texturesPngDataPath = path.join(dataWorldPath, 'textures.png');
+    const texturesJsonDataPath = path.join(dataWorldPath, 'textures.json');
 
     const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
     // const _getLightsIndex = (x, y, z) => x + y * NUM_CELLS_OVERSCAN + z * NUM_CELLS_OVERSCAN * (NUM_CELLS_HEIGHT + 1);
