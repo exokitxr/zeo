@@ -14,7 +14,7 @@ namespace Zeo_VR_Server_Reset
             Process cmd = new Process();
 
             cmd.StartInfo.FileName = "node\\node.exe";
-            cmd.StartInfo.Arguments = "index.js --reset";
+            cmd.StartInfo.Arguments = "index.js reset";
             cmd.StartInfo.RedirectStandardInput = true;
             cmd.StartInfo.RedirectStandardOutput = true;
             cmd.StartInfo.RedirectStandardError = true;
