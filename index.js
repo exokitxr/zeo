@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 
 const archae = require('archae');
+const rimraf = require('rimraf');
 
 const args = process.argv.slice(2);
 const _findArg = name => {
@@ -19,6 +20,7 @@ const _findArg = name => {
 const flags = {
   server: args.includes('server'),
   install: args.includes('install'),
+  reset: args.includes('reset'),
   host: _findArg('host'),
   port: (() => {
     const s = _findArg('port');
@@ -140,6 +142,29 @@ const config = {
 };
 const a = archae(config);
 
+const _reset = () => new Promise((accept, reject) => {
+  if (flags.reset) {
+    rimraf(path.join(dataDirectory, 'world'), err => {
+      if (!err) {
+        accept();
+      } else {
+        reject(err);
+      }
+    });
+  } else {
+    accept();
+  }
+});
+
+const _preload = () => {
+  if (flags.server) {
+    const preload = require('./lib/preload');
+    return preload.preload(a, config);
+  } else {
+    return Promise.resolve();
+  }
+};
+
 const _install = () => {
   if (flags.install) {
     return _getPlugins({core: true, def: true})
@@ -155,15 +180,6 @@ const _configure = () => {
   });
 
   return Promise.resolve();
-};
-
-const _preload = () => {
-  if (flags.server) {
-    const preload = require('./lib/preload');
-    return preload.preload(a, config);
-  } else {
-    return Promise.resolve();
-  }
 };
 
 const _getPlugins = ({core = false, def = false} = {}) => {
@@ -292,6 +308,7 @@ const _boot = () => {
 };
 
 _configure()
+  .then(() => _reset())
   .then(() => _preload())
   .then(() => _install())
   .then(() => _listenLibs())
