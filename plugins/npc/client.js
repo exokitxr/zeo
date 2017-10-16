@@ -6,7 +6,7 @@ const dataSymbol = Symbol();
 
 class Mobs {
   mount() {
-    const {three, pose, elements, input, render, sound, utils: {network: networkUtils, random: randomUtils, skin: skinUtils}} = zeo;
+    const {three, pose, elements, input, render, items, sound, utils: {network: networkUtils, random: randomUtils, skin: skinUtils}} = zeo;
     const {THREE, scene} = three;
     const {AutoWs} = networkUtils;
     const {chnkr} = randomUtils;
@@ -16,6 +16,7 @@ class Mobs {
     const upVector = new THREE.Vector3(0, 1, 0);
     const zeroQuaternion = new THREE.Quaternion();
     const localVector = new THREE.Vector3();
+    const localVector2 = new THREE.Vector3();
 
     let live = true;
     this._cleanup = () => {
@@ -273,6 +274,25 @@ class Mobs {
 
                     hurtSfx.trigger();
                   }
+                  if (mode === 'die') {
+                    const itemId = _makeId();
+                    const asset = Math.random() < 0.5 ? 'ITEM.MEAT' : 'ITEM.HIDE';
+                    items.makeItem({
+                      type: 'asset',
+                      id: itemId,
+                      name: asset,
+                      displayName: asset,
+                      attributes: {
+                        type: {value: 'asset'},
+                        value: {value: asset},
+                        position: {value: localVector.fromArray(positionStart).add(localVector2.set(0, 1, 0)).toArray().concat([0, 0, 0, 1, 1, 1, 1])},
+                        quantity: {value: 1},
+                        owner: {value: null},
+                        bindOwner: {value: null},
+                        physics: {value: true},
+                      },
+                    });
+                  }
                 } else {
                   console.warn('mob unknown message type', JSON.stringify(type));
                 }
@@ -410,6 +430,7 @@ class Mobs {
     this._cleanup();
   }
 }
+const _makeId = () => Math.random().toString(36).substring(7);
 const _relativeWsUrl = s => {
   const l = window.location;
   return ((l.protocol === 'https:') ? 'wss://' : 'ws://') + l.host + l.pathname + (!/\/$/.test(l.pathname) ? '/' : '') + s;
