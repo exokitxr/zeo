@@ -5,6 +5,8 @@
   "ITEM.WOOD": "Crafting_85",
   "ITEM.STICK": "Crafting_88",
   "ITEM.APPLE": "Food_01",
+  "ITEM.MEAT": "Food_22",
+  "ITEM.HIDE": "Crafting_68",
   "ITEM.COAL": "Crafting_55",
   "ITEM.IRON": "Crafting_51",
   "ITEM.SAND": "CraftingDust_06",
