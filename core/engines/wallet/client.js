@@ -192,9 +192,9 @@ class Wallet {
             position,
             rotation,
             scale,
-            zeroVector,
-            zeroQuaternion,
-            oneVector
+            zeroVector.clone(),
+            zeroQuaternion.clone(),
+            oneVector.clone()
           );
           _bindAssetInstance(assetInstance);
           _bindAssetInstancePhysics(assetInstance);
@@ -431,6 +431,7 @@ class Wallet {
           mesh.getAssetInstance = id => assetInstances.find(assetInstance => assetInstance.id === id);
           mesh.addAssetInstance = (id, type, value, n, physics, position, rotation, scale, localPosition, localRotation, localScale) => {
             const assetInstance = new AssetInstance(id, type, value, n, physics, position, rotation, scale, localPosition, localRotation, localScale);
+
             hand.addGrabbable(assetInstance);
             assetInstances.push(assetInstance);
 
@@ -1251,9 +1252,9 @@ class Wallet {
               position,
               rotation,
               scale,
-              zeroVector,
-              zeroQuaternion,
-              oneVector
+              zeroVector.clone(),
+              zeroQuaternion.clone(),
+              oneVector.clone()
             );
             _bindAssetInstance(assetInstance);
             _bindAssetInstancePhysics(assetInstance);
