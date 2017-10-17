@@ -1,4 +1,4 @@
-<p align="center"><img src="https://cdn.rawgit.com/modulesio/zeo/398039c9/public/img/logo-name.svg" width="200px"></p>
+<p align="center"><img src="https://cdn.rawgit.com/modulesio/zeo/989fc50f00e699231ba7fba54262d1a35e814924/public/img/logo-name.svg" width="200px"></p>
 
 **Multiplayer WebVR worlds, procedurally generated with hotloaded `npm` modules.**
 
