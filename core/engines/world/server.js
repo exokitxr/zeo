@@ -2,12 +2,10 @@ const events = require('events');
 const {EventEmitter} = events;
 const path = require('path');
 const fs = require('fs');
-const crypto = require('crypto');
 
 const mkdirp = require('mkdirp');
 const bodyParser = require('body-parser');
 const bodyParserJson = bodyParser.json();
-const secp256k1 = require('eccrypto-sync/secp256k1');
 
 const DEFAULT_TAGS = {
   tags: {},
@@ -358,9 +356,6 @@ class World {
                       const srcAddress = address;
                       const {value: asset} = assetAttribute;
                       const {value: quantity} = quantityAttribute;
-                      const privateKey = crypto.randomBytes(32);
-                      const dstAddress = _getAddress(privateKey);
-                      const privateKeyString = privateKey.toString('base64');
 
                       _removeTag(owner, id);
                     } else {
@@ -464,6 +459,5 @@ const _debounce = fn => {
   };
   return _go;
 };
-const _getAddress = privateKey => Uint8Array.from(secp256k1.keyFromPrivate(privateKey).getPublic('arr'));
 
 module.exports = World;
