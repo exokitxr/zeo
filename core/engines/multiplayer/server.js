@@ -77,14 +77,13 @@ class Multiplayer {
           const {url} = c.upgradeReq;
 
           let match;
-          if (match = url.match(/^\/archae\/multiplayerWs\?id=(.+?)&address=(.+?)&username=(.+?)$/)) {
+          if (match = url.match(/^\/archae\/multiplayerWs\?id=(.+?)&username=(.+?)$/)) {
             if (connections.length < maxUsers) {
               const n = parseInt(match[1], 10);
-              const address = decodeURIComponent(match[2]);
-              const username = decodeURIComponent(match[3]);
+              const username = decodeURIComponent(match[2]);
 
               const remoteAddress = c.upgradeReq.connection.remoteAddress.replace(/^::ffff:/, '');
-              console.log('multiplayer connection', {n, address, username, remoteAddress});
+              console.log('multiplayer connection', {n, username, remoteAddress});
 
               const _init = () => {
                 statuses.forEach((status, n) => {
@@ -122,7 +121,6 @@ class Multiplayer {
 
                 multiplayerApi.emit('playerEnter', {
                   id: n,
-                  address,
                   username,
                 });
               };

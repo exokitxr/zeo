@@ -110,29 +110,6 @@ class Zeo {
     return _requestBlocker()
       .then(blocker => {
         if (live) {
-          const _resJson = res => {
-            if (res.status >= 200 && res.status < 300) {
-              return res.json();
-            } else {
-              return null;
-            }
-          };
-          const _requestLogin = () => fetch(`${siteUrl}/id/api/address`, {
-            credentials: 'include',
-          })
-            .then(_resJson)
-            .then(({address}) => {
-              blocker.setLoggedIn();
-
-              return Promise.resolve(address);
-            })
-            .catch(err => {
-              console.warn(err);
-
-              blocker.setLoggedIn();
-
-              return Promise.resolve(null);
-            });
           const _requestPlugins = () => archae.requestPlugins([
             '/core/engines/bootstrap',
             '/core/engines/input',
@@ -177,57 +154,50 @@ class Zeo {
             '/core/utils/strg-utils',
             '/core/utils/vrid-utils',
           ]);
-
-          return Promise.all([
-            _requestLogin(),
-            _requestPlugins(),
-          ])
+          return _requestPlugins()
             .then(([
-              address,
-              [
-                bootstrap,
-                input,
-                webvr,
-                three,
-                anima,
-                resource,
-                cyborg,
-                biolumi,
-                rend,
-                keyboard,
-                teleport,
-                scale,
-                hand,
-                transform,
-                loader,
-                tags,
-                world,
-                entity,
-                file,
-                servers,
-                wallet,
-                notification,
-                config,
-                multiplayer,
-                voicechat,
-                stage,
-                fs,
-                somnifer,
-                stck,
-                jsUtils,
-                typeUtils,
-                networkUtils,
-                geometryUtils,
-                hashUtils,
-                randomUtils,
-                textUtils,
-                menuUtils,
-                skinUtils,
-                creatureUtils,
-                spriteUtils,
-                strgUtils,
-                vridUtils,
-              ],
+              bootstrap,
+              input,
+              webvr,
+              three,
+              anima,
+              resource,
+              cyborg,
+              biolumi,
+              rend,
+              keyboard,
+              teleport,
+              scale,
+              hand,
+              transform,
+              loader,
+              tags,
+              world,
+              entity,
+              file,
+              servers,
+              wallet,
+              notification,
+              config,
+              multiplayer,
+              voicechat,
+              stage,
+              fs,
+              somnifer,
+              stck,
+              jsUtils,
+              typeUtils,
+              networkUtils,
+              geometryUtils,
+              hashUtils,
+              randomUtils,
+              textUtils,
+              menuUtils,
+              skinUtils,
+              creatureUtils,
+              spriteUtils,
+              strgUtils,
+              vridUtils,
             ]) => {
               if (live) {
                 blocker.destroy();
@@ -237,9 +207,14 @@ class Zeo {
                 const {EVENTS: INPUT_EVENTS} = input;
                 const {events} = jsUtils;
                 const {EventEmitter} = events;
+                const {strgApi} = strgUtils;
 
-                address = address || '127.0.0.1';
-                bootstrap.setAddress(address);
+                strgApi.get('username')
+                  .then(username => {
+                    username = username || 'unknown-avatar';
+                    bootstrap.setAddress({username});
+                  });
+
                 const supportsWebVR = webvr.supportsWebVR();
 
                 const _update = () => {

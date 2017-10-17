@@ -56,10 +56,10 @@ class Multiplayer {
         const buffer = new ArrayBuffer(protocolUtils.BUFFER_SIZE);
 
         let connection = null;
-        const _addressChange = ({address, username}) => {
+        const _addressChange = ({username}) => {
           let pendingMessage = null;
 
-          connection = new AutoWs(_relativeWsUrl('archae/multiplayerWs?id=' + encodeURIComponent(String(multiplayerApi.getId())) + '&address=' + encodeURIComponent(address) + '&username=' + encodeURIComponent(username)));
+          connection = new AutoWs(_relativeWsUrl('archae/multiplayerWs?id=' + encodeURIComponent(String(multiplayerApi.getId())) + '&username=' + encodeURIComponent(username)));
           connection.on('message', msg => {
             const {data} = msg;
 
@@ -457,7 +457,7 @@ class Multiplayer {
             }
           };
           const _sendUpdate = () => {
-            if (updated) {
+            if (updated && connection) {
               protocolUtils.stringifyUpdate(multiplayerApi.getId(), localStatus, buffer, 0);
               connection.send(buffer);
             }
