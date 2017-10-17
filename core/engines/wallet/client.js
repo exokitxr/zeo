@@ -564,7 +564,6 @@ class Wallet {
           loading: true,
           error: false,
           inputText: '',
-          // address: null,
           asset: null,
           assets: [],
           equipments: _makeEquipments(4),
@@ -928,7 +927,6 @@ class Wallet {
 
         const _pullItem = (asset, side) => {
           const id = _makeId();
-          // const owner = bootstrap.getAddress();
           const itemSpec = {
             type: 'asset',
             id: id,
@@ -938,7 +936,6 @@ class Wallet {
               type: {value: 'asset'},
               value: {value: asset},
               position: {value: DEFAULT_MATRIX},
-              // owner: {value: owner},
               owner: {value: null},
               bindOwner: {value: null},
               physics: {value: false},
@@ -948,7 +945,6 @@ class Wallet {
           const assetInstance = walletApi.makeItem(itemSpec);
           assetInstance.grab(side);
 
-          const address = bootstrap.getAddress();
           const quantity = 1;
           const {assets: oldAssets} = walletState;
           _removeStrgAsset(asset, quantity)
@@ -995,7 +991,6 @@ class Wallet {
           const {type} = assetInstance;
           if (type === 'asset') {
             const {value} = assetInstance;
-            const address = bootstrap.getAddress();
             const quantity = 1;
             const {assets: oldAssets} = walletState;
             _addStrgAsset(value, quantity)
