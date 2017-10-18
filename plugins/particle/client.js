@@ -132,9 +132,11 @@ class Particle {
         }, */
       },
       vertexShader: `\
+        #define PI 3.1415926535897932384626433832795
         uniform float worldTime;
         attribute float type;
         attribute vec3 delta;
+        attribute vec3 angle;
         varying vec2 vUv;
         void main() {
           mat4 modelView = modelViewMatrix;
@@ -158,12 +160,14 @@ class Particle {
           if (type == 0.0) {
             animationFactor = mod((position.y / 128.0 - worldTime / ${rainTime.toFixed(1)}), 1.0);
           } else if (type == 1.0) {
-            animationFactor = mod((position.y / 128.0 - worldTime / 20000.0), 1.0);
+            animationFactor = mod((position.y / 128.0 - worldTime / 30000.0), 1.0);
           } else if (type == 2.0) {
-            animationFactor = 1.0 - mod((position.y / 128.0 - worldTime / 120000.0), 1.0);
+            animationFactor = 1.0 - mod((position.y / 128.0 - worldTime / 180000.0), 1.0);
           }
           vec3 pos = position.xyz;
           pos.y = animationFactor * 128.0;
+          pos.x += (-0.5 + sin(mod(angle.x + worldTime / 4000.0, 1.0) * PI * 2.0)) * angle.z;
+          pos.z += (-0.5 + sin(mod(angle.y + worldTime / 4000.0, 1.0) * PI * 2.0)) * angle.z;
           gl_Position = projectionMatrix * vec4(
             (modelViewMatrix * vec4(pos, 1.0)).xyz +
             (modelView * vec4(delta, 1.0)).xyz,
@@ -280,10 +284,11 @@ class Particle {
           const particles = [];
 
           class Weather {
-            constructor(position, type, uv) {
+            constructor(position, type, uv, angle) {
               this.position = position;
               this.type = type;
               this.uv = uv;
+              this.angle = angle;
             }
           }
           const weathers = [];
@@ -337,7 +342,7 @@ class Particle {
           const weatherGeometries = [
             new THREE.PlaneBufferGeometry(0.05, 0.8),
             new THREE.PlaneBufferGeometry(0.1, 0.1),
-            new THREE.PlaneBufferGeometry(0.1, 0.1),
+            new THREE.PlaneBufferGeometry(0.05, 0.05),
           ];
           const weatherGeometryPositions = weatherGeometries.map(geometry => geometry.getAttribute('position').array);
           const numWeatherGeometryPositions = weatherGeometryPositions[0].length / 3;
@@ -359,6 +364,9 @@ class Particle {
             const uvs = new Float32Array(NUM_POSITIONS);
             const uvsAttribute = new THREE.BufferAttribute(uvs, 2);
             geometry.addAttribute('uv', uvsAttribute);
+            const angles = new Float32Array(NUM_POSITIONS);
+            const anglesAttribute = new THREE.BufferAttribute(angles, 3);
+            geometry.addAttribute('angle', anglesAttribute);
             const indices = new Uint16Array(NUM_POSITIONS / 3);
             const indexAttribute = new THREE.BufferAttribute(indices, 1);
             geometry.setIndex(indexAttribute);
@@ -420,7 +428,8 @@ class Particle {
                   const weather = new Weather(
                     new THREE.Vector3(x * NUM_CELLS + Math.random() * NUM_CELLS, Math.random() * NUM_CELLS_HEIGHT, z * NUM_CELLS + Math.random() * NUM_CELLS),
                     0,
-                    _getUv('rain')
+                    _getUv('rain'),
+                    new THREE.Vector3(Math.random(), Math.random(), Math.random())
                   );
                   weathers.push(weather);
                 }
@@ -433,7 +442,8 @@ class Particle {
                   const weather = new Weather(
                     new THREE.Vector3(x * NUM_CELLS + Math.random() * NUM_CELLS, Math.random() * NUM_CELLS_HEIGHT, z * NUM_CELLS + Math.random() * NUM_CELLS),
                     1,
-                    Math.random() < 0.5 ? _getUv('snow1') : _getUv('snow2')
+                    Math.random() < 0.5 ? _getUv('snow1') : _getUv('snow2'),
+                    new THREE.Vector3(Math.random(), Math.random(), Math.random())
                   );
                   weathers.push(weather);
                 }
@@ -446,7 +456,8 @@ class Particle {
                   const weather = new Weather(
                     new THREE.Vector3(x * NUM_CELLS + Math.random() * NUM_CELLS, Math.random() * NUM_CELLS_HEIGHT, z * NUM_CELLS + Math.random() * NUM_CELLS),
                     2,
-                    Math.random() < 0.5 ? _getUv('smoke1') : _getUv('smoke2')
+                    Math.random() < 0.5 ? _getUv('smoke1') : _getUv('smoke2'),
+                    new THREE.Vector3(Math.random(), Math.random(), Math.random())
                   );
                   weathers.push(weather);
                 }
@@ -576,11 +587,13 @@ class Particle {
                 const types = typesAttribute.array;
                 const uvsAttribute = weathersMesh.geometry.attributes.uv;
                 const uvs = uvsAttribute.array;
+                const anglesAttribute = weathersMesh.geometry.attributes.angle;
+                const angles = anglesAttribute.array;
                 const indexAttribute = weathersMesh.geometry.index;
                 const indices = indexAttribute.array;
 
                 for (let i = 0; i < weathers.length; i++) {
-                  const {position, type, uv} = weathers[i];
+                  const {position, type, uv, angle} = weathers[i];
                   const uvWidth = uv[2] - uv[0];
                   const uvHeight = uv[3] - uv[1];
                   const newGeometryPositions = weatherGeometryPositions[type];
@@ -605,6 +618,10 @@ class Particle {
                     const srcBaseUvIndex = j * 2;
                     uvs[baseUvIndex + 0] = uv[0] + newGeometryUvs[srcBaseUvIndex + 0] * uvWidth;
                     uvs[baseUvIndex + 1] = 1 - (uv[1] + newGeometryUvs[srcBaseUvIndex + 1] * uvHeight);
+
+                    angles[basePositionIndex + 0] = angle.x;
+                    angles[basePositionIndex + 1] = angle.y;
+                    angles[basePositionIndex + 2] = angle.z;
                   }
 
                   for (let j = 0; j < numWeatherGeometryIndices; j++) {
@@ -621,7 +638,9 @@ class Particle {
                 weathersMesh.geometry.setDrawRange(0, indexIndex);
 
                 positionsAttribute.needsUpdate = true;
+                deltasAttribute.needsUpdate = true;
                 uvsAttribute.needsUpdate = true;
+                anglesAttribute.needsUpdate = true;
                 indexAttribute.needsUpdate = true;
 
                 weathersNeedsUpdate = false;
