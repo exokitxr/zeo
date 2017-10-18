@@ -1,4 +1,7 @@
 const {
+  NUM_CELLS,
+  NUM_CELLS_HEIGHT,
+
   TEXTURE_SIZE,
 } = require('./lib/constants/constants');
 
@@ -12,6 +15,7 @@ class Particle {
 
     const gravity = -9.8 / 1000 / 1000;
     const explosionTime = 1000;
+    const rainTime = 3000;
 
     const PARTICLE_SHADER = {
       uniforms: {
@@ -100,6 +104,70 @@ class Particle {
             discard;
           }
 
+          gl_FragColor = diffuseColor;
+        }
+      `
+    };
+    const WEATHER_SHADER = {
+      uniforms: {
+        worldTime: {
+          type: 'f',
+          value: 0,
+        },
+        map: {
+          type: 't',
+          value: null,
+        },
+        /* fogColor: {
+          type: '3f',
+          value: new THREE.Color(),
+        },
+        fogDensity: {
+          type: 'f',
+          value: 0,
+        },
+        sunIntensity: {
+          type: 'f',
+          value: 0,
+        }, */
+      },
+      vertexShader: `\
+        uniform float worldTime;
+        attribute vec3 delta;
+        varying vec2 vUv;
+        void main() {
+          mat4 modelView = modelViewMatrix;
+          modelView[0][0] = 1.0;
+          modelView[0][1] = 0.0;
+          modelView[0][2] = 0.0;
+          /* modelView[1][0] = 0.0;
+          modelView[1][1] = 1.0;
+          modelView[1][2] = 0.0; */
+          modelView[2][0] = 0.0;
+          modelView[2][1] = 0.0;
+          modelView[2][2] = 1.0;
+          modelView[3][0] = 0.0;
+          modelView[3][1] = 0.0;
+          modelView[3][2] = 0.0;
+          modelView[3][3] = 1.0;
+
+          float animationFactor = mod((position.y / 128.0 - worldTime / ${rainTime.toFixed(1)}), 1.0);
+          vec3 pos = position.xyz;
+          pos.y = delta.y + animationFactor * 128.0;
+          gl_Position = projectionMatrix * vec4(
+            (modelViewMatrix * vec4(pos, 1.0)).xyz +
+            (modelView * vec4(delta, 1.0)).xyz,
+            1.0
+          );
+          vUv = uv;
+        }
+      `,
+      fragmentShader: `\
+        uniform sampler2D map;
+        varying vec2 vUv;
+
+        void main() {
+          vec4 diffuseColor = texture2D(map, vUv);
           gl_FragColor = diffuseColor;
         }
       `
@@ -196,15 +264,13 @@ class Particle {
           }
           const particles = [];
 
-          const uniforms = THREE.UniformsUtils.clone(PARTICLE_SHADER.uniforms);
-          uniforms.map.value = textureAtlas;
-          const material = new THREE.ShaderMaterial({
-            uniforms,
-            vertexShader: PARTICLE_SHADER.vertexShader,
-            fragmentShader: PARTICLE_SHADER.fragmentShader,
-            // side: THREE.DoubleSide,
-            transparent: true,
-          });
+          class Weather {
+            constructor(position, uv) {
+              this.position = position;
+              this.uv = uv;
+            }
+          }
+          const weathers = [];
 
           const particleGeometry = new THREE.PlaneBufferGeometry(2, 2);
           const particleGeometryPositions = particleGeometry.getAttribute('position').array;
@@ -213,32 +279,81 @@ class Particle {
           const numParticleGeometryUvs = particleGeometryUvs.length / 2;
           const particleGeometryIndices = particleGeometry.index.array;
           const numParticleGeometryIndices = particleGeometryIndices.length;
+          const particlesMesh = (() => {
+            const geometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(NUM_POSITIONS);
+            const positionsAttribute = new THREE.BufferAttribute(positions, 3);
+            geometry.addAttribute('position', positionsAttribute);
+            const deltas = new Float32Array(NUM_POSITIONS);
+            const deltasAttribute = new THREE.BufferAttribute(deltas, 3);
+            geometry.addAttribute('delta', deltasAttribute);
+            const uvs = new Float32Array(NUM_POSITIONS);
+            const uvsAttribute = new THREE.BufferAttribute(uvs, 2);
+            geometry.addAttribute('uv', uvsAttribute);
+            const velocities = new Float32Array(NUM_POSITIONS);
+            const velocitiesAttribute = new THREE.BufferAttribute(velocities, 3);
+            geometry.addAttribute('velocity', velocitiesAttribute);
+            const startTimes = new Float32Array(NUM_POSITIONS);
+            const startTimesAttribute = new THREE.BufferAttribute(startTimes, 1);
+            geometry.addAttribute('startTime', startTimesAttribute);
+            const endTimes = new Float32Array(NUM_POSITIONS);
+            const endTimesAttribute = new THREE.BufferAttribute(endTimes, 1);
+            geometry.addAttribute('endTime', endTimesAttribute);
+            const indices = new Uint16Array(NUM_POSITIONS / 3);
+            const indexAttribute = new THREE.BufferAttribute(indices, 1);
+            geometry.setIndex(indexAttribute);
+            geometry.setDrawRange(0, 0);
 
-          const geometry = new THREE.BufferGeometry();
-          const positions = new Float32Array(NUM_POSITIONS);
-          const positionsAttribute = new THREE.BufferAttribute(positions, 3);
-          geometry.addAttribute('position', positionsAttribute);
-          const deltas = new Float32Array(NUM_POSITIONS);
-          const deltasAttribute = new THREE.BufferAttribute(deltas, 3);
-          geometry.addAttribute('delta', deltasAttribute);
-          const uvs = new Float32Array(NUM_POSITIONS);
-          const uvsAttribute = new THREE.BufferAttribute(uvs, 2);
-          geometry.addAttribute('uv', uvsAttribute);
-          const velocities = new Float32Array(NUM_POSITIONS);
-          const velocitiesAttribute = new THREE.BufferAttribute(velocities, 3);
-          geometry.addAttribute('velocity', velocitiesAttribute);
-          const startTimes = new Float32Array(NUM_POSITIONS);
-          const startTimesAttribute = new THREE.BufferAttribute(startTimes, 1);
-          geometry.addAttribute('startTime', startTimesAttribute);
-          const endTimes = new Float32Array(NUM_POSITIONS);
-          const endTimesAttribute = new THREE.BufferAttribute(endTimes, 1);
-          geometry.addAttribute('endTime', endTimesAttribute);
-          const indices = new Uint16Array(NUM_POSITIONS / 3);
-          const indexAttribute = new THREE.BufferAttribute(indices, 1);
-          geometry.setIndex(indexAttribute);
-          geometry.setDrawRange(0, 0);
-          const particlesMesh = new THREE.Mesh(geometry, material);
-          particlesMesh.frustumCulled = false;
+            const uniforms = THREE.UniformsUtils.clone(PARTICLE_SHADER.uniforms);
+            uniforms.map.value = textureAtlas;
+            const material = new THREE.ShaderMaterial({
+              uniforms,
+              vertexShader: PARTICLE_SHADER.vertexShader,
+              fragmentShader: PARTICLE_SHADER.fragmentShader,
+              transparent: true,
+            });
+
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.frustumCulled = false;
+            return mesh;
+          })();
+
+          const weatherGeometry = new THREE.PlaneBufferGeometry(0.05, 0.8);
+          const weatherGeometryPositions = weatherGeometry.getAttribute('position').array;
+          const numWeatherGeometryPositions = weatherGeometryPositions.length / 3;
+          const weatherGeometryUvs = weatherGeometry.getAttribute('uv').array;
+          const numWeatherGeometryUvs = weatherGeometryUvs.length / 2;
+          const weatherGeometryIndices = weatherGeometry.index.array;
+          const numWeatherGeometryIndices = weatherGeometryIndices.length;
+          const weathersMesh = (() => {
+            const geometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(NUM_POSITIONS);
+            const positionsAttribute = new THREE.BufferAttribute(positions, 3);
+            geometry.addAttribute('position', positionsAttribute);
+            const deltas = new Float32Array(NUM_POSITIONS);
+            const deltasAttribute = new THREE.BufferAttribute(deltas, 3);
+            geometry.addAttribute('delta', deltasAttribute);
+            const uvs = new Float32Array(NUM_POSITIONS);
+            const uvsAttribute = new THREE.BufferAttribute(uvs, 2);
+            geometry.addAttribute('uv', uvsAttribute);
+            const indices = new Uint16Array(NUM_POSITIONS / 3);
+            const indexAttribute = new THREE.BufferAttribute(indices, 1);
+            geometry.setIndex(indexAttribute);
+            geometry.setDrawRange(0, 0);
+
+            const uniforms = THREE.UniformsUtils.clone(WEATHER_SHADER.uniforms);
+            uniforms.map.value = textureAtlas;
+            const material = new THREE.ShaderMaterial({
+              uniforms,
+              vertexShader: WEATHER_SHADER.vertexShader,
+              fragmentShader: WEATHER_SHADER.fragmentShader,
+              // transparent: true,
+            });
+
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.frustumCulled = false;
+            return mesh;
+          })();
 
           const _getWorldTime = (() => {
             let worldTimeOffset = 0;
@@ -254,6 +369,7 @@ class Particle {
           })();
 
           let particlesNeedsUpdate = false;
+          let weathersNeedsUpdate = false;
 
           const particleEntity = {
             entityAddedCallback(particleElement) {
@@ -274,17 +390,29 @@ class Particle {
                 }
                 particlesNeedsUpdate = true;
               };
+              particleElement.addRain = (x, z) => {
+                const startTime = _getWorldTime();
+                const numWeathers = 300;
+                for (let j = 0; j < numWeathers; j++) {
+                  const weather = new Weather(
+                    new THREE.Vector3(x * NUM_CELLS + Math.random() * NUM_CELLS, Math.random() * NUM_CELLS_HEIGHT, z * NUM_CELLS + Math.random() * NUM_CELLS),
+                    _getUv('rain')
+                  );
+                  weathers.push(weather);
+                }
+                weathersNeedsUpdate = true;
+              };
             },
           };
           elements.registerEntity(this, particleEntity);
 
           let lastUpdateTime = _getWorldTime();
           const _update = () => {
-            if (particles.length > 0 || particlesMesh.parent) {
-              const now = _getWorldTime();
-              const timeDiff = now - lastUpdateTime;
+            const now = _getWorldTime();
+            const timeDiff = now - lastUpdateTime;
 
-              const _updateParticles = () => {
+            const _updateParticles = () => {
+              if (particles.length > 0) {
                 const removedParticles = [];
                 for (let i = 0; i < particles.length; i++) {
                   const particle = particles[i];
@@ -300,91 +428,181 @@ class Particle {
                   }
                   particlesNeedsUpdate = true;
                 }
-              };
-              const _renderParticles = () => {
-                if (particlesNeedsUpdate) {
-                  let attributeIndex = 0;
-                  let uvIndex = 0;
-                  let velocityIndex = 0;
-                  let startTimeIndex = 0;
-                  let indexIndex = 0;
+              }
+            };
+            const _renderParticles = () => {
+              if (particlesNeedsUpdate) {
+                let attributeIndex = 0;
+                let uvIndex = 0;
+                let velocityIndex = 0;
+                let startTimeIndex = 0;
+                let indexIndex = 0;
 
-                  for (let i = 0; i < particles.length; i++) {
-                    const {position, uv, velocity, startTime, endTime} = particles[i];
-                    const uvWidth = uv[2] - uv[0];
-                    const uvHeight = uv[3] - uv[1];
-                    const newGeometryPositions = particleGeometryPositions;
-                    const newGeometryUvs = particleGeometryUvs;
-                    const newGeometryIndices = particleGeometryIndices;
+                const positionsAttribute = particlesMesh.geometry.attributes.position;
+                const positions = positionsAttribute.array;
+                const deltasAttribute = particlesMesh.geometry.attributes.delta;
+                const deltas = deltasAttribute.array;
+                const uvsAttribute = particlesMesh.geometry.attributes.uv;
+                const uvs = uvsAttribute.array;
+                const velocitiesAttribute = particlesMesh.geometry.attributes.uv;
+                const velocities = velocitiesAttribute.array;
+                const startTimesAttribute = particlesMesh.geometry.attributes.startTime;
+                const startTimes = startTimesAttribute.array;
+                const endTimesAttribute = particlesMesh.geometry.attributes.endTime;
+                const endTimes = endTimesAttribute.array;
+                const indexAttribute = particlesMesh.geometry.index;
+                const indices = indexAttribute.array;
 
-                    for (let j = 0; j < numParticleGeometryPositions; j++) {
-                      const basePositionIndex = attributeIndex + j * 3;
-                      const srcBasePositionIndex = j * 3;
-                      positions[basePositionIndex + 0] = position.x;
-                      positions[basePositionIndex + 1] = position.y;
-                      positions[basePositionIndex + 2] = position.z;
+                for (let i = 0; i < particles.length; i++) {
+                  const {position, uv, velocity, startTime, endTime} = particles[i];
+                  const uvWidth = uv[2] - uv[0];
+                  const uvHeight = uv[3] - uv[1];
+                  const newGeometryPositions = particleGeometryPositions;
+                  const newGeometryUvs = particleGeometryUvs;
+                  const newGeometryIndices = particleGeometryIndices;
 
-                      deltas[basePositionIndex + 0] = newGeometryPositions[srcBasePositionIndex + 0];
-                      deltas[basePositionIndex + 1] = newGeometryPositions[srcBasePositionIndex + 1];
-                      deltas[basePositionIndex + 2] = newGeometryPositions[srcBasePositionIndex + 2];
+                  for (let j = 0; j < numParticleGeometryPositions; j++) {
+                    const basePositionIndex = attributeIndex + j * 3;
+                    const srcBasePositionIndex = j * 3;
+                    positions[basePositionIndex + 0] = position.x;
+                    positions[basePositionIndex + 1] = position.y;
+                    positions[basePositionIndex + 2] = position.z;
 
-                      const baseUvIndex = uvIndex + j * 2;
-                      const srcBaseUvIndex = j * 2;
-                      uvs[baseUvIndex + 0] = uv[0] + newGeometryUvs[srcBaseUvIndex + 0] * uvWidth;
-                      uvs[baseUvIndex + 1] = 1 - (uv[1] + newGeometryUvs[srcBaseUvIndex + 1] * uvHeight);
+                    deltas[basePositionIndex + 0] = newGeometryPositions[srcBasePositionIndex + 0];
+                    deltas[basePositionIndex + 1] = newGeometryPositions[srcBasePositionIndex + 1];
+                    deltas[basePositionIndex + 2] = newGeometryPositions[srcBasePositionIndex + 2];
 
-                      velocities[basePositionIndex + 0] = velocity.x;
-                      velocities[basePositionIndex + 1] = velocity.y;
-                      velocities[basePositionIndex + 2] = velocity.z;
+                    const baseUvIndex = uvIndex + j * 2;
+                    const srcBaseUvIndex = j * 2;
+                    uvs[baseUvIndex + 0] = uv[0] + newGeometryUvs[srcBaseUvIndex + 0] * uvWidth;
+                    uvs[baseUvIndex + 1] = 1 - (uv[1] + newGeometryUvs[srcBaseUvIndex + 1] * uvHeight);
 
-                      const baseStartTimeIndex = startTimeIndex + j;
-                      startTimes[baseStartTimeIndex] = startTime;
-                      endTimes[baseStartTimeIndex] = endTime;
-                    }
+                    velocities[basePositionIndex + 0] = velocity.x;
+                    velocities[basePositionIndex + 1] = velocity.y;
+                    velocities[basePositionIndex + 2] = velocity.z;
 
-                    for (let j = 0; j < numParticleGeometryIndices; j++) {
-                      const baseIndex = indexIndex + j;
-                      const baseAttributeIndex = attributeIndex / 3;
-                      indices[baseIndex] = newGeometryIndices[j] + baseAttributeIndex;
-                    }
-
-                    attributeIndex += numParticleGeometryPositions * 3;
-                    uvIndex += numParticleGeometryUvs * 2;
-                    velocityIndex += numParticleGeometryPositions * 3;
-                    startTimeIndex += numParticleGeometryPositions;
-                    indexIndex += numParticleGeometryIndices;
+                    const baseStartTimeIndex = startTimeIndex + j;
+                    startTimes[baseStartTimeIndex] = startTime;
+                    endTimes[baseStartTimeIndex] = endTime;
                   }
-                  geometry.setDrawRange(0, indexIndex);
 
-                  positionsAttribute.needsUpdate = true;
-                  deltasAttribute.needsUpdate = true;
-                  uvsAttribute.needsUpdate = true;
-                  velocitiesAttribute.needsUpdate = true;
-                  startTimesAttribute.needsUpdate = true;
-                  endTimesAttribute.needsUpdate = true;
-                  indexAttribute.needsUpdate = true;
+                  for (let j = 0; j < numParticleGeometryIndices; j++) {
+                    const baseIndex = indexIndex + j;
+                    const baseAttributeIndex = attributeIndex / 3;
+                    indices[baseIndex] = newGeometryIndices[j] + baseAttributeIndex;
+                  }
 
-                  particlesNeedsUpdate = false;
+                  attributeIndex += numParticleGeometryPositions * 3;
+                  uvIndex += numParticleGeometryUvs * 2;
+                  velocityIndex += numParticleGeometryPositions * 3;
+                  startTimeIndex += numParticleGeometryPositions;
+                  indexIndex += numParticleGeometryIndices;
                 }
-              };
-              const _updateParticlesMesh = () => {
-                if (particles.length > 0 && !particlesMesh.parent) {
-                  scene.add(particlesMesh);
-                } else if (particles.length === 0 && particlesMesh.parent) {
-                  scene.remove(particlesMesh);
+                particlesMesh.geometry.setDrawRange(0, indexIndex);
+
+                positionsAttribute.needsUpdate = true;
+                deltasAttribute.needsUpdate = true;
+                uvsAttribute.needsUpdate = true;
+                velocitiesAttribute.needsUpdate = true;
+                startTimesAttribute.needsUpdate = true;
+                endTimesAttribute.needsUpdate = true;
+                indexAttribute.needsUpdate = true;
+
+                particlesNeedsUpdate = false;
+              }
+            };
+            const _renderWeathers = () => {
+              if (weathersNeedsUpdate) {
+                let attributeIndex = 0;
+                let uvIndex = 0;
+                let velocityIndex = 0;
+                let startTimeIndex = 0;
+                let indexIndex = 0;
+
+                const positionsAttribute = weathersMesh.geometry.attributes.position;
+                const positions = positionsAttribute.array;
+                const deltasAttribute = weathersMesh.geometry.attributes.delta;
+                const deltas = deltasAttribute.array;
+                const uvsAttribute = weathersMesh.geometry.attributes.uv;
+                const uvs = uvsAttribute.array;
+                const indexAttribute = weathersMesh.geometry.index;
+                const indices = indexAttribute.array;
+
+                for (let i = 0; i < weathers.length; i++) {
+                  const {position, uv} = weathers[i];
+                  const uvWidth = uv[2] - uv[0];
+                  const uvHeight = uv[3] - uv[1];
+                  const newGeometryPositions = weatherGeometryPositions;
+                  const newGeometryUvs = weatherGeometryUvs;
+                  const newGeometryIndices = weatherGeometryIndices;
+
+                  for (let j = 0; j < numWeatherGeometryPositions; j++) {
+                    const basePositionIndex = attributeIndex + j * 3;
+                    const srcBasePositionIndex = j * 3;
+                    positions[basePositionIndex + 0] = position.x;
+                    positions[basePositionIndex + 1] = position.y;
+                    positions[basePositionIndex + 2] = position.z;
+
+                    deltas[basePositionIndex + 0] = newGeometryPositions[srcBasePositionIndex + 0];
+                    deltas[basePositionIndex + 1] = newGeometryPositions[srcBasePositionIndex + 1];
+                    deltas[basePositionIndex + 2] = newGeometryPositions[srcBasePositionIndex + 2];
+
+                    const baseUvIndex = uvIndex + j * 2;
+                    const srcBaseUvIndex = j * 2;
+                    uvs[baseUvIndex + 0] = uv[0] + newGeometryUvs[srcBaseUvIndex + 0] * uvWidth;
+                    uvs[baseUvIndex + 1] = 1 - (uv[1] + newGeometryUvs[srcBaseUvIndex + 1] * uvHeight);
+                  }
+
+                  for (let j = 0; j < numWeatherGeometryIndices; j++) {
+                    const baseIndex = indexIndex + j;
+                    const baseAttributeIndex = attributeIndex / 3;
+                    indices[baseIndex] = newGeometryIndices[j] + baseAttributeIndex;
+                  }
+
+                  attributeIndex += numWeatherGeometryPositions * 3;
+                  uvIndex += numWeatherGeometryUvs * 2;
+                  indexIndex += numWeatherGeometryIndices;
                 }
-              };
-              const _updateMaterials = () => {
-                material.uniforms.worldTime.value = _getWorldTime();
-              };
+                weathersMesh.geometry.setDrawRange(0, indexIndex);
 
-              _updateParticles();
-              _renderParticles();
-              _updateParticlesMesh();
-              _updateMaterials();
+                positionsAttribute.needsUpdate = true;
+                uvsAttribute.needsUpdate = true;
+                indexAttribute.needsUpdate = true;
 
-              lastUpdateTime = now;
-            }
+                weathersNeedsUpdate = false;
+              }
+            };
+            const _updateMeshes = () => {
+              if (particles.length > 0 && !
+                particlesMesh.parent) {
+                scene.add(particlesMesh);
+              } else if (particles.length === 0 && particlesMesh.parent) {
+                scene.remove(particlesMesh);
+              }
+
+              if (weathers.length > 0 && !weathersMesh.parent) {
+                scene.add(weathersMesh);
+              } else if (weathers.length === 0 && weathersMesh.parent) {
+                scene.remove(weathersMesh);
+              }
+            };
+            const _updateMaterials = () => {
+              if (particles.length > 0) {
+                particlesMesh.material.uniforms.worldTime.value = _getWorldTime();
+              }
+              if (weathers.length > 0) {
+                // weathersMesh.material.uniforms.worldTime.value = 0;
+                weathersMesh.material.uniforms.worldTime.value = world.getWorldTime() % rainTime;
+              }
+            };
+
+            _updateParticles();
+            _renderParticles();
+            _renderWeathers();
+            _updateMeshes();
+            _updateMaterials();
+
+            lastUpdateTime = now;
           };
           render.on('update', _update);
 

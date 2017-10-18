@@ -9,6 +9,7 @@ const {
 const TEXTURES = [
   'explosion',
   'smoke',
+  'rain',
 ];
 
 class Particle {
