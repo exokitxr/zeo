@@ -1030,7 +1030,8 @@ class Wallet {
           const {worldPosition: position} = gamepad;
 
           if (!worldGrabAsset && asset && _isInBody(position)) {
-            _pullItem(asset, side);
+            const assetSpec = walletState.assets.find(assetSpec => assetSpec.id === asset);
+            _pullItem(assetSpec.asset, side);
 
             return true;
           } else {
