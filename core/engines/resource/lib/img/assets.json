@@ -15,6 +15,8 @@
   "ITEM.PICKAXE": "Pickaxe",
   "ITEM.TORCH": "Torch",
   "ITEM.MIRROR": "Misc_28",
+  "ITEM.MAP": "Misc_15",
+  "ITEM.DRONE": "Misc_14",
   "ITEM.AXE": "Weapon_26",
   "ITEM.FLINTSTEEL": "Flint_Steel",
   "ITEM.GUN": "Gun_1",
