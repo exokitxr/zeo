@@ -15,7 +15,7 @@ class Particle {
 
     const gravity = -9.8 / 1000 / 1000;
     const explosionTime = 1000;
-    const rainTime = 3000;
+    const rainTime = 5000;
 
     const PARTICLE_SHADER = {
       uniforms: {
