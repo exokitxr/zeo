@@ -9,6 +9,8 @@ class Weather {
     return elements.requestElement(PARTICLE_PLUGIN)
       .then(particleElement => {
         particleElement.addRain(0, 0);
+        particleElement.addSnow(-1, 0);
+        particleElement.addSmoke(0, -1);
       });
   }
 
