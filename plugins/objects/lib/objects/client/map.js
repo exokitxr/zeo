@@ -36,7 +36,7 @@ const map = objectApi => {
     .then(plasticImg => {
       const updates = [];
 
-      const mapGeometry = new THREE.BoxBufferGeometry(0.1, 0.2, 0.01)
+      const mapGeometry = new THREE.BoxBufferGeometry(0.1, 0.2, 0.01);
       const mapMaterial = (() => {
         const texture = new THREE.Texture(
           plasticImg,
@@ -75,16 +75,13 @@ const map = objectApi => {
         ];
 
         const geometry = mapGeometry;
-
         const material = mapMaterial;
         const mesh = new THREE.Mesh(geometry, material);
 
         const screenMesh = (() => {
-          const geometry = new THREE.PlaneBufferGeometry(0.1, 0.2)
+          const geometry = new THREE.PlaneBufferGeometry(0.1 * 0.9, 0.2 * 0.9)
             .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, 0.005));
-          const material = new THREE.MeshBasicMaterial({
-            // map: renderTarget.texture,
-          });
+          const material = new THREE.MeshBasicMaterial();
           const mesh = new THREE.Mesh(geometry, material);
           mesh.destroy = () => {
             geometry.dispose();
@@ -94,7 +91,7 @@ const map = objectApi => {
         })();
         mesh.add(screenMesh);
 
-        mesh.canvas = canvas;
+        // mesh.canvas = canvas;
 
         let frame = 0;
         const update = () => {
