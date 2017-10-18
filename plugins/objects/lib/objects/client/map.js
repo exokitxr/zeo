@@ -34,6 +34,8 @@ const map = objectApi => {
 
   return () => _requestImageBitmap('/archae/objects/img/plastic.png')
     .then(plasticImg => {
+      const updates = [];
+
       const mapGeometry = new THREE.BoxBufferGeometry(0.1, 0.2, 0.01)
       const mapMaterial = (() => {
         const texture = new THREE.Texture(
@@ -53,7 +55,7 @@ const map = objectApi => {
         });
         return material;
       })();
-      const _makeMapMesh = () => {
+      const _makeMapMesh = grabbable => {
         const canvas = document.createElement('canvas');
         canvas.width = width;
         canvas.height = height;
@@ -76,7 +78,6 @@ const map = objectApi => {
 
         const material = mapMaterial;
         const mesh = new THREE.Mesh(geometry, material);
-        mesh.visible = false;
 
         const screenMesh = (() => {
           const geometry = new THREE.PlaneBufferGeometry(0.1, 0.2)
@@ -95,15 +96,10 @@ const map = objectApi => {
 
         mesh.canvas = canvas;
 
-        let grabbable = null;
-        mesh.setGrabbable = newGrabbable => {
-          grabbable = newGrabbable;
-        };
-
         let frame = 0;
-        mesh.update = (position, rotation) => {
-          mesh.position.copy(position);
-          mesh.quaternion.copy(rotation);
+        const update = () => {
+          mesh.position.copy(grabbable.position);
+          mesh.quaternion.copy(grabbable.rotation);
           // mesh.scale.copy(grabbable.scale);
           mesh.updateMatrixWorld();
 
@@ -111,13 +107,13 @@ const map = objectApi => {
           const nextFrame = (frame + 1) % 2;
           const nextRenderTarget = renderTargets[nextFrame];
 
-          sourceCamera.position.copy(position);
+          sourceCamera.position.copy(grabbable.position);
           sourceCamera.position.y = 128;
           sourceCamera.quaternion.setFromRotationMatrix(
             localMatrix.lookAt(
               sourceCamera.position,
-              position,
-              localVector.copy(forwardVector).applyQuaternion(rotation)
+              grabbable.position,
+              localVector.copy(forwardVector).applyQuaternion(grabbable.rotation)
             )
           );
           // sourceCamera.scale.copy(grabbable.scale);
@@ -138,26 +134,24 @@ const map = objectApi => {
 
           frame = nextFrame;
         };
+        updates.push(update);
 
         mesh.destroy = () => {
-          renderTargets[0].dispose();
-          renderTargets[1].dispose();
+          for (let i = 0; i < renderTargets.length; i++) {
+            renderTargets[i].dispose();
+          }
           screenMesh.destroy();
+
+          updates.splice(updates.indexOf(update), 1);
         };
 
         return mesh;
       };
-      const mapMeshes = {
-        left: _makeMapMesh(),
-        right: _makeMapMesh(),
-      };
-      scene.add(mapMeshes.left);
-      scene.add(mapMeshes.right);
 
-      /* const cameraItemApi = {
-        asset: 'ITEM.CAMERA',
+      const mapItemApi = {
+        asset: 'ITEM.MAP',
         itemAddedCallback(grabbable) {
-          const _triggerdown = e => {
+          /* const _triggerdown = e => {
             const {side} = e;
 
             if (grabbable.getGrabberSide() === side) {
@@ -183,15 +177,19 @@ const map = objectApi => {
               e.stopImmediatePropagation();
             }
           };
-          input.on('triggerdown', _triggerdown);
+          input.on('triggerdown', _triggerdown); */
 
+          let mapMesh = null;
           grabbable.on('grab', e => {
-            mapMeshes[e.side].setGrabbable(grabbable);
+            mapMesh = _makeMapMesh(grabbable);
+            scene.add(mapMesh);
 
             grabbable.hide();
           });
           grabbable.on('release', e => {
-            mapMeshes[e.side].setGrabbable(null);
+            scene.remove(mapMesh);
+            mapMesh.destroy();
+            mapMesh = null;
 
             grabbable.show();
           });
@@ -209,15 +207,12 @@ const map = objectApi => {
           delete grabbable[dataSymbol];
         },
       };
-      items.registerItem(this, cameraItemApi); */
+      items.registerItem(this, mapItemApi);
 
       const _update = () => {
-        const {gamepads} = pose.getStatus();
-        const gamepad = gamepads.right;
-        const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
-
-        // mapMeshes.left.update();
-        mapMeshes.right.update(controllerPosition, controllerRotation);
+        for (let i = 0; i < updates.length; i++) {
+          updates[i]();
+        }
       };
       render.on('update', _update);
 
@@ -227,7 +222,7 @@ const map = objectApi => {
         scene.remove(mapMeshes.right);
         mapMeshes.right.destroy();
 
-        // items.unregisterItem(this, cameraItemApi);
+        items.unregisterItem(this, mapItemApi);
         render.removeListener('update', _update);
       };
     });
