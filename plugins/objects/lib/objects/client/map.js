@@ -196,7 +196,7 @@ const map = objectApi => {
 
           grabbable[dataSymbol] = {
             cleanup: () => {
-              input.removeListener('triggerdown', _triggerdown);
+              // input.removeListener('triggerdown', _triggerdown);
             },
           };
         },
@@ -217,12 +217,8 @@ const map = objectApi => {
       render.on('update', _update);
 
       return () => {
-        scene.remove(mapMeshes.left);
-        mapMeshes.left.destroy();
-        scene.remove(mapMeshes.right);
-        mapMeshes.right.destroy();
-
         items.unregisterItem(this, mapItemApi);
+
         render.removeListener('update', _update);
       };
     });
