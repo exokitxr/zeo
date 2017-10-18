@@ -50,7 +50,7 @@ class Wallet {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {site: {url: siteUrl}, vrid: {url: vridUrl}}} = archae;
+    const {metadata: {site: {url: siteUrl}}} = archae;
 
     const cleanups = [];
     this._cleanup = () => {
@@ -87,7 +87,6 @@ class Wallet {
       '/core/utils/creature-utils',
       '/core/utils/sprite-utils',
       '/core/utils/strg-utils',
-      '/core/utils/vrid-utils',
     ]).then(([
       bootstrap,
       three,
@@ -110,7 +109,6 @@ class Wallet {
       creatureUtils,
       spriteUtils,
       strgUtils,
-      vridUtils,
     ]) => {
       if (live) {
         const {THREE, scene, camera} = three;

@@ -152,7 +152,6 @@ class Zeo {
             '/core/utils/creature-utils',
             '/core/utils/sprite-utils',
             '/core/utils/strg-utils',
-            '/core/utils/vrid-utils',
           ]);
           return _requestPlugins()
             .then(([
@@ -197,7 +196,6 @@ class Zeo {
               creatureUtils,
               spriteUtils,
               strgUtils,
-              vridUtils,
             ]) => {
               if (live) {
                 blocker.destroy();
