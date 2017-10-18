@@ -12,6 +12,7 @@ const chest = require('./chest');
 const mirror = require('./mirror');
 const paper = require('./paper');
 const map = require('./map');
+const drone = require('./drone');
 const monitor = require('./monitor');
 const camera = require('./camera');
 const videoCamera = require('./video-camera');
@@ -36,6 +37,7 @@ const objectsLib = options => [
   mirror,
   paper,
   map,
+  drone,
   monitor,
   camera,
   videoCamera,
