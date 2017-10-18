@@ -91,7 +91,7 @@ class Config {
         '/core/engines/resource',
         '/core/engines/rend',
         '/core/utils/js-utils',
-        '/core/utils/strg-utils',
+        '/core/utils/vrid-utils',
       ]),
       _requestGetBrowserConfig(),
       _requestGetServerConfig(),
@@ -105,7 +105,7 @@ class Config {
         resource,
         rend,
         jsUtils,
-        strgUtils,
+        vridUtils,
       ],
       browserConfigSpec,
       serverConfigSpec,
@@ -115,7 +115,7 @@ class Config {
         const {sfx} = resource;
         const {events} = jsUtils;
         const {EventEmitter} = events;
-        const {strgApi} = strgUtils;
+        const {vridApi} = vridUtils;
 
         const transparentImg = biolumi.getTransparentImg();
         const transparentMaterial = biolumi.getTransparentMaterial();
@@ -162,7 +162,7 @@ class Config {
             });
           }
         };
-        const _requestRegisterRecentServer = name => strgApi.get('servers')
+        const _requestRegisterRecentServer = name => vridApi.get('servers')
           .then(servers => {
             if (!Array.isArray(servers)) {
               servers = [];
@@ -181,7 +181,7 @@ class Config {
             servers.sort((a, b) => b.timestamp - a.timestamp);
             servers.length = Math.min(servers.length, NUM_SERVERS);
 
-            return strgApi.set('servers', servers);
+            return vridApi.set('servers', servers);
           })
           .catch(err => {
             console.warn(err);

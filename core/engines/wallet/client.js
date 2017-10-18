@@ -86,7 +86,7 @@ class Wallet {
       '/core/utils/network-utils',
       '/core/utils/creature-utils',
       '/core/utils/sprite-utils',
-      '/core/utils/strg-utils',
+      '/core/utils/vrid-utils',
     ]).then(([
       bootstrap,
       three,
@@ -108,7 +108,7 @@ class Wallet {
       networkUtils,
       creatureUtils,
       spriteUtils,
-      strgUtils,
+      vridUtils,
     ]) => {
       if (live) {
         const {THREE, scene, camera} = three;
@@ -118,7 +118,7 @@ class Wallet {
         const {AutoWs} = networkUtils;
         const {Grabbable} = hand;
         const {sfx} = resource;
-        const {strgApi} = strgUtils;
+        const {vridApi} = vridUtils;
 
         const walletRenderer = walletRender.makeRenderer({creatureUtils});
         const localUserId = multiplayer.getId();
@@ -146,7 +146,7 @@ class Wallet {
           // depthTest: false,
         });
 
-        const _addStrgAsset = (asset, quantity) => strgApi.get('assets')
+        const _addStrgAsset = (asset, quantity) => vridApi.get('assets')
           .then(assets => {
             assets = assets || [];
             let assetSpec = assets.find(assetSpec => assetSpec.asset === asset);
@@ -160,9 +160,9 @@ class Wallet {
             }
             assetSpec.quantity += quantity;
 
-            return strgApi.set('assets', assets);
+            return vridApi.set('assets', assets);
           });
-        const _removeStrgAsset = (asset, quantity) => strgApi.get('assets')
+        const _removeStrgAsset = (asset, quantity) => vridApi.get('assets')
           .then(assets => {
             assets = assets || [];
             const assetSpecIndex = assets.findIndex(assetSpec => assetSpec.asset === asset);
@@ -173,7 +173,7 @@ class Wallet {
                 assets.splice(assetSpecIndex, 1);
               }
             }
-            return strgApi.set('assets', assets);
+            return vridApi.set('assets', assets);
           });
 
         const _addAsset = (id, type, value, n, physics, matrix) => {
@@ -653,9 +653,9 @@ class Wallet {
             });
           }
         };
-        const _requestAssets = () => strgApi.get('assets')
+        const _requestAssets = () => vridApi.get('assets')
           .then(assets => assets || []);
-        const _requestEquipments = () => strgApi.get('equipment')
+        const _requestEquipments = () => vridApi.get('equipment')
           .then(equipments => equipments || _makeEquipments(4));
         const _refreshAssets = () => Promise.all([
           _requestAssets(),
@@ -713,7 +713,7 @@ class Wallet {
         _ensureInitialLoaded();
 
         const _saveEquipments = _debounce(next => {
-          strgApi.set('equipment', walletState.equipments)
+          vridApi.set('equipment', walletState.equipments)
             .then(() => {
               next();
             })

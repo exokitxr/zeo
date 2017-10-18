@@ -1,8 +1,8 @@
 class Tutorial {
   mount() {
-    const {three, render, input, pose, utils: {strg: strgUtils}} = zeo;
+    const {three, render, input, pose, utils: {vrid: vridUtils}} = zeo;
     const {THREE, scene} = three;
-    const {strgApi} = strgUtils;
+    const {vridApi} = vridUtils;
 
     const _requestImage = url => new Promise((accept, reject) => {
       const img = new Image();
@@ -182,7 +182,7 @@ class Tutorial {
     };
 
     let loading = true;
-    strgApi.get('tutorial')
+    vridApi.get('tutorial')
       .then(tutorialFlag => {
         if (tutorialFlag || tutorialFlag === undefined) {
           _loadTutorial()
@@ -199,13 +199,13 @@ class Tutorial {
         if (!loading) {
           loading = true;
 
-          strgApi.get('tutorial')
+          vridApi.get('tutorial')
             .then(tutorialFlag => {
               tutorialFlag = !tutorialFlag;
 
               (tutorialFlag ? _loadTutorial : _unloadTutorial)()
                 .then(() => {
-                  strgApi.set('tutorial', tutorialFlag)
+                  vridApi.set('tutorial', tutorialFlag)
                     .then(() => {
                       loading = false;
                     })

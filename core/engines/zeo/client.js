@@ -151,7 +151,7 @@ class Zeo {
             '/core/utils/skin-utils',
             '/core/utils/creature-utils',
             '/core/utils/sprite-utils',
-            '/core/utils/strg-utils',
+            '/core/utils/vrid-utils',
           ]);
           return _requestPlugins()
             .then(([
@@ -195,7 +195,7 @@ class Zeo {
               skinUtils,
               creatureUtils,
               spriteUtils,
-              strgUtils,
+              vridUtils,
             ]) => {
               if (live) {
                 blocker.destroy();
@@ -205,9 +205,9 @@ class Zeo {
                 const {EVENTS: INPUT_EVENTS} = input;
                 const {events} = jsUtils;
                 const {EventEmitter} = events;
-                const {strgApi} = strgUtils;
+                const {vridApi} = vridUtils;
 
-                strgApi.get('username')
+                vridApi.get('username')
                   .then(username => {
                     username = username || 'unknown-avatar';
                     bootstrap.setAddress({username});
@@ -956,7 +956,7 @@ class Zeo {
                           this.skin = skinUtils;
                           this.creature = creatureUtils;
                           this.sprite = spriteUtils;
-                          this.strg = strgUtils;
+                          this.vrid = vridUtils;
                         }
                       }
 

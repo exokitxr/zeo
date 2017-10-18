@@ -23,7 +23,7 @@ class Skin {
 
           _cancel = () => {};
         };
-        img.src = 'data:image/png;base64,' + assetSpec.skin.data;
+        img.src = 'data:image/png;base64,' + assetSpec.json.data;
         _cancel = () => {
           live = false;
         };
