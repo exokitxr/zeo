@@ -19,7 +19,7 @@ const craftingTable = objectApi => {
   const localEuler = new THREE.Euler();
   const craftOffsetVector = new THREE.Vector3(0, 1, 0);
 
-  const craftingTables = [];
+  const craftingTables = {};
   const _bindCrafter = (craftingTable, craftElement) => {
     craftingTable.crafter = craftElement.open(localVector.copy(craftingTable.position).add(craftOffsetVector), zeroQuaternion, oneVector);
   };
@@ -30,15 +30,19 @@ const craftingTable = objectApi => {
 
   const elementListener = elements.makeListener(CRAFT_PLUGIN);
   elementListener.on('add', entityElement => {
-    for (let i = 0; i < craftingTables.length; i++) {
-      const craftingTable = craftingTables[i];
-     _bindCrafter(craftingTable, entityElement);
+    for (const id in craftingTables) {
+      const craftingTable = craftingTables[id];
+      if (craftingTable) {
+        _bindCrafter(craftingTable, entityElement);
+      }
     }
   });
   elementListener.on('remove', () => {
-    for (let i = 0; i < craftingTables.length; i++) {
-      const craftingTable = craftingTables[i];
-      _unbindCrafter(craftingTable, entityElement);
+    for (const id in craftingTables) {
+      const craftingTable = craftingTables[id];
+      if (craftingTable) {
+        _unbindCrafter(craftingTable, entityElement);
+      }
     }
   });
 
