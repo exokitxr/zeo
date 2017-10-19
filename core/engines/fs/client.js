@@ -395,6 +395,18 @@ class Fs {
             });
           }
         };
+        const _resArrayBuffer = res => {
+          if (res.status >= 200 && res.status < 300) {
+            return res.arrayBuffer();
+          } else if (res.status === 404) {
+            return Promise.resolve(null);
+          } else {
+            return Promise.reject({
+              status: res.status,
+              stack: 'API returned invalid status code: ' + res.status,
+            });
+          }
+        };
 
         class RemoteFile {
           constructor(id) {
@@ -409,11 +421,16 @@ class Fs {
             return `/archae/fs/hash/${this.n}`;
           }
 
-          read() {
+          readAsBlob() {
             return fetch(this.getUrl(), {
               credentials: 'include',
-            })
-              .then(_resBlob);
+            }).then(_resBlob);
+          }
+
+          readAsArrayBuffer() {
+            return fetch(this.getUrl(), {
+              credentials: 'include',
+            }).then(_resArrayBuffer);
           }
 
           write(d) {

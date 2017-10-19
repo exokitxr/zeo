@@ -213,6 +213,7 @@ const drone = objectApi => () => {
             return localVector.toArray().concat(hmdRotation.toArray()).concat(hmdScale.toArray());
           })();
           items.makeFile({
+            name: `drone-${new Date().toISOString()}.webm`,
             data: blob,
             matrix: dropMatrix,
           });

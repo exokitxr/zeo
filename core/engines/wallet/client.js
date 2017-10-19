@@ -1019,6 +1019,29 @@ class Wallet {
             setTimeout(() => {
               notification.removeNotification(newNotification);
             }, 3000);
+          } else if (type === 'file') {
+            console.log('store file 1', assetInstance);
+
+            const {id, name} = assetInstance;
+            const n = parseInt(id, 10);
+            const file = fs.makeRemoteFile(n);
+            const url = file.getUrl();
+            file.readAsArrayBuffer()
+              .then(arrayBuffer => vridApi.upload(n, arrayBuffer))
+              .then(() => {
+                const assetSpec = {
+                  id,
+                  asset: 'ITEM.FILE',
+                  quantity: 1,
+                  file: {
+                    name,
+                    id,
+                  },
+                  timestamp: Date.now(),
+                };
+
+                console.log('store file 2', assetSpec); // XXX actually store the file
+              });
           }
         };
         const _checkGripdown = side => {
@@ -1284,25 +1307,21 @@ class Wallet {
           }
 
           makeFile(fileSpec) {
-            const {data, matrix} = fileSpec;
+            const {name, data, matrix} = fileSpec;
             const file = fs.makeRemoteFile();
-            return file.write(data)
-              .then(() => {
-                return this.reifyFile({file, matrix});
-              });
+            return file.write(data).then(() => this.reifyFile({name, file, matrix}));
           }
 
           reifyFile(fileSpec) {
-            const {file, matrix} = fileSpec;
+            const {name, file, matrix} = fileSpec;
             const {n} = file;
             const id = String(n);
             const itemSpec = {
               type: 'file',
-              id: id,
-              name: id,
-              displayName: id,
+              id,
+              name,
               attributes: {
-                type: {value: 'file'},
+                type: {value: 'file'}, // XXX unify this as an asset
                 value: {value: n},
                 position: {value: matrix},
                 owner: {value: null},
