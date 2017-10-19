@@ -1783,7 +1783,7 @@ self.onmessage = e => {
         if (objectApi && objectApi.added) {
           postMessage({
             type: 'objectAdded',
-            args: [n, x, z, objectIndex, matrix.slice(0, 3), matrix.slice(3, 7), value],
+            args: [n, ox, oz, objectIndex, matrix.slice(0, 3), matrix.slice(3, 7), value],
           });
         }
 
