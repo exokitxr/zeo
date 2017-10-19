@@ -91,7 +91,7 @@ class Weather {
           );
 
           vUv = uv;
-          vUv.x = type/5.0 + vUv.x * 1.0/5.0;
+          vUv.x = type*75.0/128.0/5.0 + vUv.x * 1.0*75.0/128.0/5.0;
         }
       `,
       fragmentShader: `\
@@ -110,6 +110,19 @@ class Weather {
       `
     };
 
+    const _requestImage = url => new Promise((accept, reject) => {
+      const img = new Image();
+
+      img.onload = () => {
+        accept(img);
+      };
+      img.onerror = err => {
+        reject(img);
+      };
+
+      img.crossOrigin = 'Anonymous';
+      img.src = url;
+    });
     const _resBlob = res => {
       if (res.status >= 200 && res.status < 300) {
         return res.blob();
@@ -131,11 +144,8 @@ class Weather {
       }
     };
 
-    const _requestUpdateTextureAtlas = () => fetch(`/archae/weather/texture-atlas.png`, {
-        credentials: 'include',
-      })
-      .then(_resBlob)
-      .then(blob => createImageBitmap(blob, 0, 0, 15, 3, {
+    const _requestUpdateTextureAtlas = () => _requestImage('/archae/weather/texture-atlas.png')
+      .then(img => createImageBitmap(img, 0, 0, img.width, img.height, {
         imageOrientation: 'flipY',
       }))
       .then(imageBitmap => {
@@ -149,8 +159,7 @@ class Weather {
       THREE.ClampToEdgeWrapping,
       THREE.ClampToEdgeWrapping,
       THREE.NearestFilter,
-      THREE.NearestFilter,
-      // THREE.LinearMipMapLinearFilter,
+      THREE.LinearMipMapLinearFilter,
       THREE.RGBAFormat,
       THREE.UnsignedByteType,
       1
@@ -255,7 +264,7 @@ class Weather {
             const {position, type, angle} = weathers[i];
             const uv = [
               0, 0,
-              1, 1,
+              75/80, 15/16,
             ];
             const uvWidth = uv[2] - uv[0];
             const uvHeight = uv[3] - uv[1];
@@ -278,8 +287,6 @@ class Weather {
               const srcBaseUvIndex = j * 2;
               uvs[baseUvIndex + 0] = newGeometryUvs[srcBaseUvIndex + 0];
               uvs[baseUvIndex + 1] = newGeometryUvs[srcBaseUvIndex + 1];
-              /* uvs[baseUvIndex + 0] = uv[0] + newGeometryUvs[srcBaseUvIndex + 0] * uvWidth;
-              uvs[baseUvIndex + 1] = 1 - (uv[1] + newGeometryUvs[srcBaseUvIndex + 1] * uvHeight); */
 
               angles[basePositionIndex + 0] = angle.x;
               angles[basePositionIndex + 1] = angle.y;
