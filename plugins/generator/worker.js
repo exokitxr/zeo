@@ -2214,7 +2214,7 @@ const _getTerrainCull = (hmdPosition, projectionMatrix, matrixWorldInverse, frus
       allocator.allocBuffer(Float32Array.from(hmdPosition)),
       allocator.allocBuffer(Float32Array.from(projectionMatrix)),
       allocator.allocBuffer(Float32Array.from(matrixWorldInverse)),
-      Boolean(frustumCulled),
+      +frustumCulled,
       allocator.allocBuffer(terrainMapChunkMeshes),
       terrainMapChunkMeshesIndex,
       cullGroups.offset,
@@ -2249,7 +2249,7 @@ const _getObjectsCull = (hmdPosition, projectionMatrix, matrixWorldInverse, frus
       allocator.allocBuffer(Float32Array.from(hmdPosition)),
       allocator.allocBuffer(Float32Array.from(projectionMatrix)),
       allocator.allocBuffer(Float32Array.from(matrixWorldInverse)),
-      Boolean(frustumCulled),
+      +frustumCulled,
       allocator.allocBuffer(objectsMapChunkMeshes),
       objectsMapChunkMeshesIndex,
       cullGroups.offset

@@ -1,3 +1,4 @@
+const GENERATOR_PLUGIN = 'plugins-generator';
 const width = 640;
 const height = 480;
 const DEFAULT_MATRIX = [
@@ -9,7 +10,7 @@ const DEFAULT_MATRIX = [
 const dataSymbol = Symbol();
 
 const drone = objectApi => () => {
-  const {three, pose, input, render, items, world} = zeo;
+  const {three, pose, input, render, elements, items, world} = zeo;
   const {THREE, scene, camera, renderer} = three;
 
   const upVector = new THREE.Vector3(0, 1, 0);
@@ -192,6 +193,8 @@ const drone = objectApi => () => {
 
     let recordInterval = null;
     mesh.startRecording = () => {
+      elements.getEntitiesElement().querySelector(GENERATOR_PLUGIN).addFrustumUnculled();
+
       mediaRecorder.start();
       recordInterval = setInterval(() => {
         mediaRecorder.requestData();
@@ -199,6 +202,8 @@ const drone = objectApi => () => {
     };
     mesh.stopRecording = () => {
       mediaRecorder.onstop = () => {
+        elements.getEntitiesElement().querySelector(GENERATOR_PLUGIN).removeFrustumUnculled();
+
         if (blobs.length > 0) {
           const blob = new Blob(blobs);
           blobs.length = 0;

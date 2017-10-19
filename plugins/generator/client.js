@@ -589,17 +589,20 @@ class Generator {
         generatorElement.clearBlock = (x, y, z) => {
           worker.requestClearBlock(x, y, z);
         };
-        let frustumCulled = false;
-        generatorElement.setFrustumCulled = newFrustumCulled => {
-          frustumCulled = newFrustumCulled;
+        let numFrustumUnculled = 0;
+        generatorElement.addFrustumUnculled = () => {
+          numFrustumUnculled++;
+        };
+        generatorElement.removeFrustumUnculled = () => {
+          numFrustumUnculled--;
         };
         generatorElement.requestTerrainCull = (hmdPosition, projectionMatrix, matrixWorldInverse, cb) => {
-          worker.requestTerrainCull(hmdPosition, projectionMatrix, matrixWorldInverse, frustumCulled, buffer => {
+          worker.requestTerrainCull(hmdPosition, projectionMatrix, matrixWorldInverse, numFrustumUnculled === 0, buffer => {
             cb(protocolUtils.parseTerrainCull(buffer));
           });
         };
         generatorElement.requestObjectsCull = (hmdPosition, projectionMatrix, matrixWorldInverse, cb) => {
-          worker.requestObjectsCull(hmdPosition, projectionMatrix, matrixWorldInverse, frustumCulled, buffer => {
+          worker.requestObjectsCull(hmdPosition, projectionMatrix, matrixWorldInverse, numFrustumUnculled === 0, buffer => {
             cb(protocolUtils.parseObjectsCull(buffer));
           });
         };
