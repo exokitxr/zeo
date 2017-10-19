@@ -233,7 +233,7 @@ class Multiplayer {
 
           updateSkin(skinImgBuffer) {
             if (skinImgBuffer) {
-              connection.send(JSON.stringify({
+              connection.send(JSON.stringify({ // XXX race condition on initial connection
                 type: 'setSkin',
                 n: this.n,
               }));
