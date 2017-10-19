@@ -4,7 +4,7 @@ const height = 480;
 const dataSymbol = Symbol();
 
 const drone = objectApi => {
-  const {three, pose, input, render, items} = zeo;
+  const {three, pose, input, render, items, world} = zeo;
   const {THREE, scene, camera, renderer} = three;
 
   const upVector = new THREE.Vector3(0, 1, 0);
@@ -35,6 +35,18 @@ const drone = objectApi => {
   return () => _requestImageBitmap('/archae/objects/img/plastic.png')
     .then(plasticImg => {
       const updates = [];
+
+      const _getWorldTime = (() => {
+        let worldTimeOffset = 0;
+        return () => {
+          const worldTime = world.getWorldTime();
+          const timeDiff = worldTime - worldTimeOffset;
+          if (timeDiff > (60 * 1000)) {
+            worldTimeOffset = Math.floor(worldTime / (60 * 1000)) * (60 * 1000);
+          }
+          return worldTime - worldTimeOffset;
+        };
+      })();
 
       const screenGeometry = new THREE.BoxBufferGeometry(2, 1, 0.05);
       const screenMaterial = (() => {
@@ -76,8 +88,10 @@ const drone = objectApi => {
       });
 
       const _makeDroneMesh = position => {
+        const initialPosition = position.clone();
+
         const object = new THREE.Object3D();
-        object.position.copy(position);
+        object.position.copy(initialPosition);
 
         const coreMesh = (() => {
           const geometry = coreGeometry;
@@ -94,7 +108,7 @@ const drone = objectApi => {
           const material = eyeMaterial;
 
           const mesh = new THREE.Mesh(geometry, material);
-          mesh.position.z = 0.1 - 0.015;
+          mesh.position.z = -0.1 + 0.015;
           mesh.rotation.y = Math.PI;
           mesh.rotation.order = camera.rotation.order;
           return mesh;
@@ -107,7 +121,7 @@ const drone = objectApi => {
           const material = pupilMaterial;
 
           const mesh = new THREE.Mesh(geometry, material);
-          mesh.position.z = 0.1 - 0.005;
+          mesh.position.z = -0.1 + 0.005;
           mesh.rotation.y = Math.PI;
           mesh.rotation.order = camera.rotation.order;
           return mesh;
@@ -116,7 +130,24 @@ const drone = objectApi => {
         // object.pupilMesh = pupilMesh;
 
         object.update = () => {
-          object.position.y += 0.001;
+          const angle = ((_getWorldTime() / 20000) % 1) * Math.PI * 2;
+          object.position.lerp(
+            localVector.copy(initialPosition).add(
+              localVector2.set(
+                Math.sin(angle) * 30,
+                12,
+                -Math.cos(angle) * 30,
+              )
+            ),
+            0.01
+          );
+          object.quaternion.setFromRotationMatrix(
+            localMatrix.lookAt(
+              object.position,
+              initialPosition,
+              upVector
+            )
+          );
           object.updateMatrixWorld();
         };
 
@@ -169,22 +200,15 @@ const drone = objectApi => {
           const nextRenderTarget = renderTargets[nextFrame];
 
           sourceCamera.position.copy(droneMesh.position);
-          sourceCamera.quaternion.setFromRotationMatrix(
-            localMatrix.lookAt(
-              sourceCamera.position,
-              localVector.copy(droneMesh.position)
-                .add(localVector2.copy(forwardVector).applyQuaternion(droneMesh.quaternion)),
-              localVector2.copy(upVector).applyQuaternion(droneMesh.quaternion)
-            )
-          );
+          sourceCamera.quaternion.copy(droneMesh.quaternion);
           sourceCamera.updateMatrixWorld();
 
           const oldVrEnabled = renderer.vr.enabled;
           renderer.vr.enabled = false;
-          mesh.visible = false;
+          screenMesh.visible = false;
           renderer.render(scene, sourceCamera, renderTarget);
           renderer.setRenderTarget(null);
-          mesh.visible = true;
+          screenMesh.visible = true;
           renderer.vr.enabled = oldVrEnabled;
 
           screenMesh.material.map = nextRenderTarget.texture;
