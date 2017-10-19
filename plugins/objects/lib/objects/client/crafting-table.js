@@ -85,9 +85,11 @@ const craftingTable = objectApi => {
           crafter: null,
         };
 
-        const craftElement = elements.getEntitiesElement().querySelector(CRAFT_PLUGIN);
-        if (craftElement) {
-          _bindCrafter(craftingTable, craftElement);
+        if (!craftingTable.crafter) {
+          const craftElement = elements.getEntitiesElement().querySelector(CRAFT_PLUGIN);
+          if (craftElement) {
+            _bindCrafter(craftingTable, craftElement);
+          }
         }
 
         craftingTables[id] = craftingTable;
@@ -95,9 +97,11 @@ const craftingTable = objectApi => {
       clearCallback(id) {
         const craftingTable = craftingTables[id];
 
-        const craftElement = elements.getEntitiesElement().querySelector(CRAFT_PLUGIN);
-        if (craftElement) {
-          _unbindCrafter(craftingTable, craftElement);
+        if (craftingTable.crafter) {
+          const craftElement = elements.getEntitiesElement().querySelector(CRAFT_PLUGIN);
+          if (craftElement) {
+            _unbindCrafter(craftingTable, craftElement);
+          }
         }
 
         craftingTables[id] = null;
