@@ -11,6 +11,7 @@ const craftingTable = require('./crafting-table');
 const chest = require('./chest');
 const mirror = require('./mirror');
 const paper = require('./paper');
+const drone = require('./drone');
 const monitor = require('./monitor');
 const torch = require('./torch');
 const fire = require('./fire');
@@ -31,6 +32,7 @@ const objectsLib = options => [
   chest,
   mirror,
   paper,
+  drone,
   monitor,
   torch,
   fire,
