@@ -8,13 +8,11 @@ const height = width / aspectRatio;
 const border = MONITOR_BORDER_SIZE;
 const RESOLUTION_X = 800;
 const RESOLUTION_Y = Math.round(RESOLUTION_X / aspectRatio);
-const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
 const DEFAULT_MATRIX = [
   0, 0, 0,
   0, 0, 0, 1,
   1, 1, 1,
 ];
-const SIDES = ['left', 'right'];
 
 const dataSymbol = Symbol();
 
@@ -52,7 +50,6 @@ const monitor = objectApi => {
           const {side} = e;
 
           if (grabbable.getGrabberSide() === side) {
-            const heightfieldElement = elements.getEntitiesElement().querySelector(HEIGHTFIELD_PLUGIN);
             localVector.copy(grabbable.position);
             localEuler.setFromQuaternion(grabbable.rotation, camera.rotation.order);
             localEuler.x = 0;
@@ -74,8 +71,7 @@ const monitor = objectApi => {
         };
       },
       itemRemovedCallback(grabbable) {
-        const {[dataSymbol]: {cleanup}} = grabbable;
-        cleanup();
+        grabbable[dataSymbol].cleanup();
 
         delete grabbable[dataSymbol];
       },
@@ -195,8 +191,6 @@ const monitor = objectApi => {
           },
           cleanup() {
             scene.remove(monitorMesh);
-
-            monitors[id] = null;
           },
         };
         monitor.loadFileN(value);
@@ -205,6 +199,7 @@ const monitor = objectApi => {
       },
       removedCallback(id) {
         monitors[id].cleanup();
+        monitors[id] = null;
       },
       triggerCallback(id, side, x, z, objectIndex) {
         const monitor = monitors[id];
@@ -250,6 +245,7 @@ const monitor = objectApi => {
     render.on('update', _update);
 
     accept(() => {
+      items.unregisterItem(this, monitorItemApi);
       objectApi.unregisterObject(monitorObjectApi);
 
       render.removeListener('update', _update);
