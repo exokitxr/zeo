@@ -1,4 +1,3 @@
-// const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
 const CRAFT_PLUGIN = 'plugins-craft';
 const DEFAULT_MATRIX = [
   0, 0, 0,
@@ -32,7 +31,7 @@ const craftingTable = objectApi => {
   elementListener.on('add', entityElement => {
     for (const id in craftingTables) {
       const craftingTable = craftingTables[id];
-      if (craftingTable) {
+      if (craftingTable && !craftingTable.crafter) {
         _bindCrafter(craftingTable, entityElement);
       }
     }
@@ -40,7 +39,7 @@ const craftingTable = objectApi => {
   elementListener.on('remove', () => {
     for (const id in craftingTables) {
       const craftingTable = craftingTables[id];
-      if (craftingTable) {
+      if (craftingTable && craftingTable.crafter) {
         _unbindCrafter(craftingTable, entityElement);
       }
     }
