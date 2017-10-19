@@ -2118,9 +2118,9 @@ self.onmessage = e => {
     }
     case 'terrainCull': {
       const {id, args} = data;
-      const {hmdPosition, projectionMatrix, matrixWorldInverse, buffer} = args;
+      const {hmdPosition, projectionMatrix, matrixWorldInverse, frustumCulled, buffer} = args;
 
-      const groups = _getTerrainCull(hmdPosition, projectionMatrix, matrixWorldInverse);
+      const groups = _getTerrainCull(hmdPosition, projectionMatrix, matrixWorldInverse, frustumCulled);
       protocolUtils.stringifyTerrainCull(groups, buffer, 0);
       postMessage({
         type: 'response',
@@ -2131,9 +2131,9 @@ self.onmessage = e => {
     }
     case 'objectsCull': {
       const {id, args} = data;
-      const {hmdPosition, projectionMatrix, matrixWorldInverse, buffer} = args;
+      const {hmdPosition, projectionMatrix, matrixWorldInverse, frustumCulled, buffer} = args;
 
-      const chunks = _getObjectsCull(hmdPosition, projectionMatrix, matrixWorldInverse);
+      const chunks = _getObjectsCull(hmdPosition, projectionMatrix, matrixWorldInverse, frustumCulled);
       protocolUtils.stringifyObjectsCull(chunks, buffer, 0);
       postMessage({
         type: 'response',
@@ -2204,7 +2204,7 @@ self.onmessage = e => {
   }
 };
 
-const _getTerrainCull = (hmdPosition, projectionMatrix, matrixWorldInverse) => {
+const _getTerrainCull = (hmdPosition, projectionMatrix, matrixWorldInverse, frustumCulled) => {
   if (wasmInitialized) {
     const allocator = new Allocator();
 
@@ -2214,6 +2214,7 @@ const _getTerrainCull = (hmdPosition, projectionMatrix, matrixWorldInverse) => {
       allocator.allocBuffer(Float32Array.from(hmdPosition)),
       allocator.allocBuffer(Float32Array.from(projectionMatrix)),
       allocator.allocBuffer(Float32Array.from(matrixWorldInverse)),
+      Boolean(frustumCulled),
       allocator.allocBuffer(terrainMapChunkMeshes),
       terrainMapChunkMeshesIndex,
       cullGroups.offset,
@@ -2237,7 +2238,7 @@ const _getTerrainCull = (hmdPosition, projectionMatrix, matrixWorldInverse) => {
     ];
   }
 };
-const _getObjectsCull = (hmdPosition, projectionMatrix, matrixWorldInverse) => {
+const _getObjectsCull = (hmdPosition, projectionMatrix, matrixWorldInverse, frustumCulled) => {
   if (wasmInitialized) {
     const allocator = new Allocator();
 
@@ -2248,6 +2249,7 @@ const _getObjectsCull = (hmdPosition, projectionMatrix, matrixWorldInverse) => {
       allocator.allocBuffer(Float32Array.from(hmdPosition)),
       allocator.allocBuffer(Float32Array.from(projectionMatrix)),
       allocator.allocBuffer(Float32Array.from(matrixWorldInverse)),
+      Boolean(frustumCulled),
       allocator.allocBuffer(objectsMapChunkMeshes),
       objectsMapChunkMeshesIndex,
       cullGroups.offset

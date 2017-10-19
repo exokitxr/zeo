@@ -284,7 +284,7 @@ class Generator {
         z,
       });
     };
-    worker.requestTerrainCull = (hmdPosition, projectionMatrix, matrixWorldInverse, cb) => {
+    worker.requestTerrainCull = (hmdPosition, projectionMatrix, matrixWorldInverse, frustumCulled, cb) => {
       const id = _makeId();
       worker.postMessage({
         type: 'terrainCull',
@@ -293,6 +293,7 @@ class Generator {
           hmdPosition: hmdPosition.toArray(localArray3),
           projectionMatrix: projectionMatrix.toArray(localArray16),
           matrixWorldInverse: matrixWorldInverse.toArray(localArray162),
+          frustumCulled,
           buffer: terrainCullBuffer,
         },
       }, [terrainCullBuffer]);
@@ -303,7 +304,7 @@ class Generator {
         cb(buffer);
       };
     };
-    worker.requestObjectsCull = (hmdPosition, projectionMatrix, matrixWorldInverse, cb) => {
+    worker.requestObjectsCull = (hmdPosition, projectionMatrix, matrixWorldInverse, frustumCulled, cb) => {
       const id = _makeId();
       worker.postMessage({
         type: 'objectsCull',
@@ -312,6 +313,7 @@ class Generator {
           hmdPosition: hmdPosition.toArray(localArray3),
           projectionMatrix: projectionMatrix.toArray(localArray16),
           matrixWorldInverse: matrixWorldInverse.toArray(localArray162),
+          frustumCulled,
           buffer: objectsCullBuffer,
         },
       }, [objectsCullBuffer]);
@@ -587,13 +589,17 @@ class Generator {
         generatorElement.clearBlock = (x, y, z) => {
           worker.requestClearBlock(x, y, z);
         };
+        let frustumCulled = false;
+        generatorElement.setFrustumCulled = newFrustumCulled => {
+          frustumCulled = newFrustumCulled;
+        };
         generatorElement.requestTerrainCull = (hmdPosition, projectionMatrix, matrixWorldInverse, cb) => {
-          worker.requestTerrainCull(hmdPosition, projectionMatrix, matrixWorldInverse, buffer => {
+          worker.requestTerrainCull(hmdPosition, projectionMatrix, matrixWorldInverse, frustumCulled, buffer => {
             cb(protocolUtils.parseTerrainCull(buffer));
           });
         };
         generatorElement.requestObjectsCull = (hmdPosition, projectionMatrix, matrixWorldInverse, cb) => {
-          worker.requestObjectsCull(hmdPosition, projectionMatrix, matrixWorldInverse, buffer => {
+          worker.requestObjectsCull(hmdPosition, projectionMatrix, matrixWorldInverse, frustumCulled, buffer => {
             cb(protocolUtils.parseObjectsCull(buffer));
           });
         };
