@@ -1,17 +1,20 @@
 const path = require('path');
 const fs = require('fs');
 
-const txtr = require('txtr');
+// const txtr = require('txtr');
 const {
   TEXTURE_SIZE,
 } = require('./lib/constants/constants');
 
-const TEXTURES = [
-  'explosion',
-  'smoke',
-];
+/* const TEXTURES = [
+  'rain',
+  'snow1',
+  'snow2',
+  'smoke1',
+  'smoke2',
+]; */
 
-class Particle {
+class Weather {
   constructor(archae) {
     this._archae = archae;
   }
@@ -22,13 +25,13 @@ class Particle {
     const {three, elements, utils: {js: jsUtils, hash: hashUtils, random: randomUtils, image: imageUtils}} = zeo;
     const {THREE} = three;
     const {murmur} = hashUtils;
-    const {jimp} = imageUtils;
+    // const {jimp} = imageUtils;
 
-    const textureImg = new jimp(TEXTURE_SIZE, TEXTURE_SIZE);
+    /* const textureImg = new jimp(TEXTURE_SIZE, TEXTURE_SIZE);
     const textureAtlas = txtr(TEXTURE_SIZE, TEXTURE_SIZE);
-    const textureUvs = {};
+    const textureUvs = {}; */
 
-    const _registerTexture = (src, name, {fourTap = false} = {}) => jimp.read(src)
+    /* const _registerTexture = (src, name, {fourTap = false} = {}) => jimp.read(src)
       .then(img => {
         const n = murmur(name);
 
@@ -51,12 +54,19 @@ class Particle {
         }
       });
     const _registerTextures = () => Promise.all(TEXTURES.map(texture => _registerTexture(path.join(__dirname, 'lib', 'img', texture + '.png'), texture)))
-      .then(() => {});
+      .then(() => {}); */
 
-    return _registerTextures()
-      .then(() => {
-        function serveParticleTextureAtlas(req, res, next) {
-          textureImg.getBuffer('image/png', (err, buffer) => {
+    /* return _registerTextures()
+      .then(() => { */
+        function serveWeatherTextureAtlas(req, res, next) {
+          res.type('image/png');
+          const rs = fs.createReadStream(path.join(__dirname, 'lib', 'img', 'weather.png'));
+          rs.on('error', err => {
+            res.status(500);
+            res.send(err.stack);
+          });
+          rs.pipe(res);
+          /* textureImg.getBuffer('image/png', (err, buffer) => {
             if (!err) {
               res.type('image/png');
               res.end(buffer);
@@ -66,20 +76,20 @@ class Particle {
                 error: err.stack,
               });
             }
-          });
+          }); */
         }
-        app.get('/archae/particle/texture-atlas.png', serveParticleTextureAtlas);
+        app.get('/archae/weather/texture-atlas.png', serveWeatherTextureAtlas);
 
-        function serveParticleTextureUvs(req, res, next) {
+        /* function serveWeatherTextureUvs(req, res, next) {
           res.json(textureUvs);
         }
-        app.get('/archae/particle/texture-uvs.json', serveParticleTextureUvs);
+        app.get('/archae/weather/texture-uvs.json', serveWeatherTextureUvs); */
 
         this._cleanup = () => {
           function removeMiddlewares(route, i, routes) {
             if (
-              route.handle.name === 'serveParticleTextureAtlas' ||
-              route.handle.name === 'serveParticleTextureUvs'
+              route.handle.name === 'serveWeatherTextureAtlas' /* ||
+              route.handle.name === 'serveWeatherTextureUvs' */
             ) {
               routes.splice(i, 1);
             }
@@ -89,7 +99,7 @@ class Particle {
           }
           app._router.stack.forEach(removeMiddlewares);
         };
-      });
+      // });
   }
 
   unmount() {
@@ -97,4 +107,4 @@ class Particle {
   }
 }
 
-module.exports = Particle;
+module.exports = Weather;

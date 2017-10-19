@@ -13,9 +13,7 @@ class Particle {
     const {THREE, scene} = three;
     const {murmur} = hashUtils;
 
-    const gravity = -9.8 / 1000 / 1000;
     const explosionTime = 1000;
-    const rainTime = 5000;
 
     const PARTICLE_SHADER = {
       uniforms: {
@@ -99,89 +97,6 @@ class Particle {
           vec4 diffuseColor1 = texture2D(map, vUv * vec2(1.0, tileSize / numFrames) + vec2(0.0, 1.0 - (tileSize * frame1 / numFrames)));
           vec4 diffuseColor2 = texture2D(map, vUv * vec2(1.0, tileSize / numFrames) + vec2(0.0, 1.0 - (tileSize * frame2 / numFrames)));
           vec4 diffuseColor = mix(diffuseColor1, diffuseColor2, mixFactor);
-
-          if (diffuseColor.a < 0.1) {
-            discard;
-          }
-
-          gl_FragColor = diffuseColor;
-        }
-      `
-    };
-    const WEATHER_SHADER = {
-      uniforms: {
-        worldTime: {
-          type: 'f',
-          value: 0,
-        },
-        map: {
-          type: 't',
-          value: null,
-        },
-        /* fogColor: {
-          type: '3f',
-          value: new THREE.Color(),
-        },
-        fogDensity: {
-          type: 'f',
-          value: 0,
-        },
-        sunIntensity: {
-          type: 'f',
-          value: 0,
-        }, */
-      },
-      vertexShader: `\
-        #define PI 3.1415926535897932384626433832795
-        uniform float worldTime;
-        attribute float type;
-        attribute vec3 delta;
-        attribute vec3 angle;
-        varying vec2 vUv;
-        void main() {
-          mat4 modelView = modelViewMatrix;
-          modelView[0][0] = 1.0;
-          modelView[0][1] = 0.0;
-          modelView[0][2] = 0.0;
-          if (type > 0.5) {
-            modelView[1][0] = 0.0;
-            modelView[1][1] = 1.0;
-            modelView[1][2] = 0.0;
-          }
-          modelView[2][0] = 0.0;
-          modelView[2][1] = 0.0;
-          modelView[2][2] = 1.0;
-          modelView[3][0] = 0.0;
-          modelView[3][1] = 0.0;
-          modelView[3][2] = 0.0;
-          modelView[3][3] = 1.0;
-
-          float animationFactor;
-          if (type == 0.0) {
-            animationFactor = mod((position.y / 128.0 - worldTime / ${rainTime.toFixed(1)}), 1.0);
-          } else if (type == 1.0) {
-            animationFactor = mod((position.y / 128.0 - worldTime / 60000.0), 1.0);
-          } else if (type == 2.0) {
-            animationFactor = 1.0 - mod((position.y / 128.0 - worldTime / 180000.0), 1.0);
-          }
-          vec3 pos = position.xyz;
-          pos.y = animationFactor * 128.0;
-          pos.x += (-0.5 + sin(mod(angle.x + worldTime / 4000.0, 1.0) * PI * 2.0)) * angle.z;
-          pos.z += (-0.5 + sin(mod(angle.y + worldTime / 4000.0, 1.0) * PI * 2.0)) * angle.z;
-          gl_Position = projectionMatrix * vec4(
-            (modelViewMatrix * vec4(pos, 1.0)).xyz +
-            (modelView * vec4(delta, 1.0)).xyz,
-            1.0
-          );
-          vUv = uv;
-        }
-      `,
-      fragmentShader: `\
-        uniform sampler2D map;
-        varying vec2 vUv;
-
-        void main() {
-          vec4 diffuseColor = texture2D(map, vUv);
 
           if (diffuseColor.a < 0.1) {
             discard;
@@ -283,16 +198,6 @@ class Particle {
           }
           const particles = [];
 
-          class Weather {
-            constructor(position, type, uv, angle) {
-              this.position = position;
-              this.type = type;
-              this.uv = uv;
-              this.angle = angle;
-            }
-          }
-          const weathers = [];
-
           const particleGeometry = new THREE.PlaneBufferGeometry(2, 2);
           const particleGeometryPositions = particleGeometry.getAttribute('position').array;
           const numParticleGeometryPositions = particleGeometryPositions.length / 3;
@@ -339,53 +244,6 @@ class Particle {
             return mesh;
           })();
 
-          const weatherGeometries = [
-            new THREE.PlaneBufferGeometry(0.05, 0.8),
-            new THREE.PlaneBufferGeometry(0.1, 0.1),
-            new THREE.PlaneBufferGeometry(0.05, 0.05),
-          ];
-          const weatherGeometryPositions = weatherGeometries.map(geometry => geometry.getAttribute('position').array);
-          const numWeatherGeometryPositions = weatherGeometryPositions[0].length / 3;
-          const weatherGeometryUvs = weatherGeometries[0].getAttribute('uv').array;
-          const numWeatherGeometryUvs = weatherGeometryUvs.length / 2;
-          const weatherGeometryIndices = weatherGeometries[0].index.array;
-          const numWeatherGeometryIndices = weatherGeometryIndices.length;
-          const weathersMesh = (() => {
-            const geometry = new THREE.BufferGeometry();
-            const positions = new Float32Array(NUM_POSITIONS);
-            const positionsAttribute = new THREE.BufferAttribute(positions, 3);
-            geometry.addAttribute('position', positionsAttribute);
-            const deltas = new Float32Array(NUM_POSITIONS);
-            const deltasAttribute = new THREE.BufferAttribute(deltas, 3);
-            geometry.addAttribute('delta', deltasAttribute);
-            const types = new Float32Array(NUM_POSITIONS);
-            const typesAttribute = new THREE.BufferAttribute(types, 1);
-            geometry.addAttribute('type', typesAttribute);
-            const uvs = new Float32Array(NUM_POSITIONS);
-            const uvsAttribute = new THREE.BufferAttribute(uvs, 2);
-            geometry.addAttribute('uv', uvsAttribute);
-            const angles = new Float32Array(NUM_POSITIONS);
-            const anglesAttribute = new THREE.BufferAttribute(angles, 3);
-            geometry.addAttribute('angle', anglesAttribute);
-            const indices = new Uint16Array(NUM_POSITIONS / 3);
-            const indexAttribute = new THREE.BufferAttribute(indices, 1);
-            geometry.setIndex(indexAttribute);
-            geometry.setDrawRange(0, 0);
-
-            const uniforms = THREE.UniformsUtils.clone(WEATHER_SHADER.uniforms);
-            uniforms.map.value = textureAtlas;
-            const material = new THREE.ShaderMaterial({
-              uniforms,
-              vertexShader: WEATHER_SHADER.vertexShader,
-              fragmentShader: WEATHER_SHADER.fragmentShader,
-              transparent: true,
-            });
-
-            const mesh = new THREE.Mesh(geometry, material);
-            mesh.frustumCulled = false;
-            return mesh;
-          })();
-
           const _getWorldTime = (() => {
             let worldTimeOffset = 0;
             return () => {
@@ -400,7 +258,6 @@ class Particle {
           })();
 
           let particlesNeedsUpdate = false;
-          let weathersNeedsUpdate = false;
 
           const particleEntity = {
             entityAddedCallback(particleElement) {
@@ -420,48 +277,6 @@ class Particle {
                   particles.push(particle);
                 }
                 particlesNeedsUpdate = true;
-              };
-              particleElement.addRain = (x, z) => {
-                const startTime = _getWorldTime();
-                const numWeathers = 300;
-                for (let j = 0; j < numWeathers; j++) {
-                  const weather = new Weather(
-                    new THREE.Vector3(x * NUM_CELLS + Math.random() * NUM_CELLS, Math.random() * NUM_CELLS_HEIGHT, z * NUM_CELLS + Math.random() * NUM_CELLS),
-                    0,
-                    _getUv('rain'),
-                    new THREE.Vector3(Math.random(), Math.random(), Math.random())
-                  );
-                  weathers.push(weather);
-                }
-                weathersNeedsUpdate = true;
-              };
-              particleElement.addSnow = (x, z) => {
-                const startTime = _getWorldTime();
-                const numWeathers = 300;
-                for (let j = 0; j < numWeathers; j++) {
-                  const weather = new Weather(
-                    new THREE.Vector3(x * NUM_CELLS + Math.random() * NUM_CELLS, Math.random() * NUM_CELLS_HEIGHT, z * NUM_CELLS + Math.random() * NUM_CELLS),
-                    1,
-                    Math.random() < 0.5 ? _getUv('snow1') : _getUv('snow2'),
-                    new THREE.Vector3(Math.random(), Math.random(), Math.random())
-                  );
-                  weathers.push(weather);
-                }
-                weathersNeedsUpdate = true;
-              };
-              particleElement.addSmoke = (x, z) => {
-                const startTime = _getWorldTime();
-                const numWeathers = 300;
-                for (let j = 0; j < numWeathers; j++) {
-                  const weather = new Weather(
-                    new THREE.Vector3(x * NUM_CELLS + Math.random() * NUM_CELLS, Math.random() * NUM_CELLS_HEIGHT, z * NUM_CELLS + Math.random() * NUM_CELLS),
-                    2,
-                    Math.random() < 0.5 ? _getUv('smoke1') : _getUv('smoke2'),
-                    new THREE.Vector3(Math.random(), Math.random(), Math.random())
-                  );
-                  weathers.push(weather);
-                }
-                weathersNeedsUpdate = true;
               };
             },
           };
@@ -572,80 +387,6 @@ class Particle {
                 particlesNeedsUpdate = false;
               }
             };
-            const _renderWeathers = () => {
-              if (weathersNeedsUpdate) {
-                let attributeIndex = 0;
-                let typeIndex = 0;
-                let uvIndex = 0;
-                let indexIndex = 0;
-
-                const positionsAttribute = weathersMesh.geometry.attributes.position;
-                const positions = positionsAttribute.array;
-                const deltasAttribute = weathersMesh.geometry.attributes.delta;
-                const deltas = deltasAttribute.array;
-                const typesAttribute = weathersMesh.geometry.attributes.type;
-                const types = typesAttribute.array;
-                const uvsAttribute = weathersMesh.geometry.attributes.uv;
-                const uvs = uvsAttribute.array;
-                const anglesAttribute = weathersMesh.geometry.attributes.angle;
-                const angles = anglesAttribute.array;
-                const indexAttribute = weathersMesh.geometry.index;
-                const indices = indexAttribute.array;
-
-                for (let i = 0; i < weathers.length; i++) {
-                  const {position, type, uv, angle} = weathers[i];
-                  const uvWidth = uv[2] - uv[0];
-                  const uvHeight = uv[3] - uv[1];
-                  const newGeometryPositions = weatherGeometryPositions[type];
-                  const newGeometryUvs = weatherGeometryUvs;
-                  const newGeometryIndices = weatherGeometryIndices;
-
-                  for (let j = 0; j < numWeatherGeometryPositions; j++) {
-                    const basePositionIndex = attributeIndex + j * 3;
-                    const srcBasePositionIndex = j * 3;
-                    positions[basePositionIndex + 0] = position.x;
-                    positions[basePositionIndex + 1] = position.y;
-                    positions[basePositionIndex + 2] = position.z;
-
-                    deltas[basePositionIndex + 0] = newGeometryPositions[srcBasePositionIndex + 0];
-                    deltas[basePositionIndex + 1] = newGeometryPositions[srcBasePositionIndex + 1];
-                    deltas[basePositionIndex + 2] = newGeometryPositions[srcBasePositionIndex + 2];
-
-                    const baseTypeIndex = typeIndex + j;
-                    types[baseTypeIndex] = type;
-
-                    const baseUvIndex = uvIndex + j * 2;
-                    const srcBaseUvIndex = j * 2;
-                    uvs[baseUvIndex + 0] = uv[0] + newGeometryUvs[srcBaseUvIndex + 0] * uvWidth;
-                    uvs[baseUvIndex + 1] = 1 - (uv[1] + newGeometryUvs[srcBaseUvIndex + 1] * uvHeight);
-
-                    angles[basePositionIndex + 0] = angle.x;
-                    angles[basePositionIndex + 1] = angle.y;
-                    angles[basePositionIndex + 2] = angle.z;
-                  }
-
-                  for (let j = 0; j < numWeatherGeometryIndices; j++) {
-                    const baseIndex = indexIndex + j;
-                    const baseAttributeIndex = attributeIndex / 3;
-                    indices[baseIndex] = newGeometryIndices[j] + baseAttributeIndex;
-                  }
-
-                  attributeIndex += numWeatherGeometryPositions * 3;
-                  typeIndex += numWeatherGeometryPositions;
-                  uvIndex += numWeatherGeometryUvs * 2;
-                  indexIndex += numWeatherGeometryIndices;
-                }
-                weathersMesh.geometry.setDrawRange(0, indexIndex);
-
-                positionsAttribute.needsUpdate = true;
-                deltasAttribute.needsUpdate = true;
-                uvsAttribute.needsUpdate = true;
-                anglesAttribute.needsUpdate = true;
-                indexAttribute.needsUpdate = true;
-
-                weathersNeedsUpdate = false;
-              }
-            };
             const _updateMeshes = () => {
               if (particles.length > 0 && !
                 particlesMesh.parent) {
@@ -653,26 +394,15 @@ class Particle {
               } else if (particles.length === 0 && particlesMesh.parent) {
                 scene.remove(particlesMesh);
               }
-
-              if (weathers.length > 0 && !weathersMesh.parent) {
-                scene.add(weathersMesh);
-              } else if (weathers.length === 0 && weathersMesh.parent) {
-                scene.remove(weathersMesh);
-              }
             };
             const _updateMaterials = () => {
               if (particles.length > 0) {
                 particlesMesh.material.uniforms.worldTime.value = _getWorldTime();
               }
-              if (weathers.length > 0) {
-                // weathersMesh.material.uniforms.worldTime.value = 0;
-                weathersMesh.material.uniforms.worldTime.value = world.getWorldTime() % (10 * 60 * 1000);
-              }
             };
 
             _updateParticles();
             _renderParticles();
-            _renderWeathers();
             _updateMeshes();
             _updateMaterials();
 
