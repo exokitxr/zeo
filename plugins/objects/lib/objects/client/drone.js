@@ -134,6 +134,7 @@ const drone = objectApi => () => {
     canvas.width = width;
     canvas.height = height;
     const ctx = canvas.getContext('2d');
+    ctx.scale(1, -1);
     ctx.imageSmoothingEnabled = false;
 
     const imageData = ctx.getImageData(0, 0, width, height);
