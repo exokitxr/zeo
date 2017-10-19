@@ -135,8 +135,19 @@ const drone = objectApi => () => {
     canvas.height = height;
     const ctx = canvas.getContext('2d');
     ctx.imageSmoothingEnabled = false;
+
     const imageData = ctx.getImageData(0, 0, width, height);
     const buffer = new Uint8Array(imageData.data.buffer, imageData.data.buffer.byteOffset, width * height * 4);
+
+    const mediaStream = canvas.captureStream(24);
+    const mediaRecorder = new MediaRecorder(mediaStream, {
+      mimeType: 'video/webm',
+      bitsPerSecond: 8000 * 1024,
+    });
+    const blobs = [];
+    mediaRecorder.ondataavailable = e => {
+      blobs.push(e.data);
+    };
 
     const _makeRenderTarget = () => new THREE.WebGLRenderTarget(width, height, {
       minFilter: THREE.NearestFilter,
@@ -178,12 +189,62 @@ const drone = objectApi => () => {
       frame = nextFrame;
     };
 
+    let recordInterval = null;
+    mesh.startRecording = () => {
+      mediaRecorder.start();
+      recordInterval = setInterval(() => {
+        mediaRecorder.requestData();
+      }, 1000);
+    };
+    mesh.stopRecording = () => {
+      mediaRecorder.onstop = () => {
+        if (blobs.length > 0) {
+          const blob = new Blob(blobs);
+          blobs.length = 0;
+
+          const dropMatrix = (() => {
+            const {hmd} = pose.getStatus();
+            const {worldPosition: hmdPosition, worldRotation: hmdRotation, worldScale: hmdScale} = hmd;
+            localVector.copy(hmdPosition)
+              .add(
+                localVector2.copy(forwardVector).multiplyScalar(0.5)
+                  .applyQuaternion(hmdRotation)
+              );
+            return localVector.toArray().concat(hmdRotation.toArray()).concat(hmdScale.toArray());
+          })();
+          items.makeFile({
+            data: blob,
+            matrix: dropMatrix,
+          });
+        }
+        mediaRecorder.onstop = null;
+      };
+
+      mediaRecorder.stop();
+      clearInterval(recordInterval);
+      recordInterval = null;
+    };
+    mesh.cancelRecording = () => {
+      mediaRecorder.onstop = () => {
+        blobs.length = 0;
+        mediaRecorder.onstop = null;
+      };
+
+      mediaRecorder.stop();
+      clearInterval(recordInterval);
+      recordInterval = null;
+    };
+
     mesh.destroy = () => {
       geometry.dispose();
       material.dispose();
 
       for (let i = 0; i < renderTargets.length; i++) {
         renderTargets[i].dispose();
+      }
+
+      if (recordInterval) {
+        mesh.cancelRecording();
       }
     };
 
@@ -243,6 +304,14 @@ const drone = objectApi => () => {
       const screen = _makeScreenMesh(drone);
       scene.add(screen);
       screens[id] = screen;
+
+      screen.startRecording();
+    },
+    triggerCallback(id, side, x, z, objectIndex) {
+      const screen = screens[id];
+      screen.stopRecording();
+
+      objectApi.removeObject(x, z, objectIndex);
     },
     gripCallback(id, side, x, z, objectIndex) {
       const itemId = _makeId();
