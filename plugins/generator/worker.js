@@ -1780,7 +1780,7 @@ self.onmessage = e => {
         });
 
         const objectApi = objectApis[n];
-        if (objectApi && objectApi.removed) {
+        if (objectApi && objectApi.added) {
           postMessage({
             type: 'objectAdded',
             args: [n, x, z, objectIndex, matrix.slice(0, 3), matrix.slice(3, 7), value],
