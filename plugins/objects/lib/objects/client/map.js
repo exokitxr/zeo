@@ -118,10 +118,10 @@ const map = objectApi => {
 
           const oldVrEnabled = renderer.vr.enabled;
           renderer.vr.enabled = false;
-          mesh.visible = false;
+          screenMesh.visible = false;
           renderer.render(scene, sourceCamera, renderTarget);
           renderer.setRenderTarget(null);
-          mesh.visible = true;
+          screenMesh.visible = true;
           renderer.vr.enabled = oldVrEnabled;
 
           screenMesh.material.map = nextRenderTarget.texture;
