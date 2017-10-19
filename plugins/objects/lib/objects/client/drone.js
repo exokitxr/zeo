@@ -241,10 +241,6 @@ const drone = objectApi => () => {
       drones[id] = drone;
 
       const screen = _makeScreenMesh(drone);
-console.log('add screen mesh', id, new Error().stack);
-if (screens[id]) {
-  throw new Error('fail double');
-}
       scene.add(screen);
       screens[id] = screen;
     },
@@ -271,7 +267,6 @@ if (screens[id]) {
       objectApi.removeObject(x, z, objectIndex);
     },
     removedCallback(id) {
-console.log('remove screen mesh', id, new Error().stack);
       const screen = screens[id];
       scene.remove(screen);
       screen.destroy();
