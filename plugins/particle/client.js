@@ -160,7 +160,7 @@ class Particle {
           if (type == 0.0) {
             animationFactor = mod((position.y / 128.0 - worldTime / ${rainTime.toFixed(1)}), 1.0);
           } else if (type == 1.0) {
-            animationFactor = mod((position.y / 128.0 - worldTime / 30000.0), 1.0);
+            animationFactor = mod((position.y / 128.0 - worldTime / 60000.0), 1.0);
           } else if (type == 2.0) {
             animationFactor = 1.0 - mod((position.y / 128.0 - worldTime / 180000.0), 1.0);
           }
