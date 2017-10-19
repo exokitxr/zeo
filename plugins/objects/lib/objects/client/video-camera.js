@@ -136,14 +136,15 @@ const videoCamera = objectApi => {
         canvas.height = height;
         const ctx = canvas.getContext('2d');
         ctx.imageSmoothingEnabled = false;
+
+        const imageData = ctx.getImageData(0, 0, width, height);
+        const buffer = new Uint8Array(imageData.data.buffer, imageData.data.buffer.byteOffset, width * height * 4);
+
         const mediaStream = canvas.captureStream(24);
         const mediaRecorder = new MediaRecorder(mediaStream, {
           mimeType: 'video/webm',
           bitsPerSecond: 8000 * 1024,
         });
-        const imageData = ctx.getImageData(0, 0, width, height);
-        const buffer = new Uint8Array(imageData.data.buffer, imageData.data.buffer.byteOffset, width * height * 4);
-
         const blobs = [];
         mediaRecorder.ondataavailable = e => {
           blobs.push(e.data);
