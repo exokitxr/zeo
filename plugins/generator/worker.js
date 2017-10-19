@@ -1650,7 +1650,7 @@ self.onmessage = e => {
           for (const index in zde.chunks) {
             const chunk = zde.chunks[index];
 
-            if (chunk) {
+            if (chunk && chunk[objectsCallbacksSymbol]) {
               chunk.forEachObject((localN, matrix, value, objectIndex) => {
                 if (localN === n) {
                   postMessage({
@@ -1675,14 +1675,17 @@ self.onmessage = e => {
         if (entry.set === 1) {
           for (const index in zde.chunks) {
             const chunk = zde.chunks[index];
-            chunk.forEachBlock((localN, x, y, z) => {
-              if (localN === n) {
-                postMessage({
-                  type: 'blockSet',
-                  args: [n, chunk.x * NUM_CELLS + x, y, chunk.z * NUM_CELLS + z],
-                });
-              }
-            });
+
+            if (chunk && chunk[objectsCallbacksSymbol]) {
+              chunk.forEachBlock((localN, x, y, z) => {
+                if (localN === n) {
+                  postMessage({
+                    type: 'blockSet',
+                    args: [n, chunk.x * NUM_CELLS + x, y, chunk.z * NUM_CELLS + z],
+                  });
+                }
+              });
+            }
           }
         }
       }
@@ -2055,17 +2058,6 @@ self.onmessage = e => {
             args: [id],
             result: buffer,
           }, [buffer]);
-
-          chunk.forEachObject((n, matrix, value, objectIndex) => {
-            const objectApi = objectApis[n];
-
-            if (objectApi && objectApi.added) {
-              postMessage({
-                type: 'objectAdded',
-                args: [n, x, z, objectIndex, matrix.slice(0, 3), matrix.slice(3, 7), value],
-              });
-            }
-          });
         })
         .catch(err => {
           console.warn(err);
