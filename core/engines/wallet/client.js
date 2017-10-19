@@ -1020,28 +1020,41 @@ class Wallet {
               notification.removeNotification(newNotification);
             }, 3000);
           } else if (type === 'file') {
-            console.log('store file 1', assetInstance);
-
-            const {id, name} = assetInstance;
-            const n = parseInt(id, 10);
+            const {id, value} = assetInstance;
+            const {id: n, name} = value;
             const file = fs.makeRemoteFile(n);
             const url = file.getUrl();
             file.readAsArrayBuffer()
               .then(arrayBuffer => vridApi.upload(n, arrayBuffer))
-              .then(() => {
+              .then(() => vridApi.get('assets'))
+              .then(assets => {
+                assets = assets || [];
+
                 const assetSpec = {
                   id,
                   asset: 'ITEM.FILE',
                   quantity: 1,
                   file: {
+                    id: n,
                     name,
-                    id,
                   },
                   timestamp: Date.now(),
+                  certificate: [
+                    {
+                      signature: id, // XXX make this an actual signature
+                    },
+                  ],
                 };
+                assets.push(assetSpec);
 
-                console.log('store file 2', assetSpec); // XXX actually store the file
+                return vridApi.set('assets', assets);
               });
+
+            sfx.drop.trigger();
+            const newNotification = notification.addNotification(`Stored ${name}.`);
+            setTimeout(() => {
+              notification.removeNotification(newNotification);
+            }, 3000);
           }
         };
         const _checkGripdown = side => {
@@ -1321,8 +1334,13 @@ class Wallet {
               id,
               name,
               attributes: {
-                type: {value: 'file'}, // XXX unify this as an asset
-                value: {value: n},
+                type: {value: 'file'},
+                value: {
+                  value: {
+                    id: n,
+                    name,
+                  },
+                },
                 position: {value: matrix},
                 owner: {value: null},
                 bindOwner: {value: null},
