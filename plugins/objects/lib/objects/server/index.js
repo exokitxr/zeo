@@ -1,6 +1,7 @@
 const stick = require('./stick');
 const stone = require('./stone');
 const grass = require('./grass');
+const bush = require('./bush');
 // const pixelgrass = require('./pixelgrass');
 // const tree = require('./tree');
 const trees = require('./trees');
@@ -22,6 +23,7 @@ const objectsLib = options => [
   stick,
   stone,
   grass,
+  bush,
   // pixelgrass,
   // tree,
   trees,

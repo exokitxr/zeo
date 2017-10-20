@@ -117,6 +117,11 @@ class Objects {
             frequency: 0.2,
             octaves: 4,
           });
+          objectApi.registerNoise('bush', {
+            seed: DEFAULT_SEED + ':bush',
+            frequency: 0.2,
+            octaves: 4,
+          });
           objectApi.registerNoise('tree', {
             seed: DEFAULT_SEED + ':tree',
             frequency: 0.2,
