@@ -18,222 +18,6 @@ const DEFAULT_USER_HEIGHT = 1.6;
 
 const dataSymbol = Symbol();
 
-const HEIGHTFIELD_SHADER = {
-  uniforms: {
-    /* d: {
-      type: 'v2',
-      value: null,
-    }, */
-    sunIntensity: {
-      type: 'f',
-      value: 0,
-    },
-  },
-  vertexShader: `\
-precision highp float;
-precision highp int;
-#define FLAT_SHADED
-/*uniform mat4 modelMatrix;
-uniform mat4 modelViewMatrix;
-uniform mat4 projectionMatrix;
-uniform mat4 viewMatrix;
-uniform mat3 normalMatrix;
-attribute vec3 position;
-attribute vec3 normal;
-attribute vec2 uv; */
-attribute vec3 color;
-attribute float skyLightmap;
-attribute float torchLightmap;
-
-// varying vec3 vPosition;
-varying vec3 vViewPosition;
-varying vec3 vColor;
-varying float vSkyLightmap;
-varying float vTorchLightmap;
-
-void main() {
-	vColor = color.rgb;
-
-  vec4 mvPosition = modelViewMatrix * vec4( position.xyz, 1.0 );
-  gl_Position = projectionMatrix * mvPosition;
-
-	// vPosition = position.xyz;
-  vViewPosition = -mvPosition.xyz;
-  vSkyLightmap = skyLightmap;
-  vTorchLightmap = torchLightmap;
-}
-`,
-  fragmentShader: `\
-precision highp float;
-precision highp int;
-#define FLAT_SHADED
-// uniform mat4 viewMatrix;
-uniform vec3 ambientLightColor;
-// uniform vec2 d;
-uniform float sunIntensity;
-
-#define saturate(a) clamp( a, 0.0, 1.0 )
-
-// varying vec3 vPosition;
-varying vec3 vViewPosition;
-varying vec3 vColor;
-varying float vSkyLightmap;
-varying float vTorchLightmap;
-
-void main() {
-	vec3 diffuseColor = vColor;
-
-  float lightColor = floor(
-    (
-      min((vSkyLightmap * sunIntensity) + vTorchLightmap, 1.0)
-    ) * 4.0 + 0.5
-  ) / 4.0;
-
-  vec3 fdx = vec3( dFdx( vViewPosition.x ), dFdx( vViewPosition.y ), dFdx( vViewPosition.z ) );
-  vec3 fdy = vec3( dFdy( vViewPosition.x ), dFdy( vViewPosition.y ), dFdy( vViewPosition.z ) );
-  vec3 normal = normalize( cross( fdx, fdy ) );
-  float dotNL = saturate( dot( normal, normalize(vViewPosition)) );
-  vec3 irradiance = ambientLightColor + (dotNL * 1.5);
-  vec3 outgoingLight = diffuseColor * irradiance * (0.1 + lightColor * 0.9);
-
-	gl_FragColor = vec4( outgoingLight, 1.0 );
-}
-`
-};
-
-const OCEAN_SHADER = {
-  uniforms: {
-    worldTime: {
-      type: 'f',
-      value: 0,
-    },
-    map: {
-      type: 't',
-      value: null,
-    },
-    /* fogColor: {
-      type: '3f',
-      value: new THREE.Color(),
-    },
-    fogDensity: {
-      type: 'f',
-      value: 0,
-    }, */
-    sunIntensity: {
-      type: 'f',
-      value: 0,
-    },
-  },
-  vertexShader: `\
-    uniform float worldTime;
-    // "attribute vec3 wave;
-    attribute vec3 color;
-    attribute float skyLightmap;
-    attribute float torchLightmap;
-    // varying vec2 vUv;
-    varying vec3 vPosition;
-    varying vec3 vColor;
-    varying float vSkyLightmap;
-    varying float vTorchLightmap;
-    varying float fogDepth;
-    void main() {
-      /* float ang = wave[0];
-      float amp = wave[1];
-      float speed = wave[2]; */
-      // gl_Position = projectionMatrix * modelViewMatrix * vec4(position.x, position.y + ((sin(ang + (speed * worldTime))) * amp), position.z, 1.0);
-      gl_Position = projectionMatrix * modelViewMatrix * vec4(position.xyz, 1.0);
-      vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
-      // vUv = vec2((position.x + position.y) / 16.0 * 4.0, (position.z + position.y) / 16.0 * 4.0 / 16.0);
-      vPosition = position;
-      vColor = color.rgb;
-      vSkyLightmap = skyLightmap;
-      vTorchLightmap = torchLightmap;
-      fogDepth = -mvPosition.z;
-    }
-  `,
-  fragmentShader: `\
-    #define LOG2 1.442695
-    #define whiteCompliment(a) ( 1.0 - saturate( a ) )
-    uniform float worldTime;
-    uniform sampler2D map;
-    uniform vec3 fogColor;
-    uniform float fogDensity;
-    uniform float sunIntensity;
-    // varying vec2 vUv;
-    varying vec3 vPosition;
-    varying vec3 vColor;
-    varying float vSkyLightmap;
-    varying float vTorchLightmap;
-    varying float fogDepth;
-    float speed = 2.0;
-
-    vec4 twoTapSample(
-      float tileOffset,
-      vec2 tileUV,
-      float tileSize,
-      sampler2D atlas
-    ) {
-      //Initialize accumulators
-      vec4 color = vec4(0.0, 0.0, 0.0, 0.0);
-      float totalWeight = 0.0;
-
-      for(int dx=0; dx<2; ++dx) {
-        //Compute coordinate in 2x2 tile patch
-        vec2 tileCoord = vec2(2.0 * fract(0.5 * (tileUV.x + float(dx))), tileUV.y);
-
-        //Weight sample based on distance to center
-        float w = pow(1.0 - abs(tileCoord.x-1.0), 16.0);
-
-        //Compute atlas coord
-        vec2 atlasUV = vec2(tileOffset + tileSize * tileCoord.x, tileCoord.y);
-
-        //Sample and accumulate
-        color += w * texture2D(atlas, atlasUV);
-        totalWeight += w;
-      }
-
-      //Return weighted color
-      return color / totalWeight;
-    }
-
-    void main() {
-      float animationFactor = (speed - abs(mod(worldTime / 1000.0, speed*2.0) - speed)) / speed;
-      float frame1 = mod(floor(animationFactor / 16.0), 1.0);
-      float frame2 = mod(frame1 + 1.0/16.0, 1.0);
-      float mixFactor = fract(animationFactor / 16.0) * 16.0;
-
-      vec2 tileUv = vec2(
-        mod(vPosition.x / 4.0, 1.0),
-        mod(vPosition.z / 4.0 / 16.0, 1.0)
-      );
-      vec3 diffuseColor1 = twoTapSample(
-        vColor.r,
-        tileUv * vec2(1.0, 1.0 - frame1),
-        0.25,
-        map
-      ).rgb;
-      vec3 diffuseColor2 = twoTapSample(
-        vColor.r,
-        tileUv * vec2(1.0, 1.0 - frame2),
-        0.25,
-        map
-      ).rgb;
-      vec3 diffuseColor = mix(diffuseColor1, diffuseColor2, mixFactor).rgb;
-      // diffuseColor *= (0.2 + 0.8 * sunIntensity);
-      float fogFactor = whiteCompliment( exp2( - fogDensity * fogDensity * fogDepth * fogDepth * LOG2 ) );
-      diffuseColor = mix(diffuseColor, fogColor, fogFactor);
-
-      float lightColor = floor(
-        (
-          min((vSkyLightmap * sunIntensity) + vTorchLightmap, 1.0)
-        ) * 4.0 + 0.5
-      ) / 4.0;
-      vec3 outgoingLight = diffuseColor * (0.2 + lightColor * 0.8);
-      gl_FragColor = vec4(outgoingLight, 0.9);
-    }
-  `
-};
-
 class Heightfield {
   constructor(archae) {
     this._archae = archae;
@@ -243,6 +27,228 @@ class Heightfield {
     const {_archae: archae} = this;
     const {three, render, pose, input, world, elements, teleport, stck, sound, utils: {js: {mod, sbffr}, random: {chnkr}}} = zeo;
     const {THREE, scene, camera, renderer} = three;
+
+    const HEIGHTFIELD_SHADER = {
+      uniforms: {
+        fogColor: {
+          type: '3f',
+          value: new THREE.Color(),
+        },
+        fogDensity: {
+          type: 'f',
+          value: 0,
+        },
+        sunIntensity: {
+          type: 'f',
+          value: 0,
+        },
+      },
+      vertexShader: `\
+        #define LOG2 1.442695
+        precision highp float;
+        precision highp int;
+        /*uniform mat4 modelMatrix;
+        uniform mat4 modelViewMatrix;
+        uniform mat4 projectionMatrix;
+        uniform mat4 viewMatrix;
+        uniform mat3 normalMatrix;
+        attribute vec3 position;
+        attribute vec3 normal;
+        attribute vec2 uv; */
+        uniform float fogDensity;
+        attribute vec3 color;
+        attribute float skyLightmap;
+        attribute float torchLightmap;
+
+        // varying vec3 vPosition;
+        varying vec3 vViewPosition;
+        varying vec3 vColor;
+        varying float vSkyLightmap;
+        varying float vTorchLightmap;
+        varying float vFog;
+
+        void main() {
+          vColor = color.rgb;
+
+          vec4 mvPosition = modelViewMatrix * vec4( position.xyz, 1.0 );
+          gl_Position = projectionMatrix * mvPosition;
+
+          // vPosition = position.xyz;
+          vViewPosition = -mvPosition.xyz;
+          vSkyLightmap = skyLightmap;
+          vTorchLightmap = torchLightmap;
+          float fogDepth = -mvPosition.z;
+          vFog = 1.0 - exp2( - fogDensity * fogDensity * fogDepth * fogDepth * LOG2 );
+        }
+      `,
+      fragmentShader: `\
+        precision highp float;
+        precision highp int;
+        uniform vec3 ambientLightColor;
+        uniform float sunIntensity;
+        uniform vec3 fogColor;
+
+        // varying vec3 vPosition;
+        varying vec3 vViewPosition;
+        varying vec3 vColor;
+        varying float vSkyLightmap;
+        varying float vTorchLightmap;
+        varying float vFog;
+
+        #define saturate(a) clamp( a, 0.0, 1.0 )
+
+        void main() {
+          float lightColor = floor(
+            (
+              min((vSkyLightmap * sunIntensity) + vTorchLightmap, 1.0)
+            ) * 4.0 + 0.5
+          ) / 4.0;
+
+          vec3 fdx = vec3( dFdx( vViewPosition.x ), dFdx( vViewPosition.y ), dFdx( vViewPosition.z ) );
+          vec3 fdy = vec3( dFdy( vViewPosition.x ), dFdy( vViewPosition.y ), dFdy( vViewPosition.z ) );
+          vec3 normal = normalize( cross( fdx, fdy ) );
+          float dotNL = saturate( dot( normal, normalize(vViewPosition)) );
+          vec3 irradiance = ambientLightColor + (dotNL * 1.5);
+          vec3 diffuseColor = vColor * irradiance * (0.1 + lightColor * 0.9);
+          diffuseColor = mix(diffuseColor, fogColor, vFog);
+
+          gl_FragColor = vec4( diffuseColor, 1.0 );
+        }
+      `
+    };
+
+    const OCEAN_SHADER = {
+      uniforms: {
+        worldTime: {
+          type: 'f',
+          value: 0,
+        },
+        map: {
+          type: 't',
+          value: null,
+        },
+        fogColor: {
+          type: '3f',
+          value: new THREE.Color(),
+        },
+        fogDensity: {
+          type: 'f',
+          value: 0,
+        },
+        sunIntensity: {
+          type: 'f',
+          value: 0,
+        },
+      },
+      vertexShader: `\
+        #define LOG2 1.442695
+        uniform float worldTime;
+        uniform float fogDensity;
+        // "attribute vec3 wave;
+        attribute vec3 color;
+        attribute float skyLightmap;
+        attribute float torchLightmap;
+        // varying vec2 vUv;
+        varying vec3 vPosition;
+        varying vec3 vColor;
+        varying float vSkyLightmap;
+        varying float vTorchLightmap;
+        varying float vFog;
+
+        void main() {
+          /* float ang = wave[0];
+          float amp = wave[1];
+          float speed = wave[2]; */
+          // gl_Position = projectionMatrix * modelViewMatrix * vec4(position.x, position.y + ((sin(ang + (speed * worldTime))) * amp), position.z, 1.0);
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position.xyz, 1.0);
+          vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+          // vUv = vec2((position.x + position.y) / 16.0 * 4.0, (position.z + position.y) / 16.0 * 4.0 / 16.0);
+          vPosition = position;
+          vColor = color.rgb;
+          vSkyLightmap = skyLightmap;
+          vTorchLightmap = torchLightmap;
+          float fogDepth = -mvPosition.z;
+          vFog = 1.0 - exp2( - fogDensity * fogDensity * fogDepth * fogDepth * LOG2 );
+        }
+      `,
+      fragmentShader: `\
+        uniform float worldTime;
+        uniform sampler2D map;
+        uniform vec3 fogColor;
+        uniform float sunIntensity;
+        // varying vec2 vUv;
+        varying vec3 vPosition;
+        varying vec3 vColor;
+        varying float vSkyLightmap;
+        varying float vTorchLightmap;
+        varying float vFog;
+        float speed = 2.0;
+
+        vec4 twoTapSample(
+          float tileOffset,
+          vec2 tileUV,
+          float tileSize,
+          sampler2D atlas
+        ) {
+          //Initialize accumulators
+          vec4 color = vec4(0.0, 0.0, 0.0, 0.0);
+          float totalWeight = 0.0;
+
+          for(int dx=0; dx<2; ++dx) {
+            //Compute coordinate in 2x2 tile patch
+            vec2 tileCoord = vec2(2.0 * fract(0.5 * (tileUV.x + float(dx))), tileUV.y);
+
+            //Weight sample based on distance to center
+            float w = pow(1.0 - abs(tileCoord.x-1.0), 16.0);
+
+            //Compute atlas coord
+            vec2 atlasUV = vec2(tileOffset + tileSize * tileCoord.x, tileCoord.y);
+
+            //Sample and accumulate
+            color += w * texture2D(atlas, atlasUV);
+            totalWeight += w;
+          }
+
+          //Return weighted color
+          return color / totalWeight;
+        }
+
+        void main() {
+          float animationFactor = (speed - abs(mod(worldTime / 1000.0, speed*2.0) - speed)) / speed;
+          float frame1 = mod(floor(animationFactor / 16.0), 1.0);
+          float frame2 = mod(frame1 + 1.0/16.0, 1.0);
+          float mixFactor = fract(animationFactor / 16.0) * 16.0;
+
+          vec2 tileUv = vec2(
+            mod(vPosition.x / 4.0, 1.0),
+            mod(vPosition.z / 4.0 / 16.0, 1.0)
+          );
+          vec3 diffuseColor1 = twoTapSample(
+            vColor.r,
+            tileUv * vec2(1.0, 1.0 - frame1),
+            0.25,
+            map
+          ).rgb;
+          vec3 diffuseColor2 = twoTapSample(
+            vColor.r,
+            tileUv * vec2(1.0, 1.0 - frame2),
+            0.25,
+            map
+          ).rgb;
+          vec3 diffuseColor = mix(diffuseColor1, diffuseColor2, mixFactor).rgb;
+          // diffuseColor *= (0.2 + 0.8 * sunIntensity);
+          diffuseColor = mix(diffuseColor, fogColor, vFog);
+
+          float lightColor = floor(
+            (
+              min((vSkyLightmap * sunIntensity) + vTorchLightmap, 1.0)
+            ) * 4.0 + 0.5
+          ) / 4.0;
+          vec3 outgoingLight = diffuseColor * (0.2 + lightColor * 0.8);
+          gl_FragColor = vec4(outgoingLight, 0.9);
+        }
+      `
+    };
 
     return elements.requestElement(GENERATOR_PLUGIN)
       .then(generatorElement => {
@@ -640,12 +646,14 @@ class Heightfield {
               16
             );
             liquidTexture.needsUpdate = true;
-            const uniforms = THREE.UniformsUtils.clone(OCEAN_SHADER.uniforms);
-            uniforms.map.value = liquidTexture;
-            // uniforms.fogColor.value = scene.fog.color;
-            // uniforms.fogDensity.value = scene.fog.density;
             const oceanMaterial = new THREE.ShaderMaterial({
-              uniforms,
+              uniforms: (() => {
+                const uniforms = THREE.UniformsUtils.clone(OCEAN_SHADER.uniforms);
+                uniforms.map.value = liquidTexture;
+                uniforms.fogColor.value = scene.fog.color;
+                uniforms.fogDensity.value = scene.fog.density;
+                return uniforms;
+              })(),
               vertexShader: OCEAN_SHADER.vertexShader,
               fragmentShader: OCEAN_SHADER.fragmentShader,
               // side: THREE.DoubleSide,
@@ -680,10 +688,15 @@ class Heightfield {
             scene.add(liquidObject);
 
             const heightfieldMaterial = new THREE.ShaderMaterial({
-              uniforms: Object.assign(
-                THREE.UniformsUtils.clone(THREE.UniformsLib.lights),
-                THREE.UniformsUtils.clone(HEIGHTFIELD_SHADER.uniforms)
-              ),
+              uniforms: (() => {
+                const uniforms = Object.assign(
+                  THREE.UniformsUtils.clone(THREE.UniformsLib.lights),
+                  THREE.UniformsUtils.clone(HEIGHTFIELD_SHADER.uniforms)
+                );
+                uniforms.fogColor.value = scene.fog.color;
+                uniforms.fogDensity.value = scene.fog.density;
+                return uniforms;
+              })(),
               vertexShader: HEIGHTFIELD_SHADER.vertexShader,
               fragmentShader: HEIGHTFIELD_SHADER.fragmentShader,
               lights: true,

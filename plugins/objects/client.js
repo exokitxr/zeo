@@ -95,18 +95,6 @@ class Objects {
               type: 't',
               value: null,
             },
-            /* lightMap: {
-              type: 't',
-              value: null,
-            },
-            useLightMap: {
-              type: 'f',
-              value: 0,
-            },
-            d: {
-              type: 'v2',
-              value: new THREE.Vector2(),
-            }, */
             selectedObject: {
               type: '2f',
               value: new THREE.Vector2(-1, -1),
@@ -119,6 +107,14 @@ class Objects {
               type: '3f',
               value: new THREE.Vector3(-1, -1, -1),
             },
+            fogColor: {
+              type: '3f',
+              value: new THREE.Color(),
+            },
+            fogDensity: {
+              type: 'f',
+              value: 0,
+            },
             sunIntensity: {
               type: 'f',
               value: 0,
@@ -129,191 +125,202 @@ class Objects {
             },
           },
           vertexShader: `\
-precision highp float;
-precision highp int;
-attribute float ssao;
-attribute vec3 frame;
-attribute float skyLightmap;
-attribute float torchLightmap;
-attribute float objectIndex;
+            #define LOG2 1.442695
+            precision highp float;
+            precision highp int;
 
-varying vec3 vPosition;
-varying vec2 vUv;
-varying float vSsao;
-varying vec3 vViewPosition;
-varying vec3 vFrame;
-varying float vSkyLightmap;
-varying float vTorchLightmap;
-varying float vObjectIndex;
-varying float vTiled;
-varying vec2 vTileOffset;
-varying vec2 vTileSize;
+            uniform float fogDensity;
 
-void main() {
-  vec4 mvPosition = modelViewMatrix * vec4( position.xyz, 1.0 );
-  gl_Position = projectionMatrix * mvPosition;
+            attribute float ssao;
+            attribute vec3 frame;
+            attribute float skyLightmap;
+            attribute float torchLightmap;
+            attribute float objectIndex;
 
-  vPosition = position.xyz;
-  vUv = uv;
-  vSsao = ssao;
-  vViewPosition = mvPosition.xyz;
-  vFrame = frame;
-  vSkyLightmap = skyLightmap;
-  vTorchLightmap = torchLightmap;
-  vObjectIndex = objectIndex;
+            varying vec3 vPosition;
+            varying vec2 vUv;
+            varying float vSsao;
+            varying vec3 vViewPosition;
+            varying vec3 vFrame;
+            varying float vSkyLightmap;
+            varying float vTorchLightmap;
+            varying float vObjectIndex;
+            varying float vTiled;
+            varying vec2 vTileOffset;
+            varying vec2 vTileSize;
+            varying float vFog;
 
-  if (vUv.x < 0.0) {
-    vec2 uv = vec2(vUv.x * -1.0, vUv.y);
-    vTiled = 1.0;
-    vTileOffset = fract(uv);
-    vTileSize = floor(uv) / ${TEXTURE_SIZE.toFixed(1)};
-  } else {
-    vTiled = 0.0;
-  }
-}
+            void main() {
+              vec4 mvPosition = modelViewMatrix * vec4( position.xyz, 1.0 );
+              gl_Position = projectionMatrix * mvPosition;
+
+              vPosition = position.xyz;
+              vUv = uv;
+              vSsao = ssao;
+              vViewPosition = mvPosition.xyz;
+              vFrame = frame;
+              vSkyLightmap = skyLightmap;
+              vTorchLightmap = torchLightmap;
+              vObjectIndex = objectIndex;
+
+              if (vUv.x < 0.0) {
+                vec2 uv = vec2(vUv.x * -1.0, vUv.y);
+                vTiled = 1.0;
+                vTileOffset = fract(uv);
+                vTileSize = floor(uv) / ${TEXTURE_SIZE.toFixed(1)};
+              } else {
+                vTiled = 0.0;
+              }
+
+              float fogDepth = -mvPosition.z;
+              vFog = 1.0 - exp2( - fogDensity * fogDensity * fogDepth * fogDepth * LOG2 );
+            }
           `,
           fragmentShader: `\
-precision highp float;
-precision highp int;
-#define DOUBLE_SIDED
-uniform vec3 ambientLightColor;
-uniform sampler2D map;
-// uniform sampler2D lightMap;
-// uniform float useLightMap;
-// uniform vec2 d;
-uniform vec2 selectedObject;
-uniform vec3 selectedBlockLeft;
-uniform vec3 selectedBlockRight;
-uniform float sunIntensity;
-uniform float worldTime;
+            precision highp float;
+            precision highp int;
+            #define DOUBLE_SIDED
+            uniform vec3 ambientLightColor;
+            uniform sampler2D map;
+            // uniform sampler2D lightMap;
+            // uniform float useLightMap;
+            // uniform vec2 d;
+            uniform vec2 selectedObject;
+            uniform vec3 selectedBlockLeft;
+            uniform vec3 selectedBlockRight;
+            uniform vec3 fogColor;
+            uniform float sunIntensity;
+            uniform float worldTime;
 
-varying vec3 vPosition;
-varying vec2 vUv;
-varying float vSsao;
-varying vec3 vViewPosition;
-varying vec3 vFrame;
-varying float vSkyLightmap;
-varying float vTorchLightmap;
-varying float vObjectIndex;
-varying float vTiled;
-varying vec2 vTileOffset;
-varying vec2 vTileSize;
+            varying vec3 vPosition;
+            varying vec2 vUv;
+            varying float vSsao;
+            varying vec3 vViewPosition;
+            varying vec3 vFrame;
+            varying float vSkyLightmap;
+            varying float vTorchLightmap;
+            varying float vObjectIndex;
+            varying float vTiled;
+            varying vec2 vTileOffset;
+            varying vec2 vTileSize;
+            varying float vFog;
 
-float speed = 1.0;
-vec3 blueColor = vec3(0.12941176470588237, 0.5882352941176471, 0.9529411764705882);
+            float speed = 1.0;
+            vec3 blueColor = vec3(0.12941176470588237, 0.5882352941176471, 0.9529411764705882);
 
-vec4 fourTapSample(
-  vec2 tileOffset,
-  vec2 tileUV,
-  vec2 tileSize,
-  sampler2D atlas
-) {
-  //Initialize accumulators
-  vec4 color = vec4(0.0, 0.0, 0.0, 0.0);
-  float totalWeight = 0.0;
+            vec4 fourTapSample(
+              vec2 tileOffset,
+              vec2 tileUV,
+              vec2 tileSize,
+              sampler2D atlas
+            ) {
+              //Initialize accumulators
+              vec4 color = vec4(0.0, 0.0, 0.0, 0.0);
+              float totalWeight = 0.0;
 
-  for(int dx=0; dx<2; ++dx)
-  for(int dy=0; dy<2; ++dy) {
-    //Compute coordinate in 2x2 tile patch
-    vec2 tileCoord = 2.0 * fract(0.5 * (tileUV + vec2(dx,dy)));
+              for(int dx=0; dx<2; ++dx)
+              for(int dy=0; dy<2; ++dy) {
+                //Compute coordinate in 2x2 tile patch
+                vec2 tileCoord = 2.0 * fract(0.5 * (tileUV + vec2(dx,dy)));
 
-    //Weight sample based on distance to center
-    float w = pow(1.0 - max(abs(tileCoord.x-1.0), abs(tileCoord.y-1.0)), 16.0);
+                //Weight sample based on distance to center
+                float w = pow(1.0 - max(abs(tileCoord.x-1.0), abs(tileCoord.y-1.0)), 16.0);
 
-    //Compute atlas coord
-    vec2 atlasUV = tileOffset + tileSize * tileCoord;
-    atlasUV.y = 1.0 - atlasUV.y;
+                //Compute atlas coord
+                vec2 atlasUV = tileOffset + tileSize * tileCoord;
+                atlasUV.y = 1.0 - atlasUV.y;
 
-    //Sample and accumulate
-    color += w * texture2D(atlas, atlasUV);
-    totalWeight += w;
-  }
+                //Sample and accumulate
+                color += w * texture2D(atlas, atlasUV);
+                totalWeight += w;
+              }
 
-  //Return weighted color
-  return color / totalWeight;
-}
+              //Return weighted color
+              return color / totalWeight;
+            }
 
-vec2 animateUv(vec2 uv, vec3 frame, float worldTime) {
-  if (frame.z > 0.0) {
-    float animationFactor = mod(worldTime, 1000.0) / 1000.0;
-    // float animationFactor = (speed - abs(mod(worldTime / 1000.0, speed*2.0) - speed)) / speed;
-    float frameIndex = floor(animationFactor * frame.z);
-    uv.y = 1.0 - (((1.0 - uv.y) - frame.x) / frame.z + frame.x + frameIndex * frame.y);
-  }
-  return uv;
-}
+            vec2 animateUv(vec2 uv, vec3 frame, float worldTime) {
+              if (frame.z > 0.0) {
+                float animationFactor = mod(worldTime, 1000.0) / 1000.0;
+                // float animationFactor = (speed - abs(mod(worldTime / 1000.0, speed*2.0) - speed)) / speed;
+                float frameIndex = floor(animationFactor * frame.z);
+                uv.y = 1.0 - (((1.0 - uv.y) - frame.x) / frame.z + frame.x + frameIndex * frame.y);
+              }
+              return uv;
+            }
 
-void main() {
-  vec4 diffuseColor;
-  if (vTiled > 0.0) {
-    vec3 fdx = dFdx(vPosition);
-    vec3 fdy = dFdy(vPosition);
-    vec3 normal = floor(normalize( cross( fdx, fdy ) ) + 0.5);
+            void main() {
+              vec4 sample;
+              if (vTiled > 0.0) {
+                vec3 fdx = dFdx(vPosition);
+                vec3 fdy = dFdy(vPosition);
+                vec3 normal = floor(normalize( cross( fdx, fdy ) ) + 0.5);
 
-    vec2 tileUv = fract(vec2(dot(normal.zxy, vPosition), dot(normal.yzx, vPosition)));
-    // back and bottom: flip 180',
-    if (normal.z < 0.0 || normal.y < 0.0) tileUv.t = 1.0 - tileUv.t;
-    // left: rotate 90 cw
-    if (normal.x < 0.0) {
-        float r = tileUv.s;
-        tileUv.s = 1.0 - tileUv.t;
-        tileUv.t = r;
-    }
-    // right and top and bottom: rotate 90 ccw
-    if (normal.x > 0.0 || normal.y != 0.0) {
-        float r = tileUv.s;
-        tileUv.s = 1.0 - tileUv.t;
-        tileUv.t = 1.0 - r;
-    }
-    // front and back and bottom: flip 180', // TODO: make top and bottom consistent (pointing north?)
-    if (normal.z > 0.0 || normal.z < 0.0 || normal.y < 0.0) {
-      tileUv.t = 1.0 - tileUv.t;
-    }
+                vec2 tileUv = fract(vec2(dot(normal.zxy, vPosition), dot(normal.yzx, vPosition)));
+                // back and bottom: flip 180',
+                if (normal.z < 0.0 || normal.y < 0.0) tileUv.t = 1.0 - tileUv.t;
+                // left: rotate 90 cw
+                if (normal.x < 0.0) {
+                    float r = tileUv.s;
+                    tileUv.s = 1.0 - tileUv.t;
+                    tileUv.t = r;
+                }
+                // right and top and bottom: rotate 90 ccw
+                if (normal.x > 0.0 || normal.y != 0.0) {
+                    float r = tileUv.s;
+                    tileUv.s = 1.0 - tileUv.t;
+                    tileUv.t = 1.0 - r;
+                }
+                // front and back and bottom: flip 180', // TODO: make top and bottom consistent (pointing north?)
+                if (normal.z > 0.0 || normal.z < 0.0 || normal.y < 0.0) {
+                  tileUv.t = 1.0 - tileUv.t;
+                }
 
-    diffuseColor = fourTapSample(
-      animateUv(vTileOffset, vFrame, worldTime),
-      tileUv,
-      vTileSize,
-      map
-    );
-  } else {
-    diffuseColor = texture2D(map, animateUv(vUv, vFrame, worldTime));
-  }
+                sample = fourTapSample(
+                  animateUv(vTileOffset, vFrame, worldTime),
+                  tileUv,
+                  vTileSize,
+                  map
+                );
+              } else {
+                sample = texture2D(map, animateUv(vUv, vFrame, worldTime));
+              }
 
-  if ( diffuseColor.a < 0.5 ) {
-    discard;
-  }
+              if ( sample.a < 0.5 ) {
+                discard;
+              }
 
-  vec3 lightColor;
-  if (
-    abs(selectedObject.x - vObjectIndex) < 0.5 || abs(selectedObject.y - vObjectIndex) < 0.5 ||
-    (
-      vPosition.x > (selectedBlockLeft.x - 0.0001) && vPosition.x < (selectedBlockLeft.x + 1.0001) &&
-      vPosition.y > (selectedBlockLeft.y - 0.0001) && vPosition.y < (selectedBlockLeft.y + 1.0001) &&
-      vPosition.z > (selectedBlockLeft.z - 0.0001) && vPosition.z < (selectedBlockLeft.z + 1.0001)
-    ) ||
-    (
-      vPosition.x > (selectedBlockRight.x - 0.0001) && vPosition.x < (selectedBlockRight.x + 1.0001) &&
-      vPosition.y > (selectedBlockRight.y - 0.0001) && vPosition.y < (selectedBlockRight.y + 1.0001) &&
-      vPosition.z > (selectedBlockRight.z - 0.0001) && vPosition.z < (selectedBlockRight.z + 1.0001)
-    )
-  ) {
-    diffuseColor.rgb = mix(diffuseColor.rgb, blueColor, 0.5);
-    lightColor = vec3(1.0);
-  } else {
-    lightColor = vec3(floor(
-      (
-        min((vSkyLightmap * sunIntensity) + vTorchLightmap, 1.0)
-      ) * 4.0 + 0.5) / 4.0
-    );
-  }
+              vec3 lightColor;
+              if (
+                abs(selectedObject.x - vObjectIndex) < 0.5 || abs(selectedObject.y - vObjectIndex) < 0.5 ||
+                (
+                  vPosition.x > (selectedBlockLeft.x - 0.0001) && vPosition.x < (selectedBlockLeft.x + 1.0001) &&
+                  vPosition.y > (selectedBlockLeft.y - 0.0001) && vPosition.y < (selectedBlockLeft.y + 1.0001) &&
+                  vPosition.z > (selectedBlockLeft.z - 0.0001) && vPosition.z < (selectedBlockLeft.z + 1.0001)
+                ) ||
+                (
+                  vPosition.x > (selectedBlockRight.x - 0.0001) && vPosition.x < (selectedBlockRight.x + 1.0001) &&
+                  vPosition.y > (selectedBlockRight.y - 0.0001) && vPosition.y < (selectedBlockRight.y + 1.0001) &&
+                  vPosition.z > (selectedBlockRight.z - 0.0001) && vPosition.z < (selectedBlockRight.z + 1.0001)
+                )
+              ) {
+                sample.rgb = mix(sample.rgb, blueColor, 0.5);
+                lightColor = vec3(1.0);
+              } else {
+                lightColor = vec3(floor(
+                  (
+                    min((vSkyLightmap * sunIntensity) + vTorchLightmap, 1.0)
+                  ) * 4.0 + 0.5) / 4.0
+                );
+              }
 
-  lightColor.rgb *= (1.0 - (vSsao * 255.0 / 3.0));
+              lightColor.rgb *= (1.0 - (vSsao * 255.0 / 3.0));
 
-  vec3 outgoingLight = diffuseColor.rgb * (0.1 + lightColor * 0.9);
+              vec3 diffuseColor = sample.rgb * (0.1 + lightColor * 0.9);
+              diffuseColor = mix(diffuseColor, fogColor, vFog);
 
-  gl_FragColor = vec4(outgoingLight, diffuseColor.a);
-}
+              gl_FragColor = vec4(diffuseColor, sample.a);
+            }
           `
         };
 
@@ -366,6 +373,8 @@ void main() {
 
         const uniforms = THREE.UniformsUtils.clone(OBJECTS_SHADER.uniforms);
         uniforms.map.value = generatorElement.getTextureAtlas();
+        uniforms.fogColor.value = scene.fog.color;
+        uniforms.fogDensity.value = scene.fog.density;
         const objectsMaterial = new THREE.ShaderMaterial({
           uniforms,
           vertexShader: OBJECTS_SHADER.vertexShader,

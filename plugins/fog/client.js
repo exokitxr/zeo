@@ -1,14 +1,14 @@
 const FOG_DENSITY = 0.01;
 const FOG_COLOR = 0xFFFFFF;
 
+const dataSymbol = Symbol();
+
 class Fog {
   mount() {
     const {three: {scene}, elements, render} = zeo;
 
     const fogElement = {
       entityAddedCallback(entityElement) {
-        const entityApi = entityElement.getEntityApi();
-
         scene.fog.density = FOG_DENSITY;
         scene.fog.color.setHex(FOG_COLOR);
 
@@ -32,16 +32,17 @@ class Fog {
         };
         updates.push(update); */
 
-        entityApi._cleanup = () => {
-          // updates.splice(updates.indexOf(update), 1);
+        entityElement[dataSymbol] = {
+          cleanup() {
+            // updates.splice(updates.indexOf(update), 1);
 
-          scene.fog.density = 0;
+            scene.fog.density = 0;
+          },
         };
       },
       entityRemovedCallback(entityElement) {
-        const entityApi = entityElement.getEntityApi();
-
-        entityApi._cleanup();
+        entityApi[dataSymbol].cleanup();
+        delete entityApi[dataSymbol];
       },
     }
     elements.registerEntity(this, fogElement);
