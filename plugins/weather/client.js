@@ -2,18 +2,19 @@ const {
   NUM_CELLS,
   NUM_CELLS_HEIGHT,
 
+  RANGE,
+
   TEXTURE_SIZE,
 } = require('./lib/constants/constants');
 
-const NUM_POSITIONS = 100 * 1024;
+const GENERATOR_PLUGIN = 'plugins-generator';
 
 class Weather {
   mount() {
-    const {three, elements, pose, input, render, items, world, utils: {hash: hashUtils}} = zeo;
+    const {three, elements, pose, input, render, items, world, utils: {js: jsUtils, hash: hashUtils}} = zeo;
     const {THREE, scene} = three;
+    const {mod} = jsUtils;
     const {murmur} = hashUtils;
-
-    const rainTime = 5000;
 
     const WEATHER_SHADER = {
       uniforms: {
@@ -45,53 +46,62 @@ class Weather {
         attribute vec3 angle;
         attribute vec2 chunkPosition;
         attribute float type;
+        attribute float valid;
         varying vec2 vUv;
 
         void main() {
-          mat4 modelView = modelViewMatrix;
-          modelView[0][0] = 1.0;
-          modelView[0][1] = 0.0;
-          modelView[0][2] = 0.0;
-          if (type != 0.0) {
-            modelView[1][0] = 0.0;
-            modelView[1][1] = 1.0;
-            modelView[1][2] = 0.0;
-          }
-          modelView[2][0] = 0.0;
-          modelView[2][1] = 0.0;
-          modelView[2][2] = 1.0;
-          modelView[3][0] = 0.0;
-          modelView[3][1] = 0.0;
-          modelView[3][2] = 0.0;
-          modelView[3][3] = 1.0;
+          if (valid > 0.0) {
+            mat4 modelView = modelViewMatrix;
+            modelView[0][0] = 1.0;
+            modelView[0][1] = 0.0;
+            modelView[0][2] = 0.0;
+            if (type != 0.0) {
+              modelView[1][0] = 0.0;
+              modelView[1][1] = 1.0;
+              modelView[1][2] = 0.0;
+            }
+            modelView[2][0] = 0.0;
+            modelView[2][1] = 0.0;
+            modelView[2][2] = 1.0;
+            modelView[3][0] = 0.0;
+            modelView[3][1] = 0.0;
+            modelView[3][2] = 0.0;
+            modelView[3][3] = 1.0;
 
-          float animationFactor = 0.0;
-          vec3 del = delta;
-          if (type == 0.0) {
-            animationFactor = mod((position.y / 128.0 - worldTime / ${rainTime.toFixed(1)}), 1.0);
-            del.x *= 0.05;
-            del.y *= 0.8;
-          } else if (type == 1.0 || type == 2.0) {
-            animationFactor = 1.0 - mod((position.y / 128.0 - worldTime / 240000.0), 1.0);
-            del.x *= 0.1;
-            del.y *= 0.1;
-          } else if (type == 3.0 || type == 4.0) {
-            animationFactor = mod((position.y / 128.0 - worldTime / 60000.0), 1.0);
-            del.x *= 0.1;
-            del.y *= 0.1;
-          }
-          vec3 pos = position.xyz;
-          pos.y = animationFactor * 128.0;
-          pos.x += chunkPosition.x + ((-0.5 + sin(mod(angle.x + worldTime / 4000.0, 1.0) * PI * 2.0)) * angle.z);
-          pos.z += chunkPosition.y + ((-0.5 + sin(mod(angle.y + worldTime / 4000.0, 1.0) * PI * 2.0)) * angle.z);
-          gl_Position = projectionMatrix * vec4(
-            (modelViewMatrix * vec4(pos, 1.0)).xyz +
-            (modelView * vec4(del, 1.0)).xyz,
-            1.0
-          );
+            float animationFactor = 0.0;
+            vec3 del = delta;
+            if (type == 0.0) {
+              animationFactor = mod((position.y / 128.0 - worldTime / 4000.0), 1.0);
+              del.x *= 0.05;
+              del.y *= 0.8;
+            } else if (type == 1.0 || type == 2.0) {
+              animationFactor = 1.0 - mod((position.y / 128.0 - worldTime / 240000.0), 1.0);
+              del.x *= 0.1;
+              del.y *= 0.1;
+            } else if (type == 3.0 || type == 4.0) {
+              animationFactor = mod((position.y / 128.0 - worldTime / 60000.0), 1.0);
+              del.x *= 0.1;
+              del.y *= 0.1;
+            }
+            vec3 pos = position.xyz;
+            pos.y = animationFactor * 128.0;
+            pos.x += chunkPosition.x;
+            pos.z += chunkPosition.y;
+            if (type != 0.0) {
+              pos.x += ((-0.5 + sin(mod(angle.x + worldTime / 4000.0, 1.0) * PI * 2.0)) * angle.z);
+              pos.z += ((-0.5 + sin(mod(angle.y + worldTime / 4000.0, 1.0) * PI * 2.0)) * angle.z);
+            }
+            gl_Position = projectionMatrix * vec4(
+              (modelViewMatrix * vec4(pos, 1.0)).xyz +
+              (modelView * vec4(del, 1.0)).xyz,
+              1.0
+            );
 
-          vUv = uv;
-          vUv.x = type*75.0/128.0/5.0 + vUv.x * 1.0*75.0/128.0/5.0;
+            vUv = uv;
+            vUv.x = type*75.0/128.0/5.0 + vUv.x * 1.0*75.0/128.0/5.0;
+          } else {
+            gl_Position = vec4(0.0);
+          }
         }
       `,
       fragmentShader: `\
@@ -159,7 +169,8 @@ class Weather {
       THREE.ClampToEdgeWrapping,
       THREE.ClampToEdgeWrapping,
       THREE.NearestFilter,
-      THREE.LinearMipMapLinearFilter,
+      THREE.NearestFilter,
+      // THREE.LinearMipMapLinearFilter,
       THREE.RGBAFormat,
       THREE.UnsignedByteType,
       1
@@ -187,8 +198,14 @@ class Weather {
       live = false;
     };
 
-    return _requestUpdateTextureAtlas()
-      .then(() => {
+    return Promise.all([
+      elements.requestElement(GENERATOR_PLUGIN),
+      _requestUpdateTextureAtlas(),
+    ])
+      .then(([
+        generatorElement,
+        textureAtlasResult,
+      ]) => {
         if (live) {
           class Weather {
             constructor(position, angle) {
@@ -223,12 +240,18 @@ class Weather {
           const angles = new Float32Array(weatherGeometryPositions.length * numWeathers);
           const anglesAttribute = new THREE.BufferAttribute(angles, 3);
           geometry.addAttribute('angle', anglesAttribute);
-          const chunkPositions = new Float32Array(NUM_POSITIONS);
-          const chunkPositionsAttribute = new THREE.InstancedBufferAttribute(chunkPositions.subarray(0, 0), 2, 1);
+          const chunkPositions = new Float32Array(RANGE * RANGE * 2 * 2);
+          const chunkPositionsAttribute = new THREE.InstancedBufferAttribute(chunkPositions, 2, 1);
+          chunkPositionsAttribute.dynamic = true;
           geometry.addAttribute('chunkPosition', chunkPositionsAttribute);
-          const types = new Float32Array(NUM_POSITIONS);
-          const typesAttribute = new THREE.InstancedBufferAttribute(types.subarray(0, 0), 1, 1);
+          const types = new Float32Array(RANGE * RANGE * 1 * 2);
+          const typesAttribute = new THREE.InstancedBufferAttribute(types, 1, 1);
+          typesAttribute.dynamic = true;
           geometry.addAttribute('type', typesAttribute);
+          const valids = new Float32Array(RANGE * RANGE * 1 * 2);
+          const validsAttribute = new THREE.InstancedBufferAttribute(valids, 1, 1);
+          validsAttribute.dynamic = true;
+          geometry.addAttribute('valid', validsAttribute);
           // const indices = new Uint16Array(numWeatherGeometryIndices.length * numWeathers);
           // const indexAttribute = new THREE.BufferAttribute(indices, 1);
           // geometry.setIndex(indexAttribute);
@@ -309,65 +332,83 @@ class Weather {
           anglesAttribute.needsUpdate = true;
           // indexAttribute.needsUpdate = true;
 
-          const _addRain = (x, z) => {
-            const basePositionIndex = instanceIndex * 2;
+          const _addRain = (index, x, z) => {
+            const basePositionIndex = index * 2;
             chunkPositions[basePositionIndex + 0] = x * NUM_CELLS;
             chunkPositions[basePositionIndex + 1] = z * NUM_CELLS;
 
-            const baseTypeIndex = instanceIndex;
+            const baseTypeIndex = index;
             types[baseTypeIndex] = 0;
 
-            instanceIndex++;
-
-            geometry.addAttribute('chunkPosition', new THREE.InstancedBufferAttribute(chunkPositions.subarray(0, instanceIndex * 2), 2, 1));
-            geometry.addAttribute('type', new THREE.InstancedBufferAttribute(types.subarray(0, instanceIndex), 1, 1));
-
             // geometry.setDrawRange(0, numWeathers * 3);
           };
-          const _addSmoke = (x, z) => {
-            const basePositionIndex = instanceIndex * 2;
+          const _addSmoke = (index, x, z) => {
+            const basePositionIndex = index * 2;
             chunkPositions[basePositionIndex + 0] = x * NUM_CELLS;
             chunkPositions[basePositionIndex + 1] = z * NUM_CELLS;
 
-            const baseTypeIndex = instanceIndex;
+            const baseTypeIndex = index;
             types[baseTypeIndex] = Math.random < 0.5 ? 1 : 2;
 
-            instanceIndex++;
-
-            geometry.addAttribute('chunkPosition', new THREE.InstancedBufferAttribute(chunkPositions.subarray(0, instanceIndex * 2), 2, 1));
-            geometry.addAttribute('type', new THREE.InstancedBufferAttribute(types.subarray(0, instanceIndex), 1, 1));
-
             // geometry.setDrawRange(0, numWeathers * 3);
           };
-          const _addSnow = (x, z) => {
-            const basePositionIndex = instanceIndex * 2;
+          const _addSnow = (index, x, z) => {
+            const basePositionIndex = index * 2;
             chunkPositions[basePositionIndex + 0] = x * NUM_CELLS;
             chunkPositions[basePositionIndex + 1] = z * NUM_CELLS;
 
-            const baseTypeIndex = instanceIndex;
+            const baseTypeIndex = index;
             types[baseTypeIndex] = Math.random < 0.5 ? 3 : 4;
-
-            instanceIndex++;
-
-            geometry.addAttribute('chunkPosition', new THREE.InstancedBufferAttribute(chunkPositions.subarray(0, instanceIndex * 2), 2, 1));
-            geometry.addAttribute('type', new THREE.InstancedBufferAttribute(types.subarray(0, instanceIndex), 1, 1));
 
             // geometry.setDrawRange(0, numWeathers * 3);
           };
-          _addRain(0, 0);
-          _addSnow(-1, 0);
-          _addSmoke(0, -1);
-/* const basePositionIndex = instanceIndex * 3;
-chunkPositions[basePositionIndex + 0] = 1 * NUM_CELLS;
-chunkPositions[basePositionIndex + 1] = 0;
-chunkPositions[basePositionIndex + 2] = 1 * NUM_CELLS;
 
-const baseTypeIndex = instanceIndex;
-types[baseTypeIndex] = 2;
+          const _allocIndex = () => {
+            for (let i = 0; i < valids.length; i++) {
+              if (valids[i] === 0) {
+                valids[i] = 1;
+                return i;
+              }
+            }
+            return -1;
+          };
+          const _freeIndex = i => {
+            valids[i] = 0;
+          };
 
-chunkPositionsAttribute.needsUpdate = true;
-typesAttribute.needsUpdate = true; */
+          const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
+          const meshWeathers = {};
+          const _add = chunk => {
+            const {x, z} = chunk;
 
+            const index = _allocIndex();
+            const v = Math.random();
+            if (v < 1/3) {
+              _addRain(index, x, z);
+            } else if (v < 2/3) {
+              _addSnow(index, x, z);
+            } else {
+              _addSmoke(index, x, z);
+            }
+            chunkPositionsAttribute.needsUpdate = true;
+            typesAttribute.needsUpdate = true;
+            validsAttribute.needsUpdate = true;
+
+            meshWeathers[_getChunkIndex(x, z)] = index;
+          };
+          generatorElement.on('add', _add);
+          const _remove = chunk => {
+            const {x, z} = chunk;
+
+            const chunkIndex = _getChunkIndex(x, z);
+            const index = meshWeathers[chunkIndex];
+            meshWeathers[chunkIndex] = null;
+            _freeIndex(index);
+          };
+          generatorElement.on('remove', _remove);
+          generatorElement.forEachChunk(chunk => {
+            _add(chunk);
+          });
 window.weathersMesh = weathersMesh;
 
           const _update = () => {
