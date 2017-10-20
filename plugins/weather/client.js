@@ -263,6 +263,7 @@ class Weather {
             uniforms,
             vertexShader: WEATHER_SHADER.vertexShader,
             fragmentShader: WEATHER_SHADER.fragmentShader,
+            side: THREE.DoubleSide,
             transparent: true,
           });
 
@@ -378,23 +379,57 @@ class Weather {
 
           const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
           const meshWeathers = {};
-          const _add = chunk => {
-            const {x, z} = chunk;
+          let running = false;
+          const queue = [];
+          const _next = () => {
+            running = false;
 
-            const index = _allocIndex();
-            const v = Math.random();
-            if (v < 1/3) {
-              _addRain(index, x, z);
-            } else if (v < 2/3) {
-              _addSnow(index, x, z);
-            } else {
-              _addSmoke(index, x, z);
+            if (queue.length > 0) {
+              queue.shift()();
             }
-            chunkPositionsAttribute.needsUpdate = true;
-            typesAttribute.needsUpdate = true;
-            validsAttribute.needsUpdate = true;
+          };
+          const _requestTemperatureHumidity = (x, z, cb) => {
+            generatorElement.requestTemperatureHumidity(x, z, cb);
+          };
+          const _add = chunk => {
+            if (!running) {
+              const {x, z} = chunk;
 
-            meshWeathers[_getChunkIndex(x, z)] = index;
+              _requestTemperatureHumidity(x, z, ({temperature, humidity}) => {
+                if (humidity[0] > 130) {
+                  if (temperature[0] > 110) {
+                    const index = _allocIndex();
+                    _addRain(index, x, z);
+                    meshWeathers[_getChunkIndex(x, z)] = index;
+                    chunkPositionsAttribute.needsUpdate = true;
+                    typesAttribute.needsUpdate = true;
+                    validsAttribute.needsUpdate = true;
+                  } else {
+                    const index = _allocIndex();
+                    _addSnow(index, x, z);
+                    meshWeathers[_getChunkIndex(x, z)] = index;
+                    chunkPositionsAttribute.needsUpdate = true;
+                    typesAttribute.needsUpdate = true;
+                    validsAttribute.needsUpdate = true;
+                  }
+                } else if (humidity[0] < 100) {
+                  if (temperature[0] > 110) {
+                    const index = _allocIndex();
+                    _addSmoke(index, x, z);
+                    meshWeathers[_getChunkIndex(x, z)] = index;
+                    chunkPositionsAttribute.needsUpdate = true;
+                    typesAttribute.needsUpdate = true;
+                    validsAttribute.needsUpdate = true;
+                  } else {
+                    // XXX
+                  }
+                }
+
+                _next();
+              });
+            } else {
+              queue.push(_add.bind(this, chunk));
+            }
           };
           generatorElement.on('add', _add);
           const _remove = chunk => {
@@ -409,7 +444,6 @@ class Weather {
           generatorElement.forEachChunk(chunk => {
             _add(chunk);
           });
-window.weathersMesh = weathersMesh;
 
           const _update = () => {
             const _updateMeshes = () => {

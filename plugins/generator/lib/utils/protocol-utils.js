@@ -186,6 +186,8 @@ const _getTerrainRenderChunkSizeFromMetadata = metadata => {
     (UINT32_SIZE * 6 * NUM_CHUNKS_HEIGHT) + // index range
     (FLOAT32_SIZE * NUM_CHUNKS_HEIGHT) + // bounding sphere
     (UINT8_SIZE * _sum(numPeeks)) + // peeks
+    (UINT8_SIZE * 1) + // temperature
+    (UINT8_SIZE * 1) + // humidity
     (FLOAT32_SIZE * numStaticHeightfield); // static heightfield
 };
 
@@ -218,7 +220,7 @@ const _getTerrainRenderChunkSize = (mapChunk, decorations) => {
 };
 
 const stringifyTerrainRenderChunk = (mapChunk, decorations, arrayBuffer, byteOffset) => {
-  const {positions, colors, indices, geometries, staticHeightfield, ether} = mapChunk;
+  const {positions, colors, indices, geometries, temperature, humidity, staticHeightfield, ether} = mapChunk;
   const {skyLightmaps, torchLightmaps} = decorations;
 
   if (arrayBuffer === undefined || byteOffset === undefined) {
@@ -288,6 +290,15 @@ const stringifyTerrainRenderChunk = (mapChunk, decorations, arrayBuffer, byteOff
     peeksBuffer.set(peeks);
     byteOffset += UINT8_SIZE * peeks.length;
   }
+
+  const temperatureBuffer = new Uint8Array(arrayBuffer, byteOffset, temperature.length);
+  temperatureBuffer.set(temperature);
+  byteOffset += UINT8_SIZE * 1;
+
+  const humidityBuffer = new Uint8Array(arrayBuffer, byteOffset, humidity.length);
+  humidityBuffer.set(humidity);
+  byteOffset += UINT8_SIZE * 1;
+  byteOffset = _align(byteOffset, FLOAT32_SIZE);
 
   const staticHeightfieldBuffer = new Float32Array(arrayBuffer, byteOffset, staticHeightfield.length);
   staticHeightfieldBuffer.set(staticHeightfield);
@@ -374,6 +385,15 @@ const parseTerrainRenderChunk = (buffer, byteOffset) => {
   const staticHeightfield = staticHeightfieldBuffer;
   byteOffset += FLOAT32_SIZE * numStaticHeightfield;
 
+  const temperatureBuffer = new Uint8Array(buffer, byteOffset, 1);
+  const temperature = temperatureBuffer;
+  byteOffset += UINT8_SIZE * 1;
+
+  const humidityBuffer = new Uint8Array(buffer, byteOffset, 1);
+  const humidity = humidityBuffer;
+  byteOffset += UINT8_SIZE * 1;
+  byteOffset = _align(byteOffset, FLOAT32_SIZE);
+
   const etherBuffer = new Float32Array(buffer, byteOffset, numEther);
   const ether = etherBuffer;
   byteOffset += FLOAT32_SIZE * numEther;
@@ -387,8 +407,55 @@ const parseTerrainRenderChunk = (buffer, byteOffset) => {
     torchLightmaps,
     indices,
     geometries,
+    temperature,
+    humidity,
     staticHeightfield,
     ether,
+  };
+};
+
+const _getTemperatureHumiditySize = spec => {
+  return (UINT8_SIZE * 1) + // temperature
+    (UINT8_SIZE * 1); // humidity
+};
+
+const stringifyTemperatureHumidity = (spec, arrayBuffer, byteOffset) => {
+  const {temperature, humidity} = spec;
+
+  if (arrayBuffer === undefined || byteOffset === undefined) {
+    const bufferSize = _getTemperatureHumiditySize(spec);
+    arrayBuffer = new ArrayBuffer(bufferSize);
+    byteOffset = 0;
+  }
+
+  const temperatureBuffer = new Uint8Array(arrayBuffer, byteOffset, 1);
+  temperatureBuffer.set(temperature);
+  byteOffset += UINT8_SIZE * 1;
+
+  const humidityBuffer = new Uint8Array(arrayBuffer, byteOffset, 1);
+  humidityBuffer.set(humidity);
+  byteOffset += UINT8_SIZE * 1;
+
+  return [arrayBuffer, byteOffset];
+};
+
+const parseTemperatureHumidity = (buffer, byteOffset) => {
+  if (byteOffset === undefined) {
+    byteOffset = 0;
+  }
+
+  const temperatureBuffer = new Uint8Array(buffer, byteOffset, 1);
+  const temperature = temperatureBuffer;
+  byteOffset += UINT8_SIZE * 1;
+
+  const humidityBuffer = new Uint8Array(buffer, byteOffset, 1);
+  const humidity = humidityBuffer;
+  byteOffset += UINT8_SIZE * 1;
+
+  return {
+    buffer,
+    temperature,
+    humidity,
   };
 };
 
@@ -1498,6 +1565,9 @@ module.exports = {
 
   stringifyTerrainRenderChunk,
   parseTerrainRenderChunk,
+
+  stringifyTemperatureHumidity,
+  parseTemperatureHumidity,
 
   stringifyTerrainsRenderChunk,
   parseTerrainsRenderChunk,

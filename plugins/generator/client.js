@@ -107,6 +107,7 @@ class Generator {
 
     let terrainGenerateBuffer = new ArrayBuffer(4 * NUM_POSITIONS_CHUNK);
     let objectsGenerateBuffer = new ArrayBuffer(NUM_POSITIONS_CHUNK);
+    let temperatureHumidityBuffer = new ArrayBuffer(2);
     let terrainCullBuffer = new ArrayBuffer(100 * 1024);
     let objectsCullBuffer = new ArrayBuffer(100 * 1024);
     let hoveredObjectsBuffer = new ArrayBuffer(12 * 2 * 4);
@@ -207,6 +208,23 @@ class Generator {
         objectsGenerateBuffer = newGenerateBuffer;
 
         cb(newGenerateBuffer);
+      };
+    };
+    worker.requestTemperatureHumidity = (x, y, cb) => {
+      const id = _makeId();
+      worker.postMessage({
+        type: 'temperatureHumidity',
+        id,
+        args: {
+          x,
+          y,
+          buffer: temperatureHumidityBuffer,
+        },
+      }, [temperatureHumidityBuffer]);
+      queues[id] = newTemperatureHumidityBuffer => {
+        temperatureHumidityBuffer = newTemperatureHumidityBuffer;
+
+        cb(newTemperatureHumidityBuffer);
       };
     };
     worker.requestUngenerate = (x, z) => {
@@ -539,6 +557,11 @@ class Generator {
         generatorElement.requestObjectsGenerate = (x, z, index, numPositions, numObjectIndices, numIndices, cb) => {
           worker.requestObjectsGenerate(x, z, index, numPositions, numObjectIndices, numIndices, buffer => {
             cb(protocolUtils.parseWorker(buffer));
+          });
+        };
+        generatorElement.requestTemperatureHumidity = (x, z, cb) => {
+          worker.requestTemperatureHumidity(x, z, buffer => {
+            cb(protocolUtils.parseTemperatureHumidity(buffer));
           });
         };
         generatorElement.addVoxel = (x, y, z) => {

@@ -396,6 +396,8 @@ const _retesselateTerrain = (chunk, newEther) => {
     colors: colors.slice(),
     indices: indices.slice(),
     geometries: geometries.slice(),
+    temperature: oldTemperature.slice(),
+    humidity: oldHumidity.slice(),
     staticHeightfield: staticHeightfield.slice(),
   };
   chunk.chunkData.decorations.terrain = {
@@ -2060,6 +2062,26 @@ self.onmessage = e => {
           zde.pushChunk(chunk);
 
           protocolUtils.stringifyWorker(chunk.chunkData.objects, chunk.chunkData.decorations.objects, buffer, 0);
+
+          postMessage({
+            type: 'response',
+            args: [id],
+            result: buffer,
+          }, [buffer]);
+        })
+        .catch(err => {
+          console.warn(err);
+        });
+      break;
+    }
+    case 'temperatureHumidity': {
+      const {id, args} = data;
+      const {x, y} = args;
+      let {buffer} = args;
+
+      _requestChunk(x, y)
+        .then(chunk => {
+          protocolUtils.stringifyTemperatureHumidity(chunk.chunkData.terrain, buffer, 0);
 
           postMessage({
             type: 'response',

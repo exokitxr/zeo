@@ -695,7 +695,7 @@ class Heightfield {
 
             let running = false;
             const queue = [];
-             const _next = () => {
+            const _next = () => {
               running = false;
 
               if (queue.length > 0) {
