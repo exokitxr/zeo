@@ -32,6 +32,8 @@ const _align = (n, alignment) => {
 
 const slab = (() => {
   const BIOMES_SIZE = _align(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN * Uint8Array.BYTES_PER_ELEMENT, Float32Array.BYTES_PER_ELEMENT);
+  const TEMPERATURE_SIZE = _align(1 * Uint8Array.BYTES_PER_ELEMENT, Float32Array.BYTES_PER_ELEMENT);
+  const HUMIDITY_SIZE = _align(1 * Uint8Array.BYTES_PER_ELEMENT, Float32Array.BYTES_PER_ELEMENT);
   const ELEVATIONS_SIZE = NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN * Float32Array.BYTES_PER_ELEMENT;
   const ETHER_SIZE = ((NUM_CELLS + 1) * (NUM_CELLS_HEIGHT + 1) * (NUM_CELLS + 1)) * Float32Array.BYTES_PER_ELEMENT;
   const WATER_SIZE  = ((NUM_CELLS + 1) * (NUM_CELLS_HEIGHT + 1) * (NUM_CELLS + 1)) * Float32Array.BYTES_PER_ELEMENT;
@@ -39,6 +41,8 @@ const slab = (() => {
 
   const buffer = new ArrayBuffer(
     BIOMES_SIZE +
+    TEMPERATURE_SIZE +
+    HUMIDITY_SIZE +
     ELEVATIONS_SIZE +
     ETHER_SIZE +
     WATER_SIZE +
@@ -48,6 +52,10 @@ const slab = (() => {
   let index = 0;
   const biomes = new Uint8Array(buffer, index, BIOMES_SIZE / Uint8Array.BYTES_PER_ELEMENT);
   index += BIOMES_SIZE;
+  const temperature = new Uint8Array(buffer, index, 1);
+  index += TEMPERATURE_SIZE;
+  const humidity = new Uint8Array(buffer, index, 1);
+  index += HUMIDITY_SIZE;
   const elevations = new Float32Array(buffer, index, ELEVATIONS_SIZE / Float32Array.BYTES_PER_ELEMENT);
   index += ELEVATIONS_SIZE;
   const ether = new Float32Array(buffer, index, ETHER_SIZE / Float32Array.BYTES_PER_ELEMENT);
@@ -59,6 +67,8 @@ const slab = (() => {
 
   return {
     biomes,
+    temperature,
+    humidity,
     elevations,
     ether,
     water,
@@ -70,9 +80,13 @@ const _generateMapChunk = (ox, oy, opts) => {
   // generate
 
   let biomes = opts.oldBiomes;
+  let temperature = opts.oldTemperature;
+  let humidity = opts.oldHumidity;
   let fillBiomes = false;
   if (!(biomes && biomes.length > 0)) {
     biomes = slab.biomes;
+    temperature = slab.temperature;
+    humidity = slab.humidity;
     fillBiomes = true;
   }
 
@@ -207,6 +221,8 @@ const _generateMapChunk = (ox, oy, opts) => {
     ox,
     oy,
     biomes,
+    temperature,
+    humidity,
     fillBiomes,
     elevations,
     fillElevations,
@@ -221,6 +237,8 @@ const _generateMapChunk = (ox, oy, opts) => {
 
   return {
     biomes,
+    temperature,
+    humidity,
     elevations,
     ether,
     water,

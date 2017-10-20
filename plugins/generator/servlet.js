@@ -111,6 +111,8 @@ const _init = () => _requestPlugins([
         _readArgs([
           Int32Array, // header
           Uint8Array, // biomes
+          Uint8Array, // temperature
+          Uint8Array, // humidity
           Float32Array, // elevation
           Float32Array, // old ether
           Float32Array, // water
@@ -119,6 +121,8 @@ const _init = () => _requestPlugins([
         ], (err, [
           header,
           oldBiomes,
+          oldTemperature,
+          oldHumidity,
           oldElevations,
           oldEther,
           oldWater,
@@ -128,6 +132,8 @@ const _init = () => _requestPlugins([
           const [ox, oz] = header;
           const opts = {
             oldBiomes,
+            oldTemperature,
+            oldHumidity,
             oldElevations,
             oldEther,
             oldWater,

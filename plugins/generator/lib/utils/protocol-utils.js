@@ -38,8 +38,13 @@ const OBJECTS_CULL_GROUP_LENGTH = (1 + NUM_RENDER_GROUPS * 2);
 const _getTerrainDataChunkSizeFromMetadata = metadata => {
   const {numBiomes, numElevations, numEther, numWater, numLava} = metadata;
 
-  return TERRAIN_DATA_HEADER_SIZE + // header
-    _align(UINT8_SIZE * numBiomes, FLOAT32_SIZE) + // biomes
+  return _align(
+      TERRAIN_DATA_HEADER_SIZE + // header
+      UINT8_SIZE * numBiomes + // biomes
+      UINT8_SIZE * 1 + // temperature
+      UINT8_SIZE * 1, // humidity
+      FLOAT32_SIZE
+    ) +
     (FLOAT32_SIZE * numElevations) + // elevations
     (FLOAT32_SIZE * numEther) + // ethers
     (FLOAT32_SIZE * numWater) + // water
@@ -65,7 +70,7 @@ const _getTerrainDataChunkSize = mapChunk => {
 };
 
 const stringifyTerrainData = (mapChunk, arrayBuffer, byteOffset) => {
-  const {biomes, elevations, ether, water, lava} = mapChunk;
+  const {biomes, temperature, humidity, elevations, ether, water, lava} = mapChunk;
 
   if (arrayBuffer === undefined || byteOffset === undefined) {
     const bufferSize = _getTerrainDataChunkSize(mapChunk);
@@ -85,6 +90,14 @@ const stringifyTerrainData = (mapChunk, arrayBuffer, byteOffset) => {
   const biomesBuffer = new Uint8Array(arrayBuffer, byteOffset, biomes.length);
   biomesBuffer.set(biomes);
   byteOffset += UINT8_SIZE * biomes.length;
+
+  const temperatureBuffer = new Uint8Array(arrayBuffer, byteOffset, 1);
+  temperatureBuffer.set(temperature);
+  byteOffset += UINT8_SIZE * 1;
+
+  const humidityBuffer = new Uint8Array(arrayBuffer, byteOffset, 1);
+  humidityBuffer.set(humidity);
+  byteOffset += UINT8_SIZE * 1;
   byteOffset = _align(byteOffset, FLOAT32_SIZE);
 
   const elevationsBuffer = new Float32Array(arrayBuffer, byteOffset, elevations.length);
@@ -123,6 +136,14 @@ const parseTerrainData = (buffer, byteOffset) => {
   const biomesBuffer = new Uint8Array(buffer, byteOffset, numBiomes);
   const biomes = biomesBuffer;
   byteOffset += UINT8_SIZE * numBiomes;
+
+  const temperatureBuffer = new Uint8Array(buffer, byteOffset, 1);
+  const temperature = temperatureBuffer;
+  byteOffset += UINT8_SIZE * 1;
+
+  const humidityBuffer = new Uint8Array(buffer, byteOffset, 1);
+  const humidity = humidityBuffer;
+  byteOffset += UINT8_SIZE * 1;
   byteOffset = _align(byteOffset, FLOAT32_SIZE);
 
   const elevationsBuffer = new Float32Array(buffer, byteOffset, numElevations);
@@ -144,6 +165,8 @@ const parseTerrainData = (buffer, byteOffset) => {
   return {
     buffer,
     biomes,
+    temperature,
+    humidity,
     elevations,
     ether,
     water,

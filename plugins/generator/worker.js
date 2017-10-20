@@ -282,6 +282,8 @@ const _retesselateTerrain = (chunk, newEther) => {
   const oldTerrainBuffer = chunk.getTerrainBuffer();
   const oldTerrainData = protocolUtils.parseTerrainData(oldTerrainBuffer.buffer, oldTerrainBuffer.byteOffset);
   const oldBiomes = oldTerrainData.biomes.slice();
+  const oldTemperature = oldTerrainData.temperature.slice();
+  const oldHumidity = oldTerrainData.humidity.slice();
   const oldElevations = oldTerrainData.elevations.slice();
   const oldEther = oldTerrainData.ether.slice();
   const oldWater = oldTerrainData.water.slice();
@@ -292,6 +294,8 @@ const _retesselateTerrain = (chunk, newEther) => {
   const allocator = new Allocator();
 
   const oldBiomesAddress = allocator.allocShadowBuffer(oldBiomes);
+  const oldTemperatureAddress = allocator.allocShadowBuffer(oldTemperature);
+  const oldHumidityAddress = allocator.allocShadowBuffer(oldHumidity);
   const oldElevationsAddress = allocator.allocShadowBuffer(oldElevations);
   const oldEtherAddress = allocator.allocShadowBuffer(oldEther);
   const oldWaterAddress = allocator.allocShadowBuffer(oldWater);
@@ -303,6 +307,8 @@ const _retesselateTerrain = (chunk, newEther) => {
       chunk.x,
       chunk.z,
       oldBiomesAddress,
+      oldTemperatureAddress,
+      oldHumidityAddress,
       +false,
       oldElevationsAddress,
       +false,
@@ -375,6 +381,8 @@ const _retesselateTerrain = (chunk, newEther) => {
   const terrainBuffer = chunk.getTerrainBuffer();
   protocolUtils.stringifyTerrainData({
     biomes: oldBiomes,
+    temperature: oldTemperature,
+    humidity: oldHumidity,
     elevations: oldElevations,
     ether: oldEther,
     water: oldWater,

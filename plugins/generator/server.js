@@ -167,10 +167,12 @@ class Generator {
 
     const _generateChunk = chunk => _generateChunkTerrain(chunk)
       .then(chunk => _generateChunkObjects(chunk));
-    const _generateChunkTerrain = (chunk, oldBiomes, oldElevations, oldEther, oldWater, oldLava, newEther) => new Promise((accept, reject) => {
+    const _generateChunkTerrain = (chunk, oldBiomes, oldTemperature, oldHumidity, oldElevations, oldEther, oldWater, oldLava, newEther) => new Promise((accept, reject) => {
       childProcess.request(servlet.METHODS.generateTerrain, [
         Int32Array.from([chunk.x, chunk.z]),
         oldBiomes || zeroBuffer,
+        oldTemperature || zeroBuffer,
+        oldHumidity || zeroBuffer,
         oldElevations || zeroBuffer,
         oldEther || zeroBuffer,
         oldWater || zeroBuffer,
@@ -633,6 +635,8 @@ class Generator {
                       const oldTerrainBuffer = chunk.getTerrainBuffer();
                       const oldChunkData = protocolUtils.parseTerrainData(oldTerrainBuffer.buffer, oldTerrainBuffer.byteOffset);
                       const oldBiomes = oldChunkData.biomes.slice();
+                      const oldTemperature = oldChunkData.temperature.slice();
+                      const oldHumidity = oldChunkData.humidity.slice();
                       const oldElevations = oldChunkData.elevations.slice();
                       const oldEther = oldChunkData.ether.slice();
                       const oldWater = oldChunkData.water.slice();
@@ -642,6 +646,8 @@ class Generator {
                         _generateChunkTerrain(
                           chunk,
                           oldBiomes,
+                          oldTemperature,
+                          oldHumidity,
                           oldElevations,
                           oldEther,
                           oldWater,
