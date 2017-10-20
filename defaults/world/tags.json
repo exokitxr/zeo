@@ -132,6 +132,17 @@
     "0pdq0am": {
       "type": "entity",
       "id": "0pdq0am",
+      "name": "/plugins/weather",
+      "displayName": "weather",
+      "version": "0.0.1",
+      "module": "/plugins/weather",
+      "tagName": "plugins-weather",
+      "attributes": {},
+      "metadata": {}
+    },
+    "0pdq0an": {
+      "type": "entity",
+      "id": "0pdq0an",
       "name": "/plugins/particle",
       "displayName": "particle",
       "version": "0.0.1",
