@@ -132,6 +132,17 @@
     "0pdq0am": {
       "type": "entity",
       "id": "0pdq0am",
+      "name": "/plugins/fog",
+      "displayName": "fog",
+      "version": "0.0.1",
+      "module": "/plugins/fog",
+      "tagName": "plugins-fog",
+      "attributes": {},
+      "metadata": {}
+    },
+    "0pdq0an": {
+      "type": "entity",
+      "id": "0pdq0an",
       "name": "/plugins/weather",
       "displayName": "weather",
       "version": "0.0.1",
@@ -140,9 +151,9 @@
       "attributes": {},
       "metadata": {}
     },
-    "0pdq0an": {
+    "0pdq0ao": {
       "type": "entity",
-      "id": "0pdq0an",
+      "id": "0pdq0ao",
       "name": "/plugins/particle",
       "displayName": "particle",
       "version": "0.0.1",
@@ -151,9 +162,9 @@
       "attributes": {},
       "metadata": {}
     },
-    "0pdq0an": {
+    "0pdq0ap": {
       "type": "entity",
-      "id": "0pdq0an",
+      "id": "0pdq0ap",
       "name": "/plugins/craft",
       "displayName": "craft",
       "version": "0.0.1",
