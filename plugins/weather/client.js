@@ -43,9 +43,10 @@ class Weather {
         #define PI 3.1415926535897932384626433832795
         uniform float worldTime;
         attribute vec3 delta;
-        attribute vec3 angle;
+        attribute vec4 angle;
         attribute vec2 chunkPosition;
         attribute float type;
+        attribute float offset;
         attribute float valid;
         varying vec2 vUv;
 
@@ -68,28 +69,38 @@ class Weather {
             modelView[3][2] = 0.0;
             modelView[3][3] = 1.0;
 
-            float animationFactor = 0.0;
+            vec3 pos = position.xyz;
             vec3 del = delta;
             if (type == 0.0) {
-              animationFactor = mod((position.y / 128.0 - worldTime / 4000.0), 1.0);
+              float animationFactor = mod((position.y / 128.0 + offset - worldTime / 4000.0), 1.0);
+              pos.y = animationFactor * 128.0;
               del.x *= 0.05;
               del.y *= 0.8;
             } else if (type == 1.0 || type == 2.0) {
-              animationFactor = 1.0 - mod((position.y / 128.0 - worldTime / 240000.0), 1.0);
+              float animationFactor = 1.0 - mod((position.y / 128.0 + offset - worldTime / 240000.0), 1.0);
+              pos.y = animationFactor * 128.0;
               del.x *= 0.1;
               del.y *= 0.1;
             } else if (type == 3.0 || type == 4.0) {
-              animationFactor = mod((position.y / 128.0 - worldTime / 60000.0), 1.0);
+              float animationFactor = mod((position.y / 128.0 + offset - worldTime / 60000.0), 1.0);
+              pos.y = animationFactor * 128.0;
+              del.x *= 0.1;
+              del.y *= 0.1;
+            } else if (type == 5.0 || type == 6.0) {
               del.x *= 0.1;
               del.y *= 0.1;
             }
-            vec3 pos = position.xyz;
-            pos.y = animationFactor * 128.0;
             pos.x += chunkPosition.x;
             pos.z += chunkPosition.y;
             if (type != 0.0) {
-              pos.x += ((-0.5 + sin(mod(angle.x + worldTime / 4000.0, 1.0) * PI * 2.0)) * angle.z);
-              pos.z += ((-0.5 + sin(mod(angle.y + worldTime / 4000.0, 1.0) * PI * 2.0)) * angle.z);
+              if (type != 5.0 && type != 6.0) {
+                pos.x += ((-0.5 + sin(mod(angle.x + worldTime / 4000.0, 1.0) * PI * 2.0)) * angle.z);
+                pos.z += ((-0.5 + sin(mod(angle.y + worldTime / 4000.0, 1.0) * PI * 2.0)) * angle.z);
+              } else {
+                pos.x += ((-0.5 + sin(mod(offset + angle.w + angle.x + worldTime / 8000.0, 1.0) * PI * 2.0)) * angle.x);
+                pos.y += ((-0.5 + sin(mod(offset + angle.w + angle.y + worldTime / 8000.0, 1.0) * PI * 2.0)) * angle.y);
+                pos.z += ((-0.5 + sin(mod(offset + angle.w + angle.z + worldTime / 8000.0, 1.0) * PI * 2.0)) * angle.z);
+              }
             }
             gl_Position = projectionMatrix * vec4(
               (modelViewMatrix * vec4(pos, 1.0)).xyz +
@@ -237,8 +248,8 @@ class Weather {
           const uvs = new Float32Array(weatherGeometryUvs.length * numWeathers);
           const uvsAttribute = new THREE.BufferAttribute(uvs, 2);
           geometry.addAttribute('uv', uvsAttribute);
-          const angles = new Float32Array(weatherGeometryPositions.length * numWeathers);
-          const anglesAttribute = new THREE.BufferAttribute(angles, 3);
+          const angles = new Float32Array(weatherGeometryPositions.length / 3 * 4 * numWeathers);
+          const anglesAttribute = new THREE.BufferAttribute(angles, 4);
           geometry.addAttribute('angle', anglesAttribute);
           const chunkPositions = new Float32Array(RANGE * RANGE * 2 * 2);
           const chunkPositionsAttribute = new THREE.InstancedBufferAttribute(chunkPositions, 2, 1);
@@ -248,6 +259,10 @@ class Weather {
           const typesAttribute = new THREE.InstancedBufferAttribute(types, 1, 1);
           typesAttribute.dynamic = true;
           geometry.addAttribute('type', typesAttribute);
+          const offsets = new Float32Array(RANGE * RANGE * 1 * 2);
+          const offsetAttribute = new THREE.InstancedBufferAttribute(offsets, 1, 1);
+          offsetAttribute.dynamic = true;
+          geometry.addAttribute('offset', offsetAttribute);
           const valids = new Float32Array(RANGE * RANGE * 1 * 2);
           const validsAttribute = new THREE.InstancedBufferAttribute(valids, 1, 1);
           validsAttribute.dynamic = true;
@@ -274,24 +289,18 @@ class Weather {
           for (let i = 0; i < numWeathers; i++) {
             const weather = new Weather(
               new THREE.Vector3(Math.random() * NUM_CELLS, Math.random() * NUM_CELLS_HEIGHT, Math.random() * NUM_CELLS),
-              // _getUv('rain'),
-              new THREE.Vector3(Math.random(), Math.random(), Math.random())
+              new THREE.Vector4(Math.random(), Math.random(), Math.random(), Math.random())
             );
             weathers[i] = weather;
           }
 
           let attributeIndex = 0;
           let uvIndex = 0;
+          let angleIndex = 0;
           // let indexIndex = 0;
           let instanceIndex = 0;
           for (let i = 0; i < weathers.length; i++) {
             const {position, type, angle} = weathers[i];
-            const uv = [
-              0, 0,
-              75/80, 15/16,
-            ];
-            const uvWidth = uv[2] - uv[0];
-            const uvHeight = uv[3] - uv[1];
             const newGeometryPositions = weatherGeometryPositions;
             const newGeometryUvs = weatherGeometryUvs;
             // const newGeometryIndices = weatherGeometryIndices;
@@ -312,9 +321,11 @@ class Weather {
               uvs[baseUvIndex + 0] = newGeometryUvs[srcBaseUvIndex + 0];
               uvs[baseUvIndex + 1] = newGeometryUvs[srcBaseUvIndex + 1];
 
-              angles[basePositionIndex + 0] = angle.x;
-              angles[basePositionIndex + 1] = angle.y;
-              angles[basePositionIndex + 2] = angle.z;
+              const baseAngleIndex = angleIndex + j * 4;
+              angles[baseAngleIndex + 0] = angle.x;
+              angles[baseAngleIndex + 1] = angle.y;
+              angles[baseAngleIndex + 2] = angle.z;
+              angles[baseAngleIndex + 3] = angle.w;
             }
 
             /* for (let j = 0; j < numWeatherGeometryIndices; j++) {
@@ -325,6 +336,7 @@ class Weather {
 
             attributeIndex += numWeatherGeometryPositions * 3;
             uvIndex += numWeatherGeometryUvs * 2;
+            angleIndex += numWeatherGeometryPositions * 4;
             // indexIndex += numWeatherGeometryIndices;
           }
           positionsAttribute.needsUpdate = true;
@@ -341,17 +353,8 @@ class Weather {
             const baseTypeIndex = index;
             types[baseTypeIndex] = 0;
 
-            // geometry.setDrawRange(0, numWeathers * 3);
-          };
-          const _addSmoke = (index, x, z) => {
-            const basePositionIndex = index * 2;
-            chunkPositions[basePositionIndex + 0] = x * NUM_CELLS;
-            chunkPositions[basePositionIndex + 1] = z * NUM_CELLS;
-
-            const baseTypeIndex = index;
-            types[baseTypeIndex] = Math.random < 0.5 ? 1 : 2;
-
-            // geometry.setDrawRange(0, numWeathers * 3);
+            const baseOffsetIndex = index;
+            offsets[baseOffsetIndex] = Math.random();
           };
           const _addSnow = (index, x, z) => {
             const basePositionIndex = index * 2;
@@ -361,7 +364,30 @@ class Weather {
             const baseTypeIndex = index;
             types[baseTypeIndex] = Math.random < 0.5 ? 3 : 4;
 
-            // geometry.setDrawRange(0, numWeathers * 3);
+            const baseOffsetIndex = index;
+            offsets[baseOffsetIndex] = Math.random();
+          };
+          const _addSmoke = (index, x, z) => {
+            const basePositionIndex = index * 2;
+            chunkPositions[basePositionIndex + 0] = x * NUM_CELLS;
+            chunkPositions[basePositionIndex + 1] = z * NUM_CELLS;
+
+            const baseTypeIndex = index;
+            types[baseTypeIndex] = Math.random < 0.5 ? 1 : 2;
+
+            const baseOffsetIndex = index;
+            offsets[baseOffsetIndex] = Math.random();
+          };
+          const _addPollen = (index, x, z) => {
+            const basePositionIndex = index * 2;
+            chunkPositions[basePositionIndex + 0] = x * NUM_CELLS;
+            chunkPositions[basePositionIndex + 1] = z * NUM_CELLS;
+
+            const baseTypeIndex = index;
+            types[baseTypeIndex] = Math.random < 0.5 ? 5 : 6;
+
+            const baseOffsetIndex = index;
+            offsets[baseOffsetIndex] = Math.random();
           };
 
           const _allocIndex = () => {
@@ -403,6 +429,7 @@ class Weather {
                     meshWeathers[_getChunkIndex(x, z)] = index;
                     chunkPositionsAttribute.needsUpdate = true;
                     typesAttribute.needsUpdate = true;
+                    offsetAttribute.needsUpdate = true;
                     validsAttribute.needsUpdate = true;
                   } else {
                     const index = _allocIndex();
@@ -410,18 +437,26 @@ class Weather {
                     meshWeathers[_getChunkIndex(x, z)] = index;
                     chunkPositionsAttribute.needsUpdate = true;
                     typesAttribute.needsUpdate = true;
+                    offsetAttribute.needsUpdate = true;
                     validsAttribute.needsUpdate = true;
                   }
                 } else if (humidity[0] < 100) {
-                  if (temperature[0] > 110) {
+                  if (temperature[0] > 140) {
                     const index = _allocIndex();
                     _addSmoke(index, x, z);
                     meshWeathers[_getChunkIndex(x, z)] = index;
                     chunkPositionsAttribute.needsUpdate = true;
                     typesAttribute.needsUpdate = true;
+                    offsetAttribute.needsUpdate = true;
                     validsAttribute.needsUpdate = true;
-                  } else {
-                    // XXX
+                  } else if (temperature[0] > 110) {
+                    const index = _allocIndex();
+                    _addPollen(index, x, z);
+                    meshWeathers[_getChunkIndex(x, z)] = index;
+                    chunkPositionsAttribute.needsUpdate = true;
+                    typesAttribute.needsUpdate = true;
+                    offsetAttribute.needsUpdate = true;
+                    validsAttribute.needsUpdate = true;
                   }
                 }
 
