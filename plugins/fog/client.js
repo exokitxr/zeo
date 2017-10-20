@@ -1,3 +1,4 @@
+const DAY_NIGHT_SKYBOX_PLUGIN = 'plugins-day-night-skybox';
 const FOG_DENSITY = 0.01;
 const FOG_COLOR = 0xFFFFFF;
 
@@ -12,29 +13,17 @@ class Fog {
         scene.fog.density = FOG_DENSITY;
         scene.fog.color.setHex(FOG_COLOR);
 
-        /* const update = () => { // XXX fix this walk to work with the new skybox module
-          const skybox = (() => {
-            for (let {parentNode: node} = this; node; node = node.parentNode) {
-              if (/^z-i-skybox$/i.test(node.tagName)) {
-                return node;
-              }
-            }
-            return null;
-          })();
-
-          if (skybox) {
-            const sunSphere = skybox.getSunSphere();
-            const sunFactor = Math.max(sunSphere.position.y / sunSphere.distance, 0);
-            scene.fog.density = sunFactor * FOG_DENSITY;
-          } else {
-            scene.fog.density = 0;
+        const _update = () => {
+          const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
+          if (dayNightSkyboxEntity) {
+            scene.fog.color.setHex(FOG_COLOR).multiplyScalar(dayNightSkyboxEntity.getSunIntensity());
           }
         };
-        updates.push(update); */
+        render.on('update', _update);
 
         entityElement[dataSymbol] = {
           cleanup() {
-            // updates.splice(updates.indexOf(update), 1);
+            render.removeListener('update', _update);
 
             scene.fog.density = 0;
           },
