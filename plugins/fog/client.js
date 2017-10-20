@@ -15,7 +15,7 @@ class Fog {
 
         const _update = () => {
           const dayNightSkyboxEntity = elements.getEntitiesElement().querySelector(DAY_NIGHT_SKYBOX_PLUGIN);
-          if (dayNightSkyboxEntity) {
+          if (dayNightSkyboxEntity && dayNightSkyboxEntity.getSunIntensity) {
             scene.fog.color.setHex(FOG_COLOR).multiplyScalar(dayNightSkyboxEntity.getSunIntensity());
           }
         };
