@@ -143,7 +143,11 @@ class Input {
     window.addEventListener('click', eventRouters.click.handle);
     window.addEventListener('mousedown', eventRouters.mousedown.handle);
     window.addEventListener('mouseup', eventRouters.mouseup.handle);
-    window.addEventListener('mousemove', eventRouters.mousemove.handle);
+    window.addEventListener('mousemove', e => {
+      if (Math.abs(e.movementX) < window.innerWidth / 4 && Math.abs(e.movementY) < window.innerHeight / 4) { // XXX hack around Chrome glitching
+        eventRouters.mousemove.handle(e);
+      }
+    });
     window.addEventListener('mousewheel', eventRouters.mousewheel.handle);
     window.addEventListener('wheel', eventRouters.wheel.handle);
     const keydown = e => {
