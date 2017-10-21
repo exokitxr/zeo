@@ -230,7 +230,6 @@ const grass = objectApi => {
       const localQuaternion = new THREE.Quaternion();
 
       const grassProbability = 0.3;
-
       objectApi.registerGenerator('grass', chunk => {
         const aox = chunk.x * NUM_CELLS;
         const aoz = chunk.z * NUM_CELLS;

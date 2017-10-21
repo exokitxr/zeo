@@ -300,70 +300,98 @@ const bigHouse = objectApi => {
       })();
       objectApi.registerGeometry('door', doorGeometry);
 
+      const localVector = new THREE.Vector3();
+      const localQuaternion = new THREE.Quaternion();
+
+      const bigHouseProbabilty = 0.005;
       objectApi.registerGenerator('big-house', chunk => {
-        if (chunk.x === -1 && chunk.z === -1) {
-          const elevation = Math.floor(objectApi.getElevation(chunk.x * NUM_CELLS, chunk.z * NUM_CELLS));
+        const minX = chunk.x * NUM_CELLS;
+        const maxX = minX + NUM_CELLS;
+        const minZ = chunk.z * NUM_CELLS;
+        const maxZ = minZ + NUM_CELLS;
 
-          const localVector = new THREE.Vector3();
-          const localQuaternion = new THREE.Quaternion();
+        for (let doz = -1; doz <= 1; doz++) {
+          const oz = chunk.z + doz;
+          const aoz = oz * NUM_CELLS;
 
-          for (let y = 0; y < BIG_HOUSE_SPEC.length; y++) {
-            const layer = BIG_HOUSE_SPEC[y];
+          for (let dox = -1; dox <= 1; dox++) {
+            const ox = chunk.x + dox;
+            const aox = ox * NUM_CELLS;
 
-            for (let z = 0; z < layer.length; z++) {
-              const row = layer[z];
+            const v = objectApi.getNoise('grass', 0, 0, aox + 1000, aoz + 1000);
+            const h = objectApi.getHash(v + ':bigHouse') / 0xFFFFFFFF;
+            if (h < bigHouseProbabilty) {
+              const ax = aox + Math.floor(objectApi.getHash(v + ':bigHouseX') / 0xFFFFFFFF * NUM_CELLS);
+              const az = aoz + Math.floor(objectApi.getHash(v + ':bigHouseZ') / 0xFFFFFFFF * NUM_CELLS);
+              const elevation = Math.floor(objectApi.getElevation(ax, az));
 
-              for (let x = 0; x < layer.length; x++) {
-                const col = row[x];
+              for (let y = 0; y < BIG_HOUSE_SPEC.length; y++) { // XXX support rotations
+                const layer = BIG_HOUSE_SPEC[y];
 
-                if (col) {
-                  const objectType = (() => {
-                    if (col === 'Cobblestone Stairs') {
-                      return 'stone-stairs';
-                    } else if (col === 'Oak Wood Stairs West' || col === 'Oak Wood Stairs East' || col === 'Oak Wood Stairs North' || col === 'Oak Wood Stairs South') {
-                      return 'wood-stairs';
-                    } else if (col === 'Door Oak Bottom') {
-                      return 'door';
-                    } else if (col === 'Glass West' || col === 'Glass East' || col === 'Glass North' || col === 'Glass South') {
-                      return 'glass';
-                    } else if (col === 'Torch') {
-                      return 'torch';
-                    } else {
-                      return null;
-                    }
-                  })();
-                  if (objectType) {
-                    localVector.set(chunk.x * NUM_CELLS + x + 0.5, elevation + y + 0.5, chunk.z * NUM_CELLS + z + 0.5);
-                    if (col === 'Glass West' || col === 'Oak Wood Stairs East') {
-                      localQuaternion.setFromUnitVectors(
-                        new THREE.Vector3(0, 0, -1),
-                        new THREE.Vector3(-1, 0, 0)
-                      );
-                    } else if (col === 'Glass East' || col === 'Oak Wood Stairs West') {
-                      localQuaternion.setFromUnitVectors(
-                        new THREE.Vector3(0, 0, -1),
-                        new THREE.Vector3(1, 0, 0)
-                      );
-                    } else if (col === 'Glass South' || col === 'Oak Wood Stairs North') {
-                      localQuaternion.setFromUnitVectors(
-                        new THREE.Vector3(0, 0, -1),
-                        new THREE.Vector3(0, 0, 1)
-                      );
-                    } else {
-                      localQuaternion.set(0, 0, 0, 1);
-                    }
-                    objectApi.addObject(chunk, objectType, localVector, localQuaternion, 0);
-                  } else {
-                    const blockType = (() => {
-                      if (col === 'Cobblestone') {
-                        return 'big-house-stone';
-                      } else if (col === 'Oak Wood Planks') {
-                        return 'big-house-plank';
-                      } else {
-                        return 'big-house-wood';
+                for (let z = 0; z < layer.length; z++) {
+                  const daz = az + z;
+
+                  if (daz >= minZ && daz < maxZ) {
+                    const row = layer[z];
+
+                    for (let x = 0; x < row.length; x++) {
+                      const dax = ax + x;
+
+                      if (dax >= minX && dax < maxX) {
+                        const col = row[x];
+
+                        if (col) {
+                          const objectType = (() => {
+                            if (col === 'Cobblestone Stairs') {
+                              return 'stone-stairs';
+                            } else if (col === 'Oak Wood Stairs West' || col === 'Oak Wood Stairs East' || col === 'Oak Wood Stairs North' || col === 'Oak Wood Stairs South') {
+                              return 'wood-stairs';
+                            } else if (col === 'Door Oak Bottom') {
+                              return 'door';
+                            } else if (col === 'Glass West' || col === 'Glass East' || col === 'Glass North' || col === 'Glass South') {
+                              return 'glass';
+                            } else if (col === 'Torch') {
+                              return 'torch';
+                            } else {
+                              return null;
+                            }
+                          })();
+                          if (objectType) {
+                            localVector.set(dax + 0.5, elevation + y + 0.5, daz + 0.5);
+                            if (col === 'Glass West' || col === 'Oak Wood Stairs East') {
+                              localQuaternion.setFromUnitVectors(
+                                new THREE.Vector3(0, 0, -1),
+                                new THREE.Vector3(-1, 0, 0)
+                              );
+                            } else if (col === 'Glass East' || col === 'Oak Wood Stairs West') {
+                              localQuaternion.setFromUnitVectors(
+                                new THREE.Vector3(0, 0, -1),
+                                new THREE.Vector3(1, 0, 0)
+                              );
+                            } else if (col === 'Glass South' || col === 'Oak Wood Stairs North') {
+                              localQuaternion.setFromUnitVectors(
+                                new THREE.Vector3(0, 0, -1),
+                                new THREE.Vector3(0, 0, 1)
+                              );
+                            } else {
+                              localQuaternion.set(0, 0, 0, 1);
+                            }
+                            objectApi.addObject(chunk, objectType, localVector, localQuaternion, 0);
+                          } else {
+                            const blockType = (() => {
+                              if (col === 'Cobblestone') {
+                                return 'big-house-stone';
+                              } else if (col === 'Oak Wood Planks') {
+                                return 'big-house-plank';
+                              } else {
+                                return 'big-house-wood';
+                              }
+                            })();
+                            objectApi.setBlock(chunk, dax, elevation + y, daz, blockType);
+                          }
+                        }
                       }
-                    })();
-                    objectApi.setBlock(chunk, chunk.x * NUM_CELLS + x, elevation + y, chunk.z * NUM_CELLS + z, blockType);
+                    }
                   }
                 }
               }
