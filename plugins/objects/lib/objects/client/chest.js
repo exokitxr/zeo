@@ -80,9 +80,6 @@ const chest = objectApi => {
         chests[id] = chest;
       },
       removedCallback(id) {
-        /* const chest = chests[id];
-        chest.destroy(); */
-
         chests[id] = null;
       },
       triggerCallback(id, side, x, z, objectIndex) {
