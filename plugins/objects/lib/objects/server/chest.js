@@ -7,6 +7,26 @@ const {
 
 const {three: {THREE}, items, utils: {image: {jimp}}} = zeo;
 
+const ASSET_CANDIDATES = [
+  'ITEM.WOOD',
+  'ITEM.WOOD',
+  'ITEM.WOOD',
+  'ITEM.STONE',
+  'ITEM.STONE',
+  'ITEM.STONE',
+  'ITEM.STICK',
+  'ITEM.STICK',
+  'ITEM.STICK',
+  'ITEM.COAL',
+  'ITEM.COAL',
+  'ITEM.COAL',
+  'ITEM.PICKAXE',
+  'ITEM.PICKAXE',
+  'ITEM.HAMMER',
+  'ITEM.HAMMER',
+  'ITEM.SWORD',
+  'ITEM.BOW',
+];
 const DEFAULT_MATRIX = [
   0, 0, 0,
   0, 0, 0, 1,
@@ -265,29 +285,18 @@ const chest = objectApi => {
 
               if (elevation > 64) {
                 const file = items.getFile();
+
+                const numAssets = 1 + Math.floor(((objectApi.getHash(v + ':chestContents') / 0xFFFFFFFF) ** 4) * 9);
+                const assets = Array(numAssets)
+                for (let i = 0; i < numAssets; i++) {
+                  assets[i] = {
+                    id: _makeId(),
+                    asset: ASSET_CANDIDATES[Math.floor(objectApi.getHash(v + ':chestContents:' + i) / 0xFFFFFFFF * ASSET_CANDIDATES.length)],
+                    quantity: 1,
+                  };
+                }
                 return file.write(JSON.stringify({
-                  assets: [
-                    {
-                      id: _makeId(),
-                      asset: 'ITEM.LIGHTSABER',
-                      quantity: 1,
-                    },
-                    {
-                      id: _makeId(),
-                      asset: 'ITEM.WOOD',
-                      quantity: 1,
-                    },
-                    {
-                      id: _makeId(),
-                      asset: 'ITEM.STONE',
-                      quantity: 1,
-                    },
-                    {
-                      id: _makeId(),
-                      asset: 'ITEM.PICKAXE',
-                      quantity: 1,
-                    },
-                  ],
+                  assets,
                 }))
                   .then(() => {
                     localVector.set(ax, elevation, az);
