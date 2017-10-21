@@ -2098,17 +2098,7 @@ self.onmessage = e => {
       const {args} = data;
       const {x, z} = args;
 
-      const chunk = _unrequestChunk(x, z);
-      chunk.forEachObject((n, matrix, value, objectIndex) => {
-        const objectApi = objectApis[n];
-
-        if (objectApi && objectApi.removed) {
-          postMessage({
-            type: 'objectRemoved',
-            args: [n, x, z, objectIndex],
-          });
-        }
-      });
+      _unrequestChunk(x, z);
       break;
     }
     case 'mutateVoxel': {
