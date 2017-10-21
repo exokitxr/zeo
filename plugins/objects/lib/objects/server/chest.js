@@ -7,6 +7,12 @@ const {
 
 const {three: {THREE}, items, utils: {image: {jimp}}} = zeo;
 
+const DEFAULT_MATRIX = [
+  0, 0, 0,
+  0, 0, 0, 1,
+  1, 1, 1,
+];
+
 const chest = objectApi => {
   const _registerTexture = (src, name) => jimp.read(src)
     .then(img => objectApi.registerTexture(name, img));
@@ -242,12 +248,31 @@ const chest = objectApi => {
         if (chunk.x === 0 && chunk.z === 0) {
           const file = items.getFile();
           return file.write(JSON.stringify({
-            assets: [ // XXX generate actual assets here
-              null,
+            assets: [
+              {
+                id: _makeId(),
+                asset: 'ITEM.LIGHTSABER',
+                quantity: 1,
+              },
+              {
+                id: _makeId(),
+                asset: 'ITEM.WOOD',
+                quantity: 1,
+              },
+              {
+                id: _makeId(),
+                asset: 'ITEM.STONE',
+                quantity: 1,
+              },
+              {
+                id: _makeId(),
+                asset: 'ITEM.PICKAXE',
+                quantity: 1,
+              },
             ],
           }))
             .then(() => {
-              objectApi.addObject(chunk, 'chest', new THREE.Vector3(2, 75, -4), new THREE.Quaternion(), file.n);
+              objectApi.addObject(chunk, 'chest', new THREE.Vector3(2, 74, -4), new THREE.Quaternion(), file.n);
             });
         }
         /* const localVector = new THREE.Vector3();
@@ -284,5 +309,6 @@ const chest = objectApi => {
       };
     });
 };
+const _makeId = () => Math.random().toString(36).substring(7);
 
 module.exports = chest;

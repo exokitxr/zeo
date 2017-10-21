@@ -920,6 +920,8 @@ class Wallet {
 
           if (assetInstance.physics) {
             _addBody();
+          } else {
+            assetInstance.emit('update');
           }
         };
 

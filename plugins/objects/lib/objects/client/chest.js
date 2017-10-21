@@ -3,6 +3,17 @@ const DEFAULT_MATRIX = [
   0, 0, 0, 1,
   1, 1, 1,
 ];
+const ASSET_POSITIONS = [
+  [0, 0],
+  [-1, 0],
+  [1, 0],
+  [-1, 1],
+  [0, 1],
+  [1, 1],
+  [-1, -1],
+  [0, -1],
+  [1, -1],
+];
 
 const dataSymbol = Symbol();
 
@@ -13,6 +24,7 @@ const chest = objectApi => {
   const zeroQuaternion = new THREE.Quaternion();
   const oneVector = new THREE.Vector3(1, 1, 1);
   const localVector = new THREE.Vector3();
+  const localVector2 = new THREE.Vector3();
   const localQuaternion = new THREE.Quaternion();
   const localEuler = new THREE.Euler();
 
@@ -80,11 +92,10 @@ const chest = objectApi => {
         objectApi.addObject('chest-open', chest.position, chest.rotation, chest.value);
       },
       gripBlockCallback(side, x, y, z) {
-        const itemId = _makeId();
         const asset = 'ITEM.CHEST';
         const assetInstance = items.makeItem({
           type: 'asset',
-          id: itemId,
+          id: _makeId(),
           name: asset,
           displayName: asset,
           attributes: {
@@ -107,12 +118,13 @@ const chest = objectApi => {
     const chestOpenObjectApi = {
       object: 'chest-open',
       addedCallback(id, position, rotation, value, x, z, objectIndex) {
+        let live = true;
+        let assets = [];
+        let assetInstances = [];
         const _saveFile = _debounce(next => {
           const file = value !== 0 ? items.getFile(value) : items.getFile();
           file.write(JSON.stringify({
-            assets: [
-              null,
-            ],
+            assets,
           }))
             .then(() => {
               if (value === 0) {
@@ -133,13 +145,40 @@ const chest = objectApi => {
             const file = items.getFile(value);
             file.readAsJson()
               .then(j => {
-                console.log('got json', j); // XXX finish this
+                if (live) {
+                  assets = j.assets;
+                  assetInstances = assets.map((assetSpec, i) => {
+                    const {id, asset, quantity} = assetSpec;
+                    const assetPosition = ASSET_POSITIONS[i];
+                    const assetInstance = items.makeItem({
+                      type: 'asset',
+                      id,
+                      name: asset,
+                      displayName: asset,
+                      attributes: {
+                        type: {value: 'asset'},
+                        value: {value: asset},
+                        position: {value: [position.x + assetPosition[0] * 0.25, position.y + 0.6, position.z + assetPosition[1] * 0.25].concat(rotation.toArray()).concat(oneVector.toArray())},
+                        quantity: {value: quantity},
+                        owner: {value: null},
+                        bindOwner: {value: null},
+                        physics: {value: false},
+                      },
+                    });
+                    assetInstance.once('grab', () => {
+                      const index = assetInstances.findIndex(assetInstance => assetInstance.id === id);
+                      assets.splice(index, 1);
+                      assetInstances.splice(index, 1);
+                    });
+                    return assetInstance;
+                  });
+                }
               })
               .catch(err => {
-                console.warn(err);
+                if (live) {
+                  console.warn(err);
+                }
               });
-          } else {
-            console.warn('no file'); // XXX finish this
           }
         };
         _loadFile();
@@ -151,10 +190,20 @@ const chest = objectApi => {
           position: position.clone(),
           rotation: rotation.clone(),
           value,
+          destroy() {
+            live = false;
+
+            _saveFile();
+
+            for (let i = 0; i < assetInstances.length; i++) {
+              items.destroyItem(assetInstances[i]);
+            }
+          },
         };
         chests[id] = chest;
       },
       removedCallback(id) {
+        chests[id].destroy();
         chests[id] = null;
       },
       triggerCallback(id, side, x, z, objectIndex) {
@@ -164,11 +213,10 @@ const chest = objectApi => {
         objectApi.addObject('chest', chest.position, chest.rotation, chest.value);
       },
       gripBlockCallback(side, x, y, z) {
-        const itemId = _makeId();
         const asset = 'ITEM.CHEST';
         const assetInstance = items.makeItem({
           type: 'asset',
-          id: itemId,
+          id: _makeId(),
           name: asset,
           displayName: asset,
           attributes: {
