@@ -479,88 +479,90 @@ const house = objectApi => {
               const az = aoz + Math.floor(objectApi.getHash(v + ':houseZ') / 0xFFFFFFFF * NUM_CELLS);
               const elevation = Math.floor(objectApi.getElevation(ax, az));
 
-              for (let y = 0; y < HOUSE_SPEC.length; y++) { // XXX support rotations
-                const layer = HOUSE_SPEC[y];
+              if (elevation > 64) {
+                for (let y = 0; y < HOUSE_SPEC.length; y++) { // XXX support rotations
+                  const layer = HOUSE_SPEC[y];
 
-                for (let z = 0; z < layer.length; z++) {
-                  const daz = az + z;
+                  for (let z = 0; z < layer.length; z++) {
+                    const daz = az + z;
 
-                  if (daz >= minZ && daz < maxZ) {
-                    const row = layer[z];
+                    if (daz >= minZ && daz < maxZ) {
+                      const row = layer[z];
 
-                    for (let x = 0; x < row.length; x++) {
-                      const dax = ax + x;
+                      for (let x = 0; x < row.length; x++) {
+                        const dax = ax + x;
 
-                      if (dax >= minX && dax < maxX) {
-                        const col = row[x];
+                        if (dax >= minX && dax < maxX) {
+                          const col = row[x];
 
-                        if (col) {
-                          const objectType = (() => {
-                            if (col === 'stone-stairs') {
-                              return 'stone-stairs';
-                            } else if (col === 'fence-nw' || col === 'fence-ne' || col === 'fence-sw' || col === 'fence-se') {
-                              return 'fence-nw';
-                            } else if (col === 'fence-top' || col === 'fence-side') {
-                              return 'fence-top';
-                            } else if (col === 'fence') {
-                              return 'fence';
-                            } else if (col === 'ladder') {
-                              return 'ladder';
-                            } else if (col === 'glass-top' || col === 'glass-west' || col === 'glass-east') {
-                              return 'glass';
-                            } else if (col === 'torch') {
-                              return 'torch';
-                            } else {
-                              return null;
-                            }
-                          })();
-                          if (objectType) {
-                            localVector.set(dax + 0.5, elevation + y + 0.5, daz + 0.5);
-                            if (col === 'fence-ne') {
-                              localQuaternion.setFromUnitVectors(
-                                new THREE.Vector3(0, 0, -1),
-                                new THREE.Vector3(1, 0, 0)
-                              );
-                            } else if (col === 'fence-se') {
-                              localQuaternion.setFromUnitVectors(
-                                new THREE.Vector3(0, 0, -1),
-                                new THREE.Vector3(0, 0, 1)
-                              );
-                            } else if (col === 'fence-sw') {
-                              localQuaternion.setFromUnitVectors(
-                                new THREE.Vector3(0, 0, -1),
-                                new THREE.Vector3(-1, 0, 0)
-                              );
-                            } else if (col === 'fence-side') {
-                              localQuaternion.setFromUnitVectors(
-                                new THREE.Vector3(0, 0, -1),
-                                new THREE.Vector3(-1, 0, 0)
-                              );
-                            } else if (col === 'glass-west') {
-                              localQuaternion.setFromUnitVectors(
-                                new THREE.Vector3(0, 0, -1),
-                                new THREE.Vector3(-1, 0, 0)
-                              );
-                            } else if (col === 'glass-east') {
-                              localQuaternion.setFromUnitVectors(
-                                new THREE.Vector3(0, 0, -1),
-                                new THREE.Vector3(1, 0, 0)
-                              );
-                            } else {
-                              localQuaternion.set(0, 0, 0, 1);
-                            }
-                            objectApi.addObject(chunk, objectType, localVector, localQuaternion, 0);
-                          } else {
-                            const blockType = (() => {
-                              if (col === 'stone') {
-                                return 'house-stone';
-                              } else if (col === 'oak-wood-planks') {
-                                return 'house-plank';
+                          if (col) {
+                            const objectType = (() => {
+                              if (col === 'stone-stairs') {
+                                return 'stone-stairs';
+                              } else if (col === 'fence-nw' || col === 'fence-ne' || col === 'fence-sw' || col === 'fence-se') {
+                                return 'fence-nw';
+                              } else if (col === 'fence-top' || col === 'fence-side') {
+                                return 'fence-top';
+                              } else if (col === 'fence') {
+                                return 'fence';
+                              } else if (col === 'ladder') {
+                                return 'ladder';
+                              } else if (col === 'glass-top' || col === 'glass-west' || col === 'glass-east') {
+                                return 'glass';
+                              } else if (col === 'torch') {
+                                return 'torch';
                               } else {
-                                return 'house-wood';
+                                return null;
                               }
                             })();
-                            objectApi.setBlock(chunk, dax, elevation + y, daz, blockType);
+                            if (objectType) {
+                              localVector.set(dax + 0.5, elevation + y + 0.5, daz + 0.5);
+                              if (col === 'fence-ne') {
+                                localQuaternion.setFromUnitVectors(
+                                  new THREE.Vector3(0, 0, -1),
+                                  new THREE.Vector3(1, 0, 0)
+                                );
+                              } else if (col === 'fence-se') {
+                                localQuaternion.setFromUnitVectors(
+                                  new THREE.Vector3(0, 0, -1),
+                                  new THREE.Vector3(0, 0, 1)
+                                );
+                              } else if (col === 'fence-sw') {
+                                localQuaternion.setFromUnitVectors(
+                                  new THREE.Vector3(0, 0, -1),
+                                  new THREE.Vector3(-1, 0, 0)
+                                );
+                              } else if (col === 'fence-side') {
+                                localQuaternion.setFromUnitVectors(
+                                  new THREE.Vector3(0, 0, -1),
+                                  new THREE.Vector3(-1, 0, 0)
+                                );
+                              } else if (col === 'glass-west') {
+                                localQuaternion.setFromUnitVectors(
+                                  new THREE.Vector3(0, 0, -1),
+                                  new THREE.Vector3(-1, 0, 0)
+                                );
+                              } else if (col === 'glass-east') {
+                                localQuaternion.setFromUnitVectors(
+                                  new THREE.Vector3(0, 0, -1),
+                                  new THREE.Vector3(1, 0, 0)
+                                );
+                              } else {
+                                localQuaternion.set(0, 0, 0, 1);
+                              }
+                              objectApi.addObject(chunk, objectType, localVector, localQuaternion, 0);
+                            } else {
+                              const blockType = (() => {
+                                if (col === 'stone') {
+                                  return 'house-stone';
+                                } else if (col === 'oak-wood-planks') {
+                                  return 'house-plank';
+                                } else {
+                                  return 'house-wood';
+                                }
+                              })();
+                              objectApi.setBlock(chunk, dax, elevation + y, daz, blockType);
+                            }
                           }
                         }
                       }
