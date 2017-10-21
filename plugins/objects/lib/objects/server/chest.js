@@ -253,8 +253,8 @@ const chest = objectApi => {
         const aox = chunk.x * NUM_CELLS;
         const aoz = chunk.z * NUM_CELLS;
 
-        for (let dz = 0; dz < NUM_CELLS_OVERSCAN; dz++) {
-          for (let dx = 0; dx < NUM_CELLS_OVERSCAN; dx++) {
+        for (let dz = 0; dz < NUM_CELLS; dz++) {
+          for (let dx = 0; dx < NUM_CELLS; dx++) {
             const ax = aox + dx;
             const az = aoz + dz;
             const v = objectApi.getNoise('grass', 0, 0, ax + 1000, az + 1000);
