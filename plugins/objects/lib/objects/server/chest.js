@@ -5,7 +5,7 @@ const {
   NUM_CELLS_OVERSCAN,
 } = require('../../constants/constants');
 
-const {three: {THREE}, utils: {image: {jimp}}} = zeo;
+const {three: {THREE}, items, utils: {image: {jimp}}} = zeo;
 
 const chest = objectApi => {
   const _registerTexture = (src, name) => jimp.read(src)
@@ -240,7 +240,15 @@ const chest = objectApi => {
 
       objectApi.registerGenerator('chest', chunk => {
         if (chunk.x === 0 && chunk.z === 0) {
-          objectApi.addObject(chunk, 'chest', new THREE.Vector3(0, 66, 0), new THREE.Quaternion(), 0);
+          const file = items.getFile();
+          return file.write(JSON.stringify({
+            assets: [ // XXX generate actual assets here
+              null,
+            ],
+          }))
+            .then(() => {
+              objectApi.addObject(chunk, 'chest', new THREE.Vector3(2, 75, -4), new THREE.Quaternion(), file.n);
+            });
         }
         /* const localVector = new THREE.Vector3();
         const localQuaternion = new THREE.Quaternion();

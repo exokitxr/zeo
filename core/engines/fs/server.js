@@ -1,5 +1,6 @@
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 
 const mkdirp = require('mkdirp');
 const murmur = require('murmurhash');
@@ -78,30 +79,32 @@ class Fs {
             app._router.stack.forEach(removeMiddlewares);
           });
 
-          /* class FsFile {
-            constructor(dirname, pathname) {
-              this.dirname = dirname;
-              this.pathname = pathname;
+          class RemoteFile {
+            constructor(id) {
+              this.n = id !== undefined ? (typeof id === 'number' ? id : murmur(id)) : _makeN();
             }
 
             getPath() {
-              const {dirname, pathname} = this;
-              return path.join(fsPath, dirname, pathname);
+              return path.join(fsPath, String(this.n));
             }
 
-            createReadStream() {
-              return fs.createReadStream(this.getPath());
+            /* readAsBlob() {
+              return fetch(this.getUrl(), {
+                credentials: 'include',
+              }).then(_resBlob);
             }
 
-            createWriteStream(opts) {
-              return fs.createWriteStream(this.getPath(), opts);
-            }
+            readAsArrayBuffer() {
+              return fetch(this.getUrl(), {
+                credentials: 'include',
+              }).then(_resArrayBuffer);
+            } */
 
-            read(opts) {
+            readAsJson() {
               return new Promise((accept, reject) => {
-                fs.readFile(this.getPath(), opts, (err, result) => {
+                fs.readFile(this.getPath(), 'utf8', (err, s) => {
                   if (!err) {
-                    accept(result);
+                    accept(JSON.parse(s));
                   } else {
                     reject(err);
                   }
@@ -109,11 +112,11 @@ class Fs {
               });
             }
 
-            write(data, opts) {
+            write(d) {
               return new Promise((accept, reject) => {
-                fs.writeFile(this.getPath(), data, opts, (err, result) => {
+                fs.writeFile(this.getPath(), d, err => {
                   if (!err) {
-                    accept(result);
+                    accept();
                   } else {
                     reject(err);
                   }
@@ -122,11 +125,11 @@ class Fs {
             }
           }
 
-          const _makeFile = (dirname, pathname) => new FsFile(dirname, pathname);
-
           return {
-            makeFile: _makeFile,
-          }; */
+            makeRemoteFile(id) {
+              return new RemoteFile(id);
+            },
+          };
         }
       });
   }
@@ -135,5 +138,10 @@ class Fs {
     this._cleanup();
   }
 }
+const _makeN = () => {
+  const buffer = crypto.randomBytes(4);
+  const array = new Uint32Array(buffer.buffer, buffer.byteOffset, 1);
+  return array[0];
+};
 
 module.exports = Fs;

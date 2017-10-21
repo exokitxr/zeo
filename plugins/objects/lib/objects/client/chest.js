@@ -62,6 +62,7 @@ const chest = objectApi => {
           objectIndex,
           position: position.clone(),
           rotation: rotation.clone(),
+          value,
         };
 
         chests[id] = chest;
@@ -76,7 +77,7 @@ const chest = objectApi => {
         const chest = chests[id];
 
         objectApi.removeObject(x, z, objectIndex);
-        objectApi.addObject('chest-open', chest.position, chest.rotation);
+        objectApi.addObject('chest-open', chest.position, chest.rotation, chest.value);
       },
       gripBlockCallback(side, x, y, z) {
         const itemId = _makeId();
@@ -106,14 +107,51 @@ const chest = objectApi => {
     const chestOpenObjectApi = {
       object: 'chest-open',
       addedCallback(id, position, rotation, value, x, z, objectIndex) {
+        const _saveFile = _debounce(next => {
+          const file = value !== 0 ? items.getFile(value) : items.getFile();
+          file.write(JSON.stringify({
+            assets: [
+              null,
+            ],
+          }))
+            .then(() => {
+              if (value === 0) {
+                objectApi.setData(x, z, objectIndex, file.n);
+                value = file.n;
+              }
+
+              next();
+            })
+            .catch(err => {
+              console.warn(err);
+
+              next();
+            });
+        });
+        const _loadFile = () => {
+          if (value !== 0) {
+            const file = items.getFile(value);
+            file.readAsJson()
+              .then(j => {
+                console.log('got json', j); // XXX finish this
+              })
+              .catch(err => {
+                console.warn(err);
+              });
+          } else {
+            console.warn('no file'); // XXX finish this
+          }
+        };
+        _loadFile();
+
         const chest = {
           x,
           z,
           objectIndex,
           position: position.clone(),
           rotation: rotation.clone(),
+          value,
         };
-
         chests[id] = chest;
       },
       removedCallback(id) {
@@ -123,7 +161,7 @@ const chest = objectApi => {
         const chest = chests[id];
 
         objectApi.removeObject(x, z, objectIndex);
-        objectApi.addObject('chest', chest.position, chest.rotation);
+        objectApi.addObject('chest', chest.position, chest.rotation, chest.value);
       },
       gripBlockCallback(side, x, y, z) {
         const itemId = _makeId();
@@ -171,5 +209,28 @@ const chest = objectApi => {
   });
 };
 const _makeId = () => Math.random().toString(36).substring(7);
+const _debounce = fn => {
+  let running = false;
+  let queued = false;
+
+  const _go = () => {
+    if (!running) {
+      running = true;
+
+      fn(() => {
+        running = false;
+
+        if (queued) {
+          queued = false;
+
+          _go();
+        }
+      });
+    } else {
+      queued = true;
+    }
+  };
+  return _go;
+};
 
 module.exports = chest;

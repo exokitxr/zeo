@@ -186,10 +186,15 @@ class Generator {
       });
     });
     const _generateChunkObjects = chunk => { // XXX this can be moved to the servlet for better performance
+      const promises = [];
       for (let i = 0; i < generators.length; i++) {
-        _generateChunkObjectsWithGenerator(chunk, generators[i]);
+        const promise = _generateChunkObjectsWithGenerator(chunk, generators[i]);
+        if (promise) {
+          promises.push(promise);
+        }
       }
-      return Promise.resolve(chunk);
+      return Promise.all(promises)
+        .then(() => chunk);
     };
     const _generateChunkObjectsWithGenerator = (chunk, generator) => {
       const n = generator[0];

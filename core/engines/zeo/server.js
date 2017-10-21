@@ -74,9 +74,9 @@ class Zeo {
             }
           }
 
-          class ZeoFsApi {
-            makeFile(id, pathname) {
-              return fs.makeFile(id, pathname);
+          class ZeoItemsApi {
+            getFile(id) {
+              return fs.makeRemoteFile(id);
             }
           }
 
@@ -94,7 +94,7 @@ class Zeo {
               this.three = new ZeoThreeApi();
               this.elements = new ZeoElementsApi();
               this.world = new ZeoWorldApi();
-              this.fs = new ZeoFsApi();
+              this.items = new ZeoItemsApi();
               this.multiplayer = new ZeoMultiplayerApi();
               this.utils = new ZeoUtilsApi();
             }
