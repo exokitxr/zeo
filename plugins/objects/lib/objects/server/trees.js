@@ -9,20 +9,41 @@ const NUM_POSITIONS = 30 * 1024;
 const {three: {THREE}, utils: {image: {jimp}}} = zeo;
 
 const tree = objectApi => {
+  const _registerTexture = (name, src) => jimp.read(src)
+    .then(img => objectApi.registerTexture(name, img, {fourTap: true}));
+
   return () => Promise.all([
-    jimp.read(path.join(__dirname, '../../img/tree.png'))
-      .then(img => objectApi.registerTexture('tree', img, {fourTap: true})),
-    jimp.read(path.join(__dirname, '../../img/tree-top.png'))
-      .then(img => objectApi.registerTexture('tree-top', img, {fourTap: true})),
-    jimp.read(path.join(__dirname, '../../img/leaf.png'))
-      .then(img => objectApi.registerTexture('leaf', img, {fourTap: true})),
-    jimp.read(path.join(__dirname, '../../img/vine.png'))
-      .then(img => objectApi.registerTexture('vine', img, {fourTap: true})),
+    _registerTexture('tree', path.join(__dirname, '../../img/tree.png')),
+    _registerTexture('tree-top', path.join(__dirname, '../../img/tree-top.png')),
+    _registerTexture('tree-acacia', path.join(__dirname, '../../img/tree-acacia.png')),
+    _registerTexture('tree-acacia-top', path.join(__dirname, '../../img/tree-acacia-top.png')),
+    _registerTexture('tree-aspen', path.join(__dirname, '../../img/tree-aspen.png')),
+    _registerTexture('tree-aspen-top', path.join(__dirname, '../../img/tree-aspen-top.png')),
+    _registerTexture('tree-jungle', path.join(__dirname, '../../img/tree-jungle.png')),
+    _registerTexture('tree-jungle-top', path.join(__dirname, '../../img/tree-jungle-top.png')),
+    _registerTexture('tree-pine', path.join(__dirname, '../../img/tree-pine.png')),
+    _registerTexture('tree-pine-top', path.join(__dirname, '../../img/tree-pine-top.png')),
+    _registerTexture('leaf', path.join(__dirname, '../../img/tree-leaf.png')),
+    _registerTexture('leaf-acacia', path.join(__dirname, '../../img/tree-acacia-leaf.png')),
+    _registerTexture('leaf-aspen', path.join(__dirname, '../../img/tree-aspen-leaf.png')),
+    _registerTexture('leaf-jungle', path.join(__dirname, '../../img/tree-jungle-leaf.png')),
+    _registerTexture('vine', path.join(__dirname, '../../img/vine.png')),
   ])
     .then(() => {
       const treeUvs = objectApi.getTileUv('tree');
       const treeTopUvs = objectApi.getTileUv('tree-top');
+      const treeAcaciaUvs = objectApi.getTileUv('tree-acacia');
+      const treeAcaciaTopUvs = objectApi.getTileUv('tree-acacia-top');
+      const treeAspenUvs = objectApi.getTileUv('tree-aspen');
+      const treeAspenTopUvs = objectApi.getTileUv('tree-aspen-top');
+      const treeJungleUvs = objectApi.getTileUv('tree-jungle');
+      const treeJungleTopUvs = objectApi.getTileUv('tree-jungle-top');
+      const treePineUvs = objectApi.getTileUv('tree-pine');
+      const treePineTopUvs = objectApi.getTileUv('tree-pine-top');
       const leafUvs = objectApi.getTileUv('leaf');
+      const leafAcaciaUvs = objectApi.getTileUv('leaf-acacia');
+      const leafAspenUvs = objectApi.getTileUv('leaf-aspen');
+      const leafJungleUvs = objectApi.getTileUv('leaf-jungle');
       const vineUvs = objectApi.getTileUv('vine');
       const zeroUvs = [1, 1, 1, 1];
       const treeBlock = {
@@ -38,6 +59,58 @@ const tree = objectApi => {
         translucent: false,
       };
       objectApi.registerBlock('tree', treeBlock);
+      const treeAcaciaBlock = {
+        uvs: [
+          treeAcaciaUvs,
+          treeAcaciaUvs,
+          treeAcaciaTopUvs,
+          treeAcaciaTopUvs,
+          treeAcaciaUvs,
+          treeAcaciaUvs,
+        ],
+        transparent: false,
+        translucent: false,
+      };
+      objectApi.registerBlock('tree-acacia', treeAcaciaBlock);
+      const treeAspenBlock = {
+        uvs: [
+          treeAspenUvs,
+          treeAspenUvs,
+          treeAspenTopUvs,
+          treeAspenTopUvs,
+          treeAspenUvs,
+          treeAspenUvs,
+        ],
+        transparent: false,
+        translucent: false,
+      };
+      objectApi.registerBlock('tree-aspen', treeAspenBlock);
+      const treeJungleBlock = {
+        uvs: [
+          treeJungleUvs,
+          treeJungleUvs,
+          treeJungleTopUvs,
+          treeJungleTopUvs,
+          treeJungleUvs,
+          treeJungleUvs,
+        ],
+        transparent: false,
+        translucent: false,
+      };
+      objectApi.registerBlock('tree-jungle', treeJungleBlock);
+      const treePineBlock = {
+        uvs: [
+          treePineUvs,
+          treePineUvs,
+          treePineTopUvs,
+          treePineTopUvs,
+          treePineUvs,
+          treePineUvs,
+        ],
+        transparent: false,
+        translucent: false,
+      };
+      objectApi.registerBlock('tree-pine', treePineBlock);
       const leafBlock = {
         uvs: [
           leafUvs,
@@ -51,6 +124,45 @@ const tree = objectApi => {
         translucent: true,
       };
       objectApi.registerBlock('leaf', leafBlock);
+      const leafAcaciaBlock = {
+        uvs: [
+          leafAcaciaUvs,
+          leafAcaciaUvs,
+          leafAcaciaUvs,
+          leafAcaciaUvs,
+          leafAcaciaUvs,
+          leafAcaciaUvs,
+        ],
+        transparent: true,
+        translucent: true,
+      };
+      objectApi.registerBlock('leaf-acacia', leafAcaciaBlock);
+      const leafAspenBlock = {
+        uvs: [
+          leafAspenUvs,
+          leafAspenUvs,
+          leafAspenUvs,
+          leafAspenUvs,
+          leafAspenUvs,
+          leafAspenUvs,
+        ],
+        transparent: true,
+        translucent: true,
+      };
+      objectApi.registerBlock('leaf-aspen', leafAspenBlock);
+      const leafJungleBlock = {
+        uvs: [
+          leafJungleUvs,
+          leafJungleUvs,
+          leafJungleUvs,
+          leafJungleUvs,
+          leafJungleUvs,
+          leafJungleUvs,
+        ],
+        transparent: true,
+        translucent: true,
+      };
+      objectApi.registerBlock('leaf-jungle', leafJungleBlock);
       const vineBlock = {
         uvs: [
           vineUvs,
@@ -296,24 +408,24 @@ const tree = objectApi => {
 
         // The entire trunk, out of logs:
         for (let i = Height - 1; i >= 0; --i) {
-          objectApi.setBlock(currentChunk, a_BlockX, a_BlockY + i, a_BlockZ, 'tree');
+          objectApi.setBlock(currentChunk, a_BlockX, a_BlockY + i, a_BlockZ, 'tree-aspen');
         }
         let h = a_BlockY + Height;
 
         // Top layer - just the Plus:
-        PushCoordBlocks(a_BlockX, h, a_BlockZ, BigO1, 'leaf');
-        objectApi.setBlock(currentChunk, a_BlockX, h, a_BlockZ, 'leaf');
+        PushCoordBlocks(a_BlockX, h, a_BlockZ, BigO1, 'leaf-aspen');
+        objectApi.setBlock(currentChunk, a_BlockX, h, a_BlockZ, 'leaf-aspen');
         h--;
 
         // Second layer - log, Plus and maybe Corners:
-        PushCoordBlocks(a_BlockX, h, a_BlockZ, BigO1, 'leaf');
-        PushCornerBlocks(a_BlockX, h, a_BlockZ, a_Seq, 0x5fffffff, 1, 'leaf');
+        PushCoordBlocks(a_BlockX, h, a_BlockZ, BigO1, 'leaf-aspen');
+        PushCornerBlocks(a_BlockX, h, a_BlockZ, a_Seq, 0x5fffffff, 1, 'leaf-aspen');
         h--;
 
         // Third and fourth layers - BigO2 and maybe 2 * Corners:
         for (let Row = 0; Row < 2; Row++) {
-          PushCoordBlocks (a_BlockX, h, a_BlockZ, BigO2, 'leaf');
-          PushCornerBlocks(a_BlockX, h, a_BlockZ, a_Seq, 0x3fffffff + Row * 0x10000000, 2, 'leaf');
+          PushCoordBlocks (a_BlockX, h, a_BlockZ, BigO2, 'leaf-aspen');
+          PushCornerBlocks(a_BlockX, h, a_BlockZ, a_Seq, 0x3fffffff + Row * 0x10000000, 2, 'leaf-aspen');
           h--;
         }  // for Row - 2*
       };
@@ -323,7 +435,7 @@ const tree = objectApi => {
 
         // Create the trunk
         for (let i = 0; i < Height; i++) {
-          objectApi.setBlock(currentChunk, a_BlockX, a_BlockY + i, a_BlockZ, 'tree');
+          objectApi.setBlock(currentChunk, a_BlockX, a_BlockY + i, a_BlockZ, 'tree-acacia');
         }
 
         // Set the starting point of the branch
@@ -338,13 +450,13 @@ const tree = objectApi => {
         // Place the logs of the branch.
         for (let i = 0; i < BranchHeight; i++) {
           BranchPos.add(BranchDirection);
-          objectApi.setBlock(currentChunk, BranchPos.x, BranchPos.y, BranchPos.z, 'tree');
+          objectApi.setBlock(currentChunk, BranchPos.x, BranchPos.y, BranchPos.z, 'tree-acacia');
         }
 
         // Add the leaves to the top of the branch
-        PushCoordBlocks(BranchPos.x, BranchPos.y, BranchPos.z, BigO2, 'leaf');
-        PushCoordBlocks(BranchPos.x, BranchPos.y + 1, BranchPos.z, BigO1, 'leaf');
-        objectApi.setBlock(currentChunk, BranchPos.x, BranchPos.y + 1, BranchPos.z, 'leaf');
+        PushCoordBlocks(BranchPos.x, BranchPos.y, BranchPos.z, BigO2, 'leaf-acacia');
+        PushCoordBlocks(BranchPos.x, BranchPos.y + 1, BranchPos.z, BigO1, 'leaf-acacia');
+        objectApi.setBlock(currentChunk, BranchPos.x, BranchPos.y + 1, BranchPos.z, 'leaf-acacia');
 
         // Choose if we have to add another branch
         const TwoTop = (objectApi.getHash(a_Seq + ':acaciaTreeTwoTop') < 0 ? true : false);
@@ -364,13 +476,13 @@ const tree = objectApi => {
         // Place the logs in the same way as the first branch
         for (let i = 0; i < BranchHeight; i++) {
           BranchPos.add(BranchDirection);
-          objectApi.setBlock(currentChunk, BranchPos.x, BranchPos.y, BranchPos.z, 'tree');
+          objectApi.setBlock(currentChunk, BranchPos.x, BranchPos.y, BranchPos.z, 'tree-acacia');
         }
 
         // And add the leaves ontop of the second branch
-        PushCoordBlocks(BranchPos.x, BranchPos.y, BranchPos.z, BigO2, 'leaf');
-        PushCoordBlocks(BranchPos.x, BranchPos.y + 1, BranchPos.z, BigO1, 'leaf');
-        objectApi.setBlock(currentChunk, BranchPos.x, BranchPos.y + 1, BranchPos.z, 'leaf');
+        PushCoordBlocks(BranchPos.x, BranchPos.y, BranchPos.z, BigO2, 'leaf-acacia');
+        PushCoordBlocks(BranchPos.x, BranchPos.y + 1, BranchPos.z, BigO1, 'leaf-acacia');
+        objectApi.setBlock(currentChunk, BranchPos.x, BranchPos.y + 1, BranchPos.z, 'leaf-acacia');
       };
       const GetDarkoakTreeImage = (a_BlockX, a_BlockY, a_BlockZ, a_Seq) => {
         // Pick a height
@@ -378,10 +490,10 @@ const tree = objectApi => {
 
         // Create the trunk
         for (let i = 0; i < Height; i++) {
-          objectApi.setBlock(currentChunk, a_BlockX, a_BlockY + i, a_BlockZ, 'tree');
-          objectApi.setBlock(currentChunk, a_BlockX + 1, a_BlockY + i, a_BlockZ, 'tree');
-          objectApi.setBlock(currentChunk, a_BlockX, a_BlockY + i, a_BlockZ + 1, 'tree');
-          objectApi.setBlock(currentChunk, a_BlockX + 1, a_BlockY + i, a_BlockZ + 1, 'tree');
+          objectApi.setBlock(currentChunk, a_BlockX, a_BlockY + i, a_BlockZ, 'tree-pine');
+          objectApi.setBlock(currentChunk, a_BlockX + 1, a_BlockY + i, a_BlockZ, 'tree-pine');
+          objectApi.setBlock(currentChunk, a_BlockX, a_BlockY + i, a_BlockZ + 1, 'tree-pine');
+          objectApi.setBlock(currentChunk, a_BlockX + 1, a_BlockY + i, a_BlockZ + 1, 'tree-pine');
         }
 
         // Prevent floating trees by placing dirt under them
@@ -410,7 +522,7 @@ const tree = objectApi => {
           const y = Height - (objectApi.getHash(a_Seq + ':darkOakTreeBranchY:' + i) % Math.floor(Height - (Height / 4)));
 
           for (let Y = y; Y < Height; Y++) {
-            objectApi.setBlock(currentChunk, a_BlockX + x, a_BlockY + Y, a_BlockZ + z, 'tree');
+            objectApi.setBlock(currentChunk, a_BlockX + x, a_BlockY + Y, a_BlockZ + z, 'tree-pine');
           }
         }
 
@@ -433,24 +545,24 @@ const tree = objectApi => {
 
         // The entire trunk, out of logs:
         for (let i = Height - 1; i >= 0; --i) {
-        objectApi.setBlock(currentChunk, a_BlockX, a_BlockY + i, a_BlockZ, 'tree');
+        objectApi.setBlock(currentChunk, a_BlockX, a_BlockY + i, a_BlockZ, 'tree-aspen');
         }
         let h = a_BlockY + Height;
 
         // Top layer - just the Plus:
-        PushCoordBlocks(a_BlockX, h, a_BlockZ, BigO1, 'leaf');
-        objectApi.setBlock(currentChunk, a_BlockX, h, a_BlockZ, 'leaf'); // There's no log at this layer
+        PushCoordBlocks(a_BlockX, h, a_BlockZ, BigO1, 'leaf-aspen');
+        objectApi.setBlock(currentChunk, a_BlockX, h, a_BlockZ, 'leaf-aspen'); // There's no log at this layer
         h--;
 
         // Second layer - log, Plus and maybe Corners:
-        PushCoordBlocks (a_BlockX, h, a_BlockZ, BigO1, 'leaf');
-        PushCornerBlocks(a_BlockX, h, a_BlockZ, a_Seq, 0x5fffffff, 1, 'leaf');
+        PushCoordBlocks (a_BlockX, h, a_BlockZ, BigO1, 'leaf-aspen');
+        PushCornerBlocks(a_BlockX, h, a_BlockZ, a_Seq, 0x5fffffff, 1, 'leaf-aspen');
         h--;
 
         // Third and fourth layers - BigO2 and maybe 2 * Corners:
         for (let Row = 0; Row < 2; Row++) {
-          PushCoordBlocks (a_BlockX, h, a_BlockZ, BigO2, 'leaf');
-          PushCornerBlocks(a_BlockX, h, a_BlockZ, a_Seq, 0x3fffffff + Row * 0x10000000, 2, 'leaf');
+          PushCoordBlocks (a_BlockX, h, a_BlockZ, BigO2, 'leaf-aspen');
+          PushCornerBlocks(a_BlockX, h, a_BlockZ, a_Seq, 0x3fffffff + Row * 0x10000000, 2, 'leaf-aspen');
           h--;
         }  // for Row - 2*
       };
@@ -555,7 +667,7 @@ const tree = objectApi => {
 
         // The entire trunk, out of logs:
         for (let i = TrunkHeight; i >= 0; --i) {
-          objectApi.setBlock(currentChunk, a_BlockX, a_BlockY + i, a_BlockZ, 'tree');
+          objectApi.setBlock(currentChunk, a_BlockX, a_BlockY + i, a_BlockZ, 'tree-pine');
         }
         let h = a_BlockY + TrunkHeight + 2;
 
@@ -630,10 +742,10 @@ const tree = objectApi => {
         const Height = 24 + objectApi.getHash(a_Seq + ':jungleTreeLargeHeight') % 24;
 
         for (let i = 0; i < Height; i++) {
-          objectApi.setBlock(currentChunk, a_BlockX,     a_BlockY + i, a_BlockZ, 'tree');
-          objectApi.setBlock(currentChunk, a_BlockX + 1, a_BlockY + i, a_BlockZ, 'tree');
-          objectApi.setBlock(currentChunk, a_BlockX,     a_BlockY + i, a_BlockZ + 1, 'tree');
-          objectApi.setBlock(currentChunk, a_BlockX + 1, a_BlockY + i, a_BlockZ + 1, 'tree');
+          objectApi.setBlock(currentChunk, a_BlockX,     a_BlockY + i, a_BlockZ, 'tree-jungle');
+          objectApi.setBlock(currentChunk, a_BlockX + 1, a_BlockY + i, a_BlockZ, 'tree-jungle');
+          objectApi.setBlock(currentChunk, a_BlockX,     a_BlockY + i, a_BlockZ + 1, 'tree-jungle');
+          objectApi.setBlock(currentChunk, a_BlockX + 1, a_BlockY + i, a_BlockZ + 1, 'tree-jungle');
         }
         let hei = a_BlockY + Height - 2;
 
@@ -650,21 +762,21 @@ const tree = objectApi => {
 
         // The lower two leaves layers are BigO4 with log in the middle and possibly corners:
         for (let i = 0; i < 2; i++) {
-          PushCoordBlocks(a_BlockX, hei, a_BlockZ, BigO4, 'leaf');
-          PushCornerBlocks(a_BlockX, hei, a_BlockZ, a_Seq, 0x5fffffff, 3, 'leaf');
+          PushCoordBlocks(a_BlockX, hei, a_BlockZ, BigO4, 'leaf-jungle');
+          PushCornerBlocks(a_BlockX, hei, a_BlockZ, a_Seq, 0x5fffffff, 3, 'leaf-jungle');
           hei++;
         }  // for i - 2*
 
         // The top leaves layer is a BigO3 with leaves in the middle and possibly corners:
-        PushCoordBlocks(a_BlockX, hei, a_BlockZ, BigO3, 'leaf');
-        PushCornerBlocks(a_BlockX, hei, a_BlockZ, a_Seq, 0x5fffffff, 3, 'leaf');
-        objectApi.setBlock(currentChunk, a_BlockX, hei, a_BlockZ, 'leaf');
+        PushCoordBlocks(a_BlockX, hei, a_BlockZ, BigO3, 'leaf-jungle');
+        PushCornerBlocks(a_BlockX, hei, a_BlockZ, a_Seq, 0x5fffffff, 3, 'leaf-jungle');
+        objectApi.setBlock(currentChunk, a_BlockX, hei, a_BlockZ, 'leaf-jungle');
       };
       const GetSmallJungleTreeImage = (a_BlockX, a_BlockY, a_BlockZ, a_Seq) => {
         const Height = 7 + objectApi.getHash(a_Seq + ':jungleTreeSmallHeight') % 3;
 
         for (let i = 0; i < Height; i++) {
-          objectApi.setBlock(currentChunk, a_BlockX, a_BlockY + i, a_BlockZ, 'tree');
+          objectApi.setBlock(currentChunk, a_BlockX, a_BlockY + i, a_BlockZ, 'tree-jungle');
         }
         let hei = a_BlockY + Height - 3;
 
@@ -673,21 +785,21 @@ const tree = objectApi => {
 
         // The lower two leaves layers are BigO3 with log in the middle and possibly corners:
         for (let i = 0; i < 2; i++) {
-          PushCoordBlocks(a_BlockX, hei, a_BlockZ, BigO3, 'leaf');
-          PushCornerBlocks(a_BlockX, hei, a_BlockZ, a_Seq, 0x5fffffff, 3, 'leaf');
+          PushCoordBlocks(a_BlockX, hei, a_BlockZ, BigO3, 'leaf-jungle');
+          PushCornerBlocks(a_BlockX, hei, a_BlockZ, a_Seq, 0x5fffffff, 3, 'leaf-jungle');
           hei++;
         }  // for i - 2*
 
         // Two layers of BigO2 leaves, possibly with corners:
         for (let i = 0; i < 1; i++) {
-          PushCoordBlocks(a_BlockX, hei, a_BlockZ, BigO2, 'leaf');
-          PushCornerBlocks(a_BlockX, hei, a_BlockZ, a_Seq, 0x5fffffff, 2, 'leaf');
+          PushCoordBlocks(a_BlockX, hei, a_BlockZ, BigO2, 'leaf-jungle');
+          PushCornerBlocks(a_BlockX, hei, a_BlockZ, a_Seq, 0x5fffffff, 2, 'leaf-jungle');
           hei++;
         }  // for i - 2*
 
         // Top plus, all leaves:
-        PushCoordBlocks(a_BlockX, hei, a_BlockZ, BigO1, 'leaf');
-        objectApi.setBlock(currentChunk, a_BlockX, hei, a_BlockZ, 'leaf');
+        PushCoordBlocks(a_BlockX, hei, a_BlockZ, BigO1, 'leaf-jungle');
+        objectApi.setBlock(currentChunk, a_BlockX, hei, a_BlockZ, 'leaf-jungle');
       };
       const GetTreeImageByBiome = (a_BlockX, a_BlockY, a_BlockZ, a_Seq, a_Biome) => {
         switch (a_Biome) {
