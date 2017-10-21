@@ -158,7 +158,16 @@ const chest = objectApi => {
                       attributes: {
                         type: {value: 'asset'},
                         value: {value: asset},
-                        position: {value: [position.x + assetPosition[0] * 0.25, position.y + 0.6, position.z + assetPosition[1] * 0.25].concat(rotation.toArray()).concat(oneVector.toArray())},
+                        position: {
+                          value: localVector.copy(position)
+                            .add(localVector2.set(0, 0.6, 0))
+                            .add(
+                              localVector2.set(assetPosition[0] * 0.25, 0, assetPosition[1] * 0.25)
+                                .applyQuaternion(rotation)
+                            ).toArray()
+                            .concat(zeroQuaternion.toArray())
+                            .concat(oneVector.toArray())
+                        },
                         quantity: {value: quantity},
                         owner: {value: null},
                         bindOwner: {value: null},

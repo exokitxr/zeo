@@ -244,65 +244,63 @@ const chest = objectApi => {
       })();
       objectApi.registerGeometry('chest-open', chestOpenGeometry);
 
+      const upVector = new THREE.Vector3(0, 1, 0);
+      const localVector = new THREE.Vector3();
+      const localQuaternion = new THREE.Quaternion();
+
+      const chestProbability = 0.0005;
       objectApi.registerGenerator('chest', chunk => {
-        if (chunk.x === 0 && chunk.z === 0) {
-          const file = items.getFile();
-          return file.write(JSON.stringify({
-            assets: [
-              {
-                id: _makeId(),
-                asset: 'ITEM.LIGHTSABER',
-                quantity: 1,
-              },
-              {
-                id: _makeId(),
-                asset: 'ITEM.WOOD',
-                quantity: 1,
-              },
-              {
-                id: _makeId(),
-                asset: 'ITEM.STONE',
-                quantity: 1,
-              },
-              {
-                id: _makeId(),
-                asset: 'ITEM.PICKAXE',
-                quantity: 1,
-              },
-            ],
-          }))
-            .then(() => {
-              objectApi.addObject(chunk, 'chest', new THREE.Vector3(2, 74, -4), new THREE.Quaternion(), file.n);
-            });
-        }
-        /* const localVector = new THREE.Vector3();
-        const localQuaternion = new THREE.Quaternion();
-        const localEuler = new THREE.Euler();
+        const aox = chunk.x * NUM_CELLS;
+        const aoz = chunk.z * NUM_CELLS;
 
-        const itemProbability = 0.25;
+        for (let dz = 0; dz < NUM_CELLS_OVERSCAN; dz++) {
+          for (let dx = 0; dx < NUM_CELLS_OVERSCAN; dx++) {
+            const ax = aox + dx;
+            const az = aoz + dz;
+            const v = objectApi.getNoise('grass', 0, 0, ax + 1000, az + 1000);
+            const h = objectApi.getHash(v + ':chest') / 0xFFFFFFFF;
 
-        for (let dz = 0; dz < NUM_CELLS; dz++) {
-          for (let dx = 0; dx < NUM_CELLS; dx++) {
-            const v = objectApi.getNoise('items', chunk.x, chunk.z, dx, dz);
-
-            if (v < itemProbability && (objectApi.getHash(String(v)) % 2) === 0) {
-              const elevation = Math.floor(objectApi.getElevation(chunk.x * NUM_CELLS + dx, chunk.z * NUM_CELLS + dz));
+            if (h < chestProbability) {
+              const elevation = objectApi.getElevation(ax, az);
 
               if (elevation > 64) {
-                const ax = (chunk.x * NUM_CELLS) + dx;
-                const az = (chunk.z * NUM_CELLS) + dz;
-                localVector.set(ax, elevation, az);
-                localQuaternion.setFromEuler(localEuler.set(
-                  0,
-                  objectApi.getHash(String(v)) / 0xFFFFFFFF * Math.PI * 2,
-                  0,
-                  'YXZ'
-                ));
-                objectApi.addObject(chunk, 'stone', localVector, localQuaternion, 0);
+                const file = items.getFile();
+                return file.write(JSON.stringify({
+                  assets: [
+                    {
+                      id: _makeId(),
+                      asset: 'ITEM.LIGHTSABER',
+                      quantity: 1,
+                    },
+                    {
+                      id: _makeId(),
+                      asset: 'ITEM.WOOD',
+                      quantity: 1,
+                    },
+                    {
+                      id: _makeId(),
+                      asset: 'ITEM.STONE',
+                      quantity: 1,
+                    },
+                    {
+                      id: _makeId(),
+                      asset: 'ITEM.PICKAXE',
+                      quantity: 1,
+                    },
+                  ],
+                }))
+                  .then(() => {
+                    localVector.set(ax, elevation, az);
+                    localQuaternion.setFromAxisAngle(
+                      upVector,
+                      objectApi.getHash(v + ':chestAngle') / 0xFFFFFFFF * Math.PI * 2
+                    );
+                    objectApi.addObject(chunk, 'chest', localVector.set(ax, elevation, az), localQuaternion, file.n);
+                  });
               }
             }
           }
-        } */
+        }
       });
 
       return () => {
