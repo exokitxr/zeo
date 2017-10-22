@@ -1,6 +1,6 @@
 const GENERATOR_PLUGIN = 'plugins-generator';
-const width = 640;
-const height = 480;
+const width = 1920;
+const height = 1080;
 const DEFAULT_MATRIX = [
   0, 0, 0,
   0, 0, 0, 1,
@@ -22,7 +22,7 @@ const drone = objectApi => () => {
   const localEuler = new THREE.Euler();
   const localMatrix = new THREE.Matrix4();
 
-  const sourceCamera = new THREE.PerspectiveCamera(45, 0.2 / 0.1, camera.near, camera.far);
+  const sourceCamera = new THREE.PerspectiveCamera(45, width / height, camera.near, camera.far);
   sourceCamera.name = camera.name;
   scene.add(sourceCamera);
 
@@ -141,7 +141,7 @@ const drone = objectApi => () => {
     const imageData = ctx.getImageData(0, 0, width, height);
     const buffer = new Uint8Array(imageData.data.buffer, imageData.data.buffer.byteOffset, width * height * 4);
 
-    const mediaStream = canvas.captureStream(24);
+    const mediaStream = canvas.captureStream(30);
     const mediaRecorder = new MediaRecorder(mediaStream, {
       mimeType: 'video/webm',
       bitsPerSecond: 8000 * 1024,
@@ -161,7 +161,7 @@ const drone = objectApi => () => {
       _makeRenderTarget(),
     ];
 
-    const geometry = new THREE.PlaneBufferGeometry(2 * 0.9, 1 * 0.9)
+    const geometry = new THREE.PlaneBufferGeometry(2 * 0.9, 2 / width * height * 0.9)
       .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, 0.05 + 0.01));
     const material = new THREE.MeshBasicMaterial();
     const mesh = new THREE.Mesh(geometry, material);

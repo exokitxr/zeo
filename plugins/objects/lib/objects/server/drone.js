@@ -2,6 +2,9 @@ const path = require('path');
 
 const {three: {THREE}, utils: {image: {jimp}}} = zeo;
 
+const width = 1920;
+const height = 1080;
+
 const drone = objectApi => {
   return () => jimp.read(path.join(__dirname, '../../img/plastic.png'))
     .then(droneImg => objectApi.registerTexture('drone', droneImg))
@@ -11,7 +14,7 @@ const drone = objectApi => {
         const uvWidth = droneUvs[2] - droneUvs[0];
         const uvHeight = droneUvs[3] - droneUvs[1];
 
-        const geometry = new THREE.BoxBufferGeometry(2, 1, 0.1);
+        const geometry = new THREE.BoxBufferGeometry(2, 2 / width * height, 0.1);
         const uvs = geometry.getAttribute('uv').array;
         const numUvs = uvs.length / 2;
         for (let i = 0; i < numUvs; i++) {
