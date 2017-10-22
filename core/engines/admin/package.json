@@ -1,0 +1,7 @@
+{
+  "name": "admin",
+  "description": "Provides admin utilities for the zeo core.",
+  "version": "0.0.1",
+  "client": "client.js",
+  "dependencies": {}
+}

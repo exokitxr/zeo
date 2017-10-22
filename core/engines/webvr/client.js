@@ -1005,14 +1005,12 @@ class WebVR {
                   case 67: // C
                     this.mode = 'right';
                     break;
-                  case 88: // X
+                  case 88: { // X
                     for (let i = 0; i < gamepads.length; i++) {
                       gamepads[i].resetPose();
                     }
                     break;
-                  case 192: // Tilde
-                    bootstrap.toggleRoamMode();
-                    break;
+                  }
                 }
               }
             };
