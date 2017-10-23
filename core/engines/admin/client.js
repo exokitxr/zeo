@@ -23,7 +23,7 @@ class Admin {
       ]) => {
         if (live) {
           const _keydown = e => {
-            if (e.event.keyCode === 192 && bootstrap.getVrMode() === 'keyboard') {
+            if ((e.event.keyCode === 192 || e.event.keyCode === 222) && bootstrap.getVrMode() === 'keyboard') { // tilde or quote
               bootstrap.toggleRoamMode();
 
               const newNotification = notification.addNotification(`Noclip ${bootstrap.getRoamMode() === 'free' ? 'enabled' : 'disabled'}.`);
