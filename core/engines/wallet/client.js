@@ -1041,11 +1041,6 @@ class Wallet {
                     name,
                   },
                   timestamp: Date.now(),
-                  certificate: [
-                    {
-                      signature: id, // XXX make this an actual signature
-                    },
-                  ],
                 };
                 assets.push(assetSpec);
 
