@@ -1027,7 +1027,34 @@ class Wallet {
             const file = fs.makeRemoteFile(n);
             const url = file.getUrl();
             file.readAsArrayBuffer()
-              .then(arrayBuffer => vridApi.upload(n, arrayBuffer))
+              .then(arrayBuffer => {
+                const _makeNotificationText = n => {
+                  let s = 'Uploading ' + (n * 100).toFixed(1) + '% [';
+                  let i;
+                  const roundN = Math.round(n * 20);
+                  for (i = 0; i < roundN; i++) {
+                    s += '|';
+                  }
+                  for (; i < 20; i++) {
+                    s += '.';
+                  }
+                  s += ']';
+                  return s;
+                };
+                const newNotification = notification.addNotification(_makeNotificationText(0));
+
+                vridApi.upload(n, arrayBuffer, progress => {
+                  newNotification.set(_makeNotificationText(progress));
+                })
+                  .then(() => {
+                    notification.removeNotification(newNotification);
+                  })
+                  .catch(err => {
+                    notification.removeNotification(newNotification);
+
+                    return Promise.reject(err);
+                  });
+              })
               .then(() => vridApi.get('assets'))
               .then(assets => {
                 assets = assets || [];
@@ -1448,12 +1475,5 @@ const _debounce = fn => {
   };
   return _go;
 };
-/* const _arrayToBase64 = array => {
-  let binary = '';
-  for (let i = 0; i < array.byteLength; i++) {
-    binary += String.fromCharCode(array[i]);
-  }
-  return btoa(binary);
-}; */
 
 module.exports = Wallet;
