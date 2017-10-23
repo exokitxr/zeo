@@ -144,7 +144,7 @@ const drone = objectApi => () => {
     const mediaStream = canvas.captureStream(30);
     const mediaRecorder = new MediaRecorder(mediaStream, {
       mimeType: 'video/webm',
-      bitsPerSecond: 8000 * 1024,
+      bitsPerSecond: 15000 * 1024,
     });
     const blobs = [];
     mediaRecorder.ondataavailable = e => {
