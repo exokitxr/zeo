@@ -327,6 +327,7 @@ class Zeo {
                           <button style="position: relative; background-color: #FFF; border: 0; outline: none; cursor: pointer;" class=headset-button>${vrSvg}</button>
                           <button style="position: relative; background-color: #FFF; border: 0; outline: none; cursor: pointer;" class=keyboard-button>${keyboardSvg}</button>
                           <button style="position: relative; background-color: #FFF; border: 0; outline: none; cursor: pointer;" class=microphone-button>${microphoneOffSvg}</button>
+                          <a href="https://my.zeovr.io/" target="_blank" style="position: relative; display: flex; background-color: #FFF; border: 0; justify-content: center; align-items: center; outline: none; cursor: pointer;" class=account-button>${accountSvg}</a>
                         </div>
                       `;
                       helper.addEventListener('dragover', e => {
@@ -436,6 +437,9 @@ class Zeo {
                         
                         e.preventDefault();
                       });
+
+                      const accountButton = $$(helper, '.account-button')[0];
+                      _styleButton(accountButton);
 
                       overlayContent.appendChild(helper);
 
@@ -1024,7 +1028,7 @@ const vrSvg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w
 const keyboardSvg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24"><path d="M6,16H18V18H6V16M6,13V15H2V13H6M7,15V13H10V15H7M11,15V13H13V15H11M14,15V13H17V15H14M18,15V13H22V15H18M2,10H5V12H2V10M19,12V10H22V12H19M18,12H16V10H18V12M8,12H6V10H8V12M12,12H9V10H12V12M15,12H13V10H15V12M2,9V7H4V9H2M5,9V7H7V9H5M8,9V7H10V9H8M11,9V7H13V9H11M14,9V7H16V9H14M17,9V7H22V9H17Z" /></svg>`;
 const microphoneOnSvg = `<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24"><path d="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z" /></svg>`;
 const microphoneOffSvg = `<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24"><path d="M19,11C19,12.19 18.66,13.3 18.1,14.28L16.87,13.05C17.14,12.43 17.3,11.74 17.3,11H19M15,11.16L9,5.18V5A3,3 0 0,1 12,2A3,3 0 0,1 15,5V11L15,11.16M4.27,3L21,19.73L19.73,21L15.54,16.81C14.77,17.27 13.91,17.58 13,17.72V21H11V17.72C7.72,17.23 5,14.41 5,11H6.7C6.7,14 9.24,16.1 12,16.1C12.81,16.1 13.6,15.91 14.31,15.58L12.65,13.92L12,14A3,3 0 0,1 9,11V10.28L3,4.27L4.27,3Z" /></svg>`;
-
+const accountSvg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24"><path d="M12,19.2C9.5,19.2 7.29,17.92 6,16C6.03,14 10,12.9 12,12.9C14,12.9 17.97,14 18,16C16.71,17.92 14.5,19.2 12,19.2M12,5A3,3 0 0,1 15,8A3,3 0 0,1 12,11A3,3 0 0,1 9,8A3,3 0 0,1 12,5M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12C22,6.47 17.5,2 12,2Z" /></svg>`;
 
 const _getQueryVariable = (url, variable) => {
   const match = url.match(/\?(.+)$/);
