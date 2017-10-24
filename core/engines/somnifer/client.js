@@ -29,6 +29,8 @@ class Somnifer {
         class SoundBody {
           constructor() {
             const sound = new THREE.PositionalAudio(listener);
+            // sound.setDistanceModel('linear');
+            // sound.setRolloffFactor(1);
             this.sound = sound;
 
             const analyser = new THREE.AudioAnalyser(sound, ANALYSER_RESOLUTION);
@@ -40,10 +42,7 @@ class Somnifer {
           }
 
           setInputElement(el) {
-            const {sound} = this;
-
-            const source = sound.context.createMediaElementSource(el);
-            sound.setNodeSource(source);
+            this.sound.setNodeSource(this.sound.context.createMediaElementSource(el));
           }
 
           setInputElements(els) {
@@ -66,39 +65,27 @@ class Somnifer {
           }
 
           setInputMediaStream(mediaStream) {
-            const {sound} = this;
-
-            const source = sound.context.createMediaStreamSource(mediaStream);
-            sound.setNodeSource(source);
+            this.sound.setNodeSource(this.sound.context.createMediaStreamSource(mediaStream));
           }
 
           setInputSource(source) {
-            const {sound} = this;
-
-            sound.setNodeSource(source);
+            this.sound.setNodeSource(source);
           }
 
           setObject(object) {
-            const {sound} = this;
-
-            object.add(sound);
-
+            object.add(this.sound);
+            object.updateMatrixWorld();
             this.object = object;
           }
 
           getAmplitude() {
-            const {analyser} = this;
-
-            return analyser.getAverageFrequency() / 255;
+            return this.analyser.getAverageFrequency() / 255;
           }
 
           destroy() {
-            const {sound, object} = this;
-
-            if (object) {
-              object.remove(sound);
+            if (this.object) {
+              this.object.remove(this.sound);
             }
-
             bodies.splice(bodies.indexOf(this), 1);
           }
         }
