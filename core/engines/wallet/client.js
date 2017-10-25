@@ -564,7 +564,7 @@ class Wallet {
           inputText: '',
           asset: null,
           assets: [],
-          equipments: _makeEquipments(4),
+          equipments: _arrayify(null, 4),
           numTags: 0,
           page: 0,
         };
@@ -656,7 +656,7 @@ class Wallet {
         const _requestAssets = () => vridApi.get('assets')
           .then(assets => assets || []);
         const _requestEquipments = () => vridApi.get('equipment')
-          .then(equipments => equipments || _makeEquipments(4));
+          .then(equipments => _arrayify(equipments, 4));
         const _refreshAssets = () => Promise.all([
           _requestAssets(),
           _requestEquipments(),
@@ -671,7 +671,7 @@ class Wallet {
             walletState.asset = null;
             walletState.assets = assets;
             const newEquipments = equipments.filter(equipmentSpec =>
-              equipmentSpec.asset === null || walletState.assets.some(assetSpec => assetSpec.asset === equipmentSpec.asset)
+              !equipmentSpec || walletState.assets.some(assetSpec => assetSpec.asset === equipmentSpec.asset)
             );
             walletState.equipments = newEquipments;
             walletState.numTags = assets.length;
@@ -798,7 +798,7 @@ class Wallet {
               const index = (() => {
                 for (let i = 0; i < oldEquipments.length; i++) {
                   const oldEquipment = oldEquipments[i];
-                  if (oldEquipment.asset === null) {
+                  if (!oldEquipment) {
                     return i;
                   }
                 }
@@ -819,9 +819,7 @@ class Wallet {
 
               const {equipments: oldEquipments} = walletState;
               const newEquipments = _clone(oldEquipments);
-              newEquipments[index] = {
-                asset: null,
-              };
+              newEquipments[index] = null;
 
               _rebindEquipments(oldEquipments, newEquipments);
 
@@ -958,7 +956,7 @@ class Wallet {
                     newAssets.splice(newAssets.indexOf(newAsset), 1);
 
                     const {equipments} = walletState;
-                    const removedEquipments = equipments.filter(equipmentSpec => equipmentSpec.asset === asset);
+                    const removedEquipments = equipments.filter(equipmentSpec => equipmentSpec && equipmentSpec.asset === asset);
                     if (removedEquipments.length > 0) {
                       for (let i = 0; i < equipments.length; i++) {
                         const equipment = equipments[i];
@@ -1201,14 +1199,14 @@ class Wallet {
 
         const _rebindEquipments = (oldEquipments, newEquipments) => {
           const removedEquipments = oldEquipments.filter(oldEquipment =>
-            oldEquipment.asset !== null && !newEquipments.some(newEquipment => newEquipment.asset === oldEquipment.asset)
+            oldEquipment && !newEquipments.some(newEquipment => newEquipment && newEquipment.asset === oldEquipment.asset)
           );
           for (let i = 0; i < removedEquipments.length; i++) {
             const removedEquipment = removedEquipments[i];
             _unbindEquipment(removedEquipment);
           }
           const addedEquipments = newEquipments.filter(newEquipment => 
-            newEquipment.asset !== null && !oldEquipments.some(oldEquipment => oldEquipment.asset === newEquipment.asset)
+            newEquipment && !oldEquipments.some(oldEquipment => oldEquipment && oldEquipment.asset === newEquipment.asset)
           );
           for (let i = 0; i < addedEquipments.length; i++) {
             const addedEquipment = addedEquipments[i];
@@ -1247,7 +1245,7 @@ class Wallet {
           if (typeof equipmentApi.asset === 'string' && typeof equipmentApi.equipmentAddedCallback === 'function') {
             const {asset} = equipmentApi;
 
-            const assetSpec = walletState.equipments.find(equipmentSpec => equipmentSpec.asset === asset);
+            const assetSpec = walletState.equipments.find(equipmentSpec => equipmentSpec && equipmentSpec.asset === asset);
             if (assetSpec) {
               equipmentApi.equipmentAddedCallback(assetSpec);
             }
@@ -1257,7 +1255,7 @@ class Wallet {
           if (typeof equipmentApi.asset === 'string' && typeof equipmentApi.equipmentRemovedCallback === 'function') {
             const {asset} = equipmentApi;
 
-            const assetSpec = walletState.equipments.find(equipmentSpec => equipmentSpec.asset === asset);
+            const assetSpec = walletState.equipments.find(equipmentSpec => equipmentSpec && equipmentSpec.asset === asset);
             if (assetSpec) {
               equipmentApi.equipmentRemovedCallback(assetSpec);
             }
@@ -1438,15 +1436,15 @@ class Wallet {
 }
 
 const _makeId = () => Math.random().toString(36).substring(7);
-const _makeEquipments = n => {
-  const result = Array(n);
-  for (let i = 0; i < n; i++) {
-    result[i] = {
-      asset: null,
-    };
+function _arrayify(array, numElements) {
+  array = array || [];
+
+  const result = Array(numElements);
+  for (let i = 0; i < numElements; i++) {
+    result[i] = array[i] || null;
   }
   return result;
-};
+}
 const _relativeWsUrl = s => {
   const l = window.location;
   return ((l.protocol === 'https:') ? 'wss://' : 'ws://') + l.host + l.pathname + (!/\/$/.test(l.pathname) ? '/' : '') + s;

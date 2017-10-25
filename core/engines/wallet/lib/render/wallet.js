@@ -44,14 +44,14 @@ const getAssetsPageSrc = ({loading, inputText, inputValue, asset, assets, equipm
               .slice(page * numTagsPerPage, (page + 1) * numTagsPerPage)
               .map(assetSpec => {
                 const focused = assetSpec.id === asset;
-                const equippable = focused && !equipments.some(equipmentSpec => equipmentSpec.id === asset);
+                const equippable = focused && !equipments.some(equipmentSpec => equipmentSpec && equipmentSpec.id === asset);
                 return getAssetSrc(assetSpec, {focused, clickable: true, equippable, equipPlaceholder: true});
               })
               .join('\n')}
           </div>
           <div style="display: flex; flex-direction: column">
             ${equipments
-              .map((equipmentSpec, index) => getAssetSrc(equipmentSpec, {index, unequippable: equipmentSpec.asset !== null}))
+              .map((equipmentSpec, index) => getAssetSrc(equipmentSpec, {index, unequippable: Boolean(equipmentSpec)}))
               .join('\n')}
           </div>
         </div>`
@@ -87,7 +87,7 @@ const getAssetsPageSrc = ({loading, inputText, inputValue, asset, assets, equipm
   `;
 };
 const getAssetSrc = (assetSpec, {index = 0, focused = false, clickable = false, equippable = false, unequippable = false, equipPlaceholder = false} = {}) => {
-  const {id, asset, quantity} = assetSpec;
+  const {id, asset, quantity} = assetSpec || {};
 
   const equipButtonSrc = (() => {
     if (equippable) {
@@ -101,7 +101,7 @@ const getAssetSrc = (assetSpec, {index = 0, focused = false, clickable = false, 
     }
   })();
 
-  if (asset !== null) {
+  if (asset) {
     const linkTagName = clickable ? 'a' : 'div';
 
     return `\
