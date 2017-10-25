@@ -506,6 +506,36 @@ class Generator {
       }
     };
 
+    let Module = null;
+    window.wasmModule = (moduleName, moduleFn) => { // XXX centralize this
+      if (moduleName === 'vxl') {
+        const localModule = moduleFn({
+          print(text) { console.log(text); },
+          printErr(text) { console.warn(text); },
+          wasmBinaryFile: '/archae/objects/objectize.wasm',
+          onRuntimeInitialized: () => {
+            Module = localModule;
+
+            console.log('loaded wasm module', Module); // XXX
+          },
+        });
+      } else {
+        console.warn('unknown wasm module', moduleName);
+      }
+    };
+    const script = document.createElement('script');
+    script.async = true;
+    script.onload = () => {
+      document.body.removeChild(script);
+    };
+    script.onerror = err => {
+      console.warn(err);
+
+      document.body.removeChild(script);
+    };
+    script.src = '/archae/objects/objectize.js';
+    document.body.appendChild(script);
+
     const listeners = {};
     const _emit = (event, data) => {
       const entry = listeners[event];

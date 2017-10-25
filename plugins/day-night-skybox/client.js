@@ -75,7 +75,7 @@ class DayNightSkybox {
         // let lastLightmapUpdateTime = 0;
         const update = () => {
           const _updateSunIntensity = () => {
-            mesh.sky.azimuth = (0.05 + (((world.getWorldTime() + 200000) / 1000) * mesh.speed / 100000)) % 1;
+            mesh.sky.azimuth = (0.05 + (((world.getWorldTime() + 20000000) / 1000) * mesh.speed / 100000)) % 1;
             const theta = Math.PI * (mesh.sky.inclination - 0.5);
             const phi = 2 * Math.PI * (mesh.sky.azimuth - 0.5);
 

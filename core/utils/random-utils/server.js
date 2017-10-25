@@ -1,7 +1,7 @@
 const path = require('path');
 
 const alea = require('alea-zeo');
-const vxlPath = path.resolve(require.resolve('vxl'), '..');
+const vxlPath = path.resolve(require.resolve('/home/k/vxl'), '..');
 const vxl = require(vxlPath);
 
 class RandomUtils {

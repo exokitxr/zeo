@@ -8,92 +8,99 @@ importScripts('/archae/assets/alea.js');
 const {exports: alea} = self.module;
 self.module = {};
 
-let wasmInitialized = false;
+let Module = null;
 let slab = null;
-Module = {
-  print(text) { console.log(text); },
-  printErr(text) { console.warn(text); },
-  wasmBinaryFile: '/archae/objects/objectize.wasm',
-  onRuntimeInitialized: () => {
-    wasmInitialized = true;
-    slab = (() => {
-      const BIOMES_SIZE = _align(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN * Uint8Array.BYTES_PER_ELEMENT, Float32Array.BYTES_PER_ELEMENT);
-      const ELEVATIONS_SIZE = NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN * Float32Array.BYTES_PER_ELEMENT;
-      const ETHER_SIZE = ((NUM_CELLS + 1) * (NUM_CELLS_HEIGHT + 1) * (NUM_CELLS + 1)) * Float32Array.BYTES_PER_ELEMENT;
-      const WATER_SIZE  = ((NUM_CELLS + 1) * (NUM_CELLS_HEIGHT + 1) * (NUM_CELLS + 1)) * Float32Array.BYTES_PER_ELEMENT;
-      const LAVA_SIZE = ((NUM_CELLS + 1) * (NUM_CELLS_HEIGHT + 1) * (NUM_CELLS + 1)) * Float32Array.BYTES_PER_ELEMENT;
-      const POSITIONS_SIZE = NUM_POSITIONS_CHUNK * Float32Array.BYTES_PER_ELEMENT;
-      const INDICES_SIZE = NUM_POSITIONS_CHUNK * Uint32Array.BYTES_PER_ELEMENT;
-      const COLORS_SIZE = NUM_POSITIONS_CHUNK * Float32Array.BYTES_PER_ELEMENT;
-      const STATIC_HEIGHTFIELD_SIZE = NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN * Float32Array.BYTES_PER_ELEMENT;
-      const ATTRIBUTE_RANGES_SIZE = NUM_CHUNKS_HEIGHT * 6 * Uint32Array.BYTES_PER_ELEMENT;
-      const INDEX_RANGES_SIZE = NUM_CHUNKS_HEIGHT * 6 * Uint32Array.BYTES_PER_ELEMENT;
-      const PEEK_SIZE = 16 * Uint8Array.BYTES_PER_ELEMENT;
-      const PEEKS_ARRAY_SIZE = PEEK_SIZE * NUM_CHUNKS_HEIGHT;
+self.wasmModule = (moduleName, moduleFn) => {
+  if (moduleName === 'vxl') {
+    const localModule = moduleFn({
+      print(text) { console.log(text); },
+      printErr(text) { console.warn(text); },
+      wasmBinaryFile: '/archae/objects/objectize.wasm',
+      onRuntimeInitialized: () => {
+        Module = localModule;
 
-      const _alloc = (constructor, size) => {
-        const offset = Module._malloc(size);
-        const b = new constructor(Module.HEAP8.buffer, Module.HEAP8.byteOffset + offset, size / constructor.BYTES_PER_ELEMENT);
-        b.offset = offset;
-        return b;
-      };
+        slab = (() => {
+          const BIOMES_SIZE = _align(NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN * Uint8Array.BYTES_PER_ELEMENT, Float32Array.BYTES_PER_ELEMENT);
+          const ELEVATIONS_SIZE = NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN * Float32Array.BYTES_PER_ELEMENT;
+          const ETHER_SIZE = ((NUM_CELLS + 1) * (NUM_CELLS_HEIGHT + 1) * (NUM_CELLS + 1)) * Float32Array.BYTES_PER_ELEMENT;
+          const WATER_SIZE  = ((NUM_CELLS + 1) * (NUM_CELLS_HEIGHT + 1) * (NUM_CELLS + 1)) * Float32Array.BYTES_PER_ELEMENT;
+          const LAVA_SIZE = ((NUM_CELLS + 1) * (NUM_CELLS_HEIGHT + 1) * (NUM_CELLS + 1)) * Float32Array.BYTES_PER_ELEMENT;
+          const POSITIONS_SIZE = NUM_POSITIONS_CHUNK * Float32Array.BYTES_PER_ELEMENT;
+          const INDICES_SIZE = NUM_POSITIONS_CHUNK * Uint32Array.BYTES_PER_ELEMENT;
+          const COLORS_SIZE = NUM_POSITIONS_CHUNK * Float32Array.BYTES_PER_ELEMENT;
+          const STATIC_HEIGHTFIELD_SIZE = NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN * Float32Array.BYTES_PER_ELEMENT;
+          const ATTRIBUTE_RANGES_SIZE = NUM_CHUNKS_HEIGHT * 6 * Uint32Array.BYTES_PER_ELEMENT;
+          const INDEX_RANGES_SIZE = NUM_CHUNKS_HEIGHT * 6 * Uint32Array.BYTES_PER_ELEMENT;
+          const PEEK_SIZE = 16 * Uint8Array.BYTES_PER_ELEMENT;
+          const PEEKS_ARRAY_SIZE = PEEK_SIZE * NUM_CHUNKS_HEIGHT;
 
-      const biomes = _alloc(Uint8Array, BIOMES_SIZE);
-      const elevations = _alloc(Float32Array, ELEVATIONS_SIZE);
-      const ether = _alloc(Float32Array, ETHER_SIZE);
-      const water = _alloc(Float32Array, WATER_SIZE);
-      const lava = _alloc(Float32Array, LAVA_SIZE);
-      const positions = _alloc(Float32Array, POSITIONS_SIZE);
-      const indices = _alloc(Uint32Array, INDICES_SIZE);
-      const colors = _alloc(Float32Array, COLORS_SIZE);
-      const staticHeightfield = _alloc(Float32Array, STATIC_HEIGHTFIELD_SIZE);
-      const attributeRanges = _alloc(Uint32Array, ATTRIBUTE_RANGES_SIZE);
-      const indexRanges = _alloc(Uint32Array, INDEX_RANGES_SIZE);
-      const peeks = _alloc(Uint8Array, PEEK_SIZE * NUM_CHUNKS_HEIGHT);
-      const peeksArray = Array(NUM_CHUNKS_HEIGHT);
-      for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
-        peeksArray[i] = new Uint8Array(peeks.buffer, peeks.byteOffset + i * PEEK_SIZE, PEEK_SIZE / Uint8Array.BYTES_PER_ELEMENT);
-      }
-      const geometriesPositions = _alloc(Float32Array, GEOMETRY_BUFFER_SIZE * NUM_CHUNKS_HEIGHT);
-      const geometriesUvs = _alloc(Float32Array, GEOMETRY_BUFFER_SIZE * NUM_CHUNKS_HEIGHT);
-      const geometriesSsaos = _alloc(Uint8Array, GEOMETRY_BUFFER_SIZE * NUM_CHUNKS_HEIGHT);
-      const geometriesFrames = _alloc(Float32Array, GEOMETRY_BUFFER_SIZE * NUM_CHUNKS_HEIGHT);
-      const geometriesObjectIndices = _alloc(Float32Array, GEOMETRY_BUFFER_SIZE * NUM_CHUNKS_HEIGHT);
-      const geometriesIndices = _alloc(Uint32Array, GEOMETRY_BUFFER_SIZE * NUM_CHUNKS_HEIGHT);
-      const geometriesObjects = _alloc(Uint32Array, GEOMETRY_BUFFER_SIZE * NUM_CHUNKS_HEIGHT);
-      const tesselateObjectsResult = _alloc(Uint32Array, 7 * 8 * 4);
-      const cullGroups = _alloc(Int32Array, NUM_MAP_CHUNK_MESHES * (1 + NUM_RENDER_GROUPS * 2));
-      const cullGroups2 = _alloc(Int32Array, NUM_MAP_CHUNK_MESHES * (1 + NUM_RENDER_GROUPS * 4));
-      const groupsIndices = _alloc(Uint32Array, 2 * 4);
+          const _alloc = (constructor, size) => {
+            const offset = Module._malloc(size);
+            const b = new constructor(Module.HEAP8.buffer, Module.HEAP8.byteOffset + offset, size / constructor.BYTES_PER_ELEMENT);
+            b.offset = offset;
+            return b;
+          };
 
-      return {
-        biomes,
-        elevations,
-        ether,
-        water,
-        lava,
-        positions,
-        indices,
-        colors,
-        staticHeightfield,
-        attributeRanges,
-        indexRanges,
-        peeks,
-        peeksArray,
-        geometriesPositions,
-        geometriesUvs,
-        geometriesSsaos,
-        geometriesFrames,
-        geometriesObjectIndices,
-        geometriesIndices,
-        geometriesObjects,
-        tesselateObjectsResult,
-        cullGroups,
-        cullGroups2,
-        groupsIndices,
-      };
-    })();
-  },
+          const biomes = _alloc(Uint8Array, BIOMES_SIZE);
+          const elevations = _alloc(Float32Array, ELEVATIONS_SIZE);
+          const ether = _alloc(Float32Array, ETHER_SIZE);
+          const water = _alloc(Float32Array, WATER_SIZE);
+          const lava = _alloc(Float32Array, LAVA_SIZE);
+          const positions = _alloc(Float32Array, POSITIONS_SIZE);
+          const indices = _alloc(Uint32Array, INDICES_SIZE);
+          const colors = _alloc(Float32Array, COLORS_SIZE);
+          const staticHeightfield = _alloc(Float32Array, STATIC_HEIGHTFIELD_SIZE);
+          const attributeRanges = _alloc(Uint32Array, ATTRIBUTE_RANGES_SIZE);
+          const indexRanges = _alloc(Uint32Array, INDEX_RANGES_SIZE);
+          const peeks = _alloc(Uint8Array, PEEK_SIZE * NUM_CHUNKS_HEIGHT);
+          const peeksArray = Array(NUM_CHUNKS_HEIGHT);
+          for (let i = 0; i < NUM_CHUNKS_HEIGHT; i++) {
+            peeksArray[i] = new Uint8Array(peeks.buffer, peeks.byteOffset + i * PEEK_SIZE, PEEK_SIZE / Uint8Array.BYTES_PER_ELEMENT);
+          }
+          const geometriesPositions = _alloc(Float32Array, GEOMETRY_BUFFER_SIZE * NUM_CHUNKS_HEIGHT);
+          const geometriesUvs = _alloc(Float32Array, GEOMETRY_BUFFER_SIZE * NUM_CHUNKS_HEIGHT);
+          const geometriesSsaos = _alloc(Uint8Array, GEOMETRY_BUFFER_SIZE * NUM_CHUNKS_HEIGHT);
+          const geometriesFrames = _alloc(Float32Array, GEOMETRY_BUFFER_SIZE * NUM_CHUNKS_HEIGHT);
+          const geometriesObjectIndices = _alloc(Float32Array, GEOMETRY_BUFFER_SIZE * NUM_CHUNKS_HEIGHT);
+          const geometriesIndices = _alloc(Uint32Array, GEOMETRY_BUFFER_SIZE * NUM_CHUNKS_HEIGHT);
+          const geometriesObjects = _alloc(Uint32Array, GEOMETRY_BUFFER_SIZE * NUM_CHUNKS_HEIGHT);
+          const tesselateObjectsResult = _alloc(Uint32Array, 7 * 8 * 4);
+          const cullGroups = _alloc(Int32Array, NUM_MAP_CHUNK_MESHES * (1 + NUM_RENDER_GROUPS * 2));
+          const cullGroups2 = _alloc(Int32Array, NUM_MAP_CHUNK_MESHES * (1 + NUM_RENDER_GROUPS * 4));
+          const groupsIndices = _alloc(Uint32Array, 2 * 4);
+
+          return {
+            biomes,
+            elevations,
+            ether,
+            water,
+            lava,
+            positions,
+            indices,
+            colors,
+            staticHeightfield,
+            attributeRanges,
+            indexRanges,
+            peeks,
+            peeksArray,
+            geometriesPositions,
+            geometriesUvs,
+            geometriesSsaos,
+            geometriesFrames,
+            geometriesObjectIndices,
+            geometriesIndices,
+            geometriesObjects,
+            tesselateObjectsResult,
+            cullGroups,
+            cullGroups2,
+            groupsIndices,
+          };
+        })();
+      },
+    });
+  } else {
+    console.warn('unknown wasm module', moduleName);
+  }
 };
 importScripts('/archae/objects/objectize.js');
 
@@ -2225,7 +2232,7 @@ self.onmessage = e => {
 };
 
 const _getTerrainCull = (hmdPosition, projectionMatrix, matrixWorldInverse, frustumCulled) => {
-  if (wasmInitialized) {
+  if (Module) {
     const allocator = new Allocator();
 
     const {cullGroups, cullGroups2, groupsIndices} = slab;
@@ -2259,7 +2266,7 @@ const _getTerrainCull = (hmdPosition, projectionMatrix, matrixWorldInverse, frus
   }
 };
 const _getObjectsCull = (hmdPosition, projectionMatrix, matrixWorldInverse, frustumCulled) => {
-  if (wasmInitialized) {
+  if (Module) {
     const allocator = new Allocator();
 
     const resultSize = NUM_MAP_CHUNK_MESHES * (1 + NUM_RENDER_GROUPS * 2);

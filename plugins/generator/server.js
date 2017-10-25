@@ -499,6 +499,16 @@ class Generator {
         const generatorElement = new Generator();
         elements.registerEntity(this, generatorElement);
 
+        const _gzip = (req, res) => {
+          if (accepts(req, 'gzip')) {
+            res.set('Content-Encoding', 'gzip');
+            const zs = zlib.createGzip();
+            zs.pipe(res);
+            res = zs;
+          }
+          return res;
+        };
+
         function serveObjectsTextureAtlas(req, res, next) {
           textureImg.getBuffer('image/png', (err, buffer) => {
             if (!err) {
@@ -516,21 +526,24 @@ class Generator {
 
         function serveObjectsObjectizeJs(req, res, next) {
           res.type('application/javascript');
+
+          res = _gzip(req, res);
+
           fs.createReadStream(path.join(vxlPath, 'bin', 'objectize.js')).pipe(res);
         }
         app.get('/archae/objects/objectize.js', serveObjectsObjectizeJs);
         function serveObjectsObjectizeWasm(req, res, next) {
-          res.type('application/octret-stream');
+          res.type('application/wasm');
+
+          res = _gzip(req, res);
+
           fs.createReadStream(path.join(vxlPath, 'bin', 'objectize.wasm')).pipe(res);
         }
         app.get('/archae/objects/objectize.wasm', serveObjectsObjectizeWasm);
         function serveObjectsTemplates(req, res, next) {
-          if (accepts(req, 'gzip')) {
-            res.set('Content-Encoding', 'gzip');
-            const zs = zlib.createGzip();
-            zs.pipe(res);
-            res = zs;
-          }
+          res.type('application/octet-stream');
+
+          res = _gzip(req, res);
 
           res.write(new Buffer(geometriesBuffer.buffer, geometriesBuffer.byteOffset, geometriesBuffer.byteLength));
           res.write(new Buffer(geometryTypes.buffer, geometryTypes.byteOffset, geometryTypes.byteLength));
@@ -538,8 +551,7 @@ class Generator {
           res.write(new Buffer(transparentVoxels.buffer, transparentVoxels.byteOffset, transparentVoxels.byteLength));
           res.write(new Buffer(translucentVoxels.buffer, translucentVoxels.byteOffset, translucentVoxels.byteLength));
           res.write(new Buffer(faceUvs.buffer, faceUvs.byteOffset, faceUvs.byteLength));
-          res.write(new Buffer(lights.buffer, lights.byteOffset, lights.byteLength));
-          res.end();
+          res.end(new Buffer(lights.buffer, lights.byteOffset, lights.byteLength));
         }
         app.get('/archae/objects/geometry.bin', serveObjectsTemplates);
 
