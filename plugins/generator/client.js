@@ -84,6 +84,7 @@ class Generator {
     const _getObjectId = (x, z, i) => (mod(x, 0xFF) << 24) | (mod(z, 0xFF) << 16) | (i & 0xFFFF);
 
     const forwardVector = new THREE.Vector3(0, 0, -1);
+    const zeroQuaternion = new THREE.Quaternion();
     const localVector = new THREE.Vector3();
     const localVector2 = new THREE.Vector3();
     const localQuaternion = new THREE.Quaternion();
@@ -506,6 +507,64 @@ class Generator {
       }
     };
 
+    let Module = null;
+    let slab = null;
+    window.wasmModule = (moduleName, moduleFn) => { // XXX centralize this as an engine
+      if (moduleName === 'vxl') {
+        const localModule = moduleFn({
+          print(text) { console.log(text); },
+          printErr(text) { console.warn(text); },
+          wasmBinaryFile: '/archae/objects/objectize.wasm',
+          onRuntimeInitialized: () => {
+            Module = localModule;
+
+            slab = (() => {
+              const DIMS_SIZE = 3 * Float32Array.BYTES_PER_ELEMENT;
+              const ETHERS_SIZE = 5 * 5 * 5 * Float32Array.BYTES_PER_ELEMENT;
+              const SHIFT_SIZE = 3 * Float32Array.BYTES_PER_ELEMENT;
+              const POSITION_SPEC_SIZE = 3 * Float32Array.BYTES_PER_ELEMENT;
+              const COLLISION_RESULT_SIZE = 3 * Uint32Array.BYTES_PER_ELEMENT;
+
+              const _alloc = (constructor, size) => {
+                const offset = Module._malloc(size);
+                const b = new constructor(Module.HEAP8.buffer, Module.HEAP8.byteOffset + offset, size / constructor.BYTES_PER_ELEMENT);
+                b.offset = offset;
+                return b;
+              };
+
+              const dims = _alloc(Uint32Array, DIMS_SIZE);
+              const ethers = _alloc(Float32Array, ETHERS_SIZE);
+              const shift = _alloc(Uint32Array, SHIFT_SIZE);
+              const positionSpec = _alloc(Float32Array, POSITION_SPEC_SIZE);
+              const collideResult = _alloc(Uint32Array, COLLISION_RESULT_SIZE);
+
+              return {
+                dims,
+                ethers,
+                shift,
+                positionSpec,
+                collideResult,
+              };
+            })();
+          },
+        });
+      } else {
+        console.warn('unknown wasm module', moduleName);
+      }
+    };
+    const script = document.createElement('script');
+    script.async = true;
+    script.onload = () => {
+      document.body.removeChild(script);
+    };
+    script.onerror = err => {
+      console.warn(err);
+
+      document.body.removeChild(script);
+    };
+    script.src = '/archae/objects/objectize.js';
+    document.body.appendChild(script);
+
     const listeners = {};
     const _emit = (event, data) => {
       const entry = listeners[event];
@@ -636,6 +695,33 @@ class Generator {
           worker.requestTeleportObject(position, side, cb);
         };
         generatorElement.getBodyObject = () => bodyObject;
+        generatorElement.collideBoxEther = (dims, getEthers, shift, position, velocity) => {
+          if (Module) {
+            dims.toArray(slab.dims, 0);
+            getEthers(slab.ethers);
+            shift.toArray(slab.shift, 0);
+            position.toArray(slab.positionSpec, 0);
+
+            Module._cllideBoxEther(slab.dims.offset, slab.ethers.offset, slab.shift.offset, slab.positionSpec.offset, slab.collideResult.offset);
+            const collided = Boolean(slab.collideResult[0]);
+            const floored = Boolean(slab.collideResult[1]);
+            const ceiled = Boolean(slab.collideResult[2]);
+            if (collided) {
+              position.fromArray(slab.positionSpec, 0);
+              if (floored && velocity.y < 0) {
+                velocity.y = 0;
+              }
+              if (ceiled && velocity.y > 0) {
+                velocity.y = 0;
+              }
+              return 0x01 | (floored ? 0x02 : 0) | (ceiled ? 0x04 : 0);
+            } else {
+              return 0;
+            }
+          } else {
+            return 0;
+          }
+        };
       },
     };
     elements.registerEntity(this, generatorEntity);

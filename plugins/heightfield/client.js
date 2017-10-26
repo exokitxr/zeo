@@ -311,6 +311,7 @@ class Heightfield {
 
         const _getChunkIndex = (x, z) => (mod(x, 0xFFFF) << 16) | mod(z, 0xFFFF);
         const _getEtherIndex = (x, y, z) => x + (z * NUM_CELLS_OVERSCAN) + (y * NUM_CELLS_OVERSCAN * NUM_CELLS_OVERSCAN);
+        const _getSizedEtherIndex = (x, y, z, sx, sz) => x + (z * sx) + (y * sx * sz);
 
         const forwardVector = new THREE.Vector3(0, 0, -1);
         const downKmVector = new THREE.Vector3(0, -1024, 0);
@@ -1091,97 +1092,49 @@ class Heightfield {
             };
             render.on('beforeRender', _beforeRender);
 
-            pose.addCollider((position, velocity, worldPosition, oldPosition) => {
-              const min = localVector.set(worldPosition.x - 1.5, worldPosition.y - DEFAULT_USER_HEIGHT - 9, worldPosition.z - 1.5).ceil();
-              const max = localVector2.set(worldPosition.x + 1.5, worldPosition.y + 1.5, worldPosition.z + 1.5).floor();
-              const bodyVector = localVector3.set(worldPosition.x, worldPosition.y - DEFAULT_USER_HEIGHT, worldPosition.z);
-              let numFloorPoints = 0;
-              for (let az = min.z; az <= max.z; az++) {
-                for (let ax = min.x; ax <= max.x; ax++) {
-                  const ox = ax >> 4;
-                  const oz = az >> 4;
-                  const index = _getChunkIndex(ox, oz);
-                  const meshes = mapChunkMeshes[index];
+            pose.addCollider((position, rotation, velocity, oldPosition) => {
+              const worldPosition = localVector.copy(position).applyMatrix4(pose.getStageMatrix());
+              const ax = Math.floor(worldPosition.x);
+              const ay = Math.floor(worldPosition.y);
+              const az = Math.floor(worldPosition.z);
 
-                  if (meshes && meshes.ether) {
-                    const lx = ax - ox * NUM_CELLS;
-                    const lz = az - oz * NUM_CELLS;
+              const dims = localVector2.set(5, 5, 5);
+              const shift = localVector3.set(ax - 2, ay - 2, az - 2);
+              const oldWorldPosition = localVector4.copy(worldPosition);
 
-                    for (let ay = max.y; ay >= min.y; ay--) {
-                      const ly = ay;
+              const collideResult = generatorElement.collideBoxEther(dims, etherBuffer => {
+                etherBuffer = etherBuffer.subarray(0, 5 * 5 * 5);
+                etherBuffer.fill(1);
+                for (let dx = -2; dx <= 2; dx++) {
+                  const x = ax + dx;
+                  for (let dz = -2; dz <= 2; dz++) {
+                    const z = az + dz;
+                    const ox = Math.floor(x / NUM_CELLS);
+                    const oz = Math.floor(z / NUM_CELLS);
+                    const mapChunkMesh = mapChunkMeshes[_getChunkIndex(ox, oz)];
 
-                      const etherValue = meshes.ether[_getEtherIndex(lx, ly, lz)];
-                      if (etherValue < 0) {
-                        const dy = ly - etherValue;
-
-                        if (numFloorPoints < 3) {
-                          floorPoints[numFloorPoints++].set(ax, dy, az);
-                        } else {
-                          floorPoints[3].set(ax, dy, az);
-                          floorPoints.sort((a, b) =>
-                            localVector4.set(a.x - bodyVector.x, a.y - bodyVector.y, a.z - bodyVector.z).length() -
-                            localVector4.set(b.x - bodyVector.x, a.y - bodyVector.y, b.z - bodyVector.z).length()
-                          );
-                        }
-                        break;
-                      }
-                    }
-                  }
-                }
-              }
-              let collided = false;
-              if (numFloorPoints === 3) {
-                const plane = localPlane.setFromNormalAndCoplanarPoint(
-                  localTriangle.set(floorPoints[0], floorPoints[1], floorPoints[2]).normal(localVector4),
-                  floorPoints[0]
-                );
-                const ray = localRay.set(
-                  worldPosition,
-                  downKmVector
-                );
-                const floorPoint = ray.intersectPlane(plane, localVector5);
-                if (floorPoint) {
-                  const bodyYDiff = floorPoint.y - bodyVector.y;
-                  if (bodyYDiff >= 0) {
-                    position.y += bodyYDiff;
-                    worldPosition.y += bodyYDiff;
-                    bodyVector.y += bodyYDiff;
-                    velocity.y = 0;
-                    collided = true;
-                  }
-                }
-              }
-
-              for (let az = min.z; az <= max.z; az++) {
-                for (let ax = min.x; ax <= max.x; ax++) {
-                  const ox = ax >> 4;
-                  const oz = az >> 4;
-                  const index = _getChunkIndex(ox, oz);
-                  const meshes = mapChunkMeshes[index];
-
-                  if (meshes && meshes.ether) {
-                    const lx = ax - ox * NUM_CELLS;
-                    const lz = az - oz * NUM_CELLS;
-
-                    for (let ay = Math.floor(bodyVector.y + DEFAULT_USER_HEIGHT); ay < Math.floor(bodyVector.y + DEFAULT_USER_HEIGHT + 0.2); ay++) {
-                      const ly = ay;
-
-                      const etherValue = meshes.ether[_getEtherIndex(lx, ly, lz)];
-                      if (etherValue < 0) {
-                        if (localCoord.set(bodyVector.x - ax, bodyVector.z - az).length() < -etherValue) {
-                          const positionOffset = localVector4.copy(oldPosition).sub(position);
-                          positionOffset.y = 0;
-                          position.add(positionOffset);
-                          worldPosition.add(positionOffset);
-                          bodyVector.add(positionOffset);
+                    if (mapChunkMesh) {
+                      for (let dy = -2; dy <= 2; dy++) {
+                        const y = ay + dy;
+                        if (y >= 0 && y <= NUM_CELLS_HEIGHT) {
+                          const srcIndex = _getEtherIndex(x - ox * NUM_CELLS, y, z - oz * NUM_CELLS);
+                          const dstIndex = _getSizedEtherIndex(dx + 2, dy + 2, dz + 2, 5, 5);
+                          etherBuffer[dstIndex] = mapChunkMesh.ether[srcIndex];
                         }
                       }
                     }
                   }
                 }
-              }
+              }, shift, worldPosition, velocity);
 
-              return collided;
+              if (collideResult) {
+                const worldPositionDiff = localVector5.copy(worldPosition).sub(oldWorldPosition);
+                position.add(worldPositionDiff);
+
+                return collideResult;
+              } else {
+                return 0;
+              }
             }, {
               priority: 1,
             });

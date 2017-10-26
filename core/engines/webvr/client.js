@@ -800,23 +800,19 @@ class WebVR {
             }
           }
 
-          collide(position, velocity, oldPosition) {
+          collide(position, rotation, velocity, oldPosition) {
             if (this.colliders.length > 0) {
-              const worldPosition = localVector3.copy(position).applyMatrix4(this.stageMatrix);
-
-              let collided = false;
+              let collideResult = 0;
               for (let i = 0; i < this.colliders.length; i++) {
-                if (this.colliders[i].fn(position, velocity, worldPosition, oldPosition)) {
-                  collided = true;
-                }
+                collideResult |= this.colliders[i].fn(position, rotation, velocity, oldPosition);
               }
-              return collided;
+              return collideResult;
             } else {
               if (position.y <= 0) {
                 position.y = 0;
-                return true;
+                return 0x01 | 0x02;
               } else {
-                return false;
+                return 0;
               }
             }
           }
@@ -1206,10 +1202,14 @@ class WebVR {
             }
 
             if (roamMode === 'physical') {
-              if (webvrInstance.collide(this.position, this.velocity, oldPosition)) {
+              const collideResult = webvrInstance.collide(this.position, this.rotation, this.velocity, oldPosition);
+              if (collideResult) {
                 matrixNeedsUpdate = true;
 
-                this.lastCollideTime = now;
+                const floored = Boolean(collideResult & 0x02);
+                if (floored) {
+                  this.lastCollideTime = now;
+                }
               } else {
                 this.velocity.y += (-9.8 / 1000 / 1000 * 2) * timeDiff;
               }

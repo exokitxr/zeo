@@ -329,6 +329,7 @@ class Objects {
         const zeroQuaternion = new THREE.Quaternion();
         const localVector = new THREE.Vector3();
         const localVector2 = new THREE.Vector3();
+        const localVector3 = new THREE.Vector3();
         const localCoord = new THREE.Vector2();
         const localCoord2 = new THREE.Vector2();
         const localQuaternion = new THREE.Quaternion();
@@ -1052,8 +1053,9 @@ class Objects {
         };
         render.on('beforeRender', _beforeRender);
 
-        pose.addCollider((position, velocity, worldPosition, oldPosition) => {
-          const bodyVector = localVector.set(worldPosition.x, worldPosition.y - DEFAULT_USER_HEIGHT, worldPosition.z);
+        pose.addCollider((position, rotation, velocity, oldPosition) => {
+          const worldPosition = localVector.copy(position).applyMatrix4(pose.getStageMatrix());
+          const bodyVector = localVector2.set(worldPosition.x, worldPosition.y - DEFAULT_USER_HEIGHT, worldPosition.z);
 
           const ox = Math.floor(bodyVector.x / NUM_CELLS);
           const oz = Math.floor(bodyVector.z / NUM_CELLS);
@@ -1079,7 +1081,7 @@ class Objects {
               };
 
               if (_isFilled(bodyVector.x, bodyVector.y + 0.1, bodyVector.z)) {
-                const positionOffset = localVector2.copy(oldPosition).sub(position);
+                const positionOffset = localVector3.copy(oldPosition).sub(position);
                 positionOffset.y = 0;
                 if (!_isFilled(bodyVector.x, bodyVector.y + 0.1, bodyVector.z + positionOffset.z)) {
                   positionOffset.x = 0;
@@ -1102,7 +1104,7 @@ class Objects {
                 const lz = az - oz * NUM_CELLS;
                 const block = meshes.blockfield[_getBlockIndex(lx, ly, lz)];
                 if (block) {
-                  const positionOffset = localVector2.copy(oldPosition).sub(position);
+                  const positionOffset = localVector3.copy(oldPosition).sub(position);
                   position.add(positionOffset);
                   worldPosition.add(positionOffset);
                   bodyVector.add(positionOffset);
@@ -1126,13 +1128,13 @@ class Objects {
                   if (bodyYDiff >= 0) {
                     position.y += bodyYDiff;
                     velocity.y = 0;
-                    return true;
+                    return 0x01 | 0x02;
                   }
                 }
               }
             }
           }
-          return false;
+          return 0;
         }, {
           priority: 2,
         });
