@@ -135,7 +135,6 @@ const drone = objectApi => () => {
     canvas.width = width;
     canvas.height = height;
     const ctx = canvas.getContext('2d');
-    ctx.scale(1, -1);
     ctx.imageSmoothingEnabled = false;
 
     const imageData = ctx.getImageData(0, 0, width, height);
@@ -186,7 +185,12 @@ const drone = objectApi => () => {
 
       mesh.material.map = nextRenderTarget.texture;
       renderer.readRenderTargetPixels(nextRenderTarget, 0, 0, width, height, buffer);
-      ctx.putImageData(imageData, 0, 0);
+      createImageBitmap(imageData, {
+        imageOrientation: 'flipY'
+      })
+        .then(imageBitmap => {
+          ctx.drawImage(imageBitmap, 0, 0);
+        });
 
       frame = nextFrame;
     };
