@@ -1065,16 +1065,18 @@ class Objects {
           if (meshes && meshes.blockfield) {
             {
               const _isFilled = (x, y, z) => {
-                const ax = Math.floor(x);
-                const ay = Math.floor(y + 0.1);
-                const az = Math.floor(z);
-                const lx = ax - ox * NUM_CELLS;
-                const lz = az - oz * NUM_CELLS;
-
-                for (let dy = ay; dy < Math.ceil(y + DEFAULT_USER_HEIGHT); dy++) {
-                  const block = meshes.blockfield[_getBlockIndex(lx, dy, lz)];
-                  if (block) {
-                    return true;
+                const ay = Math.floor(y);
+                for (let dy = ay; dy < Math.ceil(y + DEFAULT_USER_HEIGHT + 0.2); dy++) {
+                  for (let dz = -1; dz <= 1; dz++) {
+                    const az = Math.floor(z + dz * 0.2);
+                    const lz = az - oz * NUM_CELLS;
+                    for (let dx = -1; dx <= 1; dx++) {
+                      const ax = Math.floor(x + dx * 0.2);
+                      const lx = ax - ox * NUM_CELLS;
+                      if (meshes.blockfield[_getBlockIndex(lx, dy, lz)]) {
+                        return true;
+                      }
+                    }
                   }
                 }
                 return false;
@@ -1085,7 +1087,8 @@ class Objects {
                 positionOffset.y = 0;
                 if (!_isFilled(bodyVector.x, bodyVector.y + 0.1, bodyVector.z + positionOffset.z)) {
                   positionOffset.x = 0;
-                } else if (!_isFilled(bodyVector.x + positionOffset.x, bodyVector.y + 0.1, bodyVector.z)) {
+                }
+                if (!_isFilled(bodyVector.x + positionOffset.x, bodyVector.y + 0.1, bodyVector.z)) {
                   positionOffset.z = 0;
                 }
                 position.add(positionOffset);
