@@ -79,4 +79,4 @@ This project uses native modules, so if you're using `node` you'll need build to
 
 ## Contact
 
-[Slack](zeovr.slack.com) • [Wiki](zeovr.wikia.com) • [Twitter](https://twitter.com/modulesio) • [Email](mailto:a@modules.io)
+[Slack](https://zeovr.slack.com) • [Wiki](https://zeovr.wikia.com) • [Twitter](https://twitter.com/modulesio) • [Email](mailto:a@modules.io)
