@@ -12,7 +12,8 @@ node --inspect=0.0.0.0:9229 ./index.js server \
   crdsUrl='http://test.zeovr.io:9999' \
   dataDirectory='data' dataDirectorySrc='defaults/data' \
   cryptoDirectory='data/crypto' cryptoDirectorySrc='crypto' \
-  installDirectory='data/installed' &
+  installDirectory='data/installed' \
+  noOpen &
 
 sleep infinity;
 

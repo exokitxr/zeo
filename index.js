@@ -5,6 +5,7 @@ const fs = require('fs');
 
 const archae = require('archae');
 const rimraf = require('rimraf');
+const openurl = require('openurl');
 
 const args = process.argv.slice(2);
 const _findArg = name => {
@@ -49,6 +50,7 @@ const flags = {
   siteUrl: _findArg('siteUrl'),
   vridUrl: _findArg('vridUrl'),
   crdsUrl: _findArg('crdsUrl'),
+  noOpen: args.includes('noOpen'),
   maxUsers: _findArg('maxUsers'),
 };
 const hasSomeFlag = (() => {
@@ -317,7 +319,10 @@ _configure()
   .then(() => _boot())
   .then(() => {
     if (flags.server) {
-      console.log('Server: ' + config.metadata.server.url + '/');
+      console.log('Server: ' + config.metadata.server.url);
+    }
+    if (!flags.noOpen) {
+      openurl.open(config.metadata.server.url);
     }
   })
   .catch(err => {

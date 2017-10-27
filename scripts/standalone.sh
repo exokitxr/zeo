@@ -7,6 +7,7 @@ pushd "$DIR"/../
 ./index.js server \
   port="$PORT" \
   siteUrl='https://zeovr.io' \
-  vridUrl='https://zeovr.io'
+  vridUrl='https://zeovr.io' \
+  noOpen
 
 popd;
