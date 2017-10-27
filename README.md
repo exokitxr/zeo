@@ -1,9 +1,6 @@
 <p align="center"><img src="https://cdn.rawgit.com/modulesio/zeo/989fc50f00e699231ba7fba54262d1a35e814924/public/img/logo-name.svg" width="200px"></p>
 
-**Multiplayer WebVR worlds, procedurally generated with hotloaded `npm` modules.**
-
-
-🌱🌳🌋🌲🐦🏃🎮
+**Multiplayer WebVR worlds, procedurally generated with hotloaded `npm` modules.** 🌱🌳🌋🌲🐦🏃🎮
 
 [![Build status](https://ci.appveyor.com/api/projects/status/x16vv3nrqm248rp0?svg=true)](https://ci.appveyor.com/project/modulesio/zeo)
 
