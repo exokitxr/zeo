@@ -44,7 +44,7 @@ const getAssetsPageSrc = ({loading, inputText, inputValue, asset, assets, equipm
               .slice(page * numTagsPerPage, (page + 1) * numTagsPerPage)
               .map(assetSpec => {
                 const focused = assetSpec.id === asset;
-                const equippable = focused && !equipments.some(equipmentSpec => equipmentSpec && equipmentSpec.id === asset);
+                const equippable = focused && equipments.some(equipmentSpec => !equipmentSpec) && !equipments.some(equipmentSpec => equipmentSpec && equipmentSpec.id === asset);
                 return getAssetSrc(assetSpec, {focused, clickable: true, equippable, equipPlaceholder: true});
               })
               .join('\n')}
