@@ -5,6 +5,7 @@ const fs = require('fs');
 
 const archae = require('archae');
 const rimraf = require('rimraf');
+const getIP = require('external-ip')();
 const openurl = require('openurl');
 
 const args = process.argv.slice(2);
@@ -319,12 +320,19 @@ _configure()
   .then(() => _boot())
   .then(() => {
     if (flags.server) {
-      console.log('Server: ' + config.metadata.server.url);
+      console.log('Local URL: ' + config.metadata.server.url);
     }
     if (!flags.noOpen) {
       openurl.open(config.metadata.server.url);
     }
   })
+  .then(() => new Promise((accept, reject) => {
+    getIP((err, ip) => {
+      console.log('Remote URL: ' + (!err ? (protocolString + '://' + ip + ':' + port) : 'firewalled'));
+
+      accept();
+    });
+  }))
   .catch(err => {
     console.warn(err);
     process.exit(1);
