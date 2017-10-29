@@ -40,6 +40,20 @@ class Mobs {
           const npcEntity = {
             entityAddedCallback(entityElement) {
               const meshes = {};
+              let numRemovedMeshes = 0;
+              const _cleanupMeshes = () => {
+                if (++numRemovedMeshes >= 16) {
+                  const newMeshes = {};
+                  for (const id in meshes) {
+                    const mesh = meshes[id];
+                    if (mesh !== null) {
+                      newMeshes[id] = mesh;
+                    }
+                  }
+                  meshes = newMeshes;
+                  numRemovedMeshes = 0;
+                }
+              };
 
               const headRotation = new THREE.Quaternion();
               const _updateMesh = (id, mesh, animation, hit, uniforms, now) => {
@@ -123,7 +137,8 @@ class Mobs {
                     if (v >= 1) {
                       scene.remove(mesh);
                       mesh.destroy();
-                      delete meshes[id];
+                      meshes[id] = null;
+                      _cleanupMeshes();
                     }
                   }
                 }
@@ -246,9 +261,12 @@ class Mobs {
                   const {id} = e;
 
                   const mesh = meshes[id];
-                  scene.remove(mesh);
-                  mesh.destroy();
-                  delete meshes[id]; // XXX optimize out deletes
+                  if (mesh) {
+                    scene.remove(mesh);
+                    mesh.destroy();
+                    meshes[id] = null;
+                    _cleanupMeshes();
+                  }
                 } else if (type === 'mobAnimation') {
                   const {id, animation} = e;
                   const {mode, positionStart, positionEnd, rotationStart, rotationEnd, headRotationStart, headRotationEnd, duration} = animation;
@@ -256,25 +274,27 @@ class Mobs {
                   const now = Date.now();
 
                   const mesh = meshes[id];
-                  mesh.animation = {
-                    mode: mode,
-                    positionStart: new THREE.Vector3().fromArray(positionStart),
-                    positionEnd: new THREE.Vector3().fromArray(positionEnd),
-                    rotationStart: new THREE.Quaternion().fromArray(rotationStart),
-                    rotationEnd: new THREE.Quaternion().fromArray(rotationEnd),
-                    headRotationStart: new THREE.Quaternion().fromArray(headRotationStart),
-                    headRotationEnd: new THREE.Quaternion().fromArray(headRotationEnd),
-                    duration: duration,
-                    startTime: now,
-                  };
-                  if (mode === 'hit' || mode === 'die') {
-                    mesh.hit = {
+                  if (mesh) {
+                    mesh.animation = {
+                      mode: mode,
+                      positionStart: new THREE.Vector3().fromArray(positionStart),
+                      positionEnd: new THREE.Vector3().fromArray(positionEnd),
+                      rotationStart: new THREE.Quaternion().fromArray(rotationStart),
+                      rotationEnd: new THREE.Quaternion().fromArray(rotationEnd),
+                      headRotationStart: new THREE.Quaternion().fromArray(headRotationStart),
+                      headRotationEnd: new THREE.Quaternion().fromArray(headRotationEnd),
+                      duration: duration,
                       startTime: now,
                     };
+                    if (mode === 'hit' || mode === 'die') {
+                      mesh.hit = {
+                        startTime: now,
+                      };
 
-                    hurtSfx.trigger();
+                      hurtSfx.trigger();
+                    }
                   }
-                  if (mode === 'die') {
+                  if (mode === 'die') { // XXX should be moved to the backend to prevent multiplayer breakage
                     const itemId = _makeId();
                     const asset = Math.random() < 0.5 ? 'ITEM.MEAT' : 'ITEM.HIDE';
                     items.makeItem({
@@ -303,42 +323,6 @@ class Mobs {
                 range: 1,
               });
 
-              /* const _gripdown = e => {
-                const {side} = e;
-                const status = pose.getStatus();
-                const {gamepads} = status;
-                const gamepad = gamepads[side];
-                const {worldPosition: controllerPosition} = gamepad;
-
-                const position = new THREE.Vector3();
-                const sphere = new THREE.Sphere();
-                for (const id in meshes) {
-                  const mesh = meshes[id];
-                  position.copy(mesh.getWorldPosition());
-                  position.y += mesh.size.y / 2;
-                  sphere.set(
-                    position,
-                    Math.max(mesh.size.x, mesh.size.z) / 2
-                  );
-
-                  if (sphere.containsPoint(controllerPosition)) {
-                    const {hmd} = status;
-                    const {worldPosition: hmdPosition} = hmd;
-                    const direction = position.copy(mesh.position)
-                      .add(new THREE.Vector3(0, 1, 0))
-                      .sub(hmdPosition);
-                    direction.y = 0;
-                    direction.normalize();
-                    mesh.attack(direction);
-
-                    e.stopImmediatePropagation();
-
-                    break;
-                  }
-                }
-              };
-              input.on('gripdown', _gripdown); */
-
               const _add = chunk => {
                 connection.send(JSON.stringify({
                   method: 'addChunk',
@@ -361,7 +345,10 @@ class Mobs {
                 const _updateMeshes = () => {
                   const now = Date.now();
                   for (const id in meshes) {
-                    meshes[id].update(now);
+                    const mesh = meshes[id];
+                    if (mesh) {
+                      mesh.update(now);
+                    }
                   }
                 };
 
@@ -377,19 +364,21 @@ class Mobs {
 
                 for (const id in meshes) {
                   const mesh = meshes[id];
-                  const {lastHitTime} = mesh;
-                  const lastHitTimeDiff = now - lastHitTime;
+                  if (mesh) {
+                    const {lastHitTime} = mesh;
+                    const lastHitTimeDiff = now - lastHitTime;
 
-                  if (lastHitTimeDiff > 500) {
-                    hitCenter.copy(mesh.position);
-                    hitCenter.y += mesh.size.y / 2;
-                    hitSphere.set(
-                      hitCenter,
-                      Math.max(mesh.size.x, mesh.size.z) / 2
-                    );
+                    if (lastHitTimeDiff > 500) {
+                      hitCenter.copy(mesh.position);
+                      hitCenter.y += mesh.size.y / 2;
+                      hitSphere.set(
+                        hitCenter,
+                        Math.max(mesh.size.x, mesh.size.z) / 2
+                      );
 
-                    if (ray.intersectSphere(hitSphere, hitIntersectionPoint) && hitIntersectionPoint.distanceTo(ray.origin) < length) {
-                      return mesh;
+                      if (ray.intersectSphere(hitSphere, hitIntersectionPoint) && hitIntersectionPoint.distanceTo(ray.origin) < length) {
+                        return mesh;
+                      }
                     }
                   }
                 }
@@ -400,8 +389,10 @@ class Mobs {
                 _cleanup: () => {
                   for (const id in meshes) {
                     const mesh = meshes[id];
-                    scene.remove(mesh);
-                    mesh.destroy();
+                    if (mesh) {
+                      scene.remove(mesh);
+                      mesh.destroy();
+                    }
                   }
 
                   // input.removeListener('gripdown', _gripdown);

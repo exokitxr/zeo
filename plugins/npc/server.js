@@ -139,10 +139,9 @@ class Mobs {
                 },
               }));
             }, c => {
-              const {id} = this;
               c.send(JSON.stringify({
                 type: 'mobRemove',
-                id,
+                id: this.id,
               }));
             });
 
@@ -454,6 +453,21 @@ class Mobs {
                     });
                   }
 
+                  _forEachMobInChunk(trackedChunk, mob => {
+                    const {id, type, skinName, position, rotation, headRotation} = mob;
+                    c.send(JSON.stringify({
+                      type: 'mobAdd',
+                      id,
+                      spec: {
+                        type: type,
+                        skinName: skinName,
+                        position: position.toArray(),
+                        rotation: rotation.toArray(),
+                        headRotation: headRotation.toArray(),
+                      },
+                    }));
+                  });
+
                   localTrackedChunks[index] = trackedChunk;
                   trackedChunk.addRef();
                 } else if (method === 'removeChunk') {
@@ -465,10 +479,9 @@ class Mobs {
                     delete localTrackedChunks[index];
 
                     _forEachMobInChunk(trackedChunk, mob => {
-                      const {id} = mob;
                       c.send(JSON.stringify({
                         type: 'mobRemove',
-                        id,
+                        id: mob.id,
                       }));
                     });
 
