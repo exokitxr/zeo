@@ -39,7 +39,7 @@ class Mobs {
         if (live) {
           const npcEntity = {
             entityAddedCallback(entityElement) {
-              const meshes = {};
+              let meshes = {};
               let numRemovedMeshes = 0;
               const _cleanupMeshes = () => {
                 if (++numRemovedMeshes >= 16) {
