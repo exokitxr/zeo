@@ -162,7 +162,7 @@ class Config {
             });
           }
         };
-        const _requestRegisterRecentServer = name => vridApi.get('servers')
+        /* const _requestRegisterRecentServer = name => vridApi.get('servers')
           .then(servers => {
             if (!Array.isArray(servers)) {
               servers = [];
@@ -185,14 +185,14 @@ class Config {
           })
           .catch(err => {
             console.warn(err);
-          });
+          }); */
         const _applyName = name => {
           rend.setStatus('name', name);
 
-          _requestRegisterRecentServer(name)
+          /* _requestRegisterRecentServer(name)
             .catch(err => {
               console.warn(err);
-            });
+            }); */
         };
         _applyName(serverConfigSpec.name);
 
