@@ -71,14 +71,10 @@ class Zeo {
 
       const _updateText = () => {
         loaderPlugin.innerText = (() => {
-          if (!loggedIn) {
-            return 'Logging in...';
+          if (pendingPlugins.length > 0) {
+            return pendingPlugins[0];
           } else {
-            if (pendingPlugins.length > 0) {
-              return pendingPlugins[0];
-            } else {
-              return 'Waiting for plugins...';
-            }
+            return 'Waiting for plugins...';
           }
         })();
       };
@@ -91,18 +87,12 @@ class Zeo {
       };
       cleanups.push(cleanup);
 
-      const _setLoggedIn = () => {
-        loggedIn = true;
-
-        _updateText();
-      };
       const _destroy = () => {
         cleanup();
         cleanups.splice(cleanups.indexOf(cleanup), 1);
       };
 
       accept({
-        setLoggedIn: _setLoggedIn,
         destroy: _destroy,
       });
     });
