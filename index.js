@@ -321,9 +321,12 @@ _configure()
   .then(() => {
     if (flags.server) {
       console.log('Local URL: ' + config.metadata.server.url);
-    }
-    if (!flags.noOpen) {
-      openurl.open(config.metadata.server.url);
+
+      if (!flags.noOpen) {
+        openurl.open(config.metadata.server.url, err => {
+          console.warn('could not open ' + config.metadata.server.url + ' in a browser');
+        });
+      }
     }
   })
   .then(() => new Promise((accept, reject) => {
