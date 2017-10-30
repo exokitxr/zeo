@@ -148,7 +148,7 @@ class Objects {
             varying float vTiled;
             varying vec2 vTileOffset;
             varying vec2 vTileSize;
-            varying float vFog;
+            // varying float vFog;
 
             void main() {
               vec4 mvPosition = modelViewMatrix * vec4( position.xyz, 1.0 );
@@ -172,8 +172,8 @@ class Objects {
                 vTiled = 0.0;
               }
 
-              float fogDepth = -mvPosition.z;
-              vFog = 1.0 - exp2( - fogDensity * fogDensity * fogDepth * fogDepth * LOG2 );
+              // float fogDepth = -mvPosition.z;
+              // vFog = 1.0 - exp2( - fogDensity * fogDensity * fogDepth * fogDepth * LOG2 );
             }
           `,
           fragmentShader: `\
@@ -203,7 +203,7 @@ class Objects {
             varying float vTiled;
             varying vec2 vTileOffset;
             varying vec2 vTileSize;
-            varying float vFog;
+            // varying float vFog;
 
             float speed = 1.0;
             vec3 blueColor = vec3(0.12941176470588237, 0.5882352941176471, 0.9529411764705882);
@@ -317,7 +317,7 @@ class Objects {
               lightColor.rgb *= (1.0 - (vSsao * 255.0 / 3.0));
 
               vec3 diffuseColor = sample.rgb * (0.1 + lightColor * 0.9);
-              diffuseColor = mix(diffuseColor, fogColor, vFog);
+              // diffuseColor = mix(diffuseColor, fogColor, vFog);
 
               gl_FragColor = vec4(diffuseColor, sample.a);
             }
@@ -374,8 +374,8 @@ class Objects {
 
         const uniforms = THREE.UniformsUtils.clone(OBJECTS_SHADER.uniforms);
         uniforms.map.value = generatorElement.getTextureAtlas();
-        uniforms.fogColor.value = scene.fog.color;
-        uniforms.fogDensity.value = scene.fog.density;
+        // uniforms.fogColor.value = scene.fog.color;
+        // uniforms.fogDensity.value = scene.fog.density;
         const objectsMaterial = new THREE.ShaderMaterial({
           uniforms,
           vertexShader: OBJECTS_SHADER.vertexShader,

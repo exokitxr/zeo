@@ -65,7 +65,7 @@ class Heightfield {
         varying vec3 vColor;
         varying float vSkyLightmap;
         varying float vTorchLightmap;
-        varying float vFog;
+        // varying float vFog;
 
         void main() {
           vColor = color.rgb;
@@ -77,8 +77,8 @@ class Heightfield {
           vViewPosition = -mvPosition.xyz;
           vSkyLightmap = skyLightmap;
           vTorchLightmap = torchLightmap;
-          float fogDepth = -mvPosition.z;
-          vFog = 1.0 - exp2( - fogDensity * fogDensity * fogDepth * fogDepth * LOG2 );
+          // float fogDepth = -mvPosition.z;
+          // vFog = 1.0 - exp2( - fogDensity * fogDensity * fogDepth * fogDepth * LOG2 );
         }
       `,
       fragmentShader: `\
@@ -93,7 +93,7 @@ class Heightfield {
         varying vec3 vColor;
         varying float vSkyLightmap;
         varying float vTorchLightmap;
-        varying float vFog;
+        // varying float vFog;
 
         #define saturate(a) clamp( a, 0.0, 1.0 )
 
@@ -110,7 +110,7 @@ class Heightfield {
           float dotNL = saturate( dot( normal, normalize(vViewPosition)) );
           vec3 irradiance = ambientLightColor + (dotNL * 1.5);
           vec3 diffuseColor = vColor * irradiance * (0.1 + lightColor * 0.9);
-          diffuseColor = mix(diffuseColor, fogColor, vFog);
+          // diffuseColor = mix(diffuseColor, fogColor, vFog);
 
           gl_FragColor = vec4( diffuseColor, 1.0 );
         }
@@ -153,7 +153,7 @@ class Heightfield {
         varying vec3 vColor;
         varying float vSkyLightmap;
         varying float vTorchLightmap;
-        varying float vFog;
+        // varying float vFog;
 
         void main() {
           /* float ang = wave[0];
@@ -167,8 +167,8 @@ class Heightfield {
           vColor = color.rgb;
           vSkyLightmap = skyLightmap;
           vTorchLightmap = torchLightmap;
-          float fogDepth = -mvPosition.z;
-          vFog = 1.0 - exp2( - fogDensity * fogDensity * fogDepth * fogDepth * LOG2 );
+          // float fogDepth = -mvPosition.z;
+          // vFog = 1.0 - exp2( - fogDensity * fogDensity * fogDepth * fogDepth * LOG2 );
         }
       `,
       fragmentShader: `\
@@ -181,7 +181,7 @@ class Heightfield {
         varying vec3 vColor;
         varying float vSkyLightmap;
         varying float vTorchLightmap;
-        varying float vFog;
+        // varying float vFog;
         float speed = 2.0;
 
         vec4 twoTapSample(
@@ -237,7 +237,7 @@ class Heightfield {
           ).rgb;
           vec3 diffuseColor = mix(diffuseColor1, diffuseColor2, mixFactor).rgb;
           // diffuseColor *= (0.2 + 0.8 * sunIntensity);
-          diffuseColor = mix(diffuseColor, fogColor, vFog);
+          // diffuseColor = mix(diffuseColor, fogColor, vFog);
 
           float lightColor = floor(
             (
@@ -651,8 +651,8 @@ class Heightfield {
               uniforms: (() => {
                 const uniforms = THREE.UniformsUtils.clone(OCEAN_SHADER.uniforms);
                 uniforms.map.value = liquidTexture;
-                uniforms.fogColor.value = scene.fog.color;
-                uniforms.fogDensity.value = scene.fog.density;
+                // uniforms.fogColor.value = scene.fog.color;
+                // uniforms.fogDensity.value = scene.fog.density;
                 return uniforms;
               })(),
               vertexShader: OCEAN_SHADER.vertexShader,
@@ -694,8 +694,8 @@ class Heightfield {
                   THREE.UniformsUtils.clone(THREE.UniformsLib.lights),
                   THREE.UniformsUtils.clone(HEIGHTFIELD_SHADER.uniforms)
                 );
-                uniforms.fogColor.value = scene.fog.color;
-                uniforms.fogDensity.value = scene.fog.density;
+                // uniforms.fogColor.value = scene.fog.color;
+                // uniforms.fogDensity.value = scene.fog.density;
                 return uniforms;
               })(),
               vertexShader: HEIGHTFIELD_SHADER.vertexShader,

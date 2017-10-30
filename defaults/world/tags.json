@@ -129,17 +129,6 @@
       "attributes": {},
       "metadata": {}
     },
-    "0pdq0am": {
-      "type": "entity",
-      "id": "0pdq0am",
-      "name": "/plugins/fog",
-      "displayName": "fog",
-      "version": "0.0.1",
-      "module": "/plugins/fog",
-      "tagName": "plugins-fog",
-      "attributes": {},
-      "metadata": {}
-    },
     "0pdq0an": {
       "type": "entity",
       "id": "0pdq0an",
