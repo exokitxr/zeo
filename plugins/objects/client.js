@@ -1068,18 +1068,14 @@ class Objects {
               const _isFilled = (x, y, z) => {
                 const ay = Math.floor(y);
                 for (let dy = ay; dy < Math.ceil(y + DEFAULT_USER_HEIGHT + 0.2); dy++) {
-                  for (let dz = -1; dz <= 1; dz++) {
-                    const az = Math.floor(z + dz * 0.2);
-                    const aoz = Math.floor(az / NUM_CELLS);
-                    const lz = az - aoz * NUM_CELLS;
-                    for (let dx = -1; dx <= 1; dx++) {
-                      const ax = Math.floor(x + dx * 0.2);
-                      const aox = Math.floor(ax / NUM_CELLS);
-                      const lx = ax - aox * NUM_CELLS;
-                      if (meshes.blockfield[_getBlockIndex(lx, dy, lz)]) {
-                        return true;
-                      }
-                    }
+                  const az = Math.floor(z);
+                  const aoz = Math.floor(az / NUM_CELLS);
+                  const lz = az - aoz * NUM_CELLS;
+                  const ax = Math.floor(x);
+                  const aox = Math.floor(ax / NUM_CELLS);
+                  const lx = ax - aox * NUM_CELLS;
+                  if (meshes.blockfield[_getBlockIndex(lx, dy, lz)]) {
+                    return true;
                   }
                 }
                 return false;
