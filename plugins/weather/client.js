@@ -218,6 +218,63 @@ class Weather {
         textureAtlasResult,
       ]) => {
         if (live) {
+          const modelViewMatrices = {
+            left: new THREE.Matrix4(),
+            right: new THREE.Matrix4(),
+          };
+          const normalMatrices = {
+            left: new THREE.Matrix3(),
+            right: new THREE.Matrix3(),
+          };
+          const modelViewMatricesValid = {
+            left: false,
+            right: false,
+          };
+          const normalMatricesValid = {
+            left: false,
+            right: false,
+          };
+          const uniformsNeedUpdate = {
+            heightfield: {
+              left: true,
+              right: true,
+            },
+            ocean: {
+              left: true,
+              right: true,
+            },
+          };
+          function _updateModelViewMatrix(camera) {
+            if (!modelViewMatricesValid[camera.name]) {
+              modelViewMatrices[camera.name].multiplyMatrices(camera.matrixWorldInverse, this.matrixWorld);
+              modelViewMatricesValid[camera.name] = true;
+            }
+            this.modelViewMatrix = modelViewMatrices[camera.name];
+          }
+          function _updateNormalMatrix(camera) {
+            if (!normalMatricesValid[camera.name]) {
+              normalMatrices[camera.name].getNormalMatrix(this.modelViewMatrix);
+              normalMatricesValid[camera.name] = true;
+            }
+            this.normalMatrix = normalMatrices[camera.name];
+          }
+          function _uniformsNeedUpdateHeightfield(camera) {
+            if (uniformsNeedUpdate.heightfield[camera.name]) {
+              uniformsNeedUpdate.heightfield[camera.name] = false;
+              return true;
+            } else {
+              return false;
+            }
+          }
+          function _uniformsNeedUpdateOcean(camera) {
+            if (uniformsNeedUpdate.ocean[camera.name]) {
+              uniformsNeedUpdate.ocean[camera.name] = false;
+              return true;
+            } else {
+              return false;
+            }
+          }
+
           class Weather {
             constructor(position, angle) {
               this.position = position;
@@ -283,6 +340,8 @@ class Weather {
           });
 
           const weathersMesh = new THREE.Mesh(geometry, material);
+          weathersMesh.updateModelViewMatrix = _updateModelViewMatrix;
+          weathersMesh.updateNormalMatrix = _updateNormalMatrix;
           weathersMesh.frustumCulled = false;
 
           const weathers = Array(numWeathers);
@@ -480,6 +539,16 @@ class Weather {
             _add(chunk);
           });
 
+          const _updateMatrices = () => {
+            modelViewMatricesValid.left = false;
+            modelViewMatricesValid.right = false;
+            normalMatricesValid.left = false;
+            normalMatricesValid.right = false;
+            uniformsNeedUpdate.heightfield.left = true;
+            uniformsNeedUpdate.heightfield.right = true;
+            uniformsNeedUpdate.ocean.left = true;
+            uniformsNeedUpdate.ocean.right = true;
+          };
           const _update = () => {
             const _updateMeshes = () => {
               if (weathers.length > 0 && !weathersMesh.parent) {
@@ -498,9 +567,16 @@ class Weather {
             _updateMaterials();
           };
           render.on('update', _update);
+          const _beforeRender = () => {
+            _updateMatrices();
+          };
+          render.on('beforeRender', _beforeRender);
 
           this._cleanup = () => {
+            scene.remove(weathersMesh);
+
             render.removeListener('update', _update);
+            render.removeListener('beforeRender', _beforeRender);
           };
         }
       });
