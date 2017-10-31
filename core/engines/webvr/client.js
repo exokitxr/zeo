@@ -983,9 +983,6 @@ class WebVR {
                   case 70: // F
                     keys.grip = true;
                     break;
-                  case 82: // R
-                    keys.touch = true;
-                    break;
                   case 16: // Shift
                     keys.shift = true;
                     break;
@@ -993,6 +990,7 @@ class WebVR {
                     keys.space = true;
                     break;
                   case 86: // V
+                    keys.touch = true;
                     keys.axis = true;
                     break;
                   case 90: // Z
@@ -1034,10 +1032,8 @@ class WebVR {
                   case 70: // F
                     keys.grip = false;
                     break;
-                  case 82: // R
-                    keys.touch = false;
-                    break;
                   case 86: // V
+                    keys.touch = false;
                     keys.axis = false;
                     break;
                   case 16: // Shift
@@ -1328,8 +1324,8 @@ class WebVR {
           }
 
           axis(x, y) {
-            this.axes[0] = _clampAxis(axes[0] - (x * MOVE_FACTOR));
-            this.axes[1] = _clampAxis(axes[1] + (y * MOVE_FACTOR));
+            this.axes[0] = _clampAxis(this.axes[0] - (x * MOVE_FACTOR));
+            this.axes[1] = _clampAxis(this.axes[1] + (y * MOVE_FACTOR));
 
             this.poseNeedsUpdate = true;
           }

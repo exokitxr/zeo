@@ -291,89 +291,6 @@ class Cyborg {
 
           let playerSkinMesh = null;
 
-          const hudMesh = (() => {
-            const hudMesh = new THREE.Object3D();
-            // hudMesh.visible = false;
-
-            const circleMesh = (() => {
-              const geometry = (() => {
-                const geometry = new THREE.CylinderBufferGeometry(0.05, 0.05, 0.01, 8, 1)
-                  .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
-                  .applyMatrix(new THREE.Matrix4().makeRotationZ(Math.PI / 8));
-
-                const _almostZero = v => Math.abs(v) < 0.001;
-
-                const {array: positions} = geometry.getAttribute('position');
-                const numPositions = positions.length / 3;
-                for (let i = 0; i < numPositions; i++) {
-                  const baseIndex = i * 3;
-
-                  if (_almostZero(positions[baseIndex + 0]) && _almostZero(positions[baseIndex + 1])) {
-                    positions[baseIndex + 2] -= 0.005;
-                  }
-                }
-
-                geometry.computeVertexNormals();
-
-                return geometry;
-              })();
-              const material = solidMaterial;
-
-              const mesh = new THREE.Mesh(geometry, material);
-              mesh.position.z = -0.1;
-
-              const notchMesh = (() => {
-                const geometry = new THREE.SphereBufferGeometry(0.005, 5, 4)
-                  .applyMatrix(new THREE.Matrix4().makeRotationY(Math.PI / 8))
-                  .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, 0.003));
-                const material = solidMaterial;
-
-                const mesh = new THREE.Mesh(geometry, material);
-                return mesh;
-              })();
-              mesh.add(notchMesh);
-              mesh.notchMesh = notchMesh;
-
-              return mesh;
-            })();
-            hudMesh.add(circleMesh);
-            hudMesh.circleMesh = circleMesh;
-            hudMesh.update = () => {
-              const vrMode = bootstrap.getVrMode();
-              const mode = webvr.getMode()
-              const keys = webvr.getKeys();
-              if (vrMode === 'keyboard' && mode !== null && keys !== null) {
-                const {axis} = keys;
-
-                if (axis) {
-                  hudMesh.position.copy(hmdStatus.position);
-                  hudMesh.quaternion.copy(hmdStatus.rotation);
-                  hudMesh.scale.copy(hmdStatus.scale);
-
-                  const {notchMesh} = circleMesh;
-                  const gamepad = gamepadStatus[mode === 'center' ? 'left' : mode];
-                  const {axes} = gamepad;
-                  notchMesh.position.set(axes[0] * 0.043, axes[1] * 0.043, (1 - new THREE.Vector2(axes[0], axes[1]).length()) * (-0.005));
-
-                  if (!hudMesh.visible) {
-                    hudMesh.visible = true;
-                  }
-                } else {
-                  if (hudMesh.visible) {
-                    hudMesh.visible = false;
-                  }
-                }
-              } else {
-                if (hudMesh.visible) {
-                  hudMesh.visible = false;
-                }
-              }
-            };
-
-            return hudMesh;
-          })();
-          camera.parent.add(hudMesh);
-
           // camera.parent.add(hmdLabelMesh);
 
           const _getPlayer = () => player;
@@ -413,9 +330,6 @@ class Cyborg {
               localSkinStatus.gamepads.right.rotation = gamepadsStatus.right.worldRotation;
               playerSkinMesh.update(localSkinStatus);
             }
-
-            // update hud mesh
-            hudMesh.update();
 
             // update camera
             camera.position.copy(hmdStatus.position);
@@ -459,7 +373,6 @@ class Cyborg {
 
             const {mesh: hmdMesh, /*, labelMesh: hmdLabelMesh*/} = hmd;
             camera.parent.remove(playerPlaceholderMesh);
-            camera.parent.remove(hudMesh);
             // camera.parent.remove(hmdLabelMesh);
 
             rend.removeListener('update', _update);
