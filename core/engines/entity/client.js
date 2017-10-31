@@ -83,7 +83,7 @@ class Entity {
         '/core/engines/world',
         '/core/engines/file',
         '/core/engines/keyboard',
-        '/core/engines/transform',
+        // '/core/engines/transform',
         '/core/utils/type-utils',
         '/core/utils/creature-utils',
       ]),
@@ -102,7 +102,7 @@ class Entity {
         world,
         file,
         keyboard,
-        transform,
+        // transform,
         typeUtils,
         creatureUtils,
       ],
@@ -681,13 +681,10 @@ class Entity {
                   const rotation = new THREE.Quaternion(attributeValue[3], attributeValue[4], attributeValue[5], attributeValue[6]);
                   const scale = new THREE.Vector3(attributeValue[7], attributeValue[8], attributeValue[9]);
 
-                  const transformGizmo = transform.makeTransformGizmo({
+                  /* const transformGizmo = transform.makeTransformGizmo({
                     position: position,
                     rotation: rotation,
                     scale: scale,
-                    /* onpreview: (position, rotation, scale) => {
-                      this.updateBoundingBox(position, rotation, scale);
-                    }, */
                     onupdate: (position, rotation, scale) => {
                       tags.emit('setAttribute', {
                         id: tagId,
@@ -697,13 +694,13 @@ class Entity {
                     },
                   });
                   scene.add(transformGizmo);
-                  transformGizmo.updateMatrixWorld();
+                  transformGizmo.updateMatrixWorld(); */
 
                   keyboardFocusState.on('blur', () => {
                     focusState.keyboardFocusState = null;
 
-                    transform.destroyTransformGizmo(transformGizmo);
-                    scene.remove(transformGizmo);
+                    /* transform.destroyTransformGizmo(transformGizmo);
+                    scene.remove(transformGizmo); */
 
                     _updatePages();
                   });

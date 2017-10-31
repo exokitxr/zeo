@@ -114,7 +114,6 @@ class Zeo {
             '/core/engines/teleport',
             '/core/engines/scale',
             '/core/engines/hand',
-            '/core/engines/transform',
             '/core/engines/loader',
             '/core/engines/tags',
             '/core/engines/world',
@@ -160,7 +159,6 @@ class Zeo {
               teleport,
               scale,
               hand,
-              transform,
               loader,
               tags,
               world,
@@ -857,16 +855,6 @@ class Zeo {
                         }
                       }
 
-                      class ZeoTransformApi {
-                        makeTransformGizmo(spec) {
-                          return transform.makeTransformGizmo(spec);
-                        }
-
-                        destroyTransformGizmo(transformGizmo) {
-                          return transform.destroyTransformGizmo(transformGizmo);
-                        }
-                      }
-
                       class ZeoAnimationApi {
                         makeAnimation(startValue, endValue, duration) {
                           return anima.makeAnimation(startValue, endValue, duration);
@@ -988,7 +976,6 @@ class Zeo {
                           this.stck = new ZeoStckApi();
                           this.teleport = new ZeoTeleportApi();
                           this.hands = new ZeoHandsApi();
-                          this.transform = new ZeoTransformApi();
                           this.notification = new ZeoNotificationApi();
                           this.animation = new ZeoAnimationApi();
                           this.items = new ZeoItemsApi();
