@@ -7,10 +7,6 @@ import {
 } from './lib/constants/notification';
 import notificationRenderer from './lib/render/notification';
 
-const NUM_POSITIONS = 100 * 1024;
-
-const SIDES = ['left', 'right'];
-
 class Notification {
   constructor(archae) {
     this._archae = archae;
@@ -18,7 +14,6 @@ class Notification {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {site: {url: siteUrl}, server: {enabled: serverEnabled}}} = archae;
 
     const cleanups = [];
     this._cleanup = () => {
@@ -35,24 +30,14 @@ class Notification {
 
     return archae.requestPlugins([
       '/core/engines/three',
-      '/core/engines/input',
       '/core/engines/webvr',
       '/core/engines/biolumi',
-      '/core/engines/keyboard',
       '/core/engines/rend',
-      '/core/engines/tags',
-      '/core/utils/geometry-utils',
-      '/core/utils/creature-utils',
     ]).then(([
       three,
-      input,
       webvr,
       biolumi,
-      keyboard,
       rend,
-      tags,
-      geometryUtils,
-      creatureUtils,
     ]) => {
       if (live) {
         const {THREE, scene, camera} = three;
