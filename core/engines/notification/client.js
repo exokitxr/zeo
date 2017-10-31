@@ -112,33 +112,24 @@ class Notification {
             mesh.updateMatrixWorld();
           };
 
-          camera.matrixWorld.decompose(localVector, localQuaternion, localVector2);
-          mesh.align(localVector, localQuaternion, localVector2, 1);
-
           return mesh;
         })();
         scene.add(hudMesh);
 
         let lastUpdateTime = Date.now();
+        let oldVisible = false;
         const _update = () => {
           const now = Date.now();
 
-          const _updateHudMesh = () => {
-            if (hudMesh.visible) {
-              hudMesh.update();
-            }
-          };
-          const _alignHudMesh = () => {
-            if (hudMesh.visible) {
-              camera.matrixWorld.decompose(localVector, localQuaternion, localVector2);
-              hudMesh.align(localVector, localQuaternion, localVector2, (now - lastUpdateTime) * 0.02);
-            }
-          };
+          if (hudMesh.visible) {
+            hudMesh.update();
 
-          _updateHudMesh();
-          _alignHudMesh();
+            camera.matrixWorld.decompose(localVector, localQuaternion, localVector2);
+            hudMesh.align(localVector, localQuaternion, localVector2, !oldVisible ? 1 : ((now - lastUpdateTime) * 0.02));
+          }
 
           lastUpdateTime = now;
+          oldVisible = hudMesh.visible;
         };
         rend.on('update', _update);
 
