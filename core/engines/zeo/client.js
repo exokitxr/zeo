@@ -8,7 +8,7 @@ class Zeo {
     const {metadata: {site: {url: siteUrl}}} = archae;
 
     let cleanups = [];
-    const _cleanup = () => {
+    this._cleanup = () => {
       for (let i = 0; i < cleanups.length; i++) {
         const cleanup = cleanups[i];
         cleanup();
