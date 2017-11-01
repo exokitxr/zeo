@@ -6,8 +6,6 @@ const repl = require('repl');
 
 const archae = require('archae');
 const rimraf = require('rimraf');
-const getIP = require('external-ip')();
-const openurl = require('openurl');
 
 const args = process.argv.slice(2);
 const _findArg = name => {
@@ -94,9 +92,6 @@ const password = (() => {
     }
   }
 })();
-if (password !== null) {
-  console.log(`Reminder: server password is ${JSON.stringify(password)}`);
-}
 const hotload = (() => {
   try {
     const noHotloadJsonPath = path.join(__dirname, dataDirectory, 'no-hotload.json');
@@ -141,7 +136,11 @@ const config = {
       url: fullUrl,
       enabled: flags.server,
     },
+    protocolString,
+    port,
+    password,
     maxUsers,
+    noTty: flags.noTty,
     transient: {},
   },
 };
@@ -320,44 +319,6 @@ _configure()
   .then(() => _listenArchae())
   .then(() => _listenNetwork())
   .then(() => _boot())
-  .then(() => new Promise((accept, reject) => {
-    if (flags.server) {
-      console.log('Local URL: ' + config.metadata.server.url);
-
-      if (!flags.noOpen) {
-        openurl.open(config.metadata.server.url, err => {
-          console.warn('could not open ' + config.metadata.server.url + ' in a browser');
-        });
-      }
-
-      getIP((err, ip) => {
-        console.log('Remote URL: ' + (!err ? (protocolString + '://' + ip + ':' + port) : 'firewalled'));
-
-        accept();
-      });
-    } else {
-      accept();
-    }
-  }))
-  .then(() => {
-    if (!flags.noTty) {
-      const r = repl.start({ prompt: 'zeo> ' });
-      Object.defineProperty(r.context, 'status', {
-        get: () => {
-          console.log('status');
-        },
-      });
-      r.context.addMod = mod => {
-        console.log('add mod', mod);
-      };
-      r.context.removeMod = mod => {
-        console.log('remove mod', mod);
-      };
-      r.on('exit', () => {
-        process.exit();
-      });
-    }
-  })
   .catch(err => {
     console.warn(err);
     process.exit(1);

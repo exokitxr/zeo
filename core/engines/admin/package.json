@@ -3,5 +3,9 @@
   "description": "Provides admin utilities for the zeo core.",
   "version": "0.0.1",
   "client": "client.js",
-  "dependencies": {}
+  "server": "server.js",
+  "dependencies": {
+    "external-ip": "^1.3.1",
+    "openurl": "^1.1.1"
+  }
 }
