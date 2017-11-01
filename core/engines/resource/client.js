@@ -10,6 +10,7 @@ import {
   WORLD_MENU_HEIGHT,
 } from './lib/constants/menu';
 import menuRender from './lib/render/menu';
+import WebFont from 'webfontloader';
 import sfxr from 'sfxr';
 
 const hmdModelPath = 'archae/assets/models/hmd/hmd.json';
@@ -90,6 +91,20 @@ class Assets {
           assetSprites,
         };
       });
+    const _requestFonts = () => new Promise((accept, reject) => {
+      WebFont.load({
+        google: {
+          families: ['Open Sans']
+        },
+        active: () => {
+          accept();
+        },
+        inactive: () => {
+          const err = new Error('fonts failed to load');
+          reject(err);
+        },
+      });
+    });
     const _requestSfx = () => Promise.all(SFX.map(sfx => sfxr.requestSfx(sfxPath + '/' + sfx + '.ogg')))
       .then(audios => {
         const result = {};
@@ -109,6 +124,7 @@ class Assets {
       _requestJson(hmdModelPath),
       _requestJson(controllerModelPath),
       _requestSpritesheet(),
+      _requestFonts(),
       _requestSfx(),
     ])
       .then(([
@@ -116,6 +132,7 @@ class Assets {
         hmdModelJson,
         controllerModelJson,
         spritesheet,
+        fonts,
         sfx,
       ]) => {
         if (live) {

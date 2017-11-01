@@ -11,6 +11,7 @@
     "indev": "^3.0.14",
     "murmurhash": "0.0.2",
     "sfxr": "0.0.2",
-    "three-zeo": "0.0.10"
+    "three-zeo": "0.0.10",
+    "webfontloader": "^1.6.28"
   }
 }
