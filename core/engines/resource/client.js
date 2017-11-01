@@ -17,6 +17,7 @@ const hmdModelPath = 'archae/assets/models/hmd/hmd.json';
 const controllerModelPath = 'archae/assets/models/controller/controller.json';
 const imgPath = 'archae/assets/img';
 const sfxPath = 'archae/assets/sfx';
+const API_PREFIX = 'https://my-site.zeovr.io/';
 const SFX = [
   'digi_click',
   'digi_cluck',
@@ -195,14 +196,25 @@ class Assets {
             creatureUtils,
           });
 
-          const _getSpriteImageData = s => {
-            const spriteName = spritesheet.assetSprites[s] ||
-              spritesheet.spriteNames[Math.floor((murmur(s) / 0xFFFFFFFF) * spritesheet.spriteNames.length)];
-            const spriteCoods = spritesheet.spriteCoords[spriteName];
-            const [x, y] = spriteCoods;
-            const imageData = spritesheet.canvas.getSpriteImageData(x, y);
-            return imageData;
+          const _resArrayBuffer = res => {
+            if (res.status >= 200 && res.status < 300) {
+              return res.arrayBuffer();
+            } else if (res.status === 404) {
+              return Promise.resolve(null);
+            } else {
+              return Promise.reject({
+                status: res.status,
+                stack: 'API returned invalid status code: ' + res.status,
+              });
+            }
           };
+
+          const _getItemImageData = name => fetch(API_PREFIX + 'imgData/items/' + name)
+            .then(_resArrayBuffer);
+          const _getModImageData = name => fetch(API_PREFIX + 'imgData/mods/' + name)
+            .then(_resArrayBuffer);
+          const _getFileImageData = name => fetch(API_PREFIX + 'imgData/files/' + name)
+            .then(_resArrayBuffer);
           /* const _makePlayerLabelMesh = ({username}) => {
             const labelState = {
               username: username,
@@ -328,7 +340,9 @@ class Assets {
             },
             cursorImg,
             sfx: sfx,
-            getSpriteImageData: _getSpriteImageData,
+            getItemImageData: _getItemImageData,
+            getModImageData: _getModImageData,
+            getFileImageData: _getFileImageData,
             // makePlayerLabelMesh: _makePlayerLabelMesh,
             makePlayerMenuMesh: _makePlayerMenuMesh,
           };

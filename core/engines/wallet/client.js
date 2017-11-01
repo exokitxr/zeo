@@ -146,6 +146,24 @@ class Wallet {
           // depthTest: false,
         });
 
+        const _requestAssetImageData = asset => (() => {
+          const match = asset.match(/^(ITEM|MOD|FILE)\.(.+)$/);
+          const type = match[1];
+          const name = match[2];
+          if (type === 'ITEM') {
+            return resource.getItemImageData(name);
+          } else if (type === 'MOD') {
+            return resource.getModImageData(name);
+          } else if (type === 'MOD') {
+            return resource.getFileImageData(name);
+          } else {
+            return Promise.resolve(null);
+          }
+        })().then(arrayBuffer => ({
+          width: 16,
+          height: 16,
+          data: new Uint8Array(arrayBuffer),
+        }));
         const _addStrgAsset = (asset, quantity) => vridApi.get('assets')
           .then(assets => {
             assets = assets || [];
@@ -437,10 +455,8 @@ class Wallet {
               let live = true;
 
               const geometry = (() => {
-                const spriteName = type === 'asset' ? value : 'FIL';
-                const imageData = resource.getSpriteImageData(spriteName);
-
-                spriteUtils.requestSpriteGeometry(imageData, pixelSize)
+                _requestAssetImageData(value)
+                  .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize))
                   .then(geometrySpec => {
                     if (live) {
                       const {positions, normals, colors, dys, zeroDys} = geometrySpec;
