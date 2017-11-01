@@ -2,6 +2,7 @@
 
 const path = require('path');
 const fs = require('fs');
+const repl = require('repl');
 
 const archae = require('archae');
 const rimraf = require('rimraf');
@@ -336,6 +337,23 @@ _configure()
       accept();
     });
   }))
+  .then(() => {
+    const r = repl.start({ prompt: 'zeo> ' });
+    Object.defineProperty(r.context, 'status', {
+      get: () => {
+        console.log('status');
+      },
+    });
+    r.context.addMod = mod => {
+      console.log('add mod', mod);
+    };
+    r.context.removeMod = mod => {
+      console.log('remove mod', mod);
+    };
+    r.on('exit', () => {
+      process.exit();
+    });
+  })
   .catch(err => {
     console.warn(err);
     process.exit(1);
