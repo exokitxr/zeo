@@ -33,17 +33,18 @@ class Inventory {
       '/core/engines/three',
       '/core/engines/input',
       '/core/engines/webvr',
-      '/core/engines/biolumi',
+      '/core/engines/resource',
       '/core/engines/rend',
     ]).then(([
       three,
       input,
       webvr,
-      biolumi,
+      resource,
       rend,
     ]) => {
       if (live) {
         const {THREE, scene, camera} = three;
+        const {cursorImg} = resource;
 
         const localVector = new THREE.Vector3();
         const localVector2 = new THREE.Vector3();
@@ -52,9 +53,9 @@ class Inventory {
         const canvas = document.createElement('canvas');
         canvas.width = WIDTH;
         canvas.height = HEIGHT;
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#FFF';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        canvas.style.width = (WIDTH / 1.5) + 'px';
+        canvas.style.height = (HEIGHT / 1.5) + 'px';
+
         const texture = new THREE.Texture(
           canvas,
           THREE.UVMapping,
@@ -66,11 +67,32 @@ class Inventory {
           THREE.UnsignedByteType,
           16
         );
-        texture.needsUpdate = true;
+        // texture.needsUpdate = true;
         const material = new THREE.MeshBasicMaterial({
           map: texture,
           transparent: true,
         });
+
+        const ctx = canvas.getContext('2d');
+        const fontSize = 20;
+        ctx.font = `400 ${fontSize}px Open Sans`;
+        let usersMetrics = ctx.measureText('Users');
+        const _render = (x, y) => {
+          x = Math.min(Math.max((x + 1) / 2, -1), 1);
+          y = 1 - Math.min(Math.max((y + 1) / 2, -1), 1);
+
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.fillStyle = '#FFF';
+          ctx.fillText('Users', fontSize, fontSize * 1.5);
+          ctx.fillText('Inventory', fontSize + usersMetrics.width * 1.2, fontSize * 1.5);
+          ctx.fillRect(0, fontSize * 2, WIDTH, fontSize * 0.1);
+          ctx.drawImage(cursorImg, x * WIDTH, y * HEIGHT);
+
+          texture.needsUpdate = true;
+        };
+        _render(0, 0);
 
         const hudMesh = (() => {
           const geometry = new THREE.PlaneBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT);
@@ -108,11 +130,31 @@ class Inventory {
         let lastUpdateTime = Date.now();
         const _update = () => {
           const now = Date.now();
+          const {gamepads} = webvr.getStatus();
 
-          const visible = SIDES.some(side => padStates[side].paddown);
+          let visible = false;
+          let x = 0;
+          let numX = 0;
+          let y = 0;
+          let numY = 0;
+          for (let i = 0; i < SIDES.length; i++) {
+            const side = SIDES[i];
+            const padState = padStates[side];
+            if (padState.paddown) {
+              visible = true;
+
+              const gamepad = gamepads[side];
+              x += gamepad.axes[0];
+              numX++;
+              y += gamepad.axes[1];
+              numY++;
+            }
+          }
           const oldVisible = hudMesh.visible;
           hudMesh.visible = visible;
           if (visible) {
+            _render(x / numX, y / numY);
+
             camera.matrixWorld.decompose(localVector, localQuaternion, localVector2);
             hudMesh.align(localVector, localQuaternion, localVector2, !oldVisible ? 1 : ((now - lastUpdateTime) * 0.02));
           }
@@ -129,7 +171,6 @@ class Inventory {
 
         const _makePadState = () => ({
           paddown: false,
-          axes: [0, 0],
         });
         const padStates = {
           left: _makePadState(),
@@ -142,8 +183,6 @@ class Inventory {
           const gamepad = gamepads[side];
           const padState = padStates[side];
           padState.paddown = true;
-          padState.axes[0] = gamepad.axes[0];
-          padState.axes[1] = gamepad.axes[1];
         };
         input.on('padtouchdown', _padtouchdown);
 
@@ -154,8 +193,6 @@ class Inventory {
           const gamepad = gamepads[side];
           const padState = padStates[side];
           padState.paddown = false;
-          padState.axes[0] = gamepad.axes[0];
-          padState.axes[1] = gamepad.axes[1];
         };
         input.on('padtouchup', _padtouchup);
 
