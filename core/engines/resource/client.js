@@ -65,33 +65,6 @@ class Assets {
         img.onerror = null;
       };
     });
-    const _requestSpritesheet = () => Promise.all([
-      _requestImage(imgPath + '/spritesheet.png'),
-      _requestJson(imgPath + '/sprites.json'),
-      _requestJson(imgPath + '/assets.json'),
-    ])
-      .then(([
-        img,
-        spriteCoords,
-        assetSprites,
-      ]) => {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
-        const spriteSize = 16;
-        canvas.getSpriteImageData = (x, y, w, h) => ctx.getImageData(x, y, spriteSize, spriteSize);
-
-        const spriteNames = Object.keys(spriteCoords);
-
-        return {
-          canvas,
-          spriteNames,
-          spriteCoords,
-          assetSprites,
-        };
-      });
     const _requestFonts = () => new Promise((accept, reject) => {
       WebFont.load({
         google: {
@@ -119,12 +92,9 @@ class Assets {
       archae.requestPlugins([
         '/core/engines/three',
         '/core/engines/biolumi',
-        '/core/utils/hash-utils',
-        '/core/utils/creature-utils',
       ]),
       _requestJson(hmdModelPath),
       _requestJson(controllerModelPath),
-      _requestSpritesheet(),
       _requestImage(imgPath + '/cursor.svg'),
       _requestFonts(),
       _requestSfx(),
@@ -133,7 +103,6 @@ class Assets {
         plugins,
         hmdModelJson,
         controllerModelJson,
-        spritesheet,
         cursorImg,
         fonts,
         sfx,
@@ -142,8 +111,6 @@ class Assets {
           const [
             three,
             biolumi,
-            hashUtils,
-            creatureUtils,
           ] = plugins;
           const {THREE, camera} = three;
 
@@ -170,7 +137,6 @@ class Assets {
             Promise.resolve(plugins),
             _requestHmdMesh(),
             _requestControllerMesh(),
-            Promise.resolve(spritesheet),
             Promise.resolve(cursorImg),
             Promise.resolve(sfx),
           ]);
@@ -180,21 +146,17 @@ class Assets {
         [
           three,
           biolumi,
-          hashUtils,
-          creatureUtils,
         ],
         hmdModelMesh,
         controllerModelMesh,
-        spritesheet,
         cursorImg,
         sfx,
       ]) => {
         if (live) {
           const {THREE, camera} = three;
-          const {murmur} = hashUtils;
-          const menuRenderer = menuRender.makeRenderer({
+          /* const menuRenderer = menuRender.makeRenderer({
             creatureUtils,
-          });
+          }); */
 
           const _resArrayBuffer = res => {
             if (res.status >= 200 && res.status < 300) {
