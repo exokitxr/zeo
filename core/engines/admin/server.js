@@ -65,7 +65,7 @@ class Admin {
 
         return _log()
           .then(() => {
-            if (!noTty) {
+            if (serverEnabled && !noTty) {
               const r = repl.start({ prompt: 'zeo> ' });
               r.context.status = () => {
                 console.log('STATUS');
