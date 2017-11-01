@@ -74,7 +74,7 @@ class Inventory {
         });
 
         const ctx = canvas.getContext('2d');
-        const fontSize = 20;
+        const fontSize = 30;
         ctx.font = `400 ${fontSize}px Open Sans`;
         let usersMetrics = ctx.measureText('Users');
         const _render = (x, y) => {
@@ -85,17 +85,22 @@ class Inventory {
           ctx.fillStyle = '#FFF';
           ctx.fillText('Users', fontSize, fontSize * 1.5);
           ctx.fillText('Inventory', fontSize + usersMetrics.width * 1.2, fontSize * 1.5);
-          ctx.fillRect(0, fontSize * 2, WIDTH, fontSize * 0.1);
+          ctx.fillRect(fontSize, fontSize * 2, WIDTH, fontSize * 0.1);
           ctx.fillStyle = '#4CAF50';
-          ctx.fillRect(0, fontSize * 3, fontSize * (3 * 2), fontSize * 8);
+          ctx.fillRect(fontSize, fontSize * 3, fontSize * (3 * 2), fontSize * 8);
+          ctx.beginPath();
+          ctx.lineWidth = 5;
+          ctx.strokeStyle = '#FFF';
+          ctx.rect(fontSize, fontSize * 3, fontSize * (3 * 2), fontSize * 8);
+          ctx.stroke();
           ctx.fillStyle = '#2196F3';
-          ctx.fillRect(0, fontSize * (3 + 1 + 8), fontSize * 6, fontSize * 8);
+          ctx.fillRect(fontSize, fontSize * (3 + 1 + 8), fontSize * 6, fontSize * 8);
           ctx.fillStyle = '#CCC';
-          ctx.fillRect(fontSize * (6 + 1), fontSize * 3, fontSize * 6, fontSize * 17);
+          ctx.fillRect(fontSize * (1 + 6 + 1), fontSize * 3, fontSize * 6, fontSize * 17);
           ctx.fillStyle = '#E91E63';
-          ctx.fillRect(fontSize * ((6 + 1) * 2), fontSize * 3, fontSize * 6, fontSize * 8);
+          ctx.fillRect(fontSize * (1 + (6 + 1) * 2), fontSize * 3, fontSize * 6, fontSize * 8);
           ctx.fillStyle = '#673AB7';
-          ctx.fillRect(fontSize * ((6 + 1) * 2), fontSize * (3 + 1 + 8), fontSize * 6, fontSize * 8);
+          ctx.fillRect(fontSize * (1 + (6 + 1) * 2), fontSize * (3 + 1 + 8), fontSize * 6, fontSize * 8);
           ctx.drawImage(cursorImg, x * WIDTH, y * HEIGHT);
 
           texture.needsUpdate = true;
