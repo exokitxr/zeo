@@ -124,6 +124,7 @@ class Assets {
       _requestJson(hmdModelPath),
       _requestJson(controllerModelPath),
       _requestSpritesheet(),
+      _requestImage(imgPath + '/cursor.svg'),
       _requestFonts(),
       _requestSfx(),
     ])
@@ -132,6 +133,7 @@ class Assets {
         hmdModelJson,
         controllerModelJson,
         spritesheet,
+        cursorImg,
         fonts,
         sfx,
       ]) => {
@@ -168,6 +170,7 @@ class Assets {
             _requestHmdMesh(),
             _requestControllerMesh(),
             Promise.resolve(spritesheet),
+            Promise.resolve(cursorImg),
             Promise.resolve(sfx),
           ]);
         }
@@ -182,6 +185,7 @@ class Assets {
         hmdModelMesh,
         controllerModelMesh,
         spritesheet,
+        cursorImg,
         sfx,
       ]) => {
         if (live) {
@@ -322,6 +326,7 @@ class Assets {
               hmdModelMesh,
               controllerModelMesh,
             },
+            cursorImg,
             sfx: sfx,
             getSpriteImageData: _getSpriteImageData,
             // makePlayerLabelMesh: _makePlayerLabelMesh,
