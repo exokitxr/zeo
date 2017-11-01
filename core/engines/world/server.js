@@ -111,6 +111,14 @@ class World {
               }
             }
           };
+          const _addTag = (userId, itemSpec) => {
+            const {id} = itemSpec;
+            tagsJson.tags[id] = itemSpec;
+
+            _saveTags();
+
+            _broadcastLocal('addTag', [userId, itemSpec]);
+          };
           const _removeTag = (userId, id) => {
             delete tagsJson.tags[id];
 
@@ -269,12 +277,7 @@ class World {
                   if (method === 'addTag') {
                     const [userId, itemSpec] = args;
 
-                    const {id} = itemSpec;
-                    tagsJson.tags[id] = itemSpec;
-
-                    _saveTags();
-
-                    _broadcastLocal('addTag', [userId, itemSpec]);
+                    _addTag(userId, itemSpec);
                   } else if (method === 'addTags') {
                     const [userId, itemSpecs] = args;
 
@@ -394,6 +397,14 @@ class World {
           class WorldApi extends EventEmitter {
             getTags() {
               return tagsJson.tags;
+            }
+
+            addTag(itemSpec) {
+              _addTag(null, itemSpec);
+            }
+
+            removeTag(id) {
+              _removeTag(null, id);
             }
 
             initTags() {
