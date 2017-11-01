@@ -117,7 +117,7 @@ class World {
 
             _saveTags();
 
-            _broadcastLocal('addTag', [userId, itemSpec]);
+            _broadcastGlobal('addTag', [userId, itemSpec]);
           };
           const _removeTag = (userId, id) => {
             delete tagsJson.tags[id];
@@ -277,7 +277,12 @@ class World {
                   if (method === 'addTag') {
                     const [userId, itemSpec] = args;
 
-                    _addTag(userId, itemSpec);
+                    const {id} = itemSpec;
+                    tagsJson.tags[id] = itemSpec;
+
+                    _saveTags();
+
+                    _broadcastLocal('addTag', [userId, itemSpec]);
                   } else if (method === 'addTags') {
                     const [userId, itemSpecs] = args;
 
