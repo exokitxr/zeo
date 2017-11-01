@@ -53,8 +53,8 @@ class Inventory {
         const canvas = document.createElement('canvas');
         canvas.width = WIDTH;
         canvas.height = HEIGHT;
-        canvas.style.width = (WIDTH / 1.5) + 'px';
-        canvas.style.height = (HEIGHT / 1.5) + 'px';
+        // canvas.style.width = (WIDTH / 1.5) + 'px';
+        // canvas.style.height = (HEIGHT / 1.5) + 'px';
 
         const texture = new THREE.Texture(
           canvas,
@@ -65,7 +65,7 @@ class Inventory {
           THREE.NearestFilter,
           THREE.RGBAFormat,
           THREE.UnsignedByteType,
-          16
+          1
         );
         // texture.needsUpdate = true;
         const material = new THREE.MeshBasicMaterial({
@@ -82,12 +82,20 @@ class Inventory {
           y = 1 - Math.min(Math.max((y + 1) / 2, -1), 1);
 
           ctx.clearRect(0, 0, canvas.width, canvas.height);
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
           ctx.fillStyle = '#FFF';
           ctx.fillText('Users', fontSize, fontSize * 1.5);
           ctx.fillText('Inventory', fontSize + usersMetrics.width * 1.2, fontSize * 1.5);
           ctx.fillRect(0, fontSize * 2, WIDTH, fontSize * 0.1);
+          ctx.fillStyle = '#4CAF50';
+          ctx.fillRect(0, fontSize * 3, fontSize * (3 * 2), fontSize * 8);
+          ctx.fillStyle = '#2196F3';
+          ctx.fillRect(0, fontSize * (3 + 1 + 8), fontSize * 6, fontSize * 8);
+          ctx.fillStyle = '#CCC';
+          ctx.fillRect(fontSize * (6 + 1), fontSize * 3, fontSize * 6, fontSize * 17);
+          ctx.fillStyle = '#E91E63';
+          ctx.fillRect(fontSize * ((6 + 1) * 2), fontSize * 3, fontSize * 6, fontSize * 8);
+          ctx.fillStyle = '#673AB7';
+          ctx.fillRect(fontSize * ((6 + 1) * 2), fontSize * (3 + 1 + 8), fontSize * 6, fontSize * 8);
           ctx.drawImage(cursorImg, x * WIDTH, y * HEIGHT);
 
           texture.needsUpdate = true;
@@ -101,8 +109,8 @@ class Inventory {
             const targetPosition = position.clone().add(
               new THREE.Vector3(
                 0,
-                -WORLD_HEIGHT * 0.25,
-                -0.5
+                0,
+                -0.75
               ).applyQuaternion(rotation)
             );
             const targetRotation = rotation;
