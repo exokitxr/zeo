@@ -2,7 +2,6 @@
 
 const path = require('path');
 const fs = require('fs');
-const tty = require('tty');
 const repl = require('repl');
 
 const archae = require('archae');
@@ -54,6 +53,7 @@ const flags = {
   vridUrl: _findArg('vridUrl'),
   crdsUrl: _findArg('crdsUrl'),
   noOpen: args.includes('noOpen'),
+  noTty: args.includes('noTty'),
   maxUsers: _findArg('maxUsers'),
 };
 const hasSomeFlag = (() => {
@@ -340,24 +340,22 @@ _configure()
     }
   }))
   .then(() => {
-    if (flags.server) {
-      if (tty.isatty(process.stdout.fd)) {
-        const r = repl.start({ prompt: 'zeo> ' });
-        Object.defineProperty(r.context, 'status', {
-          get: () => {
-            console.log('status');
-          },
-        });
-        r.context.addMod = mod => {
-          console.log('add mod', mod);
-        };
-        r.context.removeMod = mod => {
-          console.log('remove mod', mod);
-        };
-        r.on('exit', () => {
-          process.exit();
-        });
-      }
+    if (!flags.noTty) {
+      const r = repl.start({ prompt: 'zeo> ' });
+      Object.defineProperty(r.context, 'status', {
+        get: () => {
+          console.log('status');
+        },
+      });
+      r.context.addMod = mod => {
+        console.log('add mod', mod);
+      };
+      r.context.removeMod = mod => {
+        console.log('remove mod', mod);
+      };
+      r.on('exit', () => {
+        process.exit();
+      });
     }
   })
   .catch(err => {

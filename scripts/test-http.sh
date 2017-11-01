@@ -13,7 +13,7 @@ node --inspect=0.0.0.0:9229 ./index.js server \
   dataDirectory='data' dataDirectorySrc='defaults/data' \
   cryptoDirectory='data/crypto' cryptoDirectorySrc='crypto' \
   installDirectory='data/installed' \
-  noOpen &
+  noOpen noTty &
 
 sleep infinity;
 
