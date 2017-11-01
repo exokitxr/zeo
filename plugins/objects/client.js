@@ -1082,7 +1082,7 @@ class Objects {
               };
 
               if (_isFilled(bodyVector.x, bodyVector.y + 0.1, bodyVector.z)) {
-                const positionOffset = localVector3.copy(oldPosition).sub(position);
+                const positionOffset = localVector3.copy(oldPosition).sub(position).multiplyScalar(1.0000001);
                 positionOffset.y = 0;
                 if (!_isFilled(bodyVector.x, bodyVector.y + 0.1, bodyVector.z + positionOffset.z)) {
                   positionOffset.x = 0;
