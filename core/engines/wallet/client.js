@@ -993,6 +993,12 @@ class Wallet {
               console.warn(err);
             });
 
+          const match = asset.match(/^MOD\.(.+)$/);
+          if (match) {
+            const modName = match[1];
+            world.addMod(modName);
+          }
+
           sfx.drop.trigger();
           const newNotification = notification.addNotification(`Pulled out ${asset}.`);
           setTimeout(() => {

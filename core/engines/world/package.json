@@ -8,6 +8,7 @@
   "dependencies": {
     "body-parser": "^1.17.2",
     "html-tag-names": "^1.1.2",
-    "mkdirp": "^0.5.1"
+    "mkdirp": "^0.5.1",
+    "semver": "^5.4.1"
   }
 }

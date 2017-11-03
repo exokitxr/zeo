@@ -2,10 +2,12 @@ const events = require('events');
 const {EventEmitter} = events;
 const path = require('path');
 const fs = require('fs');
+const https = require('https');
 
 const mkdirp = require('mkdirp');
 const bodyParser = require('body-parser');
 const bodyParserJson = bodyParser.json();
+const semver = require('semver');
 
 const DEFAULT_TAGS = {
   tags: {},
@@ -110,6 +112,15 @@ class World {
                 }
               }
             }
+          };
+          const _getModTagId = mod => {
+            for (const id in tagsJson.tags) {
+              const tag = tagsJson.tags[id];
+              if (tag.name === mod) {
+                return id;
+              }
+            }
+            return null;
           };
           const _addTag = (userId, itemSpec) => {
             const {id} = itemSpec;
@@ -404,12 +415,37 @@ class World {
               return tagsJson.tags;
             }
 
-            addTag(itemSpec) {
-              _addTag(null, itemSpec);
+            addMod(mod) {
+              if (!_getModTagId(mod)) {
+                _getModuleVersion(mod)
+                  .then(version => {
+                    const itemSpec = {
+                      type: 'entity',
+                      id: _makeId(),
+                      name: mod,
+                      displayName: mod,
+                      module: mod,
+                      version: version,
+                      tagName: _makeTagName(mod),
+                      attributes: {},
+                      metadata: {},
+                    };
+                    _addTag(null, itemSpec);
+                  });
+                return true;
+              } else {
+                return false;
+              }
             }
 
-            removeTag(id) {
-              _removeTag(null, id);
+            removeMod(mod) {
+              const id = _getModTagId(mode);
+              if (id) {
+                _removeTag(null, id);
+                return true;
+              } else {
+                return false;
+              }
             }
 
             initTags() {
@@ -451,6 +487,88 @@ const _jsonParse = s => {
     return null;
   }
 };
+const _makeId = () => Math.random().toString(36).substring(7);
+const _makeTagName = s => {
+  s = s
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, '-')
+    .replace(/--+/g, '-')
+    .replace(/(?:^-|-$)/g, '');
+  if (/^[0-9]/.test(s)) {
+    s = 'e-' + s;
+  }
+  if (htmlTagNames.includes(s)) {
+    s = 'e-' + s;
+  }
+  return s;
+};
+const _makeRejectApiError = reject => (statusCode = 500, message = 'API Error: ' + statusCode) => {
+  const err = new Error(message);
+  err.statusCode = statusCode;
+  reject(err);
+};
+const _getResponseString = (res, cb) => {
+  const bs = [];
+  res.on('data', d => {
+    bs.push(d);
+  });
+  res.on('end', () => {
+    const b = Buffer.concat(bs);
+    const s = b.toString('utf8');
+
+    cb(null, s);
+  });
+  res.on('error', err => {
+    cb(err);
+  });
+};
+const _getResponseJson = (res, cb) => {
+  _getResponseString(res, (err, s) => {
+    if (!err) {
+      const j = _jsonParse(s);
+
+      cb(null, j);
+    } else {
+      cb(err);
+    }
+  });
+};
+const _getModuleVersion = module => {
+  if (path.isAbsolute(module)) {
+    return Promise.resolve('0.0.1');
+  } else {
+    return _getNpmModuleVersions(module)
+      .then(versions => versions[0]);
+  }
+};
+const _getNpmModuleVersions = module => new Promise((accept, reject) => {
+  const _rejectApiError = _makeRejectApiError(reject);
+
+  https.get({
+    hostname: 'registry.npmjs.org',
+    path: '/' + module,
+  }, proxyRes => {
+    if (proxyRes.statusCode >= 200 && proxyRes.statusCode < 300) {
+      _getResponseJson(proxyRes, (err, j) => {
+        if (!err) {
+          if (typeof j === 'object' && j !== null && typeof j.versions === 'object' && j.versions !== null) {
+            const versions = Object.keys(j.versions)
+              .sort((a, b) => semver.compare(a, b) * - 1); // newest to oldest
+            accept(versions);
+          } else {
+            _rejectApiError();
+          }
+        } else {
+          _rejectApiError(proxyRes.statusCode);
+        }
+      });
+    } else {
+      _rejectApiError(proxyRes.statusCode);
+    }
+  }).on('error', err => {
+    _rejectApiError(500, err.stack);
+  });
+});
 const _arrayify = o => Object.keys(o).map(k => o[k]);
 const _debounce = fn => {
   let running = false;
