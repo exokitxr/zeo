@@ -2,7 +2,6 @@ import keycode from 'keycode';
 
 import menuShader from './lib/shaders/menu';
 import transparentShader from './lib/shaders/transparent';
-import rasterize from 'rasterize/frontend';
 
 const DEFAULT_FRAME_TIME = 1000 / (60 * 2)
 
@@ -119,23 +118,6 @@ class Biolumi {
 
       return Promise.resolve(new UiWorker());
     };
-    const _requestUiTimer = () => {
-      const startTime = Date.now();
-      let uiTime = 0;
-
-      class UiTimer {
-        getUiTime() {
-          return uiTime;
-        }
-
-        update() {
-          const now = Date.now();
-          uiTime = now - startTime;
-        }
-      }
-
-      return Promise.resolve(new UiTimer());
-    };
 
     return Promise.all([
       archae.requestPlugins([
@@ -144,8 +126,6 @@ class Biolumi {
       ]),
       _requestTransparentImg(),
       _requestUiWorker(),
-      _requestUiTimer(),
-      rasterize(),
     ])
       .then(([
         [
@@ -154,15 +134,9 @@ class Biolumi {
         ],
         transparentImg,
         uiWorker,
-        uiTimer,
-        rasterizer,
       ]) => {
         if (live) {
           const {THREE, renderer} = three;
-
-          if (rasterizer.type === 'internal') {
-            console.warn('warning: Server is using *slow* local rendering; VR clients will experience hitching. To fix this, contact the server admin.');
-          }
 
           const zeroQuaternion = new THREE.Quaternion();
           const defaultRayMeshScale = new THREE.Vector3(1, 1, 15);
@@ -685,11 +659,6 @@ class Biolumi {
           const _makeUi = ({width, height, color = [1, 1, 1, 1]}) => new Ui(width, height, color);
           const _makePage = (spec, {type = null, state = null, color = [1, 1, 1, 1], width, height, worldWidth, worldHeight, layer = null}) =>
             new Page(spec, type, state, color, width, height, worldWidth, worldHeight, layer);
-
-          const _updateUiTimer = () => {
-            uiTimer.update();
-          };
-          const _getUiTime = () => uiTimer.getUiTime();
 
           const _getFonts = () => fonts;
           const _getMonospaceFonts = () => monospaceFonts;
