@@ -1,3 +1,6 @@
+const EffectComposer = require('./lib/three-extra/postprocessing/EffectComposer');
+const HorizontalBlurShader = require('./lib/three-extra/shaders/HorizontalBlurShader');
+const VerticalBlurShader = require('./lib/three-extra/shaders/VerticalBlurShader');
 const {
   WIDTH,
   HEIGHT,
@@ -9,10 +12,45 @@ const {
 } = require('./lib/constants/menu');
 
 const NUM_POSITIONS = 200 * 1024;
-
 const MENU_RANGE = 3;
-
 const SIDES = ['left', 'right'];
+
+const width = 0.1;
+const height = 0.1;
+const pixelWidth = 128;
+const pixelHeight = 128;
+
+const LENS_SHADER = {
+  uniforms: {
+    textureMap: {
+      type: 't',
+      value: null,
+    },
+    /* lightness: {
+      type: 'f',
+      value: 0,
+    }, */
+  },
+  vertexShader: [
+    "varying vec4 texCoord;",
+    "void main() {",
+    "  vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );",
+    "  vec4 position = projectionMatrix * mvPosition;",
+    "  texCoord = position;",
+    "  texCoord.xy = 0.5*texCoord.xy + 0.5*texCoord.w;",
+    "  gl_Position = position;",
+    "}"
+  ].join("\n"),
+  fragmentShader: [
+    "uniform sampler2D textureMap;",
+    // "uniform float lightness;",
+    "varying vec4 texCoord;",
+    "void main() {",
+    "  vec4 diffuse = texture2DProj(textureMap, texCoord);",
+    "  gl_FragColor = vec4(mix(diffuse.rgb, vec3(0, 0, 0), 0.5), diffuse.a);",
+    "}"
+  ].join("\n")
+};
 
 class Rend {
   constructor(archae) {
@@ -99,6 +137,39 @@ class Rend {
         const {murmur} = hashUtils;
         const {sfx} = resource;
 
+        const THREEEffectComposer = EffectComposer(THREE);
+        const {THREERenderPass, THREEShaderPass} = THREEEffectComposer;
+        const THREEHorizontalBlurShader = HorizontalBlurShader(THREE);
+        const THREEVerticalBlurShader = VerticalBlurShader(THREE);
+
+        const _makeRenderTarget = (width, height) => new THREE.WebGLRenderTarget(width, height, {
+          minFilter: THREE.NearestFilter,
+          magFilter: THREE.NearestFilter,
+          // format: THREE.RGBFormat,
+          format: THREE.RGBAFormat,
+        });
+
+        const _requestAssetImageData = asset => (() => {
+          const match = asset.match(/^(ITEM|MOD|SKIN|FILE)\.(.+)$/);
+          const type = match[1];
+          const name = match[2];
+          if (type === 'ITEM') {
+            return resource.getItemImageData(name);
+          } else if (type === 'MOD') {
+            return resource.getModImageData(name);
+          } else if (type === 'FILE') {
+            return resource.getFileImageData(name);
+          } else if (type === 'SKIN') {
+            return resource.getSkinImageData(name); // XXX implement this
+          } else {
+            return Promise.resolve(null);
+          }
+        })().then(arrayBuffer => ({
+          width: 16,
+          height: 16,
+          data: new Uint8Array(arrayBuffer),
+        }));
+
         const uiTracker = biolumi.makeUiTracker();
         const {dotMeshes, boxMeshes} = uiTracker;
         for (let i = 0; i < SIDES.length; i++) {
@@ -147,7 +218,7 @@ class Rend {
           for (let i = 0; i < src.length; i++) {
             dst[startIndexIndex + i] = src[i] + startAttributeIndex;
           }
-        };
+        }
 
         const menuMesh = (() => {
           const geometry = new THREE.PlaneBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT);
@@ -155,9 +226,88 @@ class Rend {
             map: texture,
             side: THREE.DoubleSide,
           });
-          return new THREE.Mesh(geometry, material);
+          const mesh = new THREE.Mesh(geometry, material);
+          mesh.visible = false;
+          return mesh;
         })();
         scene.add(menuMesh);
+
+        const lensMesh = (() => {
+          const object = new THREE.Object3D();
+          // object.position.set(0, 0, 0);
+
+          const width = window.innerWidth * window.devicePixelRatio / 4;
+          const height = window.innerHeight * window.devicePixelRatio / 4;
+          const renderTarget = _makeRenderTarget(width, height);
+          const render = (() => {
+            const horizontalBlurShader = {
+              uniforms: (() => {
+                const result = THREE.UniformsUtils.clone(THREEHorizontalBlurShader.uniforms);
+                result.h.value = 1 / width;
+                return result;
+              })(),
+              vertexShader: THREEHorizontalBlurShader.vertexShader,
+              fragmentShader: THREEHorizontalBlurShader.fragmentShader,
+            };
+            const verticalBlurShader = {
+              uniforms: (() => {
+                const result = THREE.UniformsUtils.clone(THREEVerticalBlurShader.uniforms);
+                result.v.value = 1 / height;
+                return result;
+              })(),
+              vertexShader: THREEVerticalBlurShader.vertexShader,
+              fragmentShader: THREEVerticalBlurShader.fragmentShader,
+            };
+
+            const composer = new THREEEffectComposer(renderer, renderTarget);
+            const renderPass = new THREERenderPass(scene, camera);
+            composer.addPass(renderPass);
+            const hblur = new THREEShaderPass(horizontalBlurShader);
+            composer.addPass(hblur);
+            composer.addPass(hblur);
+            const vblur = new THREEShaderPass(verticalBlurShader);
+            composer.addPass(vblur);
+            const vblurFinal = new THREEShaderPass(verticalBlurShader);
+            // vblurFinal.renderToScreen = true;
+
+            composer.addPass(vblurFinal);
+
+            return (scene, camera) => {
+              renderPass.scene = scene;
+              renderPass.camera = camera;
+
+              composer.render();
+              renderer.setRenderTarget(null);
+            };
+          })();
+          object.render = render;
+
+          const planeMesh = (() => {
+            const geometry = new THREE.SphereBufferGeometry(3, 8, 6);
+            const material = (() => {
+              const shaderUniforms = THREE.UniformsUtils.clone(LENS_SHADER.uniforms);
+              // shaderUniforms.lightness.value = 0.25;
+              const shaderMaterial = new THREE.ShaderMaterial({
+                uniforms: shaderUniforms,
+                vertexShader: LENS_SHADER.vertexShader,
+                fragmentShader: LENS_SHADER.fragmentShader,
+                side: THREE.BackSide,
+              })
+              shaderMaterial.uniforms.textureMap.value = renderTarget.texture;
+              // shaderMaterial.polygonOffset = true;
+              // shaderMaterial.polygonOffsetFactor = -1;
+              return shaderMaterial;
+            })();
+
+            const mesh = new THREE.Mesh(geometry, material);
+            return mesh;
+          })();
+          object.add(planeMesh);
+          object.planeMesh = planeMesh;
+
+          return object;
+        })();
+        menuMesh.add(lensMesh);
 
         const boxMesh = (() => {
           const boxGeometry = (() => {
@@ -302,9 +452,58 @@ class Rend {
           const material = new THREE.MeshBasicMaterial({
             color: 0x000000,
           });
-          return new THREE.Mesh(geometry, material);
+          const mesh = new THREE.Mesh(geometry, material);
+          return mesh;
         })();
         menuMesh.add(boxMesh);
+
+        /* const assetsMesh = (() => {
+          const geometry = (() => {
+            _requestAssetImageData(value)
+              .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize))
+              .then(geometrySpec => {
+                if (live) {
+                  const {positions, normals, colors, dys, zeroDys} = geometrySpec;
+
+                  geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+                  // geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
+                  geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+                  geometry.addAttribute('dy', new THREE.BufferAttribute(geometry.getAttribute('dy').array === geometry.dys ? dys : zeroDys, 2));
+
+                  geometry.dys = dys;
+                  geometry.zeroDys = zeroDys;
+
+                  geometry.destroy = function() {
+                    this.dispose();
+                    spriteUtils.releaseSpriteGeometry(geometrySpec);
+                  };
+                }
+              })
+              .catch(err => {
+                if (live) {
+                  console.warn(err);
+                }
+              });
+
+            const geometry = new THREE.BufferGeometry();
+            const dys = zeroArray; // two of these so we can tell which is active
+            const zeroDys = zeroArray2;
+            geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 2));
+            geometry.dys = dys;
+            geometry.zeroDys = zeroDys;
+            geometry.boundingSphere = new THREE.Sphere(
+              zeroVector,
+              1
+            );
+            geometry.destroy = function() {
+              this.dispose();
+            };
+            return geometry;
+          })();
+          const material = assetsMaterial; // XXX move this to resource engine
+          const mesh = new THREE.Mesh(geometry, material);
+          return mesh;
+        })(); */
 
         const trigger = e => {
           const {side} = e;
@@ -497,6 +696,11 @@ class Rend {
             const localUpdate = localUpdates[i];
             localUpdate();
           }
+        });
+        rendApi.on('updateEye', eyeCamera => {
+          lensMesh.planeMesh.visible = false;
+          lensMesh.render(scene, eyeCamera);
+          lensMesh.planeMesh.visible = true;
         });
 
         return rendApi;

@@ -147,15 +147,17 @@ class Wallet {
         });
 
         const _requestAssetImageData = asset => (() => {
-          const match = asset.match(/^(ITEM|MOD|FILE)\.(.+)$/);
+          const match = asset.match(/^(ITEM|MOD|SKIN|FILE)\.(.+)$/);
           const type = match[1];
           const name = match[2];
           if (type === 'ITEM') {
             return resource.getItemImageData(name);
           } else if (type === 'MOD') {
             return resource.getModImageData(name);
-          } else if (type === 'MOD') {
+          } else if (type === 'FILE') {
             return resource.getFileImageData(name);
+          } else if (type === 'SKIN') {
+            return resource.getSkinImageData(name); // XXX implement this
           } else {
             return Promise.resolve(null);
           }
