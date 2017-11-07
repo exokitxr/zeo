@@ -8,7 +8,7 @@ const {
   DEFAULT_USER_HEIGHT,
 } = require('./lib/constants/menu');
 
-const NUM_POSITIONS = 10 * 1024;
+const NUM_POSITIONS = 200 * 1024;
 
 const MENU_RANGE = 3;
 
@@ -160,7 +160,111 @@ class Rend {
         scene.add(menuMesh);
 
         const boxMesh = (() => {
-          const cylinderGeometry = new THREE.CylinderBufferGeometry(0.001, 0.001, 0.1, 32, 1);
+          const boxGeometry = (() => {
+            const cylinderGeometry = new THREE.CylinderBufferGeometry(0.001, 0.001, 0.1, 32, 1);
+
+            const geometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(NUM_POSITIONS);
+            const indices = new Uint32Array(NUM_POSITIONS);
+
+            let attributeIndex = 0;
+            let indexIndex = 0;
+            const _pushGeometry = geometry => {
+              const newPositions = geometry.attributes.position.array;
+              positions.set(newPositions, attributeIndex);
+
+              const newIndices = geometry.index.array;
+             _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
+
+              attributeIndex += newPositions.length;
+              indexIndex += newIndices.length;
+            };
+            _pushGeometry(
+              cylinderGeometry.clone()
+                .applyMatrix(new THREE.Matrix4().makeTranslation(-0.1/2, 0, -0.1/2))
+            );
+            _pushGeometry(
+              cylinderGeometry.clone()
+                .applyMatrix(new THREE.Matrix4().makeTranslation(0.1/2, 0, -0.1/2))
+            );
+            _pushGeometry(
+              cylinderGeometry.clone()
+                .applyMatrix(new THREE.Matrix4().makeTranslation(-0.1/2, 0, 0.1/2))
+            );
+            _pushGeometry(
+              cylinderGeometry.clone()
+                .applyMatrix(new THREE.Matrix4().makeTranslation(0.1/2, 0, 0.1/2))
+            );
+            _pushGeometry(
+              cylinderGeometry.clone()
+                .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
+                  new THREE.Vector3(0, 1, 0),
+                  new THREE.Vector3(-1, 0, 0),
+                )))
+                .applyMatrix(new THREE.Matrix4().makeTranslation(0, -0.1/2, 0.1/2))
+            );
+            _pushGeometry(
+              cylinderGeometry.clone()
+                .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
+                  new THREE.Vector3(0, 1, 0),
+                  new THREE.Vector3(-1, 0, 0),
+                )))
+                .applyMatrix(new THREE.Matrix4().makeTranslation(0, -0.1/2, -0.1/2))
+            );
+            _pushGeometry(
+              cylinderGeometry.clone()
+                .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
+                  new THREE.Vector3(0, 1, 0),
+                  new THREE.Vector3(0, 0, -1),
+                )))
+                .applyMatrix(new THREE.Matrix4().makeTranslation(-0.1/2, -0.1/2, 0))
+            );
+            _pushGeometry(
+              cylinderGeometry.clone()
+                .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
+                  new THREE.Vector3(0, 1, 0),
+                  new THREE.Vector3(0, 0, -1),
+                )))
+                .applyMatrix(new THREE.Matrix4().makeTranslation(0.1/2, -0.1/2, 0))
+            );
+            _pushGeometry(
+              cylinderGeometry.clone()
+                .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
+                  new THREE.Vector3(0, 1, 0),
+                  new THREE.Vector3(-1, 0, 0),
+                )))
+                .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.1/2, 0.1/2))
+            );
+            _pushGeometry(
+              cylinderGeometry.clone()
+                .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
+                  new THREE.Vector3(0, 1, 0),
+                  new THREE.Vector3(-1, 0, 0),
+                )))
+                .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.1/2, -0.1/2))
+            );
+            _pushGeometry(
+              cylinderGeometry.clone()
+                .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
+                  new THREE.Vector3(0, 1, 0),
+                  new THREE.Vector3(0, 0, -1),
+                )))
+                .applyMatrix(new THREE.Matrix4().makeTranslation(-0.1/2, 0.1/2, 0))
+            );
+            _pushGeometry(
+              cylinderGeometry.clone()
+                .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
+                  new THREE.Vector3(0, 1, 0),
+                  new THREE.Vector3(0, 0, -1),
+                )))
+                .applyMatrix(new THREE.Matrix4().makeTranslation(0.1/2, 0.1/2, 0))
+            );
+
+            geometry.addAttribute('position', new THREE.BufferAttribute(positions.subarray(0, attributeIndex), 3));
+            geometry.setIndex(new THREE.BufferAttribute(indices.subarray(0, indexIndex), 1));
+
+            return geometry;
+          })();
 
           const geometry = new THREE.BufferGeometry();
           const positions = new Float32Array(NUM_POSITIONS);
@@ -178,87 +282,20 @@ class Rend {
             attributeIndex += newPositions.length;
             indexIndex += newIndices.length;
           };
-          _pushGeometry(
-            cylinderGeometry.clone()
-              .applyMatrix(new THREE.Matrix4().makeTranslation(-0.1/2, 0, -0.1/2))
-          );
-          _pushGeometry(
-            cylinderGeometry.clone()
-              .applyMatrix(new THREE.Matrix4().makeTranslation(0.1/2, 0, -0.1/2))
-          );
-          _pushGeometry(
-            cylinderGeometry.clone()
-              .applyMatrix(new THREE.Matrix4().makeTranslation(-0.1/2, 0, 0.1/2))
-          );
-          _pushGeometry(
-            cylinderGeometry.clone()
-              .applyMatrix(new THREE.Matrix4().makeTranslation(0.1/2, 0, 0.1/2))
-          );
-          _pushGeometry(
-            cylinderGeometry.clone()
-              .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
-                new THREE.Vector3(0, 1, 0),
-                new THREE.Vector3(-1, 0, 0),
-              )))
-              .applyMatrix(new THREE.Matrix4().makeTranslation(0, -0.1/2, 0.1/2))
-          );
-          _pushGeometry(
-            cylinderGeometry.clone()
-              .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
-                new THREE.Vector3(0, 1, 0),
-                new THREE.Vector3(-1, 0, 0),
-              )))
-              .applyMatrix(new THREE.Matrix4().makeTranslation(0, -0.1/2, -0.1/2))
-          );
-          _pushGeometry(
-            cylinderGeometry.clone()
-              .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
-                new THREE.Vector3(0, 1, 0),
-                new THREE.Vector3(0, 0, -1),
-              )))
-              .applyMatrix(new THREE.Matrix4().makeTranslation(-0.1/2, -0.1/2, 0))
-          );
-          _pushGeometry(
-            cylinderGeometry.clone()
-              .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
-                new THREE.Vector3(0, 1, 0),
-                new THREE.Vector3(0, 0, -1),
-              )))
-              .applyMatrix(new THREE.Matrix4().makeTranslation(0.1/2, -0.1/2, 0))
-          );
-          _pushGeometry(
-            cylinderGeometry.clone()
-              .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
-                new THREE.Vector3(0, 1, 0),
-                new THREE.Vector3(-1, 0, 0),
-              )))
-              .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.1/2, 0.1/2))
-          );
-          _pushGeometry(
-            cylinderGeometry.clone()
-              .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
-                new THREE.Vector3(0, 1, 0),
-                new THREE.Vector3(-1, 0, 0),
-              )))
-              .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.1/2, -0.1/2))
-          );
-          _pushGeometry(
-            cylinderGeometry.clone()
-              .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
-                new THREE.Vector3(0, 1, 0),
-                new THREE.Vector3(0, 0, -1),
-              )))
-              .applyMatrix(new THREE.Matrix4().makeTranslation(-0.1/2, 0.1/2, 0))
-          );
-          _pushGeometry(
-            cylinderGeometry.clone()
-              .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
-                new THREE.Vector3(0, 1, 0),
-                new THREE.Vector3(0, 0, -1),
-              )))
-              .applyMatrix(new THREE.Matrix4().makeTranslation(0.1/2, 0.1/2, 0))
-          );
-
+          for (let dy = 0; dy <= 5; dy++) {
+            for (let dx = 0; dx <= 3; dx++) {
+              _pushGeometry(
+                boxGeometry.clone()
+                  .applyMatrix(new THREE.Matrix4().makeTranslation(-WORLD_WIDTH/2 + 0.1/2 + WORLD_WIDTH*0.1 + 0.1*1.5*dx, WORLD_HEIGHT/2 - 0.1/2 - WORLD_HEIGHT*0.2 - 0.1*1.5*dy, 0.1 * 0.6))
+              );
+            }
+          }
+          for (let dy = 0; dy < 4; dy++) {
+            _pushGeometry(
+              boxGeometry.clone()
+                .applyMatrix(new THREE.Matrix4().makeTranslation(WORLD_WIDTH/2 - 0.1/2 - WORLD_WIDTH*0.1, WORLD_HEIGHT/2 - 0.1/2 - WORLD_HEIGHT*0.2 - 0.1*1.5*dy, 0.1 * 0.6))
+            );
+          }
           geometry.addAttribute('position', new THREE.BufferAttribute(positions.subarray(0, attributeIndex), 3));
           geometry.setIndex(new THREE.BufferAttribute(indices.subarray(0, indexIndex), 1));
 
