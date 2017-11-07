@@ -11,13 +11,18 @@ class Rend {
   mount() {
     const {_archae: archae} = this;
     const {metadata: {site: {url: siteUrl}}} = archae;
-    const {app, dirname} = archae.getCore();
+    const {express, app, dirname} = archae.getCore();
+
+    const rendImgStatic = express.static(path.join(__dirname, 'lib', 'img'));
+    function serveRendImg(req, res, next) {
+      rendImgStatic(req, res, next);
+    }
+    app.use('/archae/rend/img', serveRendImg);
 
     const mq = modulequery({
       dirname: dirname,
       modulePath: path.join('/', 'plugins'),
     });
-
     function serveSearch(req, res, next) {
       const q = req.query.q ? decodeURIComponent(req.query.q) : '';
 
@@ -50,6 +55,7 @@ class Rend {
     this._cleanup = () => {
       function removeMiddlewares(route, i, routes) {
         if (
+          route.handle.name === 'serveRendImg' ||
           route.handle.name === 'serveSearch' ||
           route.handle.name === 'serveMods'
         ) {

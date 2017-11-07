@@ -5,16 +5,10 @@ const {
   WORLD_HEIGHT,
   WORLD_DEPTH,
 
-  NAVBAR_WIDTH,
-  NAVBAR_HEIGHT,
-  NAVBAR_WORLD_WIDTH,
-  NAVBAR_WORLD_HEIGHT,
-  NAVBAR_WORLD_DEPTH,
-
   DEFAULT_USER_HEIGHT,
 } = require('./lib/constants/menu');
-const names = require('./lib/constants/names.json');
-const menuUtils = require('./lib/utils/menu');
+
+const NUM_POSITIONS = 10 * 1024;
 
 const MENU_RANGE = 3;
 
@@ -52,28 +46,51 @@ class Rend {
       live = false;
     });
 
-    return archae.requestPlugins([
-      '/core/engines/bootstrap',
-      '/core/engines/input',
-      '/core/engines/three',
-      '/core/engines/webvr',
-      '/core/engines/biolumi',
-      '/core/engines/resource',
-      '/core/utils/js-utils',
-      '/core/utils/geometry-utils',
-      '/core/utils/hash-utils',
-      '/core/utils/creature-utils',
+    const _requestImage = src => new Promise((accept, reject) => {
+      const img = new Image();
+      img.src = src;
+      img.onload = () => {
+        accept(img);
+      };
+      img.onerror = err => {
+        reject(err);
+      };
+    });
+    const _requestImageBitmap = src => _requestImage(src)
+      .then(img => createImageBitmap(img, 0, 0, img.width, img.height));
+
+    return Promise.all([
+      archae.requestPlugins([
+        '/core/engines/bootstrap',
+        '/core/engines/input',
+        '/core/engines/three',
+        '/core/engines/webvr',
+        '/core/engines/biolumi',
+        '/core/engines/resource',
+        '/core/utils/js-utils',
+        '/core/utils/geometry-utils',
+        '/core/utils/hash-utils',
+        '/core/utils/creature-utils',
+      ]),
+      _requestImageBitmap('/archae/rend/img/browser1.svg'),
+      _requestImageBitmap('/archae/rend/img/browser2.svg'),
+      _requestImageBitmap('/archae/rend/img/browser3.svg'),
     ]).then(([
-      bootstrap,
-      input,
-      three,
-      webvr,
-      biolumi,
-      resource,
-      jsUtils,
-      geometryUtils,
-      hashUtils,
-      creatureUtils,
+      [
+        bootstrap,
+        input,
+        three,
+        webvr,
+        biolumi,
+        resource,
+        jsUtils,
+        geometryUtils,
+        hashUtils,
+        creatureUtils,
+      ],
+      browser1Img,
+      browser2Img,
+      browser3Img,
     ]) => {
       if (live) {
         const {THREE, scene, camera, renderer} = three;
@@ -107,8 +124,150 @@ class Rend {
           scale: new THREE.Vector3(1, 1, 1),
         };
 
-        const menuMesh = new THREE.Object3D();
+        const canvas = document.createElement('canvas');
+        canvas.width = WIDTH;
+        canvas.height = HEIGHT;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(browser1Img, 0, 0, canvas.width, canvas.height);
+
+        const texture = new THREE.Texture(
+          canvas,
+          THREE.UVMapping,
+          THREE.ClampToEdgeWrapping,
+          THREE.ClampToEdgeWrapping,
+          THREE.LinearFilter,
+          THREE.LinearFilter,
+          THREE.RGBAFormat,
+          THREE.UnsignedByteType,
+          16
+        );
+        texture.needsUpdate = true;
+
+        const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
+          for (let i = 0; i < src.length; i++) {
+            dst[startIndexIndex + i] = src[i] + startAttributeIndex;
+          }
+        };
+
+        const menuMesh = (() => {
+          const geometry = new THREE.PlaneBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT);
+          const material = new THREE.MeshBasicMaterial({
+            map: texture,
+            side: THREE.DoubleSide,
+          });
+          return new THREE.Mesh(geometry, material);
+        })();
         scene.add(menuMesh);
+
+        const boxMesh = (() => {
+          const cylinderGeometry = new THREE.CylinderBufferGeometry(0.001, 0.001, 0.1, 32, 1);
+
+          const geometry = new THREE.BufferGeometry();
+          const positions = new Float32Array(NUM_POSITIONS);
+          const indices = new Uint32Array(NUM_POSITIONS);
+
+          let attributeIndex = 0;
+          let indexIndex = 0;
+          const _pushGeometry = geometry => {
+            const newPositions = geometry.attributes.position.array;
+            positions.set(newPositions, attributeIndex);
+
+            const newIndices = geometry.index.array;
+           _copyIndices(newIndices, indices, indexIndex, attributeIndex / 3);
+
+            attributeIndex += newPositions.length;
+            indexIndex += newIndices.length;
+          };
+          _pushGeometry(
+            cylinderGeometry.clone()
+              .applyMatrix(new THREE.Matrix4().makeTranslation(-0.1/2, 0, -0.1/2))
+          );
+          _pushGeometry(
+            cylinderGeometry.clone()
+              .applyMatrix(new THREE.Matrix4().makeTranslation(0.1/2, 0, -0.1/2))
+          );
+          _pushGeometry(
+            cylinderGeometry.clone()
+              .applyMatrix(new THREE.Matrix4().makeTranslation(-0.1/2, 0, 0.1/2))
+          );
+          _pushGeometry(
+            cylinderGeometry.clone()
+              .applyMatrix(new THREE.Matrix4().makeTranslation(0.1/2, 0, 0.1/2))
+          );
+          _pushGeometry(
+            cylinderGeometry.clone()
+              .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
+                new THREE.Vector3(0, 1, 0),
+                new THREE.Vector3(-1, 0, 0),
+              )))
+              .applyMatrix(new THREE.Matrix4().makeTranslation(0, -0.1/2, 0.1/2))
+          );
+          _pushGeometry(
+            cylinderGeometry.clone()
+              .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
+                new THREE.Vector3(0, 1, 0),
+                new THREE.Vector3(-1, 0, 0),
+              )))
+              .applyMatrix(new THREE.Matrix4().makeTranslation(0, -0.1/2, -0.1/2))
+          );
+          _pushGeometry(
+            cylinderGeometry.clone()
+              .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
+                new THREE.Vector3(0, 1, 0),
+                new THREE.Vector3(0, 0, -1),
+              )))
+              .applyMatrix(new THREE.Matrix4().makeTranslation(-0.1/2, -0.1/2, 0))
+          );
+          _pushGeometry(
+            cylinderGeometry.clone()
+              .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
+                new THREE.Vector3(0, 1, 0),
+                new THREE.Vector3(0, 0, -1),
+              )))
+              .applyMatrix(new THREE.Matrix4().makeTranslation(0.1/2, -0.1/2, 0))
+          );
+          _pushGeometry(
+            cylinderGeometry.clone()
+              .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
+                new THREE.Vector3(0, 1, 0),
+                new THREE.Vector3(-1, 0, 0),
+              )))
+              .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.1/2, 0.1/2))
+          );
+          _pushGeometry(
+            cylinderGeometry.clone()
+              .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
+                new THREE.Vector3(0, 1, 0),
+                new THREE.Vector3(-1, 0, 0),
+              )))
+              .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.1/2, -0.1/2))
+          );
+          _pushGeometry(
+            cylinderGeometry.clone()
+              .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
+                new THREE.Vector3(0, 1, 0),
+                new THREE.Vector3(0, 0, -1),
+              )))
+              .applyMatrix(new THREE.Matrix4().makeTranslation(-0.1/2, 0.1/2, 0))
+          );
+          _pushGeometry(
+            cylinderGeometry.clone()
+              .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(
+                new THREE.Vector3(0, 1, 0),
+                new THREE.Vector3(0, 0, -1),
+              )))
+              .applyMatrix(new THREE.Matrix4().makeTranslation(0.1/2, 0.1/2, 0))
+          );
+
+          geometry.addAttribute('position', new THREE.BufferAttribute(positions.subarray(0, attributeIndex), 3));
+          geometry.setIndex(new THREE.BufferAttribute(indices.subarray(0, indexIndex), 1));
+
+          const material = new THREE.MeshBasicMaterial({
+            color: 0x000000,
+          });
+          return new THREE.Mesh(geometry, material);
+        })();
+        menuMesh.add(boxMesh);
 
         const trigger = e => {
           const {side} = e;
@@ -127,9 +286,6 @@ class Rend {
           menuMesh.visible = false;
 
           menuState.open = false; // XXX need to cancel other menu states as well
-
-          uiTracker.setOpen(false);
-          _updateUiTracker();
 
           sfx.digi_powerdown.trigger();
 
@@ -158,9 +314,6 @@ class Rend {
           menuState.position.copy(newMenuPosition);
           menuState.rotation.copy(newMenuRotation);
           menuState.scale.copy(newMenuScale);
-
-          uiTracker.setOpen(true);
-          _updateUiTracker();
 
           sfx.digi_slide.trigger();
 
@@ -239,38 +392,6 @@ class Rend {
 
           getMenuState() {
             return menuState;
-          }
-
-          getTab() {
-            return navbarState.tab;
-          }
-
-          setTab(newTab) {
-            const _getTabMesh = tab => {
-              switch (tab) {
-                case 'status': return menuMesh.statusMesh;
-                case 'world': return menuMesh.worldMesh;
-                case 'entity': return menuMesh.entityMesh;
-                case 'file': return menuMesh.fileMesh;
-                case 'servers': return menuMesh.serversMesh;
-                case 'wallet': return menuMesh.walletMesh;
-                case 'options': return menuMesh.configMesh;
-                default: return null;
-              }
-            };
-
-            const {tab: oldTab} = navbarState;
-            const oldMesh = _getTabMesh(oldTab);
-            const newMesh = _getTabMesh(newTab);
-
-            oldMesh.visible = false;
-            newMesh.visible = true;
-
-            navbarState.tab = newTab;
-
-            _updateNavbarPage();
-
-            this.emit('tabchange', newTab);
           }
 
           getMenuMesh() {
