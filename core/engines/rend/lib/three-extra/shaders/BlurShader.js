@@ -17,8 +17,6 @@ const THREEHorizontalBlurShader = {
 	uniforms: {
 
 		"tDiffuse": { value: null },
-		"h":        { value: 1.0 / 512.0 },
-		"v":        { value: 1.0 / 512.0 }
 
 	},
 
@@ -38,10 +36,11 @@ const THREEHorizontalBlurShader = {
 	fragmentShader: [
 
 		"uniform sampler2D tDiffuse;",
-		"uniform float h;",
-		"uniform float v;",
 
 		"varying vec2 vUv;",
+
+		"float h = 1.0 / 512.0;",
+		"float v = 1.0 / 512.0;",
 
 		"void main() {",
 

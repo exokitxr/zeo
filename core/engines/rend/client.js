@@ -25,10 +25,6 @@ const LENS_SHADER = {
       type: 't',
       value: null,
     },
-    /* lightness: {
-      type: 'f',
-      value: 0,
-    }, */
   },
   vertexShader: [
     "varying vec4 texCoord;",
@@ -42,7 +38,6 @@ const LENS_SHADER = {
   ].join("\n"),
   fragmentShader: [
     "uniform sampler2D textureMap;",
-    // "uniform float lightness;",
     "varying vec4 texCoord;",
     "void main() {",
     "  vec4 diffuse = texture2DProj(textureMap, texCoord);",
@@ -239,11 +234,7 @@ class Rend {
           const renderTarget = _makeRenderTarget(width, height);
           const render = (() => {
             const blurShader = {
-              uniforms: (() => {
-                const result = THREE.UniformsUtils.clone(THREEBlurShader.uniforms);
-                result.h.value = 1 / width;
-                return result;
-              })(),
+              uniforms: THREE.UniformsUtils.clone(THREEBlurShader.uniforms),
               vertexShader: THREEBlurShader.vertexShader,
               fragmentShader: THREEBlurShader.fragmentShader,
             };
@@ -270,7 +261,6 @@ class Rend {
             const geometry = new THREE.SphereBufferGeometry(3, 8, 6);
             const material = (() => {
               const shaderUniforms = THREE.UniformsUtils.clone(LENS_SHADER.uniforms);
-              // shaderUniforms.lightness.value = 0.25;
               const shaderMaterial = new THREE.ShaderMaterial({
                 uniforms: shaderUniforms,
                 vertexShader: LENS_SHADER.vertexShader,
