@@ -588,67 +588,6 @@ class Wallet {
           keyboardFocusState: null,
         };
 
-        const menuMesh = (() => {
-          const worldUi = biolumi.makeUi({
-            width: WIDTH,
-            height: HEIGHT,
-          });
-          const mesh = worldUi.makePage(({
-            wallet: {
-              loading,
-              error,
-              inputText,
-              asset,
-              assets,
-              equipments,
-              numTags,
-              page,
-            },
-            focus: {
-              keyboardFocusState,
-            },
-          }) => {
-            const {type = '', inputValue = 0} = keyboardFocusState || {};
-            const focus = type === 'wallet:search';
-
-            return {
-              type: 'html',
-              src: walletRenderer.getWalletPageSrc({loading, error, inputText, inputValue, asset, assets, equipments, numTags, page, focus}),
-              x: 0,
-              y: 0,
-              w: WIDTH,
-              h: HEIGHT,
-            };
-          }, {
-            type: 'wallet',
-            state: {
-              wallet: walletState,
-              focus: focusState,
-            },
-            worldWidth: WORLD_WIDTH,
-            worldHeight: WORLD_HEIGHT,
-            isEnabled: () => rend.isOpen(),
-          });
-          mesh.visible = false;
-
-          const {page} = mesh;
-          rend.addPage(page);
-
-          cleanups.push(() => {
-            rend.removePage(page);
-          });
-
-          return mesh;
-        })();
-        rend.registerMenuMesh('walletMesh', menuMesh);
-        menuMesh.updateMatrixWorld();
-
-        const _updatePages = () => {
-          const {page} = menuMesh;
-          page.update();
-        };
-        _updatePages();
-
         const _resJson = res => {
           if (res.status >= 200 && res.status < 300) {
             return res.json();
@@ -715,18 +654,6 @@ class Wallet {
           const {numTags} = walletState;
           walletState.loading = numTags === 0;
         });
-        const _ensureInitialLoaded = () => {
-          walletState.loading = true;
-          _updatePages();
-
-          return _refreshAssets()
-            .then(() => {
-              walletState.loading = false;
-
-              _updatePages();
-            });
-        };
-        _ensureInitialLoaded();
 
         const _saveEquipments = _debounce(next => {
           vridApi.set('equipment', walletState.equipments)

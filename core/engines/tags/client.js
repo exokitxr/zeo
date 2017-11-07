@@ -550,7 +550,6 @@ class Tags {
             return mesh;
           })();
           // scene.add(linesMesh);
-          rend.registerAuxObject('tagsLinesMesh', linesMesh);
 
           const detailsState = {
             inputText: '',

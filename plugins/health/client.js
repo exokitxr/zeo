@@ -6,16 +6,11 @@ const {
   WORLD_HEIGHT,
   WORLD_DEPTH,
 } = require('./lib/constants/constants');
-const menuRenderer = require('./lib/render/menu');
 
 const HEALTH_SHADER = {
   uniforms: {
     texture: {
       type: 't',
-      value: null,
-    },
-    backgroundColor: {
-      type: '4f',
       value: null,
     },
     worldTime: {
@@ -53,7 +48,6 @@ float noise(float x) {
   ].join("\n"),
   fragmentShader: [
     "uniform sampler2D texture;",
-    "uniform vec4 backgroundColor;",
 		"uniform float hit;",
 		"uniform float heal;",
     "varying vec2 vUv;",
@@ -61,22 +55,18 @@ float noise(float x) {
     "vec3 whiteColor = vec3(1.0);",
     "void main() {",
     "  vec4 sample = texture2D(texture, vUv);",
-    "  if (sample.a > 0.0) {",
-    "    vec3 diffuse = (sample.rgb * sample.a) + (backgroundColor.rgb * (1.0 - sample.a));",
+    "  // if (sample.a > 0.0) {",
+    "    vec3 diffuse = (sample.rgb * sample.a);",
     "    if (hit > 0.0) {",
     "      diffuse = mix(diffuse, redColor, 0.7);",
     "    }",
     "    if (heal > 0.0) {",
     "      diffuse = mix(diffuse, whiteColor, 0.5);",
     "    }",
-    "    gl_FragColor = vec4(diffuse, (backgroundColor.a >= 0.5) ? 1.0 : sample.a);",
-    "  } else {",
-    "    if (backgroundColor.a >= 0.5) {",
-    "      gl_FragColor = backgroundColor;",
-    "    } else {",
-    "      discard;",
-    "    }",
-    "  }",
+    "    gl_FragColor = vec4(diffuse, sample.a);",
+    "  /* } else {",
+    "    discard;",
+    "  } */",
     "}",
   ].join("\n")
 };
@@ -103,44 +93,51 @@ class Health {
           };
 
           const hudMesh = (() => {
-            const menuUi = ui.makeUi({
-              width: WIDTH,
-              height: HEIGHT,
-              color: [1, 1, 1, 0],
-            });
-            const mesh = menuUi.makePage(({
-              health: {
-                hp,
-                totalHp,
-              },
-            }) => ({
-              type: 'html',
-              src: menuRenderer.getHudSrc({hp, totalHp}),
-              x: 0,
-              y: 0,
-              w: WIDTH,
-              h: HEIGHT,
-            }), {
-              type: 'health',
-              state: {
-                health: healthState,
-              },
-              worldWidth: WORLD_WIDTH,
-              worldHeight: WORLD_HEIGHT,
-            });
+            const canvas = document.createElement('canvas');
+            canvas.width = WIDTH;
+            canvas.height = HEIGHT;
+            const ctx = canvas.getContext('2d');
+            ctx.font = `50px Consolas, 'Liberation Mono', Menlo, Courier, monospace`;
+
+            const geometry = new THREE.PlaneBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT);
+            const texture = new THREE.Texture(
+              canvas,
+              THREE.UVMapping,
+              THREE.ClampToEdgeWrapping,
+              THREE.ClampToEdgeWrapping,
+              THREE.NearestMipMapLinearFilter,
+              THREE.NearestMipMapLinearFilter,
+              THREE.RGBAFormat,
+              THREE.UnsignedByteType,
+              16
+            );
             const uniforms = THREE.UniformsUtils.clone(HEALTH_SHADER.uniforms);
-            uniforms.texture.value = mesh.material.uniforms.texture.value;
-            uniforms.backgroundColor.value = mesh.material.uniforms.backgroundColor.value;
-            const healthMaterial = new THREE.ShaderMaterial({
-              uniforms: uniforms,
+            uniforms.texture.value = texture;
+            const material = new THREE.ShaderMaterial({
+              uniforms,
               vertexShader: HEALTH_SHADER.vertexShader,
               fragmentShader: HEALTH_SHADER.fragmentShader,
-              transparent: true,
+              // transparent: true,
             });
-            mesh.material = healthMaterial;
+            const mesh = new THREE.Mesh(geometry, material);
             mesh.visible = false;
 
-            const _align = (position, rotation, scale, lerpFactor) => {
+            mesh.update = () => {
+              ctx.fillStyle = '#111';
+              ctx.fillRect(0, 0, canvas.width, canvas.height);
+              ctx.fillStyle = '#FFF';
+              ctx.textAlign = 'left';
+              ctx.fillText('HP', 30, 70);
+              ctx.textAlign = 'right';
+              ctx.fillText(`${healthState.hp}/${healthState.totalHp}`, canvas.width - 30, 70);
+              ctx.lineWidth = 5;
+              ctx.fillStyle = '#4CAF50';
+              ctx.fillRect(110, 30, (canvas.width - 110 - 250 - 30) * (healthState.hp / healthState.totalHp), canvas.height - 30 * 2);
+              ctx.strokeStyle = '#FFF';
+              ctx.strokeRect(110, 30, canvas.width - 110 - 250 - 30, canvas.height - 30 * 2);
+              texture.needsUpdate = true;
+            };
+            mesh.align = (position, rotation, scale, lerpFactor) => {
               const targetPosition = position.clone().add(
                 new THREE.Vector3(
                   0,
@@ -165,14 +162,11 @@ class Health {
 
               mesh.updateMatrixWorld();
             };
-            mesh.align = _align;
+
+            mesh.update();
 
             camera.matrixWorld.decompose(localVector, localQuaternion, localVector2);
             mesh.align(localVector, localQuaternion, localVector2, 1);
-
-            const {page} = mesh;
-            ui.addPage(page);
-            page.update();
 
             return mesh;
           })();
@@ -186,7 +180,7 @@ class Health {
 
             if (timeDiff > 1000 && healthState.hp > 0) {
               healthState.hp = Math.max(healthState.hp - hp, 0);
-              hudMesh.page.update();
+              hudMesh.update();
 
               lastHitTime = now;
 
@@ -201,7 +195,7 @@ class Health {
           const _heal = hp => {
             if (healthState.hp < healthState.totalHp) {
               healthState.hp = Math.min(healthState.hp + hp, healthState.totalHp);
-              hudMesh.page.update();
+              hudMesh.update();
 
               lastHealTime = Date.now();
 

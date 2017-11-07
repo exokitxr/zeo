@@ -795,9 +795,6 @@ class Biolumi {
             makeUi: _makeUi,
             makePage: _makePage,
 
-            updateUiTimer: _updateUiTimer,
-            getUiTime: _getUiTime,
-
             getFonts: _getFonts,
             getMonospaceFonts: _getMonospaceFonts,
             getFontWeight: _getFontWeight,

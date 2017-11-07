@@ -100,57 +100,6 @@ class Servers {
               return servers;
             })
           );
-        const _updatePages = () => {
-          const {page} = serversMesh;
-          page.update();
-        };
-
-        const serversMesh = (() => {
-          const serversUi = biolumi.makeUi({
-            width: WIDTH,
-            height: HEIGHT,
-          });
-          const mesh = serversUi.makePage(({
-            servers: {
-              remoteServers,
-              page,
-              loading,
-            },
-          }) => ({
-            type: 'html',
-            src: menuRenderer.getServersPageSrc({
-              remoteServers,
-              page,
-              loading,
-            }),
-            x: 0,
-            y: 0,
-            w: WIDTH,
-            h: HEIGHT,
-          }), {
-            type: 'servers',
-            state: {
-              servers: serversState,
-            },
-            worldWidth: WORLD_WIDTH,
-            worldHeight: WORLD_HEIGHT,
-            isEnabled: () => rend.isOpen(),
-          });
-          mesh.visible = false;
-          // mesh.receiveShadow = true;
-
-          const {page} = mesh;
-          rend.addPage(page);
-          page.initialUpdate();
-
-          cleanups.push(() => {
-            rend.removePage(page);
-          });
-
-          return mesh;
-        })();
-        rend.registerMenuMesh('serversMesh', serversMesh);
-        serversMesh.updateMatrixWorld();
 
         const _connectServer = serverUrl => {
           window.parent.location = serverUrl;

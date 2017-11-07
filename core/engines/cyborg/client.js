@@ -287,7 +287,6 @@ class Cyborg {
           }
           const playerPlaceholderMesh = _makePlayerPlaceholderMesh();
           camera.parent.add(playerPlaceholderMesh);
-          rend.registerAuxObject('controllerMeshes', playerPlaceholderMesh.controllerMeshes);
 
           let playerSkinMesh = null;
 

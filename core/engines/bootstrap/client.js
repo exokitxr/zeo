@@ -75,14 +75,8 @@ class Bootstrap {
               return initialPath;
             }
 
-            getConnectionState() {
-              return connectionState;
-            }
-
             setConnectionState(newConnectionState) {
               connectionState = newConnectionState;
-
-              this.emit('connectionStateChange', connectionState);
             }
 
             getVrMode() {
@@ -111,8 +105,6 @@ class Bootstrap {
 
             setAddress(newAddress) {
               address = newAddress;
-
-              this.emit('addressChange', newAddress);
             }
 
             navigate(url) {
