@@ -1,6 +1,5 @@
 const EffectComposer = require('./lib/three-extra/postprocessing/EffectComposer');
-const HorizontalBlurShader = require('./lib/three-extra/shaders/HorizontalBlurShader');
-const VerticalBlurShader = require('./lib/three-extra/shaders/VerticalBlurShader');
+const BlurShader = require('./lib/three-extra/shaders/BlurShader');
 const {
   WIDTH,
   HEIGHT,
@@ -139,8 +138,7 @@ class Rend {
 
         const THREEEffectComposer = EffectComposer(THREE);
         const {THREERenderPass, THREEShaderPass} = THREEEffectComposer;
-        const THREEHorizontalBlurShader = HorizontalBlurShader(THREE);
-        const THREEVerticalBlurShader = VerticalBlurShader(THREE);
+        const THREEBlurShader = BlurShader(THREE);
 
         const _makeRenderTarget = (width, height) => new THREE.WebGLRenderTarget(width, height, {
           minFilter: THREE.NearestFilter,
@@ -240,37 +238,23 @@ class Rend {
           const height = window.innerHeight * window.devicePixelRatio / 4;
           const renderTarget = _makeRenderTarget(width, height);
           const render = (() => {
-            const horizontalBlurShader = {
+            const blurShader = {
               uniforms: (() => {
-                const result = THREE.UniformsUtils.clone(THREEHorizontalBlurShader.uniforms);
+                const result = THREE.UniformsUtils.clone(THREEBlurShader.uniforms);
                 result.h.value = 1 / width;
                 return result;
               })(),
-              vertexShader: THREEHorizontalBlurShader.vertexShader,
-              fragmentShader: THREEHorizontalBlurShader.fragmentShader,
-            };
-            const verticalBlurShader = {
-              uniforms: (() => {
-                const result = THREE.UniformsUtils.clone(THREEVerticalBlurShader.uniforms);
-                result.v.value = 1 / height;
-                return result;
-              })(),
-              vertexShader: THREEVerticalBlurShader.vertexShader,
-              fragmentShader: THREEVerticalBlurShader.fragmentShader,
+              vertexShader: THREEBlurShader.vertexShader,
+              fragmentShader: THREEBlurShader.fragmentShader,
             };
 
             const composer = new THREEEffectComposer(renderer, renderTarget);
             const renderPass = new THREERenderPass(scene, camera);
             composer.addPass(renderPass);
-            const hblur = new THREEShaderPass(horizontalBlurShader);
-            composer.addPass(hblur);
-            composer.addPass(hblur);
-            const vblur = new THREEShaderPass(verticalBlurShader);
-            composer.addPass(vblur);
-            const vblurFinal = new THREEShaderPass(verticalBlurShader);
-            // vblurFinal.renderToScreen = true;
-
-            composer.addPass(vblurFinal);
+            const blurPass = new THREEShaderPass(blurShader);
+            composer.addPass(blurPass);
+            composer.addPass(blurPass);
+            composer.addPass(blurPass);
 
             return (scene, camera) => {
               renderPass.scene = scene;
