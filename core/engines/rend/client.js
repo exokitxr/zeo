@@ -104,9 +104,7 @@ class Rend {
         '/core/utils/hash-utils',
         '/core/utils/creature-utils',
       ]),
-      _requestImageBitmap('/archae/rend/img/browser1.svg'),
-      _requestImageBitmap('/archae/rend/img/browser2.svg'),
-      _requestImageBitmap('/archae/rend/img/browser3.svg'),
+      _requestImageBitmap('/archae/rend/img/menu.svg'),
     ]).then(([
       [
         bootstrap,
@@ -120,9 +118,7 @@ class Rend {
         hashUtils,
         creatureUtils,
       ],
-      browser1Img,
-      browser2Img,
-      browser3Img,
+      menuImg,
     ]) => {
       if (live) {
         const {THREE, scene, camera, renderer} = three;
@@ -192,7 +188,7 @@ class Rend {
         canvas.width = WIDTH;
         canvas.height = HEIGHT;
         const ctx = canvas.getContext('2d');
-        ctx.drawImage(browser1Img, 0, 0, canvas.width, canvas.height);
+        ctx.drawImage(menuImg, (canvas.width - menuImg.width) / 2, (canvas.height - menuImg.height) / 2, canvas.width, canvas.width * menuImg.height / menuImg.width);
 
         const texture = new THREE.Texture(
           canvas,
@@ -218,6 +214,7 @@ class Rend {
           const material = new THREE.MeshBasicMaterial({
             map: texture,
             side: THREE.DoubleSide,
+            transparent: true,
           });
           const mesh = new THREE.Mesh(geometry, material);
           mesh.visible = false;
