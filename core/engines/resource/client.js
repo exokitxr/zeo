@@ -18,6 +18,30 @@ const controllerModelPath = 'archae/assets/models/controller/controller.json';
 const imgPath = 'archae/assets/img';
 const sfxPath = 'archae/assets/sfx';
 const API_PREFIX = 'https://my-site.zeovr.io/';
+const ASSET_SHADER = {
+  uniforms: {
+    theta: {
+      type: 'f',
+      value: 0,
+    },
+  },
+  vertexShader: [
+    "uniform float theta;",
+    "attribute vec3 color;",
+    "attribute vec2 dy;",
+    "varying vec3 vcolor;",
+    "void main() {",
+    "  gl_Position = projectionMatrix * modelViewMatrix * vec4(position.x - dy.x + (dy.x*cos(theta) - dy.y*sin(theta)), position.y, position.z - dy.y + (dy.y*cos(theta) + dy.x*sin(theta)), 1.0);",
+    "  vcolor = color;",
+    "}"
+  ].join("\n"),
+  fragmentShader: [
+    "varying vec3 vcolor;",
+    "void main() {",
+    "  gl_FragColor = vec4(vcolor, 1.0);",
+    "}"
+  ].join("\n")
+};
 const SFX = [
   'digi_click',
   'digi_cluck',
@@ -157,6 +181,14 @@ class Assets {
           /* const menuRenderer = menuRender.makeRenderer({
             creatureUtils,
           }); */
+
+          const assetsMaterial = new THREE.ShaderMaterial({
+            uniforms: THREE.UniformsUtils.clone(ASSET_SHADER.uniforms),
+            vertexShader: ASSET_SHADER.vertexShader,
+            fragmentShader: ASSET_SHADER.fragmentShader,
+            // transparent: true,
+            // depthTest: false,
+          });
 
           const _resArrayBuffer = res => {
             if (res.status >= 200 && res.status < 300) {
@@ -299,6 +331,9 @@ class Assets {
             models: {
               hmdModelMesh,
               controllerModelMesh,
+            },
+            materials: {
+              assets: assetsMaterial,
             },
             cursorImg,
             sfx: sfx,

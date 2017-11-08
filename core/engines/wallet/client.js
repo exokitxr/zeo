@@ -16,31 +16,6 @@ const DEFAULT_MATRIX = [
 const NUM_POSITIONS = 100 * 1024;
 const ROTATE_SPEED = 0.0004;
 const CREDIT_ASSET_NAME = 'CRD';
-const ASSET_SHADER = {
-  uniforms: {
-    theta: {
-      type: 'f',
-      value: 0,
-    },
-  },
-  vertexShader: [
-    "uniform float theta;",
-    "attribute vec3 color;",
-    "attribute vec2 dy;",
-    "varying vec3 vcolor;",
-    `float rotateSpeed = ${ROTATE_SPEED.toFixed(8)};`,
-    "void main() {",
-    "  gl_Position = projectionMatrix * modelViewMatrix * vec4(position.x - dy.x + (dy.x*cos(theta) - dy.y*sin(theta)), position.y, position.z - dy.y + (dy.y*cos(theta) + dy.x*sin(theta)), 1.0);",
-    "  vcolor = color;",
-    "}"
-  ].join("\n"),
-  fragmentShader: [
-    "varying vec3 vcolor;",
-    "void main() {",
-    "  gl_FragColor = vec4(vcolor, 1.0);",
-    "}"
-  ].join("\n")
-};
 const SIDES = ['left', 'right'];
 
 class Wallet {
@@ -117,7 +92,7 @@ class Wallet {
         const {murmur} = hashUtils;
         const {AutoWs} = networkUtils;
         const {Grabbable} = hand;
-        const {sfx} = resource;
+        const {materials: {assets: assetsMaterial}, sfx} = resource;
         const {vridApi} = vridUtils;
 
         const walletRenderer = walletRender.makeRenderer({creatureUtils});
@@ -138,13 +113,6 @@ class Wallet {
           new THREE.Vector3(0, 1, 0),
           new THREE.Vector3(0, 0, -1)
         );
-        const assetsMaterial = new THREE.ShaderMaterial({
-          uniforms: THREE.UniformsUtils.clone(ASSET_SHADER.uniforms),
-          vertexShader: ASSET_SHADER.vertexShader,
-          fragmentShader: ASSET_SHADER.fragmentShader,
-          // transparent: true,
-          // depthTest: false,
-        });
 
         const _requestAssetImageData = asset => (() => {
           const match = asset.match(/^(ITEM|MOD|SKIN|FILE)\.(.+)$/);
