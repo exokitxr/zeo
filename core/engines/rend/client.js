@@ -102,7 +102,8 @@ class Rend {
         '/core/utils/js-utils',
         '/core/utils/geometry-utils',
         '/core/utils/hash-utils',
-        '/core/utils/creature-utils',
+        '/core/utils/sprite-utils',
+        '/core/utils/vrid-utils',
       ]),
       _requestImageBitmap('/archae/rend/img/menu.svg'),
     ]).then(([
@@ -116,7 +117,8 @@ class Rend {
         jsUtils,
         geometryUtils,
         hashUtils,
-        creatureUtils,
+        spriteUtils,
+        vridUtils,
       ],
       menuImg,
     ]) => {
@@ -125,18 +127,20 @@ class Rend {
         const {events} = jsUtils;
         const {EventEmitter} = events;
         const {murmur} = hashUtils;
-        const {sfx} = resource;
+        const {materials: {assets: assetsMaterial}, sfx} = resource;
+        const {vridApi} = vridUtils;
 
         const THREEEffectComposer = EffectComposer(THREE);
         const {THREERenderPass, THREEShaderPass} = THREEEffectComposer;
         const THREEBlurShader = BlurShader(THREE);
 
-        const _makeRenderTarget = (width, height) => new THREE.WebGLRenderTarget(width, height, {
-          minFilter: THREE.NearestFilter,
-          magFilter: THREE.NearestFilter,
-          // format: THREE.RGBFormat,
-          format: THREE.RGBAFormat,
-        });
+        const zeroArray = new Float32Array(0);
+        const zeroArray2 = new Float32Array(0);
+        const zeroVector = new THREE.Vector3();
+        const pixelSize = 0.015;
+
+        const _requestAssets = () => vridApi.get('assets')
+          .then(assets => assets || []);
         const _requestAssetImageData = asset => (() => {
           const match = asset.match(/^(ITEM|MOD|SKIN|FILE)\.(.+)$/);
           const type = match[1];
@@ -157,6 +161,12 @@ class Rend {
           height: 16,
           data: new Uint8Array(arrayBuffer),
         }));
+        const _makeRenderTarget = (width, height) => new THREE.WebGLRenderTarget(width, height, {
+          minFilter: THREE.NearestFilter,
+          magFilter: THREE.NearestFilter,
+          // format: THREE.RGBFormat,
+          format: THREE.RGBAFormat,
+        });
 
         const auxObjects = {
           controllerMeshes: null,
@@ -291,31 +301,36 @@ class Rend {
         })();
         menuMesh.add(lensMesh);
 
-        /* const assetsMesh = (() => {
+        const assetsMesh = (() => {
           const geometry = (() => {
-            _requestAssetImageData(value)
-              .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize))
-              .then(geometrySpec => {
-                if (live) {
-                  const {positions, normals, colors, dys, zeroDys} = geometrySpec;
+            _requestAssets()
+              .then(assets => {
+                if (assets.length > 0) {
+                  _requestAssetImageData(assets[0].asset)
+                    .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize))
+                    .then(geometrySpec => {
+                      if (live) {
+                        const {positions, normals, colors, dys, zeroDys} = geometrySpec;
 
-                  geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-                  // geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
-                  geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
-                  geometry.addAttribute('dy', new THREE.BufferAttribute(geometry.getAttribute('dy').array === geometry.dys ? dys : zeroDys, 2));
+                        geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+                        // geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
+                        geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+                        geometry.addAttribute('dy', new THREE.BufferAttribute(geometry.getAttribute('dy').array === geometry.dys ? dys : zeroDys, 2));
 
-                  geometry.dys = dys;
-                  geometry.zeroDys = zeroDys;
+                        geometry.dys = dys;
+                        geometry.zeroDys = zeroDys;
 
-                  geometry.destroy = function() {
-                    this.dispose();
-                    spriteUtils.releaseSpriteGeometry(geometrySpec);
-                  };
-                }
-              })
-              .catch(err => {
-                if (live) {
-                  console.warn(err);
+                        geometry.destroy = function() {
+                          this.dispose();
+                          spriteUtils.releaseSpriteGeometry(geometrySpec);
+                        };
+                      }
+                    })
+                    .catch(err => {
+                      if (live) {
+                        console.warn(err);
+                      }
+                    });
                 }
               });
 
@@ -337,7 +352,8 @@ class Rend {
           const material = assetsMaterial; // XXX move this to resource engine
           const mesh = new THREE.Mesh(geometry, material);
           return mesh;
-        })(); */
+        })();
+        menuMesh.add(assetsMesh);
 
         const trigger = e => {
           const {side} = e;
