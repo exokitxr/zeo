@@ -423,7 +423,7 @@ class Biolumi {
           class UiTracker {
             constructor() {
               this.meshes = [];
-              this.open = true;
+              this.open = false;
 
               const _makeHoverState = () => ({
                 intersectionPoint: null,

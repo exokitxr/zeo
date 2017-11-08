@@ -137,7 +137,6 @@ class Rend {
           // format: THREE.RGBFormat,
           format: THREE.RGBAFormat,
         });
-
         const _requestAssetImageData = asset => (() => {
           const match = asset.match(/^(ITEM|MOD|SKIN|FILE)\.(.+)$/);
           const type = match[1];
@@ -158,6 +157,10 @@ class Rend {
           height: 16,
           data: new Uint8Array(arrayBuffer),
         }));
+
+        const auxObjects = {
+          controllerMeshes: null,
+        };
 
         const uiTracker = biolumi.makeUiTracker();
         const {dotMeshes, boxMeshes} = uiTracker;
@@ -346,6 +349,8 @@ class Rend {
 
           menuState.open = false; // XXX need to cancel other menu states as well
 
+          uiTracker.setOpen(false);
+
           sfx.digi_powerdown.trigger();
 
           rendApi.emit('close');
@@ -373,6 +378,8 @@ class Rend {
           menuState.position.copy(newMenuPosition);
           menuState.rotation.copy(newMenuRotation);
           menuState.scale.copy(newMenuScale);
+
+          uiTracker.setOpen(true);
 
           sfx.digi_slide.trigger();
 
@@ -434,8 +441,30 @@ class Rend {
               }
             }
           };
+          const _updateUiTracker = () => {
+            uiTracker.update({
+              pose: webvr.getStatus(),
+              sides: (() => {
+                const vrMode = bootstrap.getVrMode();
+
+                if (vrMode === 'hmd') {
+                  return SIDES;
+                } else {
+                  const mode = webvr.getMode();
+
+                  if (mode !== 'center') {
+                    return [mode];
+                  } else {
+                    return SIDES;
+                  }
+                }
+              })(),
+              controllerMeshes: auxObjects.controllerMeshes,
+            });
+          };
 
           _updateMenu();
+          _updateUiTracker();
         });
 
         class RendApi extends EventEmitter {
@@ -463,6 +492,10 @@ class Rend {
 
           setStatus(name, value) {
             statusState[name] = value;
+          }
+
+          registerAuxObject(name, object) {
+            auxObjects[name] = object;
           }
 
           update() {
