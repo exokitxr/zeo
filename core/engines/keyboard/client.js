@@ -208,7 +208,7 @@ class Keyboard {
           });
           object.add(keyboardPage.mesh);
           object.keyboardPage = keyboardPage;
-          rend.addPage(keyboardPage);
+          // rend.addPlane(keyboardPage); // XXX
 
           const keyboardHeaderPage = biolumi.makePage(null, {
             type: 'keyboard',
@@ -223,7 +223,7 @@ class Keyboard {
           keyboardHeaderPage.mesh.scale.copy(planeMesh.headerMesh.scale);
           object.add(keyboardHeaderPage.mesh);
           object.keyboardHeaderPage = keyboardHeaderPage;
-          rend.addPage(keyboardHeaderPage);
+          // rend.addPlane(keyboardHeaderPage); // XXX
 
           cleanups.push(() => {
             rend.removePage(keyboardPage);

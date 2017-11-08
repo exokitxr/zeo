@@ -225,6 +225,14 @@ class Rend {
         })();
         scene.add(menuMesh);
 
+        const plane = new THREE.Object3D();
+        plane.width = WIDTH;
+        plane.height = HEIGHT;
+        plane.worldWidth = WORLD_WIDTH;
+        plane.worldHeight = WORLD_HEIGHT;
+        menuMesh.add(plane);
+        uiTracker.addPlane(plane);
+
         const lensMesh = (() => {
           const object = new THREE.Object3D();
           // object.position.set(0, 0, 0);
@@ -522,8 +530,8 @@ class Rend {
             this.emit('entitychange', item);
           }
 
-          addPage(page) {
-            uiTracker.addPage(page);
+          addPlane(plane) {
+            uiTracker.addPlane(plane);
           }
 
           removePage(page) {
