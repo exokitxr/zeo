@@ -548,7 +548,10 @@ class Wallet {
           loading: true,
           error: false,
           inputText: '',
-          asset: null,
+          selectedAsset: {
+            left: null,
+            right: null,
+          },
           assets: [],
           equipments: _arrayify(null, 4),
           numTags: 0,
@@ -583,7 +586,8 @@ class Wallet {
             const {equipments: oldEquipments} = walletState;
 
             walletState.page = 0;
-            walletState.asset = null;
+            walletState.selectedAsset.left = null;
+            walletState.selectedAsset.right = null;
             walletState.assets = assets;
             const newEquipments = equipments.filter(equipmentSpec =>
               !equipmentSpec || walletState.assets.some(assetSpec => assetSpec.asset === equipmentSpec.asset)
@@ -1109,7 +1113,8 @@ class Wallet {
               const _checkGripdown = side => {
                 const hoverState = hoverStates[side];
                 const {worldGrabAsset} = hoverState;
-                const {asset} = walletState;
+                const {selectedAsset} = walletState;
+                const asset = selectedAsset[side];
                 const {gamepads} = webvr.getStatus();
                 const gamepad = gamepads[side];
                 const {worldPosition: position} = gamepad;
@@ -1282,6 +1287,10 @@ class Wallet {
 
                 getAssets() {
                   return walletState.assets;
+                }
+
+                selectAsset(side, asset) {
+                  walletState.selectedAsset[side] = asset;
                 }
 
                 getEquipments() {

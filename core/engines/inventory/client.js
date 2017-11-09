@@ -344,8 +344,10 @@ class Inventory {
               const {side} = e;
               if (inventoryIndices[side] !== localIndex) {
                 inventoryIndices[side] = localIndex;
+                wallet.selectAsset(side, localAssets[localIndex].id);
               } else {
                 inventoryIndices[side] = -1;
+                wallet.selectAsset(side, null);
               }
               _renderMenu();
 
@@ -422,6 +424,8 @@ class Inventory {
             inventoryBarValue = 0;
             inventoryIndices.left = -1;
             inventoryIndices.right = -1;
+            wallet.selectAsset('left', null);
+            wallet.selectAsset('right', null);
 
             _renderMenu();
             assetsMesh.render();
