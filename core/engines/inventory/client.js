@@ -25,6 +25,10 @@ const LENS_SHADER = {
       type: 't',
       value: null,
     },
+    opacity: {
+      type: 'f',
+      value: 0,
+    },
   },
   vertexShader: [
     "varying vec4 texCoord;",
@@ -38,10 +42,11 @@ const LENS_SHADER = {
   ].join("\n"),
   fragmentShader: [
     "uniform sampler2D textureMap;",
+    "uniform float opacity;",
     "varying vec4 texCoord;",
     "void main() {",
     "  vec4 diffuse = texture2DProj(textureMap, texCoord);",
-    "  gl_FragColor = vec4(mix(diffuse.rgb, vec3(0, 0, 0), 0.5), diffuse.a);",
+    "  gl_FragColor = vec4(mix(diffuse.rgb, vec3(0, 0, 0), 0.5), diffuse.a * opacity);",
     "}"
   ].join("\n")
 };
@@ -102,6 +107,7 @@ class Inventory {
         '/core/engines/world',
         '/core/engines/tags',
         '/core/engines/resource',
+        '/core/engines/anima',
         '/core/utils/sprite-utils',
         '/core/utils/vrid-utils',
       ]),
@@ -117,6 +123,7 @@ class Inventory {
         world,
         tags,
         resource,
+        anima,
         spriteUtils,
         vridUtils,
       ],
@@ -292,26 +299,9 @@ class Inventory {
               };
               _renderMenu();
 
-              const menuMesh = (() => {
-                const geometry = new THREE.PlaneBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT);
-                const material = new THREE.MeshBasicMaterial({
-                  map: texture,
-                  side: THREE.DoubleSide,
-                  transparent: true,
-                  // renderOrder: -1,
-                });
-                const mesh = new THREE.Mesh(geometry, material);
-                mesh.visible = false;
-                return mesh;
-              })();
+              const menuMesh = new THREE.Object3D();
+              menuMesh.visible = false;
               scene.add(menuMesh);
-
-              const {dotMeshes, boxMeshes} = uiTracker;
-              for (let i = 0; i < SIDES.length; i++) {
-                const side = SIDES[i];
-                scene.add(dotMeshes[side]);
-                scene.add(boxMeshes[side]);
-              }
 
               const plane = new THREE.Object3D();
               plane.width = WIDTH;
@@ -490,6 +480,7 @@ class Inventory {
                       vertexShader: LENS_SHADER.vertexShader,
                       fragmentShader: LENS_SHADER.fragmentShader,
                       side: THREE.BackSide,
+                      transparent: true,
                     })
                     shaderMaterial.uniforms.textureMap.value = renderTarget.texture;
                     // shaderMaterial.polygonOffset = true;
@@ -506,6 +497,26 @@ class Inventory {
                 return object;
               })();
               menuMesh.add(lensMesh);
+
+              const planeMesh = (() => {
+                const geometry = new THREE.PlaneBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT);
+                const material = new THREE.MeshBasicMaterial({
+                  map: texture,
+                  side: THREE.DoubleSide,
+                  transparent: true,
+                  // renderOrder: -1,
+                });
+                const mesh = new THREE.Mesh(geometry, material);
+                return mesh;
+              })();
+              menuMesh.add(planeMesh);
+
+              const {dotMeshes, boxMeshes} = uiTracker;
+              for (let i = 0; i < SIDES.length; i++) {
+                const side = SIDES[i];
+                scene.add(dotMeshes[side]);
+                scene.add(boxMeshes[side]);
+              }
 
               const assetsMesh = (() => {
                 const geometry = (() => {
@@ -630,8 +641,9 @@ class Inventory {
                 priority: -1,
               });
 
+              let animation = null;
               const _closeMenu = () => {
-                menuMesh.visible = false;
+                // menuMesh.visible = false;
 
                 menuState.open = false; // XXX need to cancel other menu states as well
 
@@ -639,7 +651,7 @@ class Inventory {
 
                 sfx.digi_powerdown.trigger();
 
-                // rendApi.emit('close');
+                animation = anima.makeAnimation(1, 0, 500);
               };
               const _openMenu = () => {
                 const {hmd: hmdStatus} = webvr.getStatus();
@@ -657,7 +669,7 @@ class Inventory {
                 menuMesh.position.copy(newMenuPosition);
                 menuMesh.quaternion.copy(newMenuRotation);
                 menuMesh.scale.copy(newMenuScale);
-                menuMesh.visible = true;
+                // menuMesh.visible = true;
                 menuMesh.updateMatrixWorld();
 
                 menuState.open = true;
@@ -669,11 +681,7 @@ class Inventory {
 
                 sfx.digi_slide.trigger();
 
-                /* rendApi.emit('open', {
-                  position: newMenuPosition,
-                  rotation: newMenuRotation,
-                  scale: newMenuScale,
-                }); */
+                animation = anima.makeAnimation(0, 1, 500);
               };
               const _menudown = () => {
                 const {open} = menuState;
@@ -752,10 +760,36 @@ class Inventory {
                     controllerMeshes: rend.getAuxObject('controllerMeshes'),
                   });
                 };
+                const _updateAnimation = () => {
+                  if (animation) {
+                    if (animation.isDone()) {
+                      menuMesh.visible = animation.getValue() >= 0.5;
+                      animation = null;
+                    } else {
+                      const value = animation.getValue();
+                      if (value > 0) {
+                        planeMesh.scale.set(1, value, 1);
+                        planeMesh.updateMatrixWorld();
+
+                        assetsMesh.scale.set(1, value, 1);
+                        assetsMesh.updateMatrixWorld();
+
+                        // lensMesh.scale.set(value, value, value);
+                        // lensMesh.updateMatrixWorld();
+                        lensMesh.planeMesh.material.uniforms.opacity.value = value;
+
+                        menuMesh.visible = true;
+                      } else {
+                        menuMesh.visible = false;
+                      }
+                    }
+                  }
+                };
 
                 _updateMove();
                 _updateMenu();
                 _updateUiTracker();
+                _updateAnimation();
               });
               rend.on('updateEye', eyeCamera => {
                 lensMesh.planeMesh.visible = false;
