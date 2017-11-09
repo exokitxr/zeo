@@ -36,7 +36,7 @@ class Entity {
       live = false;
     });
 
-    const _requestColorImgData = () => new Promise((accept, reject) => {
+    /* const _requestColorImgData = () => new Promise((accept, reject) => {
       const img = new Image();
       img.onload = () => {
         const {width, height} = img;
@@ -68,7 +68,7 @@ class Entity {
         reject(err);
       };
       img.src = 'data:image/svg+xml;utf8,' + colorImg;
-    });
+    }); */
 
     return Promise.all([
       archae.requestPlugins([
@@ -87,7 +87,7 @@ class Entity {
         '/core/utils/type-utils',
         '/core/utils/creature-utils',
       ]),
-      _requestColorImgData(),
+      // _requestColorImgData(),
     ])
     .then(([
       [
@@ -106,7 +106,7 @@ class Entity {
         typeUtils,
         creatureUtils,
       ],
-      colorImgData,
+      // colorImgData,
     ]) => {
       if (live) {
         const {THREE, scene} = three;
