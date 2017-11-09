@@ -154,7 +154,6 @@ class Rend {
               };
               // assets = _quantizeAssets(assets || []);
               assets = _quantizeAssets(assets || []);
-              console.log('got new assets', assets);
 
               const localVector = new THREE.Vector3();
               const localMatrix = new THREE.Matrix4();
@@ -236,8 +235,8 @@ class Rend {
 
               let tabIndex = 0;
               let tabType = 'item';
-              let inventoryPage = 0;
-              let inventoryPages = Math.ceil(assets.length / 12);
+              let localAssets = assets.filter(assetSpec => _getAssetType(assetSpec.asset).type === tabType);
+              let inventoryPages = Math.ceil(localAssets.length / 12);
               let inventoryBarValue = 0;
               let equipmentPages = 2; // XXX
               let equipmentBarValue = 0;
@@ -313,13 +312,24 @@ class Rend {
               _pushAnchor(inventoryBarAnchors, 1316, 235, 24, 600, (e, hoverState) => {
                 const {side} = e;
 
+                let lastInventoryPage = -1;
+                const _renderAssets = () => {
+                  const inventoryPage = _snapToIndex(inventoryPages, inventoryBarValue);
+                  if (inventoryPage !== lastInventoryPage) {
+                    assetsMesh.render();
+                    lastInventoryPage = inventoryPage;
+                  }
+                };
+
                 inventoryBarValue = hoverState.crossValue;
                 _renderMenu();
+                _renderAssets();
 
                 onmove = () => {
                   const hoverState = uiTracker.getHoverState(side);
                   inventoryBarValue = Math.min(Math.max(hoverState.y - 235, 0), 600) / 600;
                   _renderMenu();
+                  _renderAssets();
                 };
                 ontriggerup = e => {
                   console.log('inventory bar trigger up');
@@ -466,9 +476,11 @@ class Rend {
                 const material = assetsMaterial; // XXX move this to resource engine
                 const mesh = new THREE.Mesh(geometry, material);
                 const _renderAssets = () => {
+                  const inventoryPage = _snapToIndex(inventoryPages, inventoryBarValue);
+
                   Promise.all(
-                    assets.slice(inventoryPage * 12, (inventoryPage + 1) * 12)
-                      .filter(assetSpec => _getAssetType(assetSpec.asset).type === tabType)
+                    localAssets
+                      .slice(inventoryPage * 12, (inventoryPage + 1) * 12)
                       .map((assetSpec, i) =>
                         _requestAssetImageData(assetSpec.asset)
                           .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
