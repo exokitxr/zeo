@@ -165,17 +165,21 @@ class Rend {
               const zeroVector = new THREE.Vector3();
               const pixelSize = 0.006;
 
-              const _requestAssetImageData = asset => (() => {
+              const _getAssetType = asset => {
                 const match = asset.match(/^(ITEM|MOD|SKIN|FILE)\.(.+)$/);
-                const type = match[1];
-                const name = match[2];
-                if (type === 'ITEM') {
+                const type = match[1].toLowerCase();
+                const name = match[2].toLowerCase();
+                return {type, name};
+              };
+              const _requestAssetImageData = asset => (() => {
+                const {type, name} = _getAssetType(asset);
+                if (type === 'item') {
                   return resource.getItemImageData(name);
-                } else if (type === 'MOD') {
+                } else if (type === 'mod') {
                   return resource.getModImageData(name);
-                } else if (type === 'FILE') {
+                } else if (type === 'file') {
                   return resource.getFileImageData(name);
-                } else if (type === 'SKIN') {
+                } else if (type === 'skin') {
                   return resource.getSkinImageData(name);
                 } else {
                   return Promise.resolve(null);
@@ -231,6 +235,7 @@ class Rend {
               );
 
               let tabIndex = 0;
+              let tabType = 'item';
               let inventoryPage = 0;
               let inventoryPages = Math.ceil(assets.length / 12);
               let inventoryBarValue = 0;
@@ -242,7 +247,7 @@ class Rend {
                 const stepSize = max / steps;
                 return stepIndex * stepSize;
               };
-              const _render = () => {
+              const _renderMenu = () => {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 ctx.drawImage(menuImg, (canvas.width - menuImg.width) / 2, (canvas.height - menuImg.height) / 2, canvas.width, canvas.width * menuImg.height / menuImg.width);
                 ctx.fillStyle = '#FFF';
@@ -253,7 +258,7 @@ class Rend {
                 ctx.fillRect(456, 204 + _snapToPixel(600, equipmentPages, equipmentBarValue), 24, 600 / equipmentPages);
                 texture.needsUpdate = true;
               };
-              _render();
+              _renderMenu();
 
               const menuMesh = (() => {
                 const geometry = new THREE.PlaneBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT);
@@ -309,12 +314,12 @@ class Rend {
                 const {side} = e;
 
                 inventoryBarValue = hoverState.crossValue;
-                _render();
+                _renderMenu();
 
                 onmove = () => {
                   const hoverState = uiTracker.getHoverState(side);
                   inventoryBarValue = Math.min(Math.max(hoverState.y - 235, 0), 600) / 600;
-                  _render();
+                  _renderMenu();
                 };
                 ontriggerup = e => {
                   console.log('inventory bar trigger up');
@@ -336,7 +341,17 @@ class Rend {
                 const localIndex = index++;
                 _pushAnchor(tabsAnchors, 850 + dx * 126, 160, 126, 60, e => {
                   tabIndex = localIndex;
-                  _render();
+                  if (tabIndex === 0) {
+                    tabType = 'item';
+                  } else if (tabIndex === 1) {
+                    tabType = 'mod';
+                  } else if (tabIndex === 2) {
+                    tabType = 'file';
+                  } else if (tabIndex === 3) {
+                    tabType = 'skin';
+                  }
+                  _renderMenu();
+                  assetsMesh.render();
 
                   e.stopImmediatePropagation();
                 });
@@ -358,12 +373,12 @@ class Rend {
                 const {side} = e;
 
                 equipmentBarValue = hoverState.crossValue;
-                _render();
+                _renderMenu();
 
                 onmove = () => {
                   const hoverState = uiTracker.getHoverState(side);
                   equipmentBarValue = Math.min(Math.max(hoverState.y - 204, 0), 600) / 600;
-                  _render();
+                  _renderMenu();
                 };
                 ontriggerup = e => {
                   console.log('server bar trigger up');
@@ -446,18 +461,27 @@ class Rend {
                     }
                   };
 
-                  Promise.all(assets.slice(inventoryPage * 12, (inventoryPage + 1) * 12).map((assetSpec, i) =>
-                    _requestAssetImageData(assets[i].asset)
-                      .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
-                        localVector.set(
-                          WORLD_WIDTH * -0.01 + (i % 3) * WORLD_WIDTH * 0.065 * 1.2,
-                          WORLD_HEIGHT * 0.18 -Math.floor(i / 3) * WORLD_WIDTH * 0.065 * 1.2,
-                          pixelSize * 16 * 0.6
-                        ),
-                        zeroQuaternion,
-                        oneVector
-                      )))
-                  ))
+                  return geometry;
+                })();
+                const material = assetsMaterial; // XXX move this to resource engine
+                const mesh = new THREE.Mesh(geometry, material);
+                const _renderAssets = () => {
+                  Promise.all(
+                    assets.slice(inventoryPage * 12, (inventoryPage + 1) * 12)
+                      .filter(assetSpec => _getAssetType(assetSpec.asset).type === tabType)
+                      .map((assetSpec, i) =>
+                        _requestAssetImageData(assetSpec.asset)
+                          .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
+                            localVector.set(
+                              WORLD_WIDTH * -0.01 + (i % 3) * WORLD_WIDTH * 0.065 * 1.2,
+                              WORLD_HEIGHT * 0.18 -Math.floor(i / 3) * WORLD_WIDTH * 0.065 * 1.2,
+                              pixelSize * 16 * 0.6
+                            ),
+                            zeroQuaternion,
+                            oneVector
+                          )))
+                      )
+                  )
                   .then(geometrySpecs => {
                     if (live) {
                       const positions = new Float32Array(NUM_POSITIONS);
@@ -493,11 +517,9 @@ class Rend {
                       console.warn(err);
                     }
                   });
-
-                  return geometry;
-                })();
-                const material = assetsMaterial; // XXX move this to resource engine
-                const mesh = new THREE.Mesh(geometry, material);
+                };
+                _renderAssets();
+                mesh.render = _renderAssets;
                 return mesh;
               })();
               menuMesh.add(assetsMesh);
