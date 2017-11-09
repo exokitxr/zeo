@@ -1355,7 +1355,7 @@ class Wallet {
 }
 
 const _makeId = () => Math.random().toString(36).substring(7);
-function _arrayify(array, numElements) {
+const _arrayify = (array, numElements) => {
   array = array || [];
 
   const result = Array(numElements);
@@ -1363,7 +1363,7 @@ function _arrayify(array, numElements) {
     result[i] = array[i] || null;
   }
   return result;
-}
+};
 const _relativeWsUrl = s => {
   const l = window.location;
   return ((l.protocol === 'https:') ? 'wss://' : 'ws://') + l.host + l.pathname + (!/\/$/.test(l.pathname) ? '/' : '') + s;
