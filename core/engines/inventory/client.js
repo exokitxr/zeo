@@ -148,13 +148,18 @@ class Inventory {
         };
 
         const _requestAssets = () => vridApi.get('assets')
-          .then(assets => {
-            assets = _quantizeAssets(assets || []);
-            return assets
-          });
+          .then(assets => _quantizeAssets(assets || []));
+        const _requestEquipments = () => vridApi.get('equipment')
+          .then(equipments => _arrayify(equipments, 4));
 
-        return _requestAssets()
-          .then(assets => {
+        return Promise.all([
+          _requestAssets(),
+          _requestEquipments(),
+        ])
+          .then(([
+            assets,
+            equipments,
+          ]) => {
             if (live) {
               let mods = tags.getTagMeshes()
                 .filter(({item}) => item.type === 'entity')
@@ -536,6 +541,25 @@ class Inventory {
                             oneVector
                           )))
                       ).concat(
+                        equipments
+                          .map((assetSpec, i) => {
+                            if (assetSpec) {
+                              return _requestAssetImageData(assetSpec.asset)
+                                .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
+                                  localVector.set(
+                                    WORLD_WIDTH * -0.13,
+                                    WORLD_HEIGHT * 0.18 - i * WORLD_HEIGHT * 0.065 * 1.2,
+                                    pixelSize * 16 * 0.6
+                                  ),
+                                  zeroQuaternion,
+                                  oneVector
+                                )))
+                            } else {
+                              return null;
+                            }
+                          })
+                          .filter(o => o !== null)
+                      ).concat(
                         localMods
                           .map((modSpec, i) =>
                             _requestAssetImageData('MOD.' + modSpec.displayName)
@@ -752,6 +776,15 @@ const _clone = o => {
   const result = {};
   for (const k in o) {
     result[k] = o[k];
+  }
+  return result;
+};
+const _arrayify = (array, numElements) => {
+  array = array || [];
+
+  const result = Array(numElements);
+  for (let i = 0; i < numElements; i++) {
+    result[i] = array[i] || null;
   }
   return result;
 };
