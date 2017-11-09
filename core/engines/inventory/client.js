@@ -504,7 +504,7 @@ class Inventory {
                 })();
                 const material = assetsMaterial; // XXX move this to resource engine
                 const mesh = new THREE.Mesh(geometry, material);
-                const _renderAssets = () => {
+                const _renderAssets = _debounce(next => {
                   Promise.all(
                     localAssets
                       .map((assetSpec, i) =>
@@ -535,41 +535,41 @@ class Inventory {
                       )
                   )
                   .then(geometrySpecs => {
-                    if (live) {
-                      const positions = new Float32Array(NUM_POSITIONS);
-                      const colors = new Float32Array(NUM_POSITIONS);
-                      const dys = new Float32Array(NUM_POSITIONS);
+                    const positions = new Float32Array(NUM_POSITIONS);
+                    const colors = new Float32Array(NUM_POSITIONS);
+                    const dys = new Float32Array(NUM_POSITIONS);
 
-                      let attributeIndex = 0;
-                      let dyIndex = 0;
+                    let attributeIndex = 0;
+                    let dyIndex = 0;
 
-                      for (let i = 0; i < geometrySpecs.length; i++) {
-                        const geometrySpec = geometrySpecs[i];
-                        const {positions: newPositions, colors: newColors, dys: newDys} = geometrySpec;
+                    for (let i = 0; i < geometrySpecs.length; i++) {
+                      const geometrySpec = geometrySpecs[i];
+                      const {positions: newPositions, colors: newColors, dys: newDys} = geometrySpec;
 
-                        positions.set(newPositions, attributeIndex);
-                        colors.set(newColors, attributeIndex);
-                        dys.set(newDys, dyIndex);
+                      positions.set(newPositions, attributeIndex);
+                      colors.set(newColors, attributeIndex);
+                      dys.set(newDys, dyIndex);
 
-                        attributeIndex += newPositions.length;
-                        dyIndex += newDys.length;
+                      attributeIndex += newPositions.length;
+                      dyIndex += newDys.length;
 
-                        cleanups.push(() => {
-                          spriteUtils.releaseSpriteGeometry(geometrySpec);
-                        });
-                      }
-
-                      geometry.addAttribute('position', new THREE.BufferAttribute(positions.subarray(0, attributeIndex), 3));
-                      geometry.addAttribute('color', new THREE.BufferAttribute(colors.subarray(0, attributeIndex), 3));
-                      geometry.addAttribute('dy', new THREE.BufferAttribute(dys.subarray(0, dyIndex), 2));
+                      cleanups.push(() => {
+                        spriteUtils.releaseSpriteGeometry(geometrySpec);
+                      });
                     }
+
+                    geometry.addAttribute('position', new THREE.BufferAttribute(positions.subarray(0, attributeIndex), 3));
+                    geometry.addAttribute('color', new THREE.BufferAttribute(colors.subarray(0, attributeIndex), 3));
+                    geometry.addAttribute('dy', new THREE.BufferAttribute(dys.subarray(0, dyIndex), 2));
+
+                    next();
                   })
                   .catch(err => {
-                    if (live) {
-                      console.warn(err);
-                    }
+                    console.warn(err);
+
+                    next();
                   });
-                };
+                });
                 _renderAssets();
                 mesh.render = _renderAssets;
                 return mesh;
@@ -741,6 +741,29 @@ const _clone = o => {
     result[k] = o[k];
   }
   return result;
+};
+const _debounce = fn => {
+  let running = false;
+  let queued = false;
+
+  const _go = () => {
+    if (!running) {
+      running = true;
+
+      fn(() => {
+        running = false;
+
+        if (queued) {
+          queued = false;
+
+          _go();
+        }
+      });
+    } else {
+      queued = true;
+    }
+  };
+  return _go;
 };
 
 module.exports = Inventory;
