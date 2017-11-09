@@ -256,6 +256,8 @@ class Rend {
             _pushAnchor(inventoryAnchors, 870 + dx * 150, 235 + dy * 155, 132, 132);
           }
         }
+        const inventoryBarAnchors = [];
+        _pushAnchor(inventoryBarAnchors, 1316, 235, 24, 600);
         const equipmentAnchors = [];
         for (let dy = 0; dy < 4; dy++) {
           _pushAnchor(equipmentAnchors, 576, 235 + dy * 152, 252, 120);
@@ -270,7 +272,9 @@ class Rend {
             _pushAnchor(serverAnchors, dx * 150, 204 + dy * 155, 132, 132);
           }
         }
-        plane.anchors = inventoryAnchors.concat(equipmentAnchors).concat(tabsAnchors).concat(serverAnchors);
+        const serverBarAnchors = [];
+        _pushAnchor(serverBarAnchors, 456, 204, 24, 600);
+        plane.anchors = inventoryAnchors.concat(inventoryBarAnchors).concat(equipmentAnchors).concat(tabsAnchors).concat(serverAnchors).concat(serverBarAnchors);
         menuMesh.add(plane);
         uiTracker.addPlane(plane);
 
