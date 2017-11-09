@@ -164,6 +164,8 @@ class Inventory {
                 if (item.type === 'entity') {
                   mods.push(item);
                   localMods = _getLocalMods();
+                  serverBarValue = 0;
+                  serverPage = 0;
                   serverPages = mods.length > 12 ? Math.ceil(mods.length / 12) : 0;
                   _renderMenu();
                   assetsMesh.render();
@@ -386,6 +388,8 @@ class Inventory {
                   }
                   localAssets = _getLocalAssets();
                   const localTabAssets = _getLocalTabAssets();
+                  inventoryBarValue = 0;
+                  inventoryPage = 0;
                   inventoryPages = localTabAssets.length > 12 ? Math.ceil(localTabAssets.length / 12) : 0;
 
                   _renderMenu();
