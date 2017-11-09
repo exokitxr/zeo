@@ -193,8 +193,8 @@ class Rend {
         canvas.width = WIDTH;
         canvas.height = HEIGHT;
         const ctx = canvas.getContext('2d');
-        ctx.drawImage(menuImg, (canvas.width - menuImg.width) / 2, (canvas.height - menuImg.height) / 2, canvas.width, canvas.width * menuImg.height / menuImg.width);
-
+        ctx.font = '600 13px Open sans';
+        ctx.fillStyle = '#FFF';
         const texture = new THREE.Texture(
           canvas,
           THREE.UVMapping,
@@ -206,7 +206,15 @@ class Rend {
           THREE.UnsignedByteType,
           16
         );
-        texture.needsUpdate = true;
+
+        let tabIndex = 0;
+        const _render = () => {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(menuImg, (canvas.width - menuImg.width) / 2, (canvas.height - menuImg.height) / 2, canvas.width, canvas.width * menuImg.height / menuImg.width);
+          ctx.fillRect(850 + tabIndex * 126, 212, 125, 4);
+          texture.needsUpdate = true
+        };
+        _render();
 
         const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
           for (let i = 0; i < src.length; i++) {
@@ -284,8 +292,9 @@ class Rend {
         const tabsAnchors = [];
         for (let dx = 0; dx < 4; dx++) {
           const localIndex = index++;
-          _pushAnchor(tabsAnchors, 850 + dx * 120, 160, 118, 60, e => {
-            console.log('tab', localIndex);
+          _pushAnchor(tabsAnchors, 850 + dx * 126, 160, 126, 60, e => {
+            tabIndex = localIndex;
+            _render();
 
             e.stopImmediatePropagation();
           });
