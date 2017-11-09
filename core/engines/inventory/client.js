@@ -239,7 +239,6 @@ class Inventory {
               canvas.height = HEIGHT;
               const ctx = canvas.getContext('2d');
               ctx.font = '600 14px Open sans';
-              ctx.fillStyle = '#FFF';
               const texture = new THREE.Texture(
                 canvas,
                 THREE.UVMapping,
@@ -266,6 +265,10 @@ class Inventory {
               const localTabAssets = _getLocalTabAssets();
               let inventoryPages = localTabAssets.length > 12 ? Math.ceil(localTabAssets.length / 12) : 0;
               let inventoryBarValue = 0;
+              let inventoryIndices = {
+                left: -1,
+                right: -1,
+              };
               let serverPage = 0;
               let localMods = _getLocalMods();
               let serverPages = mods.length > 12 ? Math.ceil(mods.length / 12) : 0;
@@ -279,13 +282,23 @@ class Inventory {
               const _renderMenu = () => {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 ctx.drawImage(menuImg, (canvas.width - menuImg.width) / 2, (canvas.height - menuImg.height) / 2, canvas.width, canvas.width * menuImg.height / menuImg.width);
+                ctx.fillStyle = '#FFF';
                 ctx.fillRect(850 + tabIndex * 126, 212, 125, 4);
                 ctx.textAlign = 'center';
                 for (let i = 0; i < localAssets.length; i++) {
                   const assetSpec = localAssets[i];
                   const dx = i % 3;
                   const dy = Math.floor(i / 3);
+                  ctx.fillStyle = '#FFF';
                   ctx.fillText(_getAssetType(assetSpec.asset).name, 870 + (dx + 0.5) * 150, 235 + 157 - 10 + dy * 155, 132, 132);
+
+                  for (let s = 0; s < SIDES.length; s++) {
+                    const side = SIDES[s];
+                    if (inventoryIndices[side] === i) {
+                      ctx.fillStyle = '#4CAF5080';
+                      ctx.fillRect(870 + dx * 150, 235 + dy * 155, 132, 132);
+                    }
+                  }
                 }
                 for (let i = 0; i < localMods.length; i++) {
                   const modSpec = localMods[i];
@@ -293,6 +306,7 @@ class Inventory {
                   const dy = Math.floor(i / 3);
                   ctx.fillText(modSpec.displayName, 0 + (dx + 0.5) * 150, 235 + 127 - 10 + dy * 155, 132, 132);
                 }
+                ctx.fillStyle = '#FFF';
                 ctx.fillRect(1316, 235 + _snapToPixel(600, inventoryPages, inventoryBarValue), 24, 600 / inventoryPages);
                 ctx.fillRect(456, 204 + _snapToPixel(600, serverPages, serverBarValue), 24, 600 / serverPages);
                 texture.needsUpdate = true;
@@ -320,11 +334,12 @@ class Inventory {
               let onmove = null;
               const inventoryAnchors = [];
               let index = 0;
-              for (let dx = 0; dx < 3; dx++) {
-                for (let dy = 0; dy < 4; dy++) {
+              for (let dy = 0; dy < 4; dy++) {
+                for (let dx = 0; dx < 3; dx++) {
                   const localIndex = index++;
                   _pushAnchor(inventoryAnchors, 870 + dx * 150, 235 + dy * 155, 132, 132, e => {
-                    console.log('inventory', localIndex);
+                    inventoryIndices[e.side] = localIndex;
+                    _renderMenu();
 
                     e.stopImmediatePropagation();
                   });
@@ -395,8 +410,8 @@ class Inventory {
               }
               index = 0;
               const serverAnchors = [];
-              for (let dx = 0; dx < 3; dx++) {
-                for (let dy = 0; dy < 4; dy++) {
+              for (let dy = 0; dy < 4; dy++) {
+                for (let dx = 0; dx < 3; dx++) {
                   const localIndex = index++;
                   _pushAnchor(serverAnchors, dx * 150, 204 + dy * 155, 132, 132, e => {
                     console.log('server', localIndex);
