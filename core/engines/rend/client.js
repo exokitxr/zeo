@@ -152,7 +152,7 @@ class Rend {
           } else if (type === 'FILE') {
             return resource.getFileImageData(name);
           } else if (type === 'SKIN') {
-            return resource.getSkinImageData(name); // XXX implement this
+            return resource.getSkinImageData(name);
           } else {
             return Promise.resolve(null);
           }
