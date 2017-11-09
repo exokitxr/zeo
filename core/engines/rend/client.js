@@ -174,8 +174,6 @@ class Rend {
 
         const uiTracker = biolumi.makeUiTracker();
 
-        const localUpdates = [];
-
         const statusState = {
           state: 'connecting',
           url: '',
@@ -242,38 +240,76 @@ class Rend {
         plane.height = HEIGHT;
         plane.worldWidth = WORLD_WIDTH;
         plane.worldHeight = WORLD_HEIGHT;
-        const _pushAnchor = (anchors, x, y, w, h) => {
+        const _pushAnchor = (anchors, x, y, w, h, triggerdown = null) => {
           anchors.push({
             left: x,
             right: x + w,
             top: y,
             bottom: y + h,
+            triggerdown,
           });
         };
+        let ontriggerup = null;
         const inventoryAnchors = [];
+        let index = 0;
         for (let dx = 0; dx < 3; dx++) {
           for (let dy = 0; dy < 4; dy++) {
-            _pushAnchor(inventoryAnchors, 870 + dx * 150, 235 + dy * 155, 132, 132);
+            const localIndex = index++;
+            _pushAnchor(inventoryAnchors, 870 + dx * 150, 235 + dy * 155, 132, 132, e => {
+              console.log('inventory', localIndex);
+
+              e.stopImmediatePropagation();
+            });
           }
         }
         const inventoryBarAnchors = [];
-        _pushAnchor(inventoryBarAnchors, 1316, 235, 24, 600);
+        _pushAnchor(inventoryBarAnchors, 1316, 235, 24, 600, (e, hoverState) => {
+          console.log('inventory bar', hoverState.value, hoverState.crossValue);
+
+          ontriggerup = e => {
+            console.log('inventory bar trigger up');
+          };
+        });
+        index = 0;
         const equipmentAnchors = [];
         for (let dy = 0; dy < 4; dy++) {
-          _pushAnchor(equipmentAnchors, 576, 235 + dy * 152, 252, 120);
+          const localIndex = index++;
+          _pushAnchor(equipmentAnchors, 576, 235 + dy * 152, 252, 120, e => {
+            console.log('equipment', localIndex);
+
+            e.stopImmediatePropagation();
+          });
         }
+        index = 0;
         const tabsAnchors = [];
         for (let dx = 0; dx < 4; dx++) {
-          _pushAnchor(tabsAnchors, 850 + dx * 120, 160, 118, 60);
+          const localIndex = index++;
+          _pushAnchor(tabsAnchors, 850 + dx * 120, 160, 118, 60, e => {
+            console.log('tab', localIndex);
+
+            e.stopImmediatePropagation();
+          });
         }
+        index = 0;
         const serverAnchors = [];
         for (let dx = 0; dx < 3; dx++) {
           for (let dy = 0; dy < 4; dy++) {
-            _pushAnchor(serverAnchors, dx * 150, 204 + dy * 155, 132, 132);
+            const localIndex = index++;
+            _pushAnchor(serverAnchors, dx * 150, 204 + dy * 155, 132, 132, e => {
+              console.log('server', localIndex);
+
+              e.stopImmediatePropagation();
+            });
           }
         }
         const serverBarAnchors = [];
-        _pushAnchor(serverBarAnchors, 456, 204, 24, 600);
+        _pushAnchor(serverBarAnchors, 456, 204, 24, 600, (e, hoverState) => {
+          console.log('server bar', hoverState.value, hoverState.crossValue);
+
+          ontriggerup = e => {
+            console.log('server bar trigger up');
+          };
+        });
         plane.anchors = inventoryAnchors.concat(inventoryBarAnchors).concat(equipmentAnchors).concat(tabsAnchors).concat(serverAnchors).concat(serverBarAnchors);
         menuMesh.add(plane);
         uiTracker.addPlane(plane);
@@ -448,7 +484,7 @@ class Rend {
             scale: newMenuScale,
           });
         };
-        const menudown = () => {
+        const _menudown = () => {
           const {open} = menuState;
 
           if (open) {
@@ -457,7 +493,7 @@ class Rend {
             _openMenu();
           }
         };
-        input.on('menudown', menudown);
+        input.on('menudown', _menudown);
 
         scene.onBeforeRender = () => {
           rendApi.emit('beforeRender');
@@ -475,6 +511,23 @@ class Rend {
           rendApi.emit('updateEyeEnd');
         };
 
+        const _triggerdown = e => {
+          const {side} = e;
+          const hoverState = uiTracker.getHoverState(side);
+          const {anchor} = hoverState;
+          if (anchor) {
+            anchor.triggerdown(e, hoverState);
+          }
+        };
+        input.on('triggerdown', _triggerdown);
+        const _triggerup = e => {
+          if (ontriggerup) {
+            ontriggerup(e);
+            ontriggerup = null;
+          }
+        };
+        input.on('triggerup', _triggerup);
+
         cleanups.push(() => {
           scene.remove(menuMesh);
 
@@ -484,46 +537,13 @@ class Rend {
             scene.remove(uiTracker.boxMeshes[side]);
           }
 
-          input.removeListener('trigger', trigger);
-          input.removeListener('menudown', menudown);
+          input.removeListener('triggerdown', _triggerdown);
+          input.removeListener('triggerup', _triggerup);
+          input.removeListener('menudown', _menudown);
 
           scene.onRenderEye = null;
           scene.onBeforeRenderEye = null;
           scene.onAfterRenderEye = null;
-        });
-
-        localUpdates.push(() => {
-          const _updateMenu = () => {
-            if (menuState.open) {
-              if (menuMesh.position.distanceTo(webvr.getStatus().hmd.worldPosition) > MENU_RANGE) {
-                _closeMenu();
-              }
-            }
-          };
-          const _updateUiTracker = () => {
-            uiTracker.update({
-              pose: webvr.getStatus(),
-              sides: (() => {
-                const vrMode = bootstrap.getVrMode();
-
-                if (vrMode === 'hmd') {
-                  return SIDES;
-                } else {
-                  const mode = webvr.getMode();
-
-                  if (mode !== 'center') {
-                    return [mode];
-                  } else {
-                    return SIDES;
-                  }
-                }
-              })(),
-              controllerMeshes: auxObjects.controllerMeshes,
-            });
-          };
-
-          _updateMenu();
-          _updateUiTracker();
         });
 
         class RendApi extends EventEmitter {
@@ -607,10 +627,37 @@ class Rend {
         }
         const rendApi = new RendApi();
         rendApi.on('update', () => {
-          for (let i = 0; i < localUpdates.length; i++) {
-            const localUpdate = localUpdates[i];
-            localUpdate();
-          }
+          const _updateMenu = () => {
+            if (menuState.open) {
+              if (menuMesh.position.distanceTo(webvr.getStatus().hmd.worldPosition) > MENU_RANGE) {
+                _closeMenu();
+              }
+            }
+          };
+          const _updateUiTracker = () => {
+            uiTracker.update({
+              pose: webvr.getStatus(),
+              sides: (() => {
+                const vrMode = bootstrap.getVrMode();
+
+                if (vrMode === 'hmd') {
+                  return SIDES;
+                } else {
+                  const mode = webvr.getMode();
+
+                  if (mode !== 'center') {
+                    return [mode];
+                  } else {
+                    return SIDES;
+                  }
+                }
+              })(),
+              controllerMeshes: auxObjects.controllerMeshes,
+            });
+          };
+
+          _updateMenu();
+          _updateUiTracker();
         });
         rendApi.on('updateEye', eyeCamera => {
           lensMesh.planeMesh.visible = false;
