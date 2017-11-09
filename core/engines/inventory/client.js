@@ -164,6 +164,7 @@ class Inventory {
                 if (item.type === 'entity') {
                   mods.push(item);
                   localMods = _getLocalMods();
+                  serverPages = mods.length > 12 ? Math.ceil(mods.length / 12) : 0;
                   _renderMenu();
                   assetsMesh.render();
                 }
@@ -242,7 +243,7 @@ class Inventory {
               const _getLocalAssets = () => _getLocalTabAssets()
                 .slice(inventoryPage * 12, (inventoryPage + 1) * 12);
               const _getLocalMods = () => mods
-                .slice(modPage * 12, (modPage + 1) * 12);
+                .slice(serverPage * 12, (serverPage + 1) * 12);
 
               let tabIndex = 0;
               let tabType = 'item';
@@ -251,7 +252,7 @@ class Inventory {
               const localTabAssets = _getLocalTabAssets();
               let inventoryPages = localTabAssets.length > 12 ? Math.ceil(localTabAssets.length / 12) : 0;
               let inventoryBarValue = 0;
-              let modPage = 0;
+              let serverPage = 0;
               let localMods = _getLocalMods();
               let serverPages = mods.length > 12 ? Math.ceil(mods.length / 12) : 0;
               let serverBarValue = 0;
@@ -265,12 +266,18 @@ class Inventory {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 ctx.drawImage(menuImg, (canvas.width - menuImg.width) / 2, (canvas.height - menuImg.height) / 2, canvas.width, canvas.width * menuImg.height / menuImg.width);
                 ctx.fillRect(850 + tabIndex * 126, 212, 125, 4);
+                ctx.textAlign = 'center';
                 for (let i = 0; i < localAssets.length; i++) {
                   const assetSpec = localAssets[i];
                   const dx = i % 3;
                   const dy = Math.floor(i / 3);
-                  ctx.textAlign = 'center';
-                  ctx.fillText(_getAssetType(assetSpec.asset).name, 870 + (dx + 0.5) * 150, 235 + 132 - 10 + dy * 155, 132, 132);
+                  ctx.fillText(_getAssetType(assetSpec.asset).name, 870 + (dx + 0.5) * 150, 235 + 157 - 10 + dy * 155, 132, 132);
+                }
+                for (let i = 0; i < localMods.length; i++) {
+                  const modSpec = localMods[i];
+                  const dx = i % 3;
+                  const dy = Math.floor(i / 3);
+                  ctx.fillText(modSpec.displayName, 0 + (dx + 0.5) * 150, 235 + 127 - 10 + dy * 155, 132, 132);
                 }
                 ctx.fillRect(1316, 235 + _snapToPixel(600, inventoryPages, inventoryBarValue), 24, 600 / inventoryPages);
                 ctx.fillRect(456, 204 + _snapToPixel(600, serverPages, serverBarValue), 24, 600 / serverPages);
@@ -314,7 +321,6 @@ class Inventory {
                 });
               };
               let onmove = null;
-              let ontriggerup = null;
               const inventoryAnchors = [];
               let index = 0;
               for (let dx = 0; dx < 3; dx++) {
@@ -351,9 +357,6 @@ class Inventory {
                   inventoryBarValue = Math.min(Math.max(hoverState.y - 235, 0), 600) / 600;
                   _renderMenu();
                   _renderAssets();
-                };
-                ontriggerup = e => {
-                  console.log('inventory bar trigger up');
                 };
               });
               index = 0;
@@ -407,16 +410,30 @@ class Inventory {
               _pushAnchor(serverBarAnchors, 456, 204, 24, 600, (e, hoverState) => {
                 const {side} = e;
 
+                let lastServerPage = -1;
+                const _renderAssets = () => {
+                  serverPage = _snapToIndex(serverPages, serverBarValue);
+                  if (_renderAssets !== lastServerPage) {
+                    localAssets = _getLocalAssets();
+
+                    assetsMesh.render();
+                    lastServerPage = serverPage;
+                  }
+                };
+
                 serverBarValue = hoverState.crossValue;
+                serverPage = _snapToIndex(serverPages, serverBarValue);
+                localMods = _getLocalMods();
                 _renderMenu();
+                _renderAssets();
 
                 onmove = () => {
                   const hoverState = uiTracker.getHoverState(side);
                   serverBarValue = Math.min(Math.max(hoverState.y - 204, 0), 600) / 600;
+                  serverPage = _snapToIndex(serverPages, serverBarValue);
+                  localMods = _getLocalMods();
                   _renderMenu();
-                };
-                ontriggerup = e => {
-                  console.log('server bar trigger up');
+                  _renderAssets();
                 };
               });
               plane.anchors = inventoryAnchors.concat(inventoryBarAnchors).concat(equipmentAnchors).concat(tabsAnchors).concat(serverAnchors).concat(serverBarAnchors);
@@ -498,7 +515,7 @@ class Inventory {
 
                   return geometry;
                 })();
-                const material = assetsMaterial; // XXX move this to resource engine
+                const material = assetsMaterial;
                 const mesh = new THREE.Mesh(geometry, material);
                 const _renderAssets = _debounce(next => {
                   Promise.all(
@@ -651,11 +668,7 @@ class Inventory {
               };
               input.on('triggerdown', _triggerdown);
               const _triggerup = e => {
-                if (ontriggerup) {
-                  ontriggerup(e);
-                }
                 onmove = null;
-                ontriggerup = null;
               };
               input.on('triggerup', _triggerup);
 
