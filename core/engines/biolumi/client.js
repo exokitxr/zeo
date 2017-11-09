@@ -159,6 +159,7 @@ class Biolumi {
             // depthTest: false,
             depthWrite: false,
             // alphaTest: 0.1,
+            // renderOrder: 1,
           });
 
           const _isWorldVisible = mesh => {
@@ -564,15 +565,14 @@ class Biolumi {
 
                         if (x >= 0 && x < width && y > 0 && y <= height) {
                           let anchor = null;
-                          /* const {layer} = page;
-                          const anchors = layer ? layer.anchors : [];
+                          const {anchors} = plane;
                           for (let i = 0; i < anchors.length; i++) {
                             const a = anchors[i];
                             if (x >= a.left && x <= a.right && y >= a.top && y <= a.bottom) {
                               anchor = a;
                               break;
                             }
-                          } */
+                          }
 
                           if (anchor) {
                             hoverState.anchor = anchor;

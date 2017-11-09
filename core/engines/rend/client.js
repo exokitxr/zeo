@@ -173,12 +173,6 @@ class Rend {
         };
 
         const uiTracker = biolumi.makeUiTracker();
-        const {dotMeshes, boxMeshes} = uiTracker;
-        for (let i = 0; i < SIDES.length; i++) {
-          const side = SIDES[i];
-          scene.add(dotMeshes[side]);
-          scene.add(boxMeshes[side]);
-        }
 
         const localUpdates = [];
 
@@ -228,6 +222,7 @@ class Rend {
             map: texture,
             side: THREE.DoubleSide,
             transparent: true,
+            // renderOrder: -1,
           });
           const mesh = new THREE.Mesh(geometry, material);
           mesh.visible = false;
@@ -235,11 +230,47 @@ class Rend {
         })();
         scene.add(menuMesh);
 
+        const {dotMeshes, boxMeshes} = uiTracker;
+        for (let i = 0; i < SIDES.length; i++) {
+          const side = SIDES[i];
+          scene.add(dotMeshes[side]);
+          scene.add(boxMeshes[side]);
+        }
+
         const plane = new THREE.Object3D();
         plane.width = WIDTH;
         plane.height = HEIGHT;
         plane.worldWidth = WORLD_WIDTH;
         plane.worldHeight = WORLD_HEIGHT;
+        const _pushAnchor = (anchors, x, y, w, h) => {
+          anchors.push({
+            left: x,
+            right: x + w,
+            top: y,
+            bottom: y + h,
+          });
+        };
+        const inventoryAnchors = [];
+        for (let dx = 0; dx < 3; dx++) {
+          for (let dy = 0; dy < 4; dy++) {
+            _pushAnchor(inventoryAnchors, 870 + dx * 150, 235 + dy * 155, 132, 132);
+          }
+        }
+        const equipmentAnchors = [];
+        for (let dy = 0; dy < 4; dy++) {
+          _pushAnchor(equipmentAnchors, 576, 235 + dy * 152, 252, 120);
+        }
+        const tabsAnchors = [];
+        for (let dx = 0; dx < 4; dx++) {
+          _pushAnchor(tabsAnchors, 850 + dx * 120, 160, 118, 60);
+        }
+        const serverAnchors = [];
+        for (let dx = 0; dx < 3; dx++) {
+          for (let dy = 0; dy < 4; dy++) {
+            _pushAnchor(serverAnchors, dx * 150, 204 + dy * 155, 132, 132);
+          }
+        }
+        plane.anchors = inventoryAnchors.concat(equipmentAnchors).concat(tabsAnchors).concat(serverAnchors);
         menuMesh.add(plane);
         uiTracker.addPlane(plane);
 
