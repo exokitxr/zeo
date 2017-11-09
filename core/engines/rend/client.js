@@ -10,7 +10,7 @@ const {
   DEFAULT_USER_HEIGHT,
 } = require('./lib/constants/menu');
 
-const NUM_POSITIONS = 200 * 1024;
+const NUM_POSITIONS = 500 * 1024;
 const MENU_RANGE = 3;
 const SIDES = ['left', 'right'];
 
@@ -134,10 +134,14 @@ class Rend {
         const {THREERenderPass, THREEShaderPass} = THREEEffectComposer;
         const THREEBlurShader = BlurShader(THREE);
 
+        const localVector = new THREE.Vector3();
+        const localMatrix = new THREE.Matrix4();
+        const zeroQuaternion = new THREE.Quaternion();
+        const oneVector = new THREE.Vector3(1, 1, 1);
         const zeroArray = new Float32Array(0);
         const zeroArray2 = new Float32Array(0);
         const zeroVector = new THREE.Vector3();
-        const pixelSize = 0.015;
+        const pixelSize = 0.006;
 
         const _requestAssets = () => vridApi.get('assets')
           .then(assets => assets || []);
@@ -208,6 +212,7 @@ class Rend {
         );
 
         let tabIndex = 0;
+        let inventoryIndex = 0;
         const _render = () => {
           ctx.clearRect(0, 0, canvas.width, canvas.height);
           ctx.drawImage(menuImg, (canvas.width - menuImg.width) / 2, (canvas.height - menuImg.height) / 2, canvas.width, canvas.width * menuImg.height / menuImg.width);
@@ -215,12 +220,6 @@ class Rend {
           texture.needsUpdate = true
         };
         _render();
-
-        const _copyIndices = (src, dst, startIndexIndex, startAttributeIndex) => {
-          for (let i = 0; i < src.length; i++) {
-            dst[startIndexIndex + i] = src[i] + startAttributeIndex;
-          }
-        }
 
         const menuMesh = (() => {
           const geometry = new THREE.PlaneBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT);
@@ -383,50 +382,68 @@ class Rend {
 
         const assetsMesh = (() => {
           const geometry = (() => {
-            _requestAssets()
-              .then(assets => {
-                if (assets.length > 0) {
-                  _requestAssetImageData(assets[0].asset)
-                    .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize))
-                    .then(geometrySpec => {
-                      if (live) {
-                        const {positions, normals, colors, dys, zeroDys} = geometrySpec;
-
-                        geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-                        // geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
-                        geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
-                        geometry.addAttribute('dy', new THREE.BufferAttribute(geometry.getAttribute('dy').array === geometry.dys ? dys : zeroDys, 2));
-
-                        geometry.dys = dys;
-                        geometry.zeroDys = zeroDys;
-
-                        geometry.destroy = function() {
-                          this.dispose();
-                          spriteUtils.releaseSpriteGeometry(geometrySpec);
-                        };
-                      }
-                    })
-                    .catch(err => {
-                      if (live) {
-                        console.warn(err);
-                      }
-                    });
-                }
-              });
-
             const geometry = new THREE.BufferGeometry();
-            const dys = zeroArray; // two of these so we can tell which is active
-            const zeroDys = zeroArray2;
-            geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 2));
-            geometry.dys = dys;
-            geometry.zeroDys = zeroDys;
+
             geometry.boundingSphere = new THREE.Sphere(
               zeroVector,
               1
             );
-            geometry.destroy = function() {
-              this.dispose();
+            const cleanups = [];
+            geometry.destroy = () => {
+              for (let i = 0; i < cleanups.length; i++) {
+                cleanups[i]();
+              }
             };
+
+            _requestAssets()
+              .then(assets => Promise.all(assets.slice(inventoryIndex * 12, (inventoryIndex + 1) * 12).map((assetSpec, i) =>
+                _requestAssetImageData(assets[i].asset)
+                  .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
+                    localVector.set(
+                      WORLD_WIDTH * -0.01 + (i % 3) * WORLD_WIDTH * 0.065 * 1.2,
+                      WORLD_HEIGHT * 0.18 -Math.floor(i / 3) * WORLD_WIDTH * 0.065 * 1.2,
+                      pixelSize * 16 * 0.6
+                    ),
+                    zeroQuaternion,
+                    oneVector
+                  )))
+              )))
+              .then(geometrySpecs => {
+                if (live) {
+                  const positions = new Float32Array(NUM_POSITIONS);
+                  const colors = new Float32Array(NUM_POSITIONS);
+                  const dys = new Float32Array(NUM_POSITIONS);
+
+                  let attributeIndex = 0;
+                  let dyIndex = 0;
+
+                  for (let i = 0; i < geometrySpecs.length; i++) {
+                    const geometrySpec = geometrySpecs[i];
+                    const {positions: newPositions, colors: newColors, dys: newDys} = geometrySpec;
+
+                    positions.set(newPositions, attributeIndex);
+                    colors.set(newColors, attributeIndex);
+                    dys.set(newDys, dyIndex);
+
+                    attributeIndex += newPositions.length;
+                    dyIndex += newDys.length;
+
+                    cleanups.push(() => {
+                      spriteUtils.releaseSpriteGeometry(geometrySpec);
+                    });
+                  }
+
+                  geometry.addAttribute('position', new THREE.BufferAttribute(positions.subarray(0, attributeIndex), 3));
+                  geometry.addAttribute('color', new THREE.BufferAttribute(colors.subarray(0, attributeIndex), 3));
+                  geometry.addAttribute('dy', new THREE.BufferAttribute(dys.subarray(0, dyIndex), 2));
+                }
+              })
+              .catch(err => {
+                if (live) {
+                  console.warn(err);
+                }
+              });
+
             return geometry;
           })();
           const material = assetsMaterial; // XXX move this to resource engine
