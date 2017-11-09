@@ -213,10 +213,14 @@ class Rend {
 
         let tabIndex = 0;
         let inventoryIndex = 0;
+        let inventoryBarValue = 0;
+        let equipmentBarValue = 0;
         const _render = () => {
           ctx.clearRect(0, 0, canvas.width, canvas.height);
           ctx.drawImage(menuImg, (canvas.width - menuImg.width) / 2, (canvas.height - menuImg.height) / 2, canvas.width, canvas.width * menuImg.height / menuImg.width);
           ctx.fillRect(850 + tabIndex * 126, 212, 125, 4);
+          ctx.fillRect(1316, 235 + inventoryBarValue * (600 - 60), 24, 60);
+          ctx.fillRect(456, 204 + equipmentBarValue * (600 - 60), 24, 60);
           texture.needsUpdate = true
         };
         _render();
@@ -256,6 +260,7 @@ class Rend {
             triggerdown,
           });
         };
+        let onmove = null;
         let ontriggerup = null;
         const inventoryAnchors = [];
         let index = 0;
@@ -271,8 +276,16 @@ class Rend {
         }
         const inventoryBarAnchors = [];
         _pushAnchor(inventoryBarAnchors, 1316, 235, 24, 600, (e, hoverState) => {
-          console.log('inventory bar', hoverState.value, hoverState.crossValue);
+          const {side} = e;
 
+          inventoryBarValue = hoverState.crossValue;
+          _render();
+
+          onmove = () => {
+            const hoverState = uiTracker.getHoverState(side);
+            inventoryBarValue = Math.min(Math.max(hoverState.y - 235, 0), 600) / 600;
+            _render();
+          };
           ontriggerup = e => {
             console.log('inventory bar trigger up');
           };
@@ -312,8 +325,16 @@ class Rend {
         }
         const serverBarAnchors = [];
         _pushAnchor(serverBarAnchors, 456, 204, 24, 600, (e, hoverState) => {
-          console.log('server bar', hoverState.value, hoverState.crossValue);
+          const {side} = e;
 
+          equipmentBarValue = hoverState.crossValue;
+          _render();
+
+          onmove = () => {
+            const hoverState = uiTracker.getHoverState(side);
+            equipmentBarValue = Math.min(Math.max(hoverState.y - 204, 0), 600) / 600;
+            _render();
+          };
           ontriggerup = e => {
             console.log('server bar trigger up');
           };
@@ -549,8 +570,9 @@ class Rend {
         const _triggerup = e => {
           if (ontriggerup) {
             ontriggerup(e);
-            ontriggerup = null;
           }
+          onmove = null;
+          ontriggerup = null;
         };
         input.on('triggerup', _triggerup);
 
@@ -653,6 +675,11 @@ class Rend {
         }
         const rendApi = new RendApi();
         rendApi.on('update', () => {
+          const _updateMove = () => {
+            if (onmove) {
+              onmove();
+            }
+          };
           const _updateMenu = () => {
             if (menuState.open) {
               if (menuMesh.position.distanceTo(webvr.getStatus().hmd.worldPosition) > MENU_RANGE) {
@@ -682,6 +709,7 @@ class Rend {
             });
           };
 
+          _updateMove();
           _updateMenu();
           _updateUiTracker();
         });

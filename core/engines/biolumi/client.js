@@ -428,6 +428,8 @@ class Biolumi {
 
               const _makeHoverState = () => ({
                 intersectionPoint: null,
+                x: 0,
+                y: 0,
                 target: null,
                 anchor: null,
                 value: 0,
@@ -562,6 +564,9 @@ class Biolumi {
                             .add(localVector7.set(0, worldHeight / 2, 0).applyQuaternion(worldRotation))
                         );
                         const y = xAxis.distanceToPoint(intersectionPoint) / worldHeight * height;
+
+                        hoverState.x = x;
+                        hoverState.y = y;
 
                         if (x >= 0 && x < width && y > 0 && y <= height) {
                           let anchor = null;
