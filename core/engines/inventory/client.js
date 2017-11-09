@@ -153,10 +153,6 @@ class Inventory {
             return assets
           });
 
-        rend.on('loadEntities', () => {
-          console.log('rend load entities');
-        });
-
         return _requestAssets()
           .then(assets => {
             if (live) {
