@@ -11,8 +11,7 @@ import {
   TAGS_WORLD_HEIGHT,
   TAGS_WORLD_DEPTH,
 } from './lib/constants/entity';
-import entityRender from './lib/render/entity';
-import colorImg from './lib/img/color';
+// import colorImg from './lib/img/color';
 
 class Entity {
   constructor(archae) {
@@ -36,42 +35,7 @@ class Entity {
       live = false;
     });
 
-    /* const _requestColorImgData = () => new Promise((accept, reject) => {
-      const img = new Image();
-      img.onload = () => {
-        const {width, height} = img;
-
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
-
-        const imageData = ctx.getImageData(0, 0, width, height);
-        const {data: imageDataData} = imageData;
-        imageData.getColorArray = (x, y) => {
-          const xPx = Math.floor(x * width);
-          const yPx = Math.floor(y * height);
-          const baseIndex = (xPx + (yPx * width)) * 4;
-          const colorArray = [
-            imageDataData[baseIndex + 0] / 255,
-            imageDataData[baseIndex + 1] / 255,
-            imageDataData[baseIndex + 2] / 255,
-          ];
-          return colorArray;
-        };
-
-        accept(imageData);
-      };
-      img.onerror = err => {
-        reject(err);
-      };
-      img.src = 'data:image/svg+xml;utf8,' + colorImg;
-    }); */
-
-    return Promise.all([
-      archae.requestPlugins([
+    return archae.requestPlugins([
         '/core/engines/three',
         '/core/engines/input',
         '/core/engines/webvr',
@@ -83,62 +47,27 @@ class Entity {
         '/core/engines/world',
         '/core/engines/file',
         '/core/engines/keyboard',
-        // '/core/engines/transform',
         '/core/utils/type-utils',
         '/core/utils/creature-utils',
-      ]),
-      // _requestColorImgData(),
     ])
     .then(([
-      [
-        three,
-        input,
-        webvr,
-        biolumi,
-        resource,
-        rend,
-        tags,
-        fs,
-        world,
-        file,
-        keyboard,
-        // transform,
-        typeUtils,
-        creatureUtils,
-      ],
-      // colorImgData,
+      three,
+      input,
+      webvr,
+      biolumi,
+      resource,
+      rend,
+      tags,
+      fs,
+      world,
+      file,
+      keyboard,
+      typeUtils,
+      creatureUtils,
     ]) => {
       if (live) {
         const {THREE, scene} = three;
         const {sfx} = resource;
-
-        const entityRenderer = entityRender.makeRenderer({typeUtils, creatureUtils});
-
-        const transparentMaterial = biolumi.getTransparentMaterial();
-
-        const mainFontSpec = {
-          fonts: biolumi.getFonts(),
-          fontSize: 36,
-          lineHeight: 1.4,
-          fontWeight: biolumi.getFontWeight(),
-          fontStyle: biolumi.getFontStyle(),
-        };
-        const subcontentFontSpec = {
-          fonts: biolumi.getFonts(),
-          fontSize: 24,
-          lineHeight: 1.4,
-          fontWeight: biolumi.getFontWeight(),
-          fontStyle: biolumi.getFontStyle(),
-        };
-
-        /* const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
-        const _decomposeMatrix = matrix => {
-          const position = new THREE.Vector3();
-          const rotation = new THREE.Quaternion();
-          const scale = new THREE.Vector3();
-          matrix.decompose(position, rotation, scale);
-          return {position, rotation, scale};
-        }; */
 
         const _decorateEntity = entity => {
           const {id, name, version, displayName, module, attributes, instancing} = entity;
