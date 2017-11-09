@@ -173,6 +173,19 @@ class Inventory {
           }
         };
         world.on('add', _worldAdd);
+        const _walletAssets = newAssets => {
+          assets = newAssets;
+          const localTabAssets = _getLocalTabAssets();
+          inventoryPage = 0;
+          inventoryPages = localTabAssets.length > 12 ? Math.ceil(localTabAssets.length / 12) : 0;
+          inventoryBarValue = 0;
+          inventoryIndices.left = -1;
+          inventoryIndices.right = -1;
+
+          _renderMenu();
+          assetsMesh.render();
+        };
+        wallet.on('assets', _walletAssets);
 
         const localVector = new THREE.Vector3();
         const localMatrix = new THREE.Matrix4();
@@ -373,12 +386,16 @@ class Inventory {
           _pushAnchor(equipmentAnchors, 576, 235 + dy * 152, 252, 120, e => {
             const inventoryIndex = inventoryIndices[e.side];
 
-            if (inventoryIndex !== -1) {
+            if (!equipments[localIndex] && inventoryIndex !== -1) {
               const assetSpec = localAssets[inventoryIndex];
               wallet.setEquipment(localIndex, assetSpec);
             } else {
               wallet.setEquipment(localIndex, null);
             }
+
+            equipments = wallet.getEquipments();
+            _renderMenu();
+            assetsMesh.render();
 
             e.stopImmediatePropagation();
           });
@@ -735,6 +752,9 @@ class Inventory {
             scene.remove(uiTracker.dotMeshes[side]);
             scene.remove(uiTracker.boxMeshes[side]);
           }
+
+          world.removeListener('add', _worldAdd);
+          wallet.removeListener('assets', _walletAssets);
 
           input.removeListener('triggerdown', _triggerdown);
           input.removeListener('triggerup', _triggerup);

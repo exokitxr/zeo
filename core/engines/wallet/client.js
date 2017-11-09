@@ -1028,6 +1028,9 @@ class Wallet {
                         _updatePages();
                       }
                     })
+                    .then(() => {
+                      walletApi.emit('assets', assets);
+                    })
                     .catch(err => {
                       console.warn(err);
                     });
@@ -1088,6 +1091,12 @@ class Wallet {
                       assets.push(assetSpec);
 
                       return vridApi.set('assets', assets);
+                    })
+                    .then(() => {
+                       walletApi.emit('assets', assets);
+                    })
+                    .catch(err => {
+                      console.warn(err);
                     });
 
                   sfx.drop.trigger();
