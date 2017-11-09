@@ -111,7 +111,6 @@ const _makeImageDataGeometry = (width, height, size, matrix, imageDataData) => {
   const geometry = new THREE.BufferGeometry();
   geometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array(positions.buffer, 0, attributeIndex), 3));
   geometry.addAttribute('color', new THREE.BufferAttribute(new Float32Array(colors.buffer, 0, attributeIndex), 3));
-  geometry.applyMatrix(matrix);
 
   const numPositions = attributeIndex / 3;
   const dys = new Float32Array(numPositions * 2);
@@ -119,6 +118,8 @@ const _makeImageDataGeometry = (width, height, size, matrix, imageDataData) => {
     dys[(i * 2) + 0] = positions[(i * 3) + 0];
     dys[(i * 2) + 1] = positions[(i * 3) + 2];
   }
+
+  geometry.applyMatrix(matrix);
 
   geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 2));
   geometry.addAttribute('zeroDy', new THREE.BufferAttribute(new Float32Array(dys.length), 2));
