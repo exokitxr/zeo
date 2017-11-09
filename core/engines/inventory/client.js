@@ -99,11 +99,9 @@ class Inventory {
         '/core/engines/webvr',
         '/core/engines/biolumi',
         '/core/engines/rend',
+        '/core/engines/world',
         '/core/engines/tags',
         '/core/engines/resource',
-        '/core/utils/js-utils',
-        '/core/utils/geometry-utils',
-        '/core/utils/hash-utils',
         '/core/utils/sprite-utils',
         '/core/utils/vrid-utils',
       ]),
@@ -116,11 +114,9 @@ class Inventory {
         webvr,
         biolumi,
         rend,
+        world,
         tags,
         resource,
-        jsUtils,
-        geometryUtils,
-        hashUtils,
         spriteUtils,
         vridUtils,
       ],
@@ -128,9 +124,6 @@ class Inventory {
     ]) => {
       if (live) {
         const {THREE, scene, camera, renderer} = three;
-        const {events} = jsUtils;
-        const {EventEmitter} = events;
-        const {murmur} = hashUtils;
         const {materials: {assets: assetsMaterial}, sfx} = resource;
         const {vridApi} = vridUtils;
 
@@ -159,22 +152,28 @@ class Inventory {
             assets = _quantizeAssets(assets || []);
             return assets
           });
-        const _requestMods = () => tags.getTagMeshes()
-          .filter(({item}) =>
-            item.type === 'entity' &&
-            item.displayName.indexOf(inputText) !== -1
-          )
-          .map(({item}) => item);
 
-        return Promise.all([
-          _requestAssets(),
-          _requestMods(),
-        ])
-          .then(([
-            assets,
-            mods,
-          ]) => {
+        rend.on('loadEntities', () => {
+          console.log('rend load entities');
+        });
+
+        return _requestAssets()
+          .then(assets => {
             if (live) {
+              let mods = tags.getTagMeshes()
+                .filter(({item}) => item.type === 'entity')
+                .map(({item}) => item);
+              const _worldAdd = tagMesh => {
+                const {item} = tagMesh;
+                if (item.type === 'entity') {
+                  mods.push(item);
+                  localMods = _getLocalMods();
+                  _renderMenu();
+                  assetsMesh.render();
+                }
+              };
+              world.on('add', _worldAdd);
+
               const localVector = new THREE.Vector3();
               const localMatrix = new THREE.Matrix4();
               const zeroQuaternion = new THREE.Quaternion();
@@ -519,6 +518,20 @@ class Inventory {
                             zeroQuaternion,
                             oneVector
                           )))
+                      ).concat(
+                        localMods
+                          .map((modSpec, i) =>
+                            _requestAssetImageData('MOD.' + modSpec.displayName)
+                              .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
+                                localVector.set(
+                                  WORLD_WIDTH * -0.46 + (i % 3) * WORLD_WIDTH * 0.065 * 1.2,
+                                  WORLD_HEIGHT * 0.2 -Math.floor(i / 3) * WORLD_WIDTH * 0.065 * 1.2,
+                                  pixelSize * 16 * 0.6
+                                ),
+                                zeroQuaternion,
+                                oneVector
+                              )))
+                          )
                       )
                   )
                   .then(geometrySpecs => {
