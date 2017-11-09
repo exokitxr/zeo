@@ -252,7 +252,7 @@ class Entity {
         };
         rend.on('saveAllEntities', _saveAllEntities);
 
-        const _trigger = e => {
+        /* const _trigger = e => {
           const {side} = e;
 
           const _clickMenu = () => {
@@ -573,26 +573,9 @@ class Entity {
                   const rotation = new THREE.Quaternion(attributeValue[3], attributeValue[4], attributeValue[5], attributeValue[6]);
                   const scale = new THREE.Vector3(attributeValue[7], attributeValue[8], attributeValue[9]);
 
-                  /* const transformGizmo = transform.makeTransformGizmo({
-                    position: position,
-                    rotation: rotation,
-                    scale: scale,
-                    onupdate: (position, rotation, scale) => {
-                      tags.emit('setAttribute', {
-                        id: tagId,
-                        name: attributeName,
-                        value: position.toArray().concat(rotation.toArray()).concat(scale.toArray()),
-                      });
-                    },
-                  });
-                  scene.add(transformGizmo);
-                  transformGizmo.updateMatrixWorld(); */
-
                   keyboardFocusState.on('blur', () => {
                     focusState.keyboardFocusState = null;
 
-                    /* transform.destroyTransformGizmo(transformGizmo);
-                    scene.remove(transformGizmo); */
 
                     _updatePages();
                   });
@@ -627,13 +610,13 @@ class Entity {
             e.stopImmediatePropagation();
           }
         };
-        input.on('trigger', _trigger);
+        input.on('trigger', _trigger); */
 
         cleanups.push(() => {
           rend.removeListener('tabchange', _tabchange);
           rend.removeListener('entitychange', _entitychange);
           rend.removeListener('saveAllEntities', _saveAllEntities);
-          input.removeListener('trigger', _trigger);
+          // input.removeListener('trigger', _trigger);
         });
       }
     });

@@ -400,7 +400,7 @@ class Multiplayer {
         const localStatus = _makePlayerStatus();
         const _update = () => {
           const status = webvr.getStatus();
-          const menuState = rend.getMenuState();
+          // const menuState = rend.getMenuState();
 
           let updated = false;
           const _updateHmd = () => {
@@ -441,7 +441,7 @@ class Multiplayer {
               }
             }
           };
-          const _updateMetadata = () => {
+          /* const _updateMetadata = () => {
             if (
               menuState.open !== localStatus.metadata.menu.open ||
               !menuState.position.equals(localStatus.metadata.menu.position) ||
@@ -455,7 +455,7 @@ class Multiplayer {
 
               updated = true;
             }
-          };
+          }; */
           const _sendUpdate = () => {
             if (updated && connection) {
               protocolUtils.stringifyUpdate(multiplayerApi.getId(), localStatus, buffer, 0);
@@ -465,7 +465,7 @@ class Multiplayer {
 
           _updateHmd();
           _updateControllers();
-          _updateMetadata();
+          // _updateMetadata();
           _sendUpdate();
         };
         rend.on('update', _update);

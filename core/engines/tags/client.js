@@ -741,7 +741,7 @@ class Tags {
           const _requestFileItemModelMesh = item => fs.makeFile('fs/' + item.id + item.name)
             .read({type: 'model'}); */
 
-          const _trigger = e => {
+          /* const _trigger = e => {
             const {side} = e;
 
             const _doClickAux = () => {
@@ -799,15 +799,6 @@ class Tags {
                   e.stopImmediatePropagation();
 
                   return true;
-                /* } else if (match = onclick.match(/^tag:download:(.+)$/)) {
-                  const id = match[1];
-
-                  const downloadEvent = {
-                    id,
-                  };
-                  tagsApi.emit('download', downloadEvent);
-
-                  return true; */
                 } else if (match = onclick.match(/^attribute:remove:(.+?):(.+?)$/)) {
                   const id = match[1];
                   const name = match[2];
@@ -862,7 +853,7 @@ class Tags {
               e.stopImmediatePropagation();
             }
           };
-          input.on('trigger', _trigger);
+          input.on('trigger', _trigger); */
 
           const _update = () => {
             const _updateLocal = () => {
@@ -883,7 +874,7 @@ class Tags {
             }
             scene.remove(linesMesh);
 
-            input.removeListener('trigger', _trigger);
+            // input.removeListener('trigger', _trigger);
             rend.removeListener('update', _update);
           });
 

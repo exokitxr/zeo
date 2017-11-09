@@ -120,9 +120,9 @@ class World {
             const {id} = item;
             tagMeshes[id] = tagMesh;
 
-            if (!rend.isOpen()) {
+            // if (!rend.isOpen()) {
               tagMesh.visible = false;
-            }
+            // }
 
             // scene.add(tagMesh);
             // tagMesh.updateMatrixWorld();
@@ -376,7 +376,7 @@ class World {
         };
         rend.on('clearAllEntities', _clearAllEntities);
 
-        const _trigger = e => {
+        /* const _trigger = e => {
           const {side} = e;
 
           const _clickMenu = () => {
@@ -535,7 +535,7 @@ class World {
         };
         input.on('trigger', _trigger, {
           priority: 1,
-        });
+        }); */
 
         const _mutateAddEntity = ({element, tagName, attributes}) => {
           const itemSpec = {
@@ -732,7 +732,7 @@ class World {
           rend.removeListener('loadEntities', _loadEntities);
           rend.removeListener('clearAllEntities', _clearAllEntities);
 
-          input.removeListener('trigger', _trigger);
+          // input.removeListener('trigger', _trigger);
 
           // tags.removeListener('download', _download);
           tags.removeListener('mutateAddEntity', _mutateAddEntity);

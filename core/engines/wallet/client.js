@@ -636,7 +636,7 @@ class Wallet {
               next();
             });
         });
-        const _trigger = e => {
+        /* const _trigger = e => {
           const {side} = e;
 
           const _downloadFile = () => {
@@ -777,7 +777,7 @@ class Wallet {
         };
         input.on('trigger', _trigger, {
           priority: 1,
-        });
+        }); */
 
         const _bindAssetInstancePhysics = assetInstance => {
           let body = null;
@@ -1182,7 +1182,7 @@ class Wallet {
         };
 
         cleanups.push(() => {
-          input.removeListener('trigger', _trigger);
+          // input.removeListener('trigger', _trigger);
           input.removeListener('gripdown', _gripdown);
 
           fs.removeListener('upload', _upload);

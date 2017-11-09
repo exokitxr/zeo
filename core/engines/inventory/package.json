@@ -1,0 +1,7 @@
+{
+  "name": "inventory",
+  "description": "Provides inventory management interface for the zeo core.",
+  "version": "0.0.1",
+  "client": "client.js",
+  "dependencies": {}
+}

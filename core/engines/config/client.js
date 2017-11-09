@@ -230,7 +230,7 @@ class Config {
           }
         };
 
-        const _trigger = e => {
+        /* const _trigger = e => {
           const {side} = e;
 
           const _clickMenu = () => {
@@ -423,7 +423,7 @@ class Config {
         };
         input.on('trigger', _trigger, {
           priority: 1,
-        });
+        }); */
 
         const _update = () => {
           if (configState.statsCheckboxValue) {

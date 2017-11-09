@@ -282,7 +282,7 @@ class FileEngine {
         };
         rend.on('tabchange', _tabchange);
 
-        const _trigger = e => {
+        /* const _trigger = e => {
           const {side} = e;
 
           const _clickMenu = () => {
@@ -390,51 +390,6 @@ class FileEngine {
               _setFile(null);
 
               return true;
-            /* } else if (match = onclick.match(/^file:loadEntities:(.+)$/)) {
-              const id = match[1];
-
-              const file = npmState.tagSpecs.find(tagSpec => tagSpec.id === id);
-              const {name} = file;
-              fs.makeFile('fs/' + id + name)
-                .read({type: 'json'})
-                .then(j => {
-                  const {entities} = j;
-
-                  for (let i = 0; i < entities.length; i++) { // need to do this so new entities do not conflict with current ones
-                    const entity = entities[i];
-                    entity.id = _makeId();
-                  }
-
-                  rend.loadEntities(entities);
-                })
-                .catch(err => {
-                  console.warn(err);
-                });
-
-              return true;
-            } else if (match = onclick.match(/^file:replaceWorld:(.+)$/)) {
-              const id = match[1];
-
-              const file = npmState.tagSpecs.find(tagSpec => tagSpec.id === id);
-              const {name} = file;
-              fs.makeFile('fs/' + id + name)
-                .read({type: 'json'})
-                .then(j => {
-                  const {entities} = j;
-
-                  for (let i = 0; i < entities.length; i++) { // need to do this so new entities do not conflict with current ones
-                    const entity = entities[i];
-                    entity.id = _makeId();
-                  }
-
-                  rend.clearAllEntities();
-                  rend.loadEntities(entities);
-                })
-                .catch(err => {
-                  console.warn(err);
-                });
-
-              return true; */
             } else {
               return false;
             }
@@ -460,11 +415,11 @@ class FileEngine {
             e.stopImmediatePropagation();
           }
         };
-        input.on('trigger', _trigger);
+        input.on('trigger', _trigger); */
 
         cleanups.push(() => {
           rend.removeListener('tabchange', _tabchange);
-          input.removeListener('trigger', _trigger);
+          // input.removeListener('trigger', _trigger);
         });
 
         /* const _setFile = itemSpec => {

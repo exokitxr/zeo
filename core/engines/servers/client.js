@@ -105,7 +105,7 @@ class Servers {
           window.parent.location = serverUrl;
         };
 
-        const _trigger = e => {
+        /* const _trigger = e => {
           const {side} = e;
           const hoverState = rend.getHoverState(side);
           const {anchor} = hoverState;
@@ -157,11 +157,11 @@ class Servers {
         };
         input.on('trigger', _trigger, {
           priority: 1,
-        });
+        }); */
 
         cleanups.push(() => {
           rend.removeListener('tabchange', _tabchange);
-          input.removeListener('trigger', _trigger);
+          // input.removeListener('trigger', _trigger);
         });
 
         const _tabchange = tab => {
