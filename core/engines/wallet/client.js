@@ -568,16 +568,6 @@ class Wallet {
             });
           }
         };
-        const _resBlob = res => {
-          if (res.status >= 200 && res.status < 300) {
-            return res.blob();
-          } else {
-            return Promise.reject({
-              status: res.status,
-              stack: 'API returned invalid status code: ' + res.status,
-            });
-          }
-        };
         const _requestAssets = () => vridApi.get('assets')
           .then(assets => assets || []);
         const _requestEquipments = () => vridApi.get('equipment')
@@ -603,28 +593,13 @@ class Wallet {
 
             _rebindEquipments(oldEquipments, newEquipments);
 
-            _updatePages();
+            // _updatePages();
           })
           .catch(err => {
             console.warn(err);
 
             walletState.error = true;
           });
-        const _updateWallet = menuUtils.debounce(next => {
-          /* const {inputText} = walletState;
-          const searchText = inputText.toLowerCase(); */
-
-          _refreshAssets()
-            .then(() => {
-              walletState.loading = false;
-
-              next();
-            });
-
-          const {numTags} = walletState;
-          walletState.loading = numTags === 0;
-        });
-
         const _saveEquipments = _debounce(next => {
           vridApi.set('equipment', walletState.equipments)
             .then(() => {
@@ -636,430 +611,6 @@ class Wallet {
               next();
             });
         });
-        /* const _trigger = e => {
-          const {side} = e;
-
-          const _downloadFile = () => {
-            return false;
-            const grabbedGrabbable = hand.getGrabbedGrabbable(side);
-
-            if (grabbedGrabbable && grabbedGrabbable.type === 'file') {
-              fs.makeRemoteFile(grabbedGrabbable.value).download();
-              return  true;
-            } else {
-              return false;
-            }
-          };
-          const _clickMenu = () => {
-            const hoverState = rend.getHoverState(side);
-            const {anchor} = hoverState;
-            const onclick = (anchor && anchor.onclick) || '';
-
-            let match;
-            if (onclick === 'wallet:focus') {
-              const {inputText} = walletState;
-              const {value, target: page} = hoverState;
-              const {layer: {measures}} = page;
-              const valuePx = value * (WIDTH - 250);
-              const {index, px} = biolumi.getTextPropertiesFromCoord(measures['wallet:search'], inputText, valuePx);
-              const {hmd: hmdStatus} = webvr.getStatus();
-              const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
-              const keyboardFocusState = keyboard.focus({
-                type: 'wallet:search',
-                position: hmdPosition,
-                rotation: hmdRotation,
-                inputText: inputText,
-                inputIndex: index,
-                inputValue: px,
-                page: page,
-              });
-              focusState.keyboardFocusState = keyboardFocusState;
-
-              keyboardFocusState.on('update', () => {
-                const {inputText: keyboardInputText} = keyboardFocusState;
-                const {inputText: walletInputText} = walletState;
-
-                if (keyboardInputText !== walletInputText) {
-                  walletState.inputText = keyboardInputText;
-
-                  _updateWallet();
-                }
-
-                _updatePages();
-              });
-              keyboardFocusState.on('blur', () => {
-                focusState.keyboardFocusState = null;
-
-                _updatePages();
-              });
-
-              _updatePages();
-
-              return true;
-            } else if (match = onclick.match(/^asset:main:(.+)$/)) {
-              const id = match[1];
-
-              walletState.asset = walletState.asset !== id ? id : null;
-
-              _updatePages();
-
-              return true;
-            } else if (match = onclick.match(/^asset:equip:(.+)$/)) {
-              const id = match[1];
-
-              const {equipments: oldEquipments} = walletState;
-              const index = (() => {
-                for (let i = 0; i < oldEquipments.length; i++) {
-                  const oldEquipment = oldEquipments[i];
-                  if (!oldEquipment) {
-                    return i;
-                  }
-                }
-                return oldEquipments.length - 1;
-              })();
-              const newEquipments = _clone(oldEquipments);
-              newEquipments[index] = _clone(walletState.assets.find(assetSpec => assetSpec.id === id));
-
-              _rebindEquipments(oldEquipments, newEquipments);
-
-              walletState.equipments = newEquipments;
-              _saveEquipments();
-              _updatePages();
-
-              return true;
-            } else if (match = onclick.match(/^asset:unequip:([0-9]+)$/)) {
-              const index = parseInt(match[1], 10);
-
-              const {equipments: oldEquipments} = walletState;
-              const newEquipments = _clone(oldEquipments);
-              newEquipments[index] = null;
-
-              _rebindEquipments(oldEquipments, newEquipments);
-
-              walletState.equipments = newEquipments;
-              _saveEquipments();
-              _updatePages();
-
-              return true;
-            } else if (onclick === 'wallet:refresh') {
-              _updateWallet();
-              _updatePages();
-
-              return true;
-            } else {
-              return false;
-            }
-          };
-          const _clickMenuBackground = () => {
-            const hoverState = rend.getHoverState(side);
-            const {target} = hoverState;
-
-            if (target && target.mesh && target.mesh.parent === menuMesh) {
-              return true;
-            } else {
-              return false;
-            }
-          };
-
-          if (_downloadFile()) {
-            // nothing
-          } else {
-            if (_clickMenu()) {
-              sfx.digi_select.trigger();
-
-              e.stopImmediatePropagation();
-            } else if (_clickMenuBackground()) {
-              sfx.digi_plink.trigger();
-
-              e.stopImmediatePropagation();
-            }
-          }
-        };
-        input.on('trigger', _trigger, {
-          priority: 1,
-        }); */
-
-        const _bindAssetInstancePhysics = assetInstance => {
-          let body = null;
-          const _addBody = ({velocity = new THREE.Vector3()} = {}) => {
-            body = stck.makeDynamicBoxBody(assetInstance.position, assetSizeVector, velocity);
-            body.on('update', () => {
-              assetInstance.setStateLocal(body.position, body.rotation, body.scale);
-            });
-            body.on('collide', () => {
-              assetInstance.collide();
-            });
-          };
-          const _removeBody = () => {
-            stck.destroyBody(body);
-            body = null;
-          };
-
-          assetInstance.on('release', e => {
-            const {userId} = e;
-
-            if (userId === localUserId) {
-              const {side} = e;
-              const player = cyborg.getPlayer();
-              const linearVelocity = player.getControllerLinearVelocity(side);
-
-              _addBody({
-                velocity: linearVelocity,
-              });
-
-              assetInstance.enablePhysics();
-            }
-          });
-          assetInstance.on('grab', e => {
-            const {userId} = e;
-            if (userId === localUserId) {
-              assetInstance.disablePhysics();
-            }
-          });
-          assetInstance.on('physics', enabled => {
-            if (enabled && !body) {
-              _addBody();
-            } else if (!enabled && body) {
-              _removeBody();
-            }
-          });
-          assetInstance.on('destroy', () => {
-            if (body) {
-              _removeBody();
-            }
-          });
-
-          if (assetInstance.physics) {
-            _addBody();
-          } else {
-            assetInstance.emit('update');
-          }
-        };
-
-        const _pullItem = (asset, side) => {
-          const id = _makeId();
-          const itemSpec = {
-            type: 'asset',
-            id: id,
-            name: asset,
-            displayName: asset,
-            attributes: {
-              type: {value: 'asset'},
-              value: {value: asset},
-              position: {value: DEFAULT_MATRIX},
-              owner: {value: null},
-              bindOwner: {value: null},
-              physics: {value: false},
-            },
-            metadata: {},
-          };
-          const assetInstance = walletApi.makeItem(itemSpec);
-          assetInstance.grab(side);
-
-          const quantity = 1;
-          const {assets: oldAssets} = walletState;
-          _removeStrgAsset(asset, quantity)
-            .then(() => {
-              const {assets: newAssets} = walletState;
-
-              if (oldAssets === newAssets) {
-                const newAsset = newAssets.find(assetSpec => assetSpec.asset === asset);
-                if (newAsset) {
-                  if (--newAsset.quantity === 0) {
-                    newAssets.splice(newAssets.indexOf(newAsset), 1);
-
-                    const {equipments} = walletState;
-                    const removedEquipments = equipments.filter(equipmentSpec => equipmentSpec && equipmentSpec.asset === asset);
-                    if (removedEquipments.length > 0) {
-                      for (let i = 0; i < equipments.length; i++) {
-                        const equipment = equipments[i];
-                        if (removedEquipments.includes(equipment)) {
-                          equipment.asset = null;
-                        }
-                      }
-
-                      _saveEquipments();
-                    }
-                  }
-
-                  _updatePages();
-                }
-              }
-            })
-            .catch(err => {
-              console.warn(err);
-            });
-
-          const match = asset.match(/^MOD\.(.+)$/);
-          if (match) {
-            const modName = match[1];
-            world.addMod(modName);
-          }
-
-          sfx.drop.trigger();
-          const newNotification = notification.addNotification(`Pulled out ${asset}.`);
-          setTimeout(() => {
-            notification.removeNotification(newNotification);
-          }, 3000);
-        };
-        const _storeItem = assetInstance => {
-          walletApi.destroyItem(assetInstance);
-
-          const {type} = assetInstance;
-          if (type === 'asset') {
-            const {value} = assetInstance;
-            const quantity = 1;
-            const {assets: oldAssets} = walletState;
-            _addStrgAsset(value, quantity)
-              .then(() => {
-                const {assets: newAssets} = walletState;
-
-                if (oldAssets === newAssets) {
-                  let newAsset = newAssets.find(assetSpec => assetSpec.asset === value);
-                  if (!newAsset) {
-                    newAsset = {
-                      id: value,
-                      asset: value,
-                      quantity: 0,
-                    };
-                    newAssets.push(newAsset);
-                  }
-                  newAsset.quantity++;
-
-                  _updatePages();
-                }
-              })
-              .catch(err => {
-                console.warn(err);
-              });
-
-            sfx.drop.trigger();
-            const newNotification = notification.addNotification(`Stored ${value}.`);
-            setTimeout(() => {
-              notification.removeNotification(newNotification);
-            }, 3000);
-          } else if (type === 'file') {
-            const {id, value} = assetInstance;
-            const {id: n, name} = value;
-            const file = fs.makeRemoteFile(n);
-            const url = file.getUrl();
-            file.readAsArrayBuffer()
-              .then(arrayBuffer => {
-                const _makeNotificationText = n => {
-                  let s = 'Uploading ' + (n * 100).toFixed(1) + '% [';
-                  let i;
-                  const roundN = Math.round(n * 20);
-                  for (i = 0; i < roundN; i++) {
-                    s += '|';
-                  }
-                  for (; i < 20; i++) {
-                    s += '.';
-                  }
-                  s += ']';
-                  return s;
-                };
-                const newNotification = notification.addNotification(_makeNotificationText(0));
-
-                vridApi.upload(n, arrayBuffer, progress => {
-                  newNotification.set(_makeNotificationText(progress));
-                })
-                  .then(() => {
-                    notification.removeNotification(newNotification);
-                  })
-                  .catch(err => {
-                    notification.removeNotification(newNotification);
-
-                    return Promise.reject(err);
-                  });
-              })
-              .then(() => vridApi.get('assets'))
-              .then(assets => {
-                assets = assets || [];
-
-                const assetSpec = {
-                  id,
-                  asset: 'ITEM.FILE',
-                  quantity: 1,
-                  file: {
-                    id: n,
-                    name,
-                  },
-                  timestamp: Date.now(),
-                };
-                assets.push(assetSpec);
-
-                return vridApi.set('assets', assets);
-              });
-
-            sfx.drop.trigger();
-            const newNotification = notification.addNotification(`Stored ${name}.`);
-            setTimeout(() => {
-              notification.removeNotification(newNotification);
-            }, 3000);
-          }
-        };
-        const _checkGripdown = side => {
-          const hoverState = hoverStates[side];
-          const {worldGrabAsset} = hoverState;
-          const {asset} = walletState;
-          const {gamepads} = webvr.getStatus();
-          const gamepad = gamepads[side];
-          const {worldPosition: position} = gamepad;
-
-          if (!worldGrabAsset && asset && _isInBody(position)) {
-            const assetSpec = walletState.assets.find(assetSpec => assetSpec.id === asset);
-            _pullItem(assetSpec.asset, side);
-
-            return true;
-          } else {
-            return false;
-          }
-        };
-        const _checkGripup = e => {
-          const {item} = e;
-          const {position} = item;
-
-          if (_isInBody(position)) {
-            _storeItem(item);
-
-            e.stopImmediatePropagation();
-          }
-        };
-        const _gripdown = e => {
-          const {side} = e;
-          if (_checkGripdown(side)) {
-            e.stopImmediatePropagation();
-          }
-        };
-        input.on('gripdown', _gripdown, {
-          priority: -2,
-        });
-
-        const _upload = ({file, dropMatrix}) => {
-          const id = String(file.n);
-          const itemSpec = {
-            type: 'file',
-            id: id,
-            name: id,
-            displayName: id,
-            attributes: {
-              type: {value: 'file'},
-              value: {value: id},
-              position: {value: dropMatrix},
-              owner: {value: null},
-              bindOwner: {value: null},
-              physics: {value: true},
-            },
-            metadata: {},
-          };
-          walletApi.makeItem(itemSpec);
-        };
-        fs.on('upload', _upload);
-
-        const _update = () => {
-          assetsMaterial.uniforms.theta.value = (Date.now() * ROTATE_SPEED * (Math.PI * 2) % (Math.PI * 2));
-        };
-        rend.on('update', _update);
 
         const itemApis = {};
         const equipmentApis = {};
@@ -1181,170 +732,620 @@ class Wallet {
           }
         };
 
-        cleanups.push(() => {
-          // input.removeListener('trigger', _trigger);
-          input.removeListener('gripdown', _gripdown);
+        return _refreshAssets()
+          .then(() => {
+            if (live) {
+              /* const _trigger = e => {
+                const {side} = e;
 
-          fs.removeListener('upload', _upload);
+                const _downloadFile = () => {
+                  return false;
+                  const grabbedGrabbable = hand.getGrabbedGrabbable(side);
 
-          rend.removeListener('update', _update);
-        });
+                  if (grabbedGrabbable && grabbedGrabbable.type === 'file') {
+                    fs.makeRemoteFile(grabbedGrabbable.value).download();
+                    return  true;
+                  } else {
+                    return false;
+                  }
+                };
+                const _clickMenu = () => {
+                  const hoverState = rend.getHoverState(side);
+                  const {anchor} = hoverState;
+                  const onclick = (anchor && anchor.onclick) || '';
 
-        class WalletApi extends EventEmitter {
-          getAssetsMaterial() {
-            return assetsMaterial;
-          }
+                  let match;
+                  if (onclick === 'wallet:focus') {
+                    const {inputText} = walletState;
+                    const {value, target: page} = hoverState;
+                    const {layer: {measures}} = page;
+                    const valuePx = value * (WIDTH - 250);
+                    const {index, px} = biolumi.getTextPropertiesFromCoord(measures['wallet:search'], inputText, valuePx);
+                    const {hmd: hmdStatus} = webvr.getStatus();
+                    const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
+                    const keyboardFocusState = keyboard.focus({
+                      type: 'wallet:search',
+                      position: hmdPosition,
+                      rotation: hmdRotation,
+                      inputText: inputText,
+                      inputIndex: index,
+                      inputValue: px,
+                      page: page,
+                    });
+                    focusState.keyboardFocusState = keyboardFocusState;
 
-          getAsset(id) {
-            return assetsMesh.getAssetInstance(id);
-          }
+                    keyboardFocusState.on('update', () => {
+                      const {inputText: keyboardInputText} = keyboardFocusState;
+                      const {inputText: walletInputText} = walletState;
 
-          makeItem(itemSpec) {
-            const {
-              id,
-              attributes: {
-                type: {value: type},
-                value: {value: value},
-                position: {value: matrix},
-                physics: {value: physics},
-              },
-            } = itemSpec;
-            const n = murmur(id);
-            const position = new THREE.Vector3(matrix[0], matrix[1], matrix[2]);
-            const rotation = new THREE.Quaternion(matrix[3], matrix[4], matrix[5], matrix[6]);
-            const scale = new THREE.Vector3(matrix[7], matrix[8], matrix[9]);
+                      if (keyboardInputText !== walletInputText) {
+                        walletState.inputText = keyboardInputText;
 
-            const assetInstance = assetsMesh.addAssetInstance(
-              id,
-              type,
-              value,
-              n,
-              physics,
-              position,
-              rotation,
-              scale,
-              zeroVector.clone(),
-              zeroQuaternion.clone(),
-              oneVector.clone()
-            );
-            _bindAssetInstance(assetInstance);
-            _bindAssetInstancePhysics(assetInstance);
+                        _updateWallet();
+                      }
 
-            connection.send(JSON.stringify({
-              method: 'addAsset',
-              args: {
-                id,
-                type,
-                value,
-                n,
-                physics,
-                matrix,
-              },
-            }));
+                      _updatePages();
+                    });
+                    keyboardFocusState.on('blur', () => {
+                      focusState.keyboardFocusState = null;
 
-            return assetInstance;
-          }
+                      _updatePages();
+                    });
 
-          destroyItem(itemSpec) {
-            const {id} = itemSpec;
-            const assetInstance = assetsMesh.getAssetInstance(id);
-            _unbindAssetInstance(assetInstance);
+                    _updatePages();
 
-            assetsMesh.removeAssetInstance(id);
+                    return true;
+                  } else if (match = onclick.match(/^asset:main:(.+)$/)) {
+                    const id = match[1];
 
-            connection.send(JSON.stringify({
-              method: 'removeAsset',
-              args: {
-                id,
-              },
-            }));
-          }
+                    walletState.asset = walletState.asset !== id ? id : null;
 
-          makeFile(fileSpec) {
-            const {name, data, matrix} = fileSpec;
-            const file = fs.makeRemoteFile();
-            return file.write(data).then(() => this.reifyFile({name, file, matrix}));
-          }
+                    _updatePages();
 
-          reifyFile(fileSpec) {
-            const {name, file, matrix} = fileSpec;
-            const {n} = file;
-            const id = String(n);
-            const itemSpec = {
-              type: 'file',
-              id,
-              name,
-              attributes: {
-                type: {value: 'file'},
-                value: {
-                  value: {
-                    id: n,
-                    name,
+                    return true;
+                  } else if (match = onclick.match(/^asset:equip:(.+)$/)) {
+                    const id = match[1];
+
+                    const {equipments: oldEquipments} = walletState;
+                    const index = (() => {
+                      for (let i = 0; i < oldEquipments.length; i++) {
+                        const oldEquipment = oldEquipments[i];
+                        if (!oldEquipment) {
+                          return i;
+                        }
+                      }
+                      return oldEquipments.length - 1;
+                    })();
+                    const newEquipments = _clone(oldEquipments);
+                    newEquipments[index] = _clone(walletState.assets.find(assetSpec => assetSpec.id === id));
+
+                    _rebindEquipments(oldEquipments, newEquipments);
+
+                    walletState.equipments = newEquipments;
+                    _saveEquipments();
+                    _updatePages();
+
+                    return true;
+                  } else if (match = onclick.match(/^asset:unequip:([0-9]+)$/)) {
+                    const index = parseInt(match[1], 10);
+
+                    const {equipments: oldEquipments} = walletState;
+                    const newEquipments = _clone(oldEquipments);
+                    newEquipments[index] = null;
+
+                    _rebindEquipments(oldEquipments, newEquipments);
+
+                    walletState.equipments = newEquipments;
+                    _saveEquipments();
+                    _updatePages();
+
+                    return true;
+                  } else if (onclick === 'wallet:refresh') {
+                    _updateWallet();
+                    _updatePages();
+
+                    return true;
+                  } else {
+                    return false;
+                  }
+                };
+                const _clickMenuBackground = () => {
+                  const hoverState = rend.getHoverState(side);
+                  const {target} = hoverState;
+
+                  if (target && target.mesh && target.mesh.parent === menuMesh) {
+                    return true;
+                  } else {
+                    return false;
+                  }
+                };
+
+                if (_downloadFile()) {
+                  // nothing
+                } else {
+                  if (_clickMenu()) {
+                    sfx.digi_select.trigger();
+
+                    e.stopImmediatePropagation();
+                  } else if (_clickMenuBackground()) {
+                    sfx.digi_plink.trigger();
+
+                    e.stopImmediatePropagation();
+                  }
+                }
+              };
+              input.on('trigger', _trigger, {
+                priority: 1,
+              }); */
+
+              const _bindAssetInstancePhysics = assetInstance => {
+                let body = null;
+                const _addBody = ({velocity = new THREE.Vector3()} = {}) => {
+                  body = stck.makeDynamicBoxBody(assetInstance.position, assetSizeVector, velocity);
+                  body.on('update', () => {
+                    assetInstance.setStateLocal(body.position, body.rotation, body.scale);
+                  });
+                  body.on('collide', () => {
+                    assetInstance.collide();
+                  });
+                };
+                const _removeBody = () => {
+                  stck.destroyBody(body);
+                  body = null;
+                };
+
+                assetInstance.on('release', e => {
+                  const {userId} = e;
+
+                  if (userId === localUserId) {
+                    const {side} = e;
+                    const player = cyborg.getPlayer();
+                    const linearVelocity = player.getControllerLinearVelocity(side);
+
+                    _addBody({
+                      velocity: linearVelocity,
+                    });
+
+                    assetInstance.enablePhysics();
+                  }
+                });
+                assetInstance.on('grab', e => {
+                  const {userId} = e;
+                  if (userId === localUserId) {
+                    assetInstance.disablePhysics();
+                  }
+                });
+                assetInstance.on('physics', enabled => {
+                  if (enabled && !body) {
+                    _addBody();
+                  } else if (!enabled && body) {
+                    _removeBody();
+                  }
+                });
+                assetInstance.on('destroy', () => {
+                  if (body) {
+                    _removeBody();
+                  }
+                });
+
+                if (assetInstance.physics) {
+                  _addBody();
+                } else {
+                  assetInstance.emit('update');
+                }
+              };
+
+              const _pullItem = (asset, side) => {
+                const id = _makeId();
+                const itemSpec = {
+                  type: 'asset',
+                  id: id,
+                  name: asset,
+                  displayName: asset,
+                  attributes: {
+                    type: {value: 'asset'},
+                    value: {value: asset},
+                    position: {value: DEFAULT_MATRIX},
+                    owner: {value: null},
+                    bindOwner: {value: null},
+                    physics: {value: false},
                   },
-                },
-                position: {value: matrix},
-                owner: {value: null},
-                bindOwner: {value: null},
-                physics: {value: true},
-              },
-              metadata: {},
-            };
-            return walletApi.makeItem(itemSpec);
-          }
+                  metadata: {},
+                };
+                const assetInstance = walletApi.makeItem(itemSpec);
+                assetInstance.grab(side);
 
-          registerItem(pluginInstance, itemApi) {
-            const {asset} = itemApi;
+                const quantity = 1;
+                const {assets: oldAssets} = walletState;
+                _removeStrgAsset(asset, quantity)
+                  .then(() => {
+                    const {assets: newAssets} = walletState;
 
-            let entry = itemApis[asset];
-            if (!entry) {
-              entry = [];
-              itemApis[asset] = entry;
+                    if (oldAssets === newAssets) {
+                      const newAsset = newAssets.find(assetSpec => assetSpec.asset === asset);
+                      if (newAsset) {
+                        if (--newAsset.quantity === 0) {
+                          newAssets.splice(newAssets.indexOf(newAsset), 1);
+
+                          const {equipments} = walletState;
+                          const removedEquipments = equipments.filter(equipmentSpec => equipmentSpec && equipmentSpec.asset === asset);
+                          if (removedEquipments.length > 0) {
+                            for (let i = 0; i < equipments.length; i++) {
+                              const equipment = equipments[i];
+                              if (removedEquipments.includes(equipment)) {
+                                equipment.asset = null;
+                              }
+                            }
+
+                            _saveEquipments();
+                          }
+                        }
+
+                        _updatePages();
+                      }
+                    }
+                  })
+                  .catch(err => {
+                    console.warn(err);
+                  });
+
+                const match = asset.match(/^MOD\.(.+)$/);
+                if (match) {
+                  const modName = match[1];
+                  world.addMod(modName);
+                }
+
+                sfx.drop.trigger();
+                const newNotification = notification.addNotification(`Pulled out ${asset}.`);
+                setTimeout(() => {
+                  notification.removeNotification(newNotification);
+                }, 3000);
+              };
+              const _storeItem = assetInstance => {
+                walletApi.destroyItem(assetInstance);
+
+                const {type} = assetInstance;
+                if (type === 'asset') {
+                  const {value} = assetInstance;
+                  const quantity = 1;
+                  const {assets: oldAssets} = walletState;
+                  _addStrgAsset(value, quantity)
+                    .then(() => {
+                      const {assets: newAssets} = walletState;
+
+                      if (oldAssets === newAssets) {
+                        let newAsset = newAssets.find(assetSpec => assetSpec.asset === value);
+                        if (!newAsset) {
+                          newAsset = {
+                            id: value,
+                            asset: value,
+                            quantity: 0,
+                          };
+                          newAssets.push(newAsset);
+                        }
+                        newAsset.quantity++;
+
+                        _updatePages();
+                      }
+                    })
+                    .catch(err => {
+                      console.warn(err);
+                    });
+
+                  sfx.drop.trigger();
+                  const newNotification = notification.addNotification(`Stored ${value}.`);
+                  setTimeout(() => {
+                    notification.removeNotification(newNotification);
+                  }, 3000);
+                } else if (type === 'file') {
+                  const {id, value} = assetInstance;
+                  const {id: n, name} = value;
+                  const file = fs.makeRemoteFile(n);
+                  const url = file.getUrl();
+                  file.readAsArrayBuffer()
+                    .then(arrayBuffer => {
+                      const _makeNotificationText = n => {
+                        let s = 'Uploading ' + (n * 100).toFixed(1) + '% [';
+                        let i;
+                        const roundN = Math.round(n * 20);
+                        for (i = 0; i < roundN; i++) {
+                          s += '|';
+                        }
+                        for (; i < 20; i++) {
+                          s += '.';
+                        }
+                        s += ']';
+                        return s;
+                      };
+                      const newNotification = notification.addNotification(_makeNotificationText(0));
+
+                      vridApi.upload(n, arrayBuffer, progress => {
+                        newNotification.set(_makeNotificationText(progress));
+                      })
+                        .then(() => {
+                          notification.removeNotification(newNotification);
+                        })
+                        .catch(err => {
+                          notification.removeNotification(newNotification);
+
+                          return Promise.reject(err);
+                        });
+                    })
+                    .then(() => vridApi.get('assets'))
+                    .then(assets => {
+                      assets = assets || [];
+
+                      const assetSpec = {
+                        id,
+                        asset: 'ITEM.FILE',
+                        quantity: 1,
+                        file: {
+                          id: n,
+                          name,
+                        },
+                        timestamp: Date.now(),
+                      };
+                      assets.push(assetSpec);
+
+                      return vridApi.set('assets', assets);
+                    });
+
+                  sfx.drop.trigger();
+                  const newNotification = notification.addNotification(`Stored ${name}.`);
+                  setTimeout(() => {
+                    notification.removeNotification(newNotification);
+                  }, 3000);
+                }
+              };
+              const _checkGripdown = side => {
+                const hoverState = hoverStates[side];
+                const {worldGrabAsset} = hoverState;
+                const {asset} = walletState;
+                const {gamepads} = webvr.getStatus();
+                const gamepad = gamepads[side];
+                const {worldPosition: position} = gamepad;
+
+                if (!worldGrabAsset && asset && _isInBody(position)) {
+                  const assetSpec = walletState.assets.find(assetSpec => assetSpec.id === asset);
+                  _pullItem(assetSpec.asset, side);
+
+                  return true;
+                } else {
+                  return false;
+                }
+              };
+              const _checkGripup = e => {
+                const {item} = e;
+                const {position} = item;
+
+                if (_isInBody(position)) {
+                  _storeItem(item);
+
+                  e.stopImmediatePropagation();
+                }
+              };
+              const _gripdown = e => {
+                const {side} = e;
+                if (_checkGripdown(side)) {
+                  e.stopImmediatePropagation();
+                }
+              };
+              input.on('gripdown', _gripdown, {
+                priority: -2,
+              });
+
+              const _upload = ({file, dropMatrix}) => {
+                const id = String(file.n);
+                const itemSpec = {
+                  type: 'file',
+                  id: id,
+                  name: id,
+                  displayName: id,
+                  attributes: {
+                    type: {value: 'file'},
+                    value: {value: id},
+                    position: {value: dropMatrix},
+                    owner: {value: null},
+                    bindOwner: {value: null},
+                    physics: {value: true},
+                  },
+                  metadata: {},
+                };
+                walletApi.makeItem(itemSpec);
+              };
+              fs.on('upload', _upload);
+
+              const _update = () => {
+                assetsMaterial.uniforms.theta.value = (Date.now() * ROTATE_SPEED * (Math.PI * 2) % (Math.PI * 2));
+              };
+              rend.on('update', _update);
+
+              cleanups.push(() => {
+                // input.removeListener('trigger', _trigger);
+                input.removeListener('gripdown', _gripdown);
+
+                fs.removeListener('upload', _upload);
+
+                rend.removeListener('update', _update);
+              });
+
+              class WalletApi extends EventEmitter {
+                getAssetsMaterial() {
+                  return assetsMaterial;
+                }
+
+                getAsset(id) {
+                  return assetsMesh.getAssetInstance(id);
+                }
+
+                makeItem(itemSpec) {
+                  const {
+                    id,
+                    attributes: {
+                      type: {value: type},
+                      value: {value: value},
+                      position: {value: matrix},
+                      physics: {value: physics},
+                    },
+                  } = itemSpec;
+                  const n = murmur(id);
+                  const position = new THREE.Vector3(matrix[0], matrix[1], matrix[2]);
+                  const rotation = new THREE.Quaternion(matrix[3], matrix[4], matrix[5], matrix[6]);
+                  const scale = new THREE.Vector3(matrix[7], matrix[8], matrix[9]);
+
+                  const assetInstance = assetsMesh.addAssetInstance(
+                    id,
+                    type,
+                    value,
+                    n,
+                    physics,
+                    position,
+                    rotation,
+                    scale,
+                    zeroVector.clone(),
+                    zeroQuaternion.clone(),
+                    oneVector.clone()
+                  );
+                  _bindAssetInstance(assetInstance);
+                  _bindAssetInstancePhysics(assetInstance);
+
+                  connection.send(JSON.stringify({
+                    method: 'addAsset',
+                    args: {
+                      id,
+                      type,
+                      value,
+                      n,
+                      physics,
+                      matrix,
+                    },
+                  }));
+
+                  return assetInstance;
+                }
+
+                destroyItem(itemSpec) {
+                  const {id} = itemSpec;
+                  const assetInstance = assetsMesh.getAssetInstance(id);
+                  _unbindAssetInstance(assetInstance);
+
+                  assetsMesh.removeAssetInstance(id);
+
+                  connection.send(JSON.stringify({
+                    method: 'removeAsset',
+                    args: {
+                      id,
+                    },
+                  }));
+                }
+
+                makeFile(fileSpec) {
+                  const {name, data, matrix} = fileSpec;
+                  const file = fs.makeRemoteFile();
+                  return file.write(data).then(() => this.reifyFile({name, file, matrix}));
+                }
+
+                reifyFile(fileSpec) {
+                  const {name, file, matrix} = fileSpec;
+                  const {n} = file;
+                  const id = String(n);
+                  const itemSpec = {
+                    type: 'file',
+                    id,
+                    name,
+                    attributes: {
+                      type: {value: 'file'},
+                      value: {
+                        value: {
+                          id: n,
+                          name,
+                        },
+                      },
+                      position: {value: matrix},
+                      owner: {value: null},
+                      bindOwner: {value: null},
+                      physics: {value: true},
+                    },
+                    metadata: {},
+                  };
+                  return walletApi.makeItem(itemSpec);
+                }
+
+                getAssets() {
+                  return walletState.assets;
+                }
+
+                getEquipments() {
+                  return walletState.equipments;
+                }
+
+                setEquipment(index, equipment) {
+                  walletState.equipments[index] = equipment;
+
+                  const {equipments: oldEquipments} = walletState;
+                  const newEquipments = _clone(oldEquipments);
+                  newEquipments[index] = _clone(equipment);
+
+                  _rebindEquipments(oldEquipments, newEquipments);
+
+                  walletState.equipments = newEquipments;
+                  _saveEquipments();
+                }
+
+                registerItem(pluginInstance, itemApi) {
+                  const {asset} = itemApi;
+
+                  let entry = itemApis[asset];
+                  if (!entry) {
+                    entry = [];
+                    itemApis[asset] = entry;
+                  }
+                  entry.push(itemApi);
+
+                  _bindItemApi(itemApi);
+                }
+
+                unregisterItem(pluginInstance, itemApi) {
+                  const {asset} = itemApi;
+
+                  const entry = itemApis[asset];
+                  entry.splice(entry.indexOf(itemApi), 1);
+                  if (entry.length === 0) {
+                    delete itemApis[asset];
+                  }
+
+                  _unbindItemApi(itemApi);
+                }
+
+                registerEquipment(pluginInstance, equipmentApi) {
+                  const {asset} = equipmentApi;
+
+                  let entry = equipmentApis[asset];
+                  if (!entry) {
+                    entry = [];
+                    equipmentApis[asset] = entry;
+                  }
+                  entry.push(equipmentApi);
+
+                  _bindEquipmentApi(equipmentApi);
+                }
+
+                unregisterEquipment(pluginInstance, equipmentApi) {
+                  const {asset} = equipmentApi;
+
+                  const entry = equipmentApis[asset];
+                  entry.splice(entry.indexOf(equipmentApi), 1);
+                  if (entry.length === 0) {
+                    delete equipmentApis[asset];
+                  }
+
+                  _unbindEquipmentApi(equipmentApi);
+                }
+              }
+              const walletApi = new WalletApi();
+              return walletApi;
             }
-            entry.push(itemApi);
-
-            _bindItemApi(itemApi);
-          }
-
-          unregisterItem(pluginInstance, itemApi) {
-            const {asset} = itemApi;
-
-            const entry = itemApis[asset];
-            entry.splice(entry.indexOf(itemApi), 1);
-            if (entry.length === 0) {
-              delete itemApis[asset];
-            }
-
-            _unbindItemApi(itemApi);
-          }
-
-          registerEquipment(pluginInstance, equipmentApi) {
-            const {asset} = equipmentApi;
-
-            let entry = equipmentApis[asset];
-            if (!entry) {
-              entry = [];
-              equipmentApis[asset] = entry;
-            }
-            entry.push(equipmentApi);
-
-            _bindEquipmentApi(equipmentApi);
-          }
-
-          unregisterEquipment(pluginInstance, equipmentApi) {
-            const {asset} = equipmentApi;
-
-            const entry = equipmentApis[asset];
-            entry.splice(entry.indexOf(equipmentApi), 1);
-            if (entry.length === 0) {
-              delete equipmentApis[asset];
-            }
-
-            _unbindEquipmentApi(equipmentApi);
-          }
-        }
-        const walletApi = new WalletApi();
-
-        return walletApi;
+          });
       }
     });
   }
