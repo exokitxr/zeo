@@ -221,6 +221,7 @@ class Rend {
               canvas.height = HEIGHT;
               const ctx = canvas.getContext('2d');
               ctx.font = '600 13px Open sans';
+              ctx.fillStyle = '#FFF';
               const texture = new THREE.Texture(
                 canvas,
                 THREE.UVMapping,
@@ -233,10 +234,17 @@ class Rend {
                 16
               );
 
+              const _getLocalTabAssets = () => assets
+                .filter(assetSpec => _getAssetType(assetSpec.asset).type === tabType);
+              const _getLocalAssets = () => _getLocalTabAssets()
+                .slice(inventoryPage * 12, (inventoryPage + 1) * 12);
+
               let tabIndex = 0;
               let tabType = 'item';
-              let localAssets = assets.filter(assetSpec => _getAssetType(assetSpec.asset).type === tabType);
-              let inventoryPages = Math.ceil(localAssets.length / 12);
+              let inventoryPage = 0;
+              let localAssets = _getLocalAssets();
+              const localTabAssets = _getLocalTabAssets();
+              let inventoryPages = localTabAssets.length > 12 ? Math.ceil(localTabAssets.length / 12) : 0;
               let inventoryBarValue = 0;
               let equipmentPages = 2; // XXX
               let equipmentBarValue = 0;
@@ -249,11 +257,8 @@ class Rend {
               const _renderMenu = () => {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 ctx.drawImage(menuImg, (canvas.width - menuImg.width) / 2, (canvas.height - menuImg.height) / 2, canvas.width, canvas.width * menuImg.height / menuImg.width);
-                ctx.fillStyle = '#FFF';
                 ctx.fillRect(850 + tabIndex * 126, 212, 125, 4);
-                ctx.fillStyle = inventoryPages > 1 ? '#FFF' : '#78867b';
                 ctx.fillRect(1316, 235 + _snapToPixel(600, inventoryPages, inventoryBarValue), 24, 600 / inventoryPages);
-                ctx.fillStyle = equipmentPages > 1 ? '#FFF' : '#78867b';
                 ctx.fillRect(456, 204 + _snapToPixel(600, equipmentPages, equipmentBarValue), 24, 600 / equipmentPages);
                 texture.needsUpdate = true;
               };
@@ -314,8 +319,10 @@ class Rend {
 
                 let lastInventoryPage = -1;
                 const _renderAssets = () => {
-                  const inventoryPage = _snapToIndex(inventoryPages, inventoryBarValue);
+                  inventoryPage = _snapToIndex(inventoryPages, inventoryBarValue);
                   if (inventoryPage !== lastInventoryPage) {
+                    localAssets = _getLocalAssets();
+
                     assetsMesh.render();
                     lastInventoryPage = inventoryPage;
                   }
@@ -360,6 +367,10 @@ class Rend {
                   } else if (tabIndex === 3) {
                     tabType = 'skin';
                   }
+                  localAssets = _getLocalAssets();
+                  const localTabAssets = _getLocalTabAssets();
+                  inventoryPages = localTabAssets.length > 12 ? Math.ceil(localTabAssets.length / 12) : 0;
+
                   _renderMenu();
                   assetsMesh.render();
 
@@ -476,11 +487,8 @@ class Rend {
                 const material = assetsMaterial; // XXX move this to resource engine
                 const mesh = new THREE.Mesh(geometry, material);
                 const _renderAssets = () => {
-                  const inventoryPage = _snapToIndex(inventoryPages, inventoryBarValue);
-
                   Promise.all(
                     localAssets
-                      .slice(inventoryPage * 12, (inventoryPage + 1) * 12)
                       .map((assetSpec, i) =>
                         _requestAssetImageData(assetSpec.asset)
                           .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
