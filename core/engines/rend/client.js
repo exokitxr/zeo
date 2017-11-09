@@ -220,7 +220,7 @@ class Rend {
               canvas.width = WIDTH;
               canvas.height = HEIGHT;
               const ctx = canvas.getContext('2d');
-              ctx.font = '600 13px Open sans';
+              ctx.font = '600 14px Open sans';
               ctx.fillStyle = '#FFF';
               const texture = new THREE.Texture(
                 canvas,
@@ -258,6 +258,13 @@ class Rend {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 ctx.drawImage(menuImg, (canvas.width - menuImg.width) / 2, (canvas.height - menuImg.height) / 2, canvas.width, canvas.width * menuImg.height / menuImg.width);
                 ctx.fillRect(850 + tabIndex * 126, 212, 125, 4);
+                for (let i = 0; i < localAssets.length; i++) {
+                  const assetSpec = localAssets[i];
+                  const dx = i % 3;
+                  const dy = Math.floor(i / 3);
+                  ctx.textAlign = 'center';
+                  ctx.fillText(_getAssetType(assetSpec.asset).name, 870 + (dx + 0.5) * 150, 235 + 132 - 10 + dy * 155, 132, 132);
+                }
                 ctx.fillRect(1316, 235 + _snapToPixel(600, inventoryPages, inventoryBarValue), 24, 600 / inventoryPages);
                 ctx.fillRect(456, 204 + _snapToPixel(600, equipmentPages, equipmentBarValue), 24, 600 / equipmentPages);
                 texture.needsUpdate = true;
