@@ -137,7 +137,24 @@ class Rend {
         return vridApi.get('assets')
           .then(assets => {
             if (live) {
-              assets => assets || [];
+              const _quantizeAssets = assets => {
+                const assetIndex = {};
+                for (let i = 0; i < assets.length; i++) {
+                  const assetSpec = assets[i];
+                  const {asset} = assetSpec;
+                  let entry = assetIndex[asset];
+                  if (!entry) {
+                    entry = _clone(assetSpec);
+                    entry.assets = [];
+                    assetIndex[asset] = entry;
+                  }
+                  entry.assets.push(assetSpec);
+                }
+                return Object.keys(assetIndex).map(k => assetIndex[k]);
+              };
+              // assets = _quantizeAssets(assets || []);
+              assets = _quantizeAssets(assets || []);
+              console.log('got new assets', assets);
 
               const localVector = new THREE.Vector3();
               const localMatrix = new THREE.Matrix4();
@@ -201,7 +218,6 @@ class Rend {
               canvas.height = HEIGHT;
               const ctx = canvas.getContext('2d');
               ctx.font = '600 13px Open sans';
-              ctx.fillStyle = '#FFF';
               const texture = new THREE.Texture(
                 canvas,
                 THREE.UVMapping,
@@ -218,8 +234,9 @@ class Rend {
               let inventoryPage = 0;
               let inventoryPages = Math.ceil(assets.length / 12);
               let inventoryBarValue = 0;
+              let equipmentPages = 2; // XXX
               let equipmentBarValue = 0;
-              const _snapToIndex = (steps, value) => Math.round(steps * value);
+              const _snapToIndex = (steps, value) => Math.floor(steps * value);
               const _snapToPixel = (max, steps, value) => {
                 const stepIndex = _snapToIndex(steps, value);
                 const stepSize = max / steps;
@@ -228,9 +245,12 @@ class Rend {
               const _render = () => {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 ctx.drawImage(menuImg, (canvas.width - menuImg.width) / 2, (canvas.height - menuImg.height) / 2, canvas.width, canvas.width * menuImg.height / menuImg.width);
+                ctx.fillStyle = '#FFF';
                 ctx.fillRect(850 + tabIndex * 126, 212, 125, 4);
-                ctx.fillRect(1316, 235 + _snapToPixel(600 - 60, inventoryPages, inventoryBarValue), 24, 60);
-                ctx.fillRect(456, 204 + _snapToPixel(600 - 60, inventoryPages, equipmentBarValue), 24, 60);
+                ctx.fillStyle = inventoryPages > 1 ? '#FFF' : '#78867b';
+                ctx.fillRect(1316, 235 + _snapToPixel(600, inventoryPages, inventoryBarValue), 24, 600 / inventoryPages);
+                ctx.fillStyle = equipmentPages > 1 ? '#FFF' : '#78867b';
+                ctx.fillRect(456, 204 + _snapToPixel(600, equipmentPages, equipmentBarValue), 24, 600 / equipmentPages);
                 texture.needsUpdate = true;
               };
               _render();
@@ -739,5 +759,12 @@ class Rend {
     this._cleanup();
   }
 }
+const _clone = o => {
+  const result = {};
+  for (const k in o) {
+    result[k] = o[k];
+  }
+  return result;
+};
 
 module.exports = Rend;
