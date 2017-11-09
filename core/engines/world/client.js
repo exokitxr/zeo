@@ -53,7 +53,7 @@ class World {
       '/core/engines/hand',
       '/core/engines/loader',
       '/core/engines/tags',
-      // '/core/engines/fs',
+      '/core/utils/js-utils',
       '/core/utils/network-utils',
       '/core/utils/geometry-utils',
       '/core/utils/creature-utils',
@@ -72,13 +72,15 @@ class World {
       hand,
       loader,
       tags,
-      // fs,
+      jsUtils,
       networkUtils,
       geometryUtils,
       creatureUtils,
     ]) => {
       if (live) {
         const {THREE, scene, camera} = three;
+        const {events} = jsUtils;
+        const {EventEmitter} = events;
         const {AutoWs} = networkUtils;
         const {sfx} = resource;
 
@@ -126,6 +128,8 @@ class World {
 
             // scene.add(tagMesh);
             // tagMesh.updateMatrixWorld();
+
+            worldApi.emit('add', tagMesh);
           }
 
           remove(tagMesh) {
@@ -751,7 +755,7 @@ class World {
           connection.destroy();
         });
 
-        class WorldApi {
+        class WorldApi extends EventEmitter {
           init() {
             initPromise.resolve();
           }
@@ -773,7 +777,6 @@ class World {
           }
         }
         const worldApi = new WorldApi();
-
         return worldApi;
       }
     });
