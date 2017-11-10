@@ -174,7 +174,7 @@ class Inventory {
         };
         world.on('add', _worldAdd);
         const _walletAssets = newAssets => {
-          assets = newAssets;
+          assets = _quantizeAssets(newAssets);
           const localTabAssets = _getLocalTabAssets();
           inventoryPage = 0;
           inventoryPages = localTabAssets.length > 12 ? Math.ceil(localTabAssets.length / 12) : 0;
