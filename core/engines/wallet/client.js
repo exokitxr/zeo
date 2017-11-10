@@ -6,7 +6,6 @@ import {
   WORLD_DEPTH,
 } from './lib/constants/wallet';
 import walletRender from './lib/render/wallet';
-import menuUtils from './lib/utils/menu';
 
 const DEFAULT_MATRIX = [
   0, 0, 0,
