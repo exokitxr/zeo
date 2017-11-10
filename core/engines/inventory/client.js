@@ -303,6 +303,13 @@ class Inventory {
               }
             }
           }
+          for (let i = 0; i < equipments.length; i++) {
+            const equipment = equipments[i];
+            if (equipment) {
+              ctx.fillStyle = '#FFF';
+              ctx.fillRect(516, 235 + i * 152, 44, 120);
+            }
+          }
           for (let i = 0; i < localMods.length; i++) {
             const modSpec = localMods[i];
             const dx = i % 3;
