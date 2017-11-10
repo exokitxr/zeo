@@ -130,7 +130,7 @@ class Wallet {
           height: 16,
           data: new Uint8Array(arrayBuffer),
         }));
-        const _addStrgAsset = (asset, quantity) => vridApi.get('assets')
+        const _addStrgAsset = asset => vridApi.get('assets')
           .then(assets => {
             assets = assets || [];
             let assetSpec = assets.find(assetSpec => assetSpec.asset === asset);
@@ -138,24 +138,18 @@ class Wallet {
               assetSpec = {
                 id: asset,
                 asset,
-                quantity: 0,
               };
               assets.push(assetSpec);
             }
-            assetSpec.quantity += quantity;
 
             return vridApi.set('assets', assets);
           });
-        const _removeStrgAsset = (asset, quantity) => vridApi.get('assets')
+        const _removeStrgAsset = asset => vridApi.get('assets')
           .then(assets => {
             assets = assets || [];
             const assetSpecIndex = assets.findIndex(assetSpec => assetSpec.asset === asset);
             if (assetSpecIndex !== -1) {
-              const assetSpec = assets[assetSpecIndex];
-              assetSpec.quantity--;
-              if (assetSpec.quantity === 0) {
-                assets.splice(assetSpecIndex, 1);
-              }
+              assets.splice(assetSpecIndex, 1);
             }
             return vridApi.set('assets', assets);
           });
@@ -954,30 +948,27 @@ class Wallet {
                 const assetInstance = walletApi.makeItem(itemSpec);
                 assetInstance.grab(side);
 
-                const quantity = 1;
                 const {assets: oldAssets} = walletState;
-                _removeStrgAsset(asset, quantity)
+                _removeStrgAsset(asset)
                   .then(() => {
                     const {assets: newAssets} = walletState;
 
                     if (oldAssets === newAssets) {
-                      const newAsset = newAssets.find(assetSpec => assetSpec.asset === asset);
-                      if (newAsset) {
-                        if (--newAsset.quantity === 0) {
-                          newAssets.splice(newAssets.indexOf(newAsset), 1);
+                      const index = newAssets.findIndex(assetSpec => assetSpec.asset === asset);
+                      if (index !== -1) {
+                        newAssets.splice(index, 1);
 
-                          const {equipments} = walletState;
-                          const removedEquipments = equipments.filter(equipmentSpec => equipmentSpec && equipmentSpec.asset === asset);
-                          if (removedEquipments.length > 0) {
-                            for (let i = 0; i < equipments.length; i++) {
-                              const equipment = equipments[i];
-                              if (removedEquipments.includes(equipment)) {
-                                equipment.asset = null;
-                              }
-                            }
-
-                            _saveEquipments();
+                        const {equipments} = walletState;
+                        let removed = false;
+                        for (let i = 0; i < equipments.length; i++) {
+                          const equipmentSpec = equipments[i];
+                          if (equipmentSpec && equipmentSpec.asset === asset) {
+                            equipments[i] = null;
+                            removed = true;
                           }
+                        }
+                        if (removed) {
+                          _saveEquipments();
                         }
 
                         // _updatePages();
@@ -1006,9 +997,8 @@ class Wallet {
                 const {type} = assetInstance;
                 if (type === 'asset') {
                   const {value} = assetInstance;
-                  const quantity = 1;
                   const {assets: oldAssets} = walletState;
-                  _addStrgAsset(value, quantity)
+                  _addStrgAsset(value)
                     .then(() => {
                       const {assets: newAssets} = walletState;
 
@@ -1018,17 +1008,15 @@ class Wallet {
                           newAsset = {
                             id: value,
                             asset: value,
-                            quantity: 0,
                           };
                           newAssets.push(newAsset);
                         }
-                        newAsset.quantity++;
 
                         // _updatePages();
                       }
                     })
                     .then(() => {
-                      walletApi.emit('assets', assets);
+                      walletApi.emit('assets', walletState.assets);
                     })
                     .catch(err => {
                       console.warn(err);
@@ -1080,7 +1068,6 @@ class Wallet {
                       const assetSpec = {
                         id,
                         asset: 'ITEM.FILE',
-                        quantity: 1,
                         file: {
                           id: n,
                           name,
