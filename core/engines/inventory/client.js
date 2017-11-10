@@ -113,6 +113,7 @@ class Inventory {
         '/core/utils/vrid-utils',
       ]),
       _requestImageBitmap('/archae/inventory/img/menu.svg'),
+      _requestImageBitmap('/archae/inventory/img/arrow-left.svg'),
     ]).then(([
       [
         bootstrap,
@@ -130,6 +131,7 @@ class Inventory {
         vridUtils,
       ],
       menuImg,
+      arrowLeftImg,
     ]) => {
       if (live) {
         const {THREE, scene, camera, renderer} = three;
@@ -241,7 +243,6 @@ class Inventory {
         canvas.width = WIDTH;
         canvas.height = HEIGHT;
         const ctx = canvas.getContext('2d');
-        ctx.font = '600 14px Open sans';
         const texture = new THREE.Texture(
           canvas,
           THREE.UVMapping,
@@ -276,6 +277,7 @@ class Inventory {
         let localMods = _getLocalMods();
         let serverPages = mods.length > 12 ? Math.ceil(mods.length / 12) : 0;
         let serverBarValue = 0;
+        let serverIndex = -1;
         const _snapToIndex = (steps, value) => Math.floor(steps * value);
         const _snapToPixel = (max, steps, value) => {
           const stepIndex = _snapToIndex(steps, value);
@@ -287,7 +289,9 @@ class Inventory {
           ctx.drawImage(menuImg, (canvas.width - menuImg.width) / 2, (canvas.height - menuImg.height) / 2, canvas.width, canvas.width * menuImg.height / menuImg.width);
           ctx.fillStyle = '#FFF';
           ctx.fillRect(850 + tabIndex * 126, 212, 125, 4);
+          ctx.font = '600 14px Open sans';
           ctx.textAlign = 'center';
+          ctx.textBaseline = 'alphabetic';
           for (let i = 0; i < localAssets.length; i++) {
             const assetSpec = localAssets[i];
             const dx = i % 3;
@@ -319,6 +323,17 @@ class Inventory {
           ctx.fillStyle = '#FFF';
           ctx.fillRect(1316, 235 + _snapToPixel(600, inventoryPages, inventoryBarValue), 24, 600 / inventoryPages);
           ctx.fillRect(456, 204 + _snapToPixel(600, serverPages, serverBarValue), 24, 600 / serverPages);
+          if (serverIndex !== -1) {
+            ctx.clearRect(0, 200, 500, 650);
+
+            ctx.drawImage(arrowLeftImg, 0, 200);
+
+            const modSpec = localMods[serverIndex];
+            ctx.font = '600 24px/1 Open sans';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
+            ctx.fillText(modSpec.displayName, 50, 200);
+          }
           texture.needsUpdate = true;
         };
         _renderMenu();
@@ -349,14 +364,16 @@ class Inventory {
             const localIndex = index++;
             _pushAnchor(inventoryAnchors, 870 + dx * 150, 235 + dy * 155, 132, 132, e => {
               const {side} = e;
-              if (inventoryIndices[side] !== localIndex) {
-                inventoryIndices[side] = localIndex;
-                wallet.selectAsset(side, localAssets[localIndex].id);
-              } else {
-                inventoryIndices[side] = -1;
-                wallet.selectAsset(side, null);
+              if (localIndex < localAssets.length) {
+                if (inventoryIndices[side] !== localIndex) {
+                  inventoryIndices[side] = localIndex;
+                  wallet.selectAsset(side, localAssets[localIndex].id);
+                } else {
+                  inventoryIndices[side] = -1;
+                  wallet.selectAsset(side, null);
+                }
+                _renderMenu();
               }
-              _renderMenu();
 
               e.stopImmediatePropagation();
             });
@@ -384,6 +401,9 @@ class Inventory {
           onmove = () => {
             const hoverState = uiTracker.getHoverState(side);
             inventoryBarValue = Math.min(Math.max(hoverState.y - 235, 0), 600) / 600;
+            inventoryIndices[side] = -1;
+            wallet.selectAsset(side, null);
+
             _renderMenu();
             _renderAssets();
           };
@@ -433,6 +453,7 @@ class Inventory {
             inventoryIndices.right = -1;
             wallet.selectAsset('left', null);
             wallet.selectAsset('right', null);
+            serverIndex = -1;
 
             _renderMenu();
             assetsMesh.render();
@@ -446,7 +467,13 @@ class Inventory {
           for (let dx = 0; dx < 3; dx++) {
             const localIndex = index++;
             _pushAnchor(serverAnchors, dx * 150, 204 + dy * 155, 132, 132, e => {
-              console.log('server', localIndex);
+              if (localIndex < localMods.length) {
+                serverIndex = localIndex;
+                plane.anchors = _getAnchors();
+
+                _renderMenu();
+                assetsMesh.render();
+              }
 
               e.stopImmediatePropagation();
             });
@@ -482,7 +509,25 @@ class Inventory {
             _renderAssets();
           };
         });
-        plane.anchors = inventoryAnchors.concat(inventoryBarAnchors).concat(equipmentAnchors).concat(tabsAnchors).concat(serverAnchors).concat(serverBarAnchors);
+        const serverModAnchors = [];
+        _pushAnchor(serverModAnchors, 0, 200, 40, 40, (e, hoverState) => {
+          serverIndex = -1;
+          plane.anchors = _getAnchors();
+
+          _renderMenu();
+          assetsMesh.render();
+        });
+        const _getAnchors = () => {
+          const result = inventoryAnchors.concat(inventoryBarAnchors).concat(equipmentAnchors).concat(tabsAnchors);
+          if (serverIndex === -1) {
+            result.push.apply(result, serverAnchors);
+            result.push.apply(result, serverBarAnchors);
+          } else {
+            result.push.apply(result, serverModAnchors);
+          }
+          return result;
+        };
+        plane.anchors = _getAnchors();
         menuMesh.add(plane);
         uiTracker.addPlane(plane);
 
@@ -618,7 +663,7 @@ class Inventory {
                     })
                     .filter(o => o !== null)
                 ).concat(
-                  localMods
+                  serverIndex === -1 ? localMods
                     .map((modSpec, i) =>
                       _requestAssetImageData('MOD.' + modSpec.displayName)
                         .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
@@ -630,7 +675,7 @@ class Inventory {
                           zeroQuaternion,
                           oneVector
                         )))
-                    )
+                    ) : []
                 )
             )
             .then(geometrySpecs => {
