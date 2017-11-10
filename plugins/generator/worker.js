@@ -520,7 +520,6 @@ const _relightSub = (chunk, x, y, z) => _decorateChunkLightsRange(
 );
 const _decorateChunkLightsRange = (chunk, minX, maxX, minY, maxY, minZ, maxZ, relight) => {
   const {x: ox, z: oz} = chunk;
-  const updatingLights = chunk[lightsRenderedSymbol];
 
   const lavaArray = Array(9);
   const objectLightsArray = Array(9);
