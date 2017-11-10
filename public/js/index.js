@@ -2,12 +2,19 @@ import vrid from 'vrid';
 
 window.vrid = vrid;
 
-archae.requestPlugin('/core/engines/zeo')
-  .then(() => {
-    console.log('app started');
-  })
-  .catch(err => {
-    console.warn(err);
+vrid.getUser()
+  .then(user => {
+    if (user) {
+      archae.requestPlugin('/core/engines/zeo')
+        .then(() => {
+          console.log('app started');
+        })
+        .catch(err => {
+          console.warn(err);
+        });
+    } else {
+      document.location.href = `https://my.zeovr.io/sign-in.html?redirectUrl=${encodeURIComponent(document.location.href)}`;
+    }
   });
 
 window.onvrdisplayactivate = e => {
