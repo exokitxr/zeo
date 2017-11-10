@@ -1,11 +1,11 @@
 import {
   WIDTH,
   HEIGHT,
+
   WORLD_WIDTH,
   WORLD_HEIGHT,
   WORLD_DEPTH,
 } from './lib/constants/notification';
-import notificationRenderer from './lib/render/notification';
 
 class Notification {
   constructor(archae) {
@@ -31,12 +31,10 @@ class Notification {
     return archae.requestPlugins([
       '/core/engines/three',
       '/core/engines/webvr',
-      '/core/engines/biolumi',
       '/core/engines/rend',
     ]).then(([
       three,
       webvr,
-      biolumi,
       rend,
     ]) => {
       if (live) {
@@ -49,40 +47,52 @@ class Notification {
         const notifications = [];
 
         const hudMesh = (() => {
-          const menuUi = biolumi.makeUi({
-            width: WIDTH,
-            height: HEIGHT,
-            color: [1, 1, 1, 0],
-          });
-          const mesh = menuUi.makePage(({
-            notifications,
-          }) => {
-            const text = _escape(notifications.map(({text}) => text).join(' '));
+          const canvas = document.createElement('canvas');
+          canvas.width = WIDTH;
+          canvas.height = HEIGHT;
+          const ctx = canvas.getContext('2d');
+          const fontSize = 34;
+          const lineHeight = 1.4;
+          ctx.font = `600 ${fontSize}px/${lineHeight} Consolas, "Liberation Mono", Menlo, Courier, monospace`;
+          ctx.textBaseline = 'top';
+          const texture = new THREE.Texture(
+            canvas,
+            THREE.UVMapping,
+            THREE.ClampToEdgeWrapping,
+            THREE.ClampToEdgeWrapping,
+            THREE.LinearFilter,
+            THREE.LinearFilter,
+            THREE.RGBAFormat,
+            THREE.UnsignedByteType,
+            16
+          );
 
-            return {
-              type: 'html',
-              src: notificationRenderer.getHudSrc(text),
-              x: 0,
-              y: 0,
-              w: WIDTH,
-              h: HEIGHT,
-            };
-          }, {
-            type: 'notification',
-            state: {
-              notifications,
-            },
-            worldWidth: WORLD_WIDTH,
-            worldHeight: WORLD_HEIGHT,
+          const geometry = new THREE.PlaneBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT);
+          const material = new THREE.MeshBasicMaterial({
+            map: texture,
+            side: THREE.DoubleSide,
+            transparent: true,
+            // renderOrder: -1,
           });
+          const mesh = new THREE.Mesh(geometry, material);
           mesh.visible = false;
-
           mesh.needsUpdate = false;
           mesh.update = () => {
             if (mesh.needsUpdate) {
-              const {page} = mesh;
-              page.update();
+              ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+              const text = _escape(notifications.map(({text}) => text).join('\n'));
+              const width = Math.min(10 * 2 + ctx.measureText(text).width, WIDTH);
+              const height = Math.min(notifications.length * fontSize * lineHeight, HEIGHT);
+              const left = (WIDTH - width) / 2;
+
+              ctx.fillStyle = '#111';
+              ctx.fillRect(left, 0, width, height);
+
+              ctx.fillStyle = '#FFF';
+              ctx.fillText(text, left + 10, 0);
+
+              texture.needsUpdate = true;
               mesh.needsUpdate = false;
             }
           };
@@ -90,7 +100,7 @@ class Notification {
             const targetPosition = position.clone().add(
               new THREE.Vector3(
                 0,
-                -WORLD_HEIGHT * 0.25,
+                -WORLD_HEIGHT,
                 -0.5
               ).applyQuaternion(rotation)
             );
