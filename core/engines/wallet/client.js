@@ -5,7 +5,6 @@ import {
   WORLD_HEIGHT,
   WORLD_DEPTH,
 } from './lib/constants/wallet';
-import walletRender from './lib/render/wallet';
 
 const DEFAULT_MATRIX = [
   0, 0, 0,
@@ -14,7 +13,6 @@ const DEFAULT_MATRIX = [
 ];
 const NUM_POSITIONS = 100 * 1024;
 const ROTATE_SPEED = 0.0004;
-const CREDIT_ASSET_NAME = 'CRD';
 const SIDES = ['left', 'right'];
 
 class Wallet {
@@ -94,7 +92,6 @@ class Wallet {
         const {materials: {assets: assetsMaterial}, sfx} = resource;
         const {vridApi} = vridUtils;
 
-        const walletRenderer = walletRender.makeRenderer({creatureUtils});
         const localUserId = multiplayer.getId();
 
         const pixelSize = 0.015;
