@@ -68,9 +68,7 @@ class Hand {
 
         const connections = [];
 
-        wss.on('connection', c => {
-          const {url} = c.upgradeReq;
-
+        wss.on('connection', (c, {url}) => {
           let match;
           if (match = url.match(/\/archae\/handWs\?id=(.+)$/)) {
             const userId = match[1];

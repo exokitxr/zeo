@@ -116,6 +116,9 @@ const config = {
   dataDirectory,
   cryptoDirectory,
   installDirectory,
+  indexJsFiles: [
+    path.join(__dirname, 'public', 'js', 'index.js'),
+  ],
   password,
   cors: true,
   staticSite: false,

@@ -73,16 +73,14 @@ class Multiplayer {
           },
         });
 
-        wss.on('connection', c => {
-          const {url} = c.upgradeReq;
-
+        wss.on('connection', (c, {url, connection: {remoteAddress}}) => {
           let match;
           if (match = url.match(/^\/archae\/multiplayerWs\?id=(.+?)&username=(.+?)$/)) {
             if (connections.length < maxUsers) {
               const n = parseInt(match[1], 10);
               const username = decodeURIComponent(match[2]);
 
-              const remoteAddress = c.upgradeReq.connection.remoteAddress.replace(/^::ffff:/, '');
+              remoteAddress = remoteAddress.replace(/^::ffff:/, '');
               console.log('multiplayer connection', {n, username, remoteAddress});
 
               const _init = () => {

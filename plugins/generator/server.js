@@ -610,9 +610,7 @@ class Generator {
         app.get('/archae/generator/originHeight', serveGeneratorOriginHeight);
 
         const connections = [];
-        const _connection = c => {
-          const {url} = c.upgradeReq;
-
+        const _connection = (c, {url}) => {
           if (url === '/archae/generatorWs') {
             const _broadcast = e => {
               const es = JSON.stringify(e);

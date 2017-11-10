@@ -1,4 +1,6 @@
-(() => {
+import vrid from 'vrid';
+
+window.vrid = vrid;
 
 archae.requestPlugin('/core/engines/zeo')
   .then(() => {
@@ -20,5 +22,3 @@ window.onvrdisplayactivate = e => {
     },
   ]);
 };
-
-})();

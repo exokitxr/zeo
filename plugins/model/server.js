@@ -12,9 +12,7 @@ class Model {
     const models = {};
 
     const connections = [];
-    const _connection = c => {
-      const {url} = c.upgradeReq;
-
+    const _connection = (c, {url}) => {
       if (url === '/archae/modelWs') {
         for (const index in models) {
           const model = models[index];

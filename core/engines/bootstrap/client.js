@@ -120,7 +120,6 @@ class Bootstrap {
             }
           }
           const bootstrapApi = new BootstrapApi();
-
           return bootstrapApi;
         }
       });

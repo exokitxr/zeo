@@ -24,9 +24,7 @@ constructor(archae) {
     const assetInstances = [];
 
     const connections = [];
-    wss.on('connection', c => {
-      const {url} = c.upgradeReq;
-
+    wss.on('connection', (c, {url}) => {
       if (url === '/archae/walletWs') {
         const _init = () => {
           c.send(JSON.stringify({

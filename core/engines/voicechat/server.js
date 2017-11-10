@@ -9,9 +9,7 @@ class VoiceChat {
 
     const connections = [];
 
-    wss.on('connection', c => {
-      const {url} = c.upgradeReq;
-
+    wss.on('connection', (c, {url}) => {
       let match;
       if (match = url.match(/\/archae\/voicechatWs\?id=(.+)$/)) {
         const peerId = parseInt(decodeURIComponent(match[1]), 10);
