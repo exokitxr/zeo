@@ -624,7 +624,7 @@ class Inventory {
                         .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
                           localVector.set(
                             WORLD_WIDTH * -0.46 + (i % 3) * WORLD_WIDTH * 0.065 * 1.2,
-                            WORLD_HEIGHT * 0.2 -Math.floor(i / 3) * WORLD_WIDTH * 0.065 * 1.2,
+                            WORLD_HEIGHT * 0.21 -Math.floor(i / 3) * WORLD_WIDTH * 0.065 * 1.2,
                             pixelSize * 16 * 0.6
                           ),
                           zeroQuaternion,
