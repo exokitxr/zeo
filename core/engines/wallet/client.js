@@ -984,7 +984,7 @@ class Wallet {
                           }
                         }
 
-                        _updatePages();
+                        // _updatePages();
                       }
                     }
                   })
@@ -1028,7 +1028,7 @@ class Wallet {
                         }
                         newAsset.quantity++;
 
-                        _updatePages();
+                        // _updatePages();
                       }
                     })
                     .then(() => {
