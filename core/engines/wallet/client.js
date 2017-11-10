@@ -278,272 +278,6 @@ class Wallet {
           left: _makeHoverState(),
           right: _makeHoverState(),
         };
-
-        const _makeAssetsMesh = () => {
-          const mesh = new THREE.Object3D();
-
-          class AssetInstance extends Grabbable {
-            constructor(
-              id,
-              type,
-              value,
-              n,
-              physics,
-              position,
-              rotation,
-              scale,
-              localPosition,
-              localRotation,
-              localScale
-            ) {
-              super(n, position, rotation, scale, localPosition, localRotation, localScale);
-
-              this.id = id;
-              this.type = type;
-              this.value = value;
-              this.physics = physics;
-            }
-
-            emit(t, e) {
-              switch (t) {
-                case 'grab': {
-                  const {userId, side} = e;
-
-                  hoverStates[side].worldGrabAsset = this;
-
-                  super.emit(t, {
-                    userId,
-                    side,
-                    item: this,
-                  });
-
-                  assetsMesh.geometryNeedsUpdate = true;
-
-                  break;
-                }
-                case 'release': {
-                  const {userId, side, live, stopImmediatePropagation} = e;
-
-                  hoverStates[side].worldGrabAsset = null;
-
-                  const e2 = {
-                    userId,
-                    side,
-                    item: this,
-                    live,
-                    stopImmediatePropagation,
-                  };
-                  super.emit(t, e2);
-
-                  if (e2.live) {
-                    _checkGripup(e2);
-                  }
-
-                  break;
-                }
-                case 'update': {
-                  super.emit(t, e);
-
-                  break;
-                }
-                case 'destroy': {
-                  const {userId, side} = e;
-                  if (userId) {
-                    hoverStates[side].worldGrabAsset = null;
-                  }
-
-                  super.emit(t, {
-                    userId,
-                    side,
-                    item: this,
-                  });
-
-                  break;
-                }
-                default: {
-                  super.emit(t, e);
-
-                  break;
-                }
-              }
-            }
-
-            show() {
-              this.emit('show');
-            }
-
-            hide() {
-              this.emit('hide');
-            }
-
-            enablePhysics() {
-              this.physics = true;
-              this.emit('physics', true);
-
-              connection.send(JSON.stringify({
-                method: 'setPhysics',
-                args: {
-                  id: this.id,
-                  physics: true,
-                },
-              }));
-            }
-
-            disablePhysics() {
-              this.physics = false;
-              this.emit('physics', false);
-
-              connection.send(JSON.stringify({
-                method: 'setPhysics',
-                args: {
-                  id: this.id,
-                  physics: false,
-                },
-              }));
-            }
-
-            updatePhysics(physics) {
-              this.physics = physics;
-              this.emit('physics', physics);
-            }
-
-            collide() {
-              this.emit('collide');
-            }
-          }
-
-          const assetInstances = [];
-          mesh.getAssetInstances = id => assetInstances;
-          mesh.getAssetInstance = id => assetInstances.find(assetInstance => assetInstance.id === id);
-          mesh.addAssetInstance = (id, type, value, n, physics, position, rotation, scale, localPosition, localRotation, localScale) => {
-            const assetInstance = new AssetInstance(id, type, value, n, physics, position, rotation, scale, localPosition, localRotation, localScale);
-
-            hand.addGrabbable(assetInstance);
-            assetInstances.push(assetInstance);
-
-            const mesh = (() => {
-              let live = true;
-
-              const geometry = (() => {
-                _requestAssetImageData(value)
-                  .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize))
-                  .then(geometrySpec => {
-                    if (live) {
-                      const {positions, normals, colors, dys, zeroDys} = geometrySpec;
-
-                      geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-                      // geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
-                      geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
-                      geometry.addAttribute('dy', new THREE.BufferAttribute(geometry.getAttribute('dy').array === geometry.dys ? dys : zeroDys, 2));
-
-                      geometry.dys = dys;
-                      geometry.zeroDys = zeroDys;
-
-                      geometry.destroy = function() {
-                        this.dispose();
-                        spriteUtils.releaseSpriteGeometry(geometrySpec);
-                      };
-                    }
-                  })
-                  .catch(err => {
-                    if (live) {
-                      console.warn(err);
-                    }
-                  });
-
-                const geometry = new THREE.BufferGeometry();
-                const dys = zeroArray; // two of these so we can tell which is active
-                const zeroDys = zeroArray2;
-                geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 2));
-                geometry.dys = dys;
-                geometry.zeroDys = zeroDys;
-                geometry.boundingSphere = new THREE.Sphere(
-                  zeroVector,
-                  1
-                );
-                geometry.destroy = function() {
-                  this.dispose();
-                };
-                return geometry;
-              })();
-              const material = assetsMaterial;
-              const mesh = new THREE.Mesh(geometry, material);
-
-              mesh.destroy = () => {
-                geometry.destroy();
-
-                live = false;
-              };
-
-              return mesh;
-            })();
-            scene.add(mesh);
-            assetInstance.mesh = mesh;
-
-            assetInstance.on('grab', () => {
-              const {geometry} = mesh;
-              const dyAttribute = geometry.getAttribute('dy');
-              dyAttribute.array = geometry.zeroDys;
-              dyAttribute.needsUpdate = true;
-            });
-            assetInstance.on('release', () => {
-              const {geometry} = mesh;
-              const dyAttribute = geometry.getAttribute('dy');
-              dyAttribute.array = geometry.dys;
-              dyAttribute.needsUpdate = true;
-            });
-            const localVector = new THREE.Vector3();
-            const localQuaternion = new THREE.Quaternion();
-            assetInstance.on('update', () => {
-              const {position, rotation, scale, localPosition, localRotation, localScale} = assetInstance;
-
-              mesh.position.copy(position);
-
-              localQuaternion.copy(rotation);
-              if (assetInstance.isGrabbed()) {
-                localQuaternion.multiply(forwardQuaternion);
-              }
-              mesh.quaternion.copy(localQuaternion)
-                .multiply(localRotation);
-
-              mesh.scale.copy(scale)
-                .multiply(localScale);
-
-              if (assetInstance.isGrabbed()) {
-                mesh.position
-                  .add(
-                    localVector.copy(localPosition)
-                      .add(assetOffsetVector)
-                      .applyQuaternion(localQuaternion)
-                  );
-                // mesh.scale.multiplyScalar(0.5);
-              }
-
-              mesh.updateMatrixWorld();
-            });
-            assetInstance.on('show', () => {
-              mesh.visible = true;
-            });
-            assetInstance.on('hide', () => {
-              mesh.visible = false;
-            });
-
-            return assetInstance;
-          };
-          mesh.removeAssetInstance = id => {
-            const assetInstance = assetInstances.splice(assetInstances.findIndex(assetInstance => assetInstance.id === id), 1)[0];
-            hand.destroyGrabbable(assetInstance);
-
-            const {mesh} = assetInstance;
-            scene.remove(mesh);
-            mesh.destroy();
-          };
-
-          return mesh;
-        };
-        const assetsMesh = _makeAssetsMesh();
-        scene.add(assetsMesh);
-
         const walletState = {
           loading: true,
           error: false,
@@ -616,61 +350,7 @@ class Wallet {
             });
         });
 
-        const itemApis = {};
         const equipmentApis = {};
-        const _bindAssetInstance = assetInstance => {
-          const {value} = assetInstance;
-          const itemEntry = itemApis[value];
-
-          if (itemEntry) {
-            for (let i = 0; i < itemEntry.length; i++) {
-              const itemApi = itemEntry[i];
-
-              if (typeof itemApi.itemAddedCallback === 'function') {
-                itemApi.itemAddedCallback(assetInstance);
-              }
-            }
-          }
-        };
-        const _unbindAssetInstance = assetInstance => {
-          const {value} = assetInstance;
-          const itemEntry = itemApis[value];
-
-          if (itemEntry) {
-            for (let i = 0; i < itemEntry.length; i++) {
-              const itemApi = itemEntry[i];
-
-              if (typeof itemApi.itemRemovedCallback === 'function') {
-                itemApi.itemRemovedCallback(assetInstance);
-              }
-            }
-          }
-        };
-        const _bindItemApi = itemApi => {
-          if (typeof itemApi.asset === 'string' && typeof itemApi.itemAddedCallback === 'function') {
-            const {asset} = itemApi;
-            const boundAssetInstances = assetsMesh.getAssetInstances()
-              .filter(assetInstance => assetInstance.value === asset);
-
-            for (let i = 0; i < boundAssetInstances.length; i++) {
-              const assetInstance = boundAssetInstances[i];
-              itemApi.itemAddedCallback(assetInstance);
-            }
-          }
-        };
-        const _unbindItemApi = itemApi => {
-          if (typeof itemApi.asset === 'string' && typeof itemApi.itemRemovedCallback === 'function') {
-            const {asset} = itemApi;
-            const boundAssetInstances = assetsMesh.getAssetInstances()
-              .filter(assetInstance => assetInstance.value === asset);
-
-            for (let i = 0; i < boundAssetInstances.length; i++) {
-              const assetInstance = boundAssetInstances[i];
-              itemApi.itemRemovedCallback(assetInstance);
-            }
-          }
-        };
-
         const _rebindEquipments = (oldEquipments, newEquipments) => {
           const removedEquipments = oldEquipments.filter(oldEquipment =>
             oldEquipment && !newEquipments.some(newEquipment => newEquipment && newEquipment.asset === oldEquipment.asset)
@@ -739,6 +419,271 @@ class Wallet {
         return _refreshAssets()
           .then(() => {
             if (live) {
+              const _makeAssetsMesh = () => {
+                const mesh = new THREE.Object3D();
+
+                class AssetInstance extends Grabbable {
+                  constructor(
+                    id,
+                    type,
+                    value,
+                    n,
+                    physics,
+                    position,
+                    rotation,
+                    scale,
+                    localPosition,
+                    localRotation,
+                    localScale
+                  ) {
+                    super(n, position, rotation, scale, localPosition, localRotation, localScale);
+
+                    this.id = id;
+                    this.type = type;
+                    this.value = value;
+                    this.physics = physics;
+                  }
+
+                  emit(t, e) {
+                    switch (t) {
+                      case 'grab': {
+                        const {userId, side} = e;
+
+                        hoverStates[side].worldGrabAsset = this;
+
+                        super.emit(t, {
+                          userId,
+                          side,
+                          item: this,
+                        });
+
+                        assetsMesh.geometryNeedsUpdate = true;
+
+                        break;
+                      }
+                      case 'release': {
+                        const {userId, side, live, stopImmediatePropagation} = e;
+
+                        hoverStates[side].worldGrabAsset = null;
+
+                        const e2 = {
+                          userId,
+                          side,
+                          item: this,
+                          live,
+                          stopImmediatePropagation,
+                        };
+                        super.emit(t, e2);
+
+                        if (e2.live) {
+                          _checkGripup(e2);
+                        }
+
+                        break;
+                      }
+                      case 'update': {
+                        super.emit(t, e);
+
+                        break;
+                      }
+                      case 'destroy': {
+                        const {userId, side} = e;
+                        if (userId) {
+                          hoverStates[side].worldGrabAsset = null;
+                        }
+
+                        super.emit(t, {
+                          userId,
+                          side,
+                          item: this,
+                        });
+
+                        break;
+                      }
+                      default: {
+                        super.emit(t, e);
+
+                        break;
+                      }
+                    }
+                  }
+
+                  show() {
+                    this.emit('show');
+                  }
+
+                  hide() {
+                    this.emit('hide');
+                  }
+
+                  enablePhysics() {
+                    this.physics = true;
+                    this.emit('physics', true);
+
+                    connection.send(JSON.stringify({
+                      method: 'setPhysics',
+                      args: {
+                        id: this.id,
+                        physics: true,
+                      },
+                    }));
+                  }
+
+                  disablePhysics() {
+                    this.physics = false;
+                    this.emit('physics', false);
+
+                    connection.send(JSON.stringify({
+                      method: 'setPhysics',
+                      args: {
+                        id: this.id,
+                        physics: false,
+                      },
+                    }));
+                  }
+
+                  updatePhysics(physics) {
+                    this.physics = physics;
+                    this.emit('physics', physics);
+                  }
+
+                  collide() {
+                    this.emit('collide');
+                  }
+                }
+
+                const assetInstances = [];
+                mesh.getAssetInstances = id => assetInstances;
+                mesh.getAssetInstance = id => assetInstances.find(assetInstance => assetInstance.id === id);
+                mesh.addAssetInstance = (id, type, value, n, physics, position, rotation, scale, localPosition, localRotation, localScale) => {
+                  const assetInstance = new AssetInstance(id, type, value, n, physics, position, rotation, scale, localPosition, localRotation, localScale);
+
+                  hand.addGrabbable(assetInstance);
+                  assetInstances.push(assetInstance);
+
+                  const mesh = (() => {
+                    let live = true;
+
+                    const geometry = (() => {
+                      _requestAssetImageData(value)
+                        .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize))
+                        .then(geometrySpec => {
+                          if (live) {
+                            const {positions, normals, colors, dys, zeroDys} = geometrySpec;
+
+                            geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+                            // geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
+                            geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+                            geometry.addAttribute('dy', new THREE.BufferAttribute(geometry.getAttribute('dy').array === geometry.dys ? dys : zeroDys, 2));
+
+                            geometry.dys = dys;
+                            geometry.zeroDys = zeroDys;
+
+                            geometry.destroy = function() {
+                              this.dispose();
+                              spriteUtils.releaseSpriteGeometry(geometrySpec);
+                            };
+                          }
+                        })
+                        .catch(err => {
+                          if (live) {
+                            console.warn(err);
+                          }
+                        });
+
+                      const geometry = new THREE.BufferGeometry();
+                      const dys = zeroArray; // two of these so we can tell which is active
+                      const zeroDys = zeroArray2;
+                      geometry.addAttribute('dy', new THREE.BufferAttribute(dys, 2));
+                      geometry.dys = dys;
+                      geometry.zeroDys = zeroDys;
+                      geometry.boundingSphere = new THREE.Sphere(
+                        zeroVector,
+                        1
+                      );
+                      geometry.destroy = function() {
+                        this.dispose();
+                      };
+                      return geometry;
+                    })();
+                    const material = assetsMaterial;
+                    const mesh = new THREE.Mesh(geometry, material);
+
+                    mesh.destroy = () => {
+                      geometry.destroy();
+
+                      live = false;
+                    };
+
+                    return mesh;
+                  })();
+                  scene.add(mesh);
+                  assetInstance.mesh = mesh;
+
+                  assetInstance.on('grab', () => {
+                    const {geometry} = mesh;
+                    const dyAttribute = geometry.getAttribute('dy');
+                    dyAttribute.array = geometry.zeroDys;
+                    dyAttribute.needsUpdate = true;
+                  });
+                  assetInstance.on('release', () => {
+                    const {geometry} = mesh;
+                    const dyAttribute = geometry.getAttribute('dy');
+                    dyAttribute.array = geometry.dys;
+                    dyAttribute.needsUpdate = true;
+                  });
+                  const localVector = new THREE.Vector3();
+                  const localQuaternion = new THREE.Quaternion();
+                  assetInstance.on('update', () => {
+                    const {position, rotation, scale, localPosition, localRotation, localScale} = assetInstance;
+
+                    mesh.position.copy(position);
+
+                    localQuaternion.copy(rotation);
+                    if (assetInstance.isGrabbed()) {
+                      localQuaternion.multiply(forwardQuaternion);
+                    }
+                    mesh.quaternion.copy(localQuaternion)
+                      .multiply(localRotation);
+
+                    mesh.scale.copy(scale)
+                      .multiply(localScale);
+
+                    if (assetInstance.isGrabbed()) {
+                      mesh.position
+                        .add(
+                          localVector.copy(localPosition)
+                            .add(assetOffsetVector)
+                            .applyQuaternion(localQuaternion)
+                        );
+                      // mesh.scale.multiplyScalar(0.5);
+                    }
+
+                    mesh.updateMatrixWorld();
+                  });
+                  assetInstance.on('show', () => {
+                    mesh.visible = true;
+                  });
+                  assetInstance.on('hide', () => {
+                    mesh.visible = false;
+                  });
+
+                  return assetInstance;
+                };
+                mesh.removeAssetInstance = id => {
+                  const assetInstance = assetInstances.splice(assetInstances.findIndex(assetInstance => assetInstance.id === id), 1)[0];
+                  hand.destroyGrabbable(assetInstance);
+
+                  const {mesh} = assetInstance;
+                  scene.remove(mesh);
+                  mesh.destroy();
+                };
+
+                return mesh;
+              };
+              const assetsMesh = _makeAssetsMesh();
+              scene.add(assetsMesh);
+
               /* const _trigger = e => {
                 const {side} = e;
 
@@ -881,6 +826,60 @@ class Wallet {
               input.on('trigger', _trigger, {
                 priority: 1,
               }); */
+
+              const itemApis = {};
+              const _bindAssetInstance = assetInstance => {
+                const {value} = assetInstance;
+                const itemEntry = itemApis[value];
+
+                if (itemEntry) {
+                  for (let i = 0; i < itemEntry.length; i++) {
+                    const itemApi = itemEntry[i];
+
+                    if (typeof itemApi.itemAddedCallback === 'function') {
+                      itemApi.itemAddedCallback(assetInstance);
+                    }
+                  }
+                }
+              };
+              const _unbindAssetInstance = assetInstance => {
+                const {value} = assetInstance;
+                const itemEntry = itemApis[value];
+
+                if (itemEntry) {
+                  for (let i = 0; i < itemEntry.length; i++) {
+                    const itemApi = itemEntry[i];
+
+                    if (typeof itemApi.itemRemovedCallback === 'function') {
+                      itemApi.itemRemovedCallback(assetInstance);
+                    }
+                  }
+                }
+              };
+              const _bindItemApi = itemApi => {
+                if (typeof itemApi.asset === 'string' && typeof itemApi.itemAddedCallback === 'function') {
+                  const {asset} = itemApi;
+                  const boundAssetInstances = assetsMesh.getAssetInstances()
+                    .filter(assetInstance => assetInstance.value === asset);
+
+                  for (let i = 0; i < boundAssetInstances.length; i++) {
+                    const assetInstance = boundAssetInstances[i];
+                    itemApi.itemAddedCallback(assetInstance);
+                  }
+                }
+              };
+              const _unbindItemApi = itemApi => {
+                if (typeof itemApi.asset === 'string' && typeof itemApi.itemRemovedCallback === 'function') {
+                  const {asset} = itemApi;
+                  const boundAssetInstances = assetsMesh.getAssetInstances()
+                    .filter(assetInstance => assetInstance.value === asset);
+
+                  for (let i = 0; i < boundAssetInstances.length; i++) {
+                    const assetInstance = boundAssetInstances[i];
+                    itemApi.itemRemovedCallback(assetInstance);
+                  }
+                }
+              };
 
               const _bindAssetInstancePhysics = assetInstance => {
                 let body = null;
