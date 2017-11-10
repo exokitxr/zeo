@@ -465,7 +465,6 @@ class Hand {
   }
 }
 
-const _arrayEquals = (a, b) => a.length === b.length && a.every((ai, i) => ai === b[i]);
 const _relativeWsUrl = s => {
   const l = window.location;
   return ((l.protocol === 'https:') ? 'wss://' : 'ws://') + l.host + l.pathname + (!/\/$/.test(l.pathname) ? '/' : '') + s;
