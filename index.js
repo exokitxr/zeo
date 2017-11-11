@@ -54,15 +54,7 @@ const flags = {
   noTty: args.includes('noTty'),
   maxUsers: _findArg('maxUsers'),
 };
-const hasSomeFlag = (() => {
-  for (const k in flags) {
-    if (flags[k]) {
-      return true;
-    }
-  }
-  return false;
-})();
-if (!hasSomeFlag) {
+if (!flags.install && !flags.reset && !flags.server) {
   flags.server = true;
 }
 
