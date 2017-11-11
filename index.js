@@ -58,7 +58,7 @@ const flags = {
   noTty: args.includes('noTty'),
   maxUsers: _findArg('maxUsers'),
 };
-if (!flags.install && !flags.reset && !flags.server) {
+if (!flags.server && !flags.native && !flags.install && !flags.reset) {
   flags.server = true;
 }
 
