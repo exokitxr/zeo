@@ -2,10 +2,13 @@
 
 const path = require('path');
 const fs = require('fs');
+const url = require('url');
 const repl = require('repl');
 
 const archae = require('archae');
 const rimraf = require('rimraf');
+const electron = require('electron');
+// const webgl = require('node-webgl');
 
 const args = process.argv.slice(2);
 const _findArg = name => {
@@ -20,6 +23,7 @@ const _findArg = name => {
 };
 const flags = {
   server: args.includes('server'),
+  native: args.includes('native'),
   install: args.includes('install'),
   reset: args.includes('reset'),
   host: _findArg('host'),
@@ -316,6 +320,20 @@ _configure()
   .then(() => _listenArchae())
   .then(() => _listenNetwork())
   .then(() => _boot())
+  .then(() => {
+    if (flags.native) {
+      const win = new electron.BrowserWindow({
+        width: 1280,
+        height: 1024,
+        autoHideMenuBar: true,
+      });
+      win.loadURL(fullUrl);
+      win.webContents.openDevTools();
+      win.on('closed', () => {
+        process.exit(0);
+      });
+    }
+  })
   .catch(err => {
     console.warn(err);
     process.exit(1);
