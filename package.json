@@ -46,7 +46,7 @@
     "marked": "^0.3.6",
     "mkdirp": "^0.5.1",
     "nat-upnp": "^1.1.0",
-    "node-webgl": "^0.5.5",
+    "node-webgl2": "0.0.3",
     "rimraf": "^2.6.2",
     "rnd": "^1.0.10",
     "vrid": "0.0.59"
