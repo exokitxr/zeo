@@ -1,9 +1,8 @@
 import vrid from 'vrid';
 
 window.vrid = vrid;
-window.archae = new (archae())();
 
-window.archae.requestPlugin('/core/engines/zeo')
+archae.requestPlugin('/core/engines/zeo')
   .then(() => {
     console.log('app started');
   })
