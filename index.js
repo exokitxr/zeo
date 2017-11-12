@@ -332,6 +332,10 @@ _configure()
       win.on('closed', () => {
         process.exit(0);
       });
+
+      /* const document = webgl.document();
+      const requestAnimationFrame = document.requestAnimationFrame;
+      document.setTitle('ZeoVR'); */
     }
   })
   .catch(err => {
