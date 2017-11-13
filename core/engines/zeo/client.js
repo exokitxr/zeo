@@ -193,7 +193,6 @@ class Zeo {
                 blocker.destroy();
 
                 const {THREE, scene, camera, renderer} = three;
-                const {domElement} = renderer;
                 const {EVENTS: INPUT_EVENTS} = input;
                 const {events} = jsUtils;
                 const {EventEmitter} = events;
@@ -301,7 +300,7 @@ class Zeo {
                           <div style="display: flex; flex-direction: column; justify-content: center; align-items: center;" class=overlay-content></div>
                         </div>
                       `;
-                      document.body.insertBefore(overlay, renderer.domElement.nextSibling);
+                      document.body.insertBefore(overlay, document.body.firstChild);
                       const overlayContent = overlay.querySelector('.overlay-content');
 
                       const helper = document.createElement('div');

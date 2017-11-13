@@ -56,9 +56,35 @@ class Three {
         cameraParent.add(camera);
         scene.add(cameraParent);
 
-        const canvas = document.querySelector('#canvas');
+        const canvas = document.createElement('canvas');
+        canvas.style.display = 'none';
+        document.body.appendChild(canvas);
+
+        let canvas2;
+        let gl2;
+        if (window.webgl) {
+          const document = window.webgl.document();
+          canvas2 = document.createElement('canvas', window.devicePixelRatio * window.innerWidth, window.devicePixelRatio * window.innerHeight);
+          canvas2.style = {
+            width: canvas2.width,
+            height: canvas2.height,
+          };
+          gl2 = canvas2.getContext('webgl');
+          const _recurse = () => {
+            document.requestAnimationFrame();
+            requestAnimationFrame(_recurse);
+          };
+          _recurse();
+        }
+        window.canvas = canvas; // XXX
+        window.gl = gl;
+        window.canvas2 = canvas2;
+        window.gl2 = gl2;
         const renderer = new THREE.WebGLRenderer({
           canvas: canvas,
+          // context: gl,
+          // canvas: canvas2,
+          // context: gl2,
           antialias: true,
         });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -67,7 +93,6 @@ class Three {
         // renderer.shadowMap.enabled = true;
         // renderer.shadowMap.autoUpdate = false;
         // renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        window.document.body.appendChild(renderer.domElement);
 
         window.addEventListener('resize', () => {
           if (!renderer.vr.enabled) {

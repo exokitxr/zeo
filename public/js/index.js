@@ -1,6 +1,7 @@
 import vrid from 'vrid';
-
 window.vrid = vrid;
+
+window.webgl = (window.process && process.versions['electron']) ? require('node-webgl2') : null;
 
 vrid.getUser()
   .then(user => {
