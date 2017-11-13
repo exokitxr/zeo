@@ -8,7 +8,6 @@ const repl = require('repl');
 const archae = require('archae');
 const rimraf = require('rimraf');
 const electron = require('electron');
-// const webgl = require('node-webgl2');
 
 const args = process.argv.slice(2);
 const _findArg = name => {
@@ -332,10 +331,6 @@ _configure()
       win.on('closed', () => {
         process.exit(0);
       });
-
-      /* const document = webgl.document();
-      const requestAnimationFrame = document.requestAnimationFrame;
-      document.setTitle('ZeoVR'); */
     }
   })
   .catch(err => {
