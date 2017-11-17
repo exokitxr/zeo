@@ -2,6 +2,7 @@
 
 const path = require('path');
 const fs = require('fs');
+const child_process = require('child_process');
 
 const archae = require('archae');
 const rimraf = require('rimraf');
@@ -19,6 +20,7 @@ const _findArg = name => {
 };
 const flags = {
   server: args.includes('server'),
+  connect: args.includes('connect'),
   install: args.includes('install'),
   reset: args.includes('reset'),
   host: _findArg('host'),
@@ -53,7 +55,7 @@ const flags = {
   noTty: args.includes('noTty'),
   maxUsers: _findArg('maxUsers'),
 };
-if (!flags.server && !flags.install && !flags.reset) {
+if (!flags.server && !flags.connect && !flags.install && !flags.reset) {
   flags.server = true;
 }
 
@@ -302,6 +304,17 @@ const _boot = () => {
       _getPlugins({core: true})
         .then(plugins => a.requestPlugins(plugins))
     );
+  }
+  if (flags.connect) {
+    const childProcess = child_process.spawn(path.join(__dirname, 'scripts', 'lib', 'windows', 'node-webvr', 'run' + (process.platform === 'win32' ? '.cmd' : '.sh')), [fullUrl]);
+    childProcess.on('error', err => {
+      console.warn(err);
+    });
+    childProcess.on('exit', code => {
+      if (code !== 0) {
+        console.warn('connect process exited with code', code);
+      }
+    });
   }
 
   return Promise.all(bootPromises);
