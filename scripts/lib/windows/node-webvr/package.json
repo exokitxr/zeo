@@ -1,5 +1,5 @@
 {
   "dependencies": {
-    "node-webvr": "0.0.7"
+    "node-webvr": "0.0.8"
   }
 }
