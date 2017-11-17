@@ -6,6 +6,7 @@ const child_process = require('child_process');
 
 const archae = require('archae');
 const rimraf = require('rimraf');
+const requireRelative = require('require-relative');
 
 const args = process.argv.slice(2);
 const _findArg = name => {
@@ -306,7 +307,8 @@ const _boot = () => {
     );
   }
   if (flags.connect) {
-    const childProcess = child_process.spawn(path.join(__dirname, 'scripts', 'lib', 'windows', 'node-webvr', 'run' + (process.platform === 'win32' ? '.cmd' : '.sh')), [fullUrl]);
+    const nodeWebvrPath = path.join(requireRelative.resolve('node-webvr', path.join(__dirname, 'scripts', 'lib', 'windows', 'node-webvr')), '..');
+    const childProcess = child_process.spawn(path.join(nodeWebvrPath, 'run' + (process.platform === 'win32' ? '.cmd' : '.sh')), [fullUrl]);
     childProcess.on('error', err => {
       console.warn(err);
     });
