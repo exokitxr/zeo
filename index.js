@@ -52,7 +52,6 @@ const flags = {
   siteUrl: _findArg('siteUrl'),
   vridUrl: _findArg('vridUrl'),
   crdsUrl: _findArg('crdsUrl'),
-  noOpen: args.includes('noOpen'),
   noTty: args.includes('noTty'),
   maxUsers: _findArg('maxUsers'),
 };
@@ -99,7 +98,6 @@ const siteUrl = flags.siteUrl || (protocolString + '://' + hostname + ':' + port
 const vridUrl = flags.vridUrl || (protocolString + '://' + hostname + ':' + port);
 const crdsUrl = flags.crdsUrl || (protocolString + '://' + hostname + ':' + port);
 const fullUrl = protocolString + '://127.0.0.1:' + port;
-const noOpen = flags.noOpen;
 const maxUsers = (flags.maxUsers && parseInt(flags.maxUsers, 10)) || 4;
 const config = {
   dirname: __dirname,
@@ -137,7 +135,6 @@ const config = {
     protocolString,
     port,
     password,
-    noOpen,
     maxUsers,
     noTty: flags.noTty,
     transient: {},

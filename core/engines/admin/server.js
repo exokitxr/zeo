@@ -1,7 +1,6 @@
 const repl = require('repl');
 
 const getIP = require('external-ip')();
-const openurl = require('openurl');
 
 class Admin {
   constructor(archae) {
@@ -20,7 +19,6 @@ class Admin {
         port,
         password,
         noTty,
-        noOpen,
       },
     } = archae;
 
@@ -42,12 +40,6 @@ class Admin {
             }
 
             console.log('Local URL: ' + serverUrl);
-
-            if (!noOpen) {
-              openurl.open(serverUrl, err => {
-                console.warn('could not open ' + serverUrl + ' in a browser');
-              });
-            }
 
             getIP((err, ip) => {
               console.log('Remote URL: ' + (!err ? (protocolString + '://' + ip + ':' + port) : 'firewalled'));
