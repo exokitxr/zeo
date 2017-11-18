@@ -56,36 +56,32 @@ class Three {
         cameraParent.add(camera);
         scene.add(cameraParent);
 
-        const canvas = document.createElement('canvas');
-        canvas.style.display = 'none';
-        document.body.appendChild(canvas);
-
-        let canvas2;
-        let gl2;
-        if (window.webgl) {
-          const document = window.webgl.document();
-          canvas2 = document.createElement('canvas', window.devicePixelRatio * window.innerWidth, window.devicePixelRatio * window.innerHeight);
-          canvas2.style = {
-            width: canvas2.width,
-            height: canvas2.height,
-          };
-          gl2 = canvas2.getContext('webgl');
-          const _recurse = () => {
-            document.requestAnimationFrame();
-            requestAnimationFrame(_recurse);
-          };
-          _recurse();
-        }
-        window.canvas = canvas; // XXX
-        window.gl = gl;
-        window.canvas2 = canvas2;
-        window.gl2 = gl2;
+        const canvas = (() => {
+          const nativeCanvas = document.createElement('native-canvas', window.devicePixelRatio * window.innerWidth, window.devicePixelRatio * window.innerHeight);
+          if (nativeCanvas.getContext) {
+            nativeCanvas.style = {
+              width: nativeCanvas.width,
+              height: nativeCanvas.height,
+            };
+            return nativeCanvas;
+          } else {
+            const canvas = document.createElement('canvas');
+            canvas.style.display = 'none';
+            document.body.appendChild(canvas);
+            return canvas;
+          }
+        })();
+        const gl = canvas.getContext('webgl', {
+          alpha: false,
+          stencil: true,
+          antialias: true,
+          premultipliedAlpha: true,
+          preserveDrawingBuffer: false,
+        });
         const renderer = new THREE.WebGLRenderer({
           canvas: canvas,
-          // context: gl,
-          // canvas: canvas2,
-          // context: gl2,
-          antialias: true,
+          context: gl,
+          // antialias: true,
         });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(window.devicePixelRatio);
