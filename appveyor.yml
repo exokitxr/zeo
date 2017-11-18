@@ -37,6 +37,7 @@ after_test:
       rm -R node/node_modules
       msbuild 'scripts/lib/windows/Zeo VR.sln'
       cp 'scripts/lib/windows/Zeo VR/bin/Zeo VR.exe' .
+      cp 'scripts/lib/windows/Zeo VR Connect/bin/Zeo VR Connect.exe' connect.exe
       cp 'scripts/lib/windows/Zeo VR Server Reset/bin/Zeo VR Server Reset.exe' reset.exe
       touch data/no-hotload.json
       ./scripts/lib/windows/node-webvr/build.cmd
