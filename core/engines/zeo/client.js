@@ -192,7 +192,7 @@ class Zeo {
               if (live) {
                 blocker.destroy();
 
-                const {THREE, scene, camera, renderer} = three;
+                const {THREE, scene, camera, renderer, canvas} = three;
                 const {EVENTS: INPUT_EVENTS} = input;
                 const {events} = jsUtils;
                 const {EventEmitter} = events;
@@ -406,6 +406,13 @@ class Zeo {
                         }
                         e.preventDefault();
                       });
+                      if (canvas.on) {
+                        canvas.on('click', e => {
+                          if (!webvr.isPresenting()) {
+                            _enterKeyboardVR();
+                          }
+                        });
+                      }
 
                       let microphone = false;
                       const microphoneButton = $$(helper, '.microphone-button')[0];
