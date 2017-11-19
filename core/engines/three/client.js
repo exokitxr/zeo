@@ -104,6 +104,7 @@ class Three {
           scene,
           camera,
           renderer,
+          canvas,
         };
       });
   }
