@@ -25,6 +25,9 @@ class Zeo {
     const $$ = (el, s) => el.querySelectorAll(s);
 
     const _requestBlocker = () => new Promise((accept, reject) => {
+      const nativeHtml = document.createElement('native-html');
+      nativeHtml.show();
+
       const loaderOverlay = $('#loader-overlay')[0];
       const loaderPlugin = $('#loader-plugin')[0];
       const loaderError = $('#loader-error')[0];
@@ -190,13 +193,13 @@ class Zeo {
               vridUtils,
             ]) => {
               if (live) {
-                blocker.destroy();
-
                 const {THREE, scene, camera, renderer, canvas} = three;
                 const {EVENTS: INPUT_EVENTS} = input;
                 const {events} = jsUtils;
                 const {EventEmitter} = events;
                 const {vridApi} = vridUtils;
+
+                blocker.destroy();
 
                 vridApi.get('username')
                   .then(username => {
