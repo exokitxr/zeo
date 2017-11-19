@@ -887,9 +887,11 @@ class Inventory {
           _updateAnimation();
         });
         rend.on('updateEye', eyeCamera => {
-          lensMesh.planeMesh.visible = false;
-          lensMesh.render(scene, eyeCamera);
-          lensMesh.planeMesh.visible = true;
+          if (menuMesh.visible) {
+            lensMesh.planeMesh.visible = false;
+            lensMesh.render(scene, eyeCamera);
+            lensMesh.planeMesh.visible = true;
+          }
         });
       }
     });
