@@ -1005,6 +1005,12 @@ class WebVR {
                     }
                     break;
                   }
+                  case 27: { // ESC
+                    if (document.nativePointerLockElement || document.pointerLockElement) {
+                      document.exitPointerLock();
+                    }
+                    break;
+                  }
                 }
               }
             };
@@ -1075,7 +1081,7 @@ class WebVR {
             const pointerlockchange = e => {
               const {isPresenting: wasPresenting} = this;
 
-              const isPresenting = document.pointerLockElement !== null;
+              const isPresenting = document.nativePointerLockElement !== null || document.pointerLockElement !== null;
               this.isPresenting = isPresenting;
 
               if (!isPresenting) {
