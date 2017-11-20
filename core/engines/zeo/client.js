@@ -414,8 +414,10 @@ class Zeo {
                           if (!webvr.isPresenting()) {
                             const fx = e.clientX / canvas.width;
                             const fy = e.clientY / canvas.height;
-                            if (fx >= 0.85 && fx <= 0.95 && fy >= 0.85 && fy <= 0.95 && webvr.supportsWebVR()) {
-                              _enterHeadsetVR();
+                            if (fx >= 0.85 && fx <= 0.95 && fy >= 0.85 && fy <= 0.95) {
+                              if (webvr.supportsWebVR()) {
+                                _enterHeadsetVR();
+                              }
                             } else {
                               _enterKeyboardVR();
                             }
