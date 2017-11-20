@@ -1386,7 +1386,6 @@ class WebVR {
             this._cleanup();
           }
         }
-
         const webvrInstance = new WebvrInstance();
         return webvrInstance;
       }

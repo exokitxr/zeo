@@ -217,9 +217,11 @@ function drawImage(tex, texWidth, texHeight, dstX, dstY) {
 
   gl.enable(gl.DEPTH_TEST);
 }
-var textureInfo = loadImageAndCreateTextureInfo('/archae/rend/img/google-cardboard.svg');
+var textureInfoYes = loadImageAndCreateTextureInfo('/archae/rend/img/google-cardboard.svg');
+var textureInfoNo = loadImageAndCreateTextureInfo('/archae/rend/img/google-cardboard-x.svg');
 
-function renderVRButton() {
+function renderVRButton(yes) {
+  const textureInfo = yes ? textureInfoYes : textureInfoNo;
   drawImage(
     textureInfo.texture,
     gl.canvas.width * 0.1,

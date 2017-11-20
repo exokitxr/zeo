@@ -34,10 +34,12 @@ class Rend {
 
     return archae.requestPlugins([
       '/core/engines/three',
+      '/core/engines/webvr',
       '/core/utils/js-utils',
     ]).then(([
-        three,
-        jsUtils,
+      three,
+      webvr,
+      jsUtils,
     ]) => {
       if (live) {
         const {THREE, scene, renderer} = three;
@@ -157,7 +159,9 @@ class Rend {
         const rendApi = new RendApi();
 
         rendApi.on('afterRender', () => {
-          blockerRenderer.renderVRButton();
+          if (!webvr.isPresenting()) {
+            blockerRenderer.renderVRButton(webvr.supportsWebVR());
+          }
         });
 
         return rendApi;
