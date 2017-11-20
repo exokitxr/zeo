@@ -13,7 +13,7 @@ class Rend {
     const {metadata: {site: {url: siteUrl}}} = archae;
     const {express, app, dirname} = archae.getCore();
 
-    const rendImgStatic = express.static(path.join(__dirname, 'lib', 'img'));
+    const rendImgStatic = express.static(path.join(__dirname, 'img'));
     function serveRendImg(req, res, next) {
       rendImgStatic(req, res, next);
     }
