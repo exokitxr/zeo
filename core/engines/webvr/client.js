@@ -151,10 +151,8 @@ class WebVR {
         const localVector2 = new THREE.Vector3();
         const localVector3 = new THREE.Vector3();
         const localQuaternion = new THREE.Quaternion();
-        const localQuaternion2 = new THREE.Quaternion();
         const localEuler = new THREE.Euler();
         const localMatrix = new THREE.Matrix4();
-        const localMatrix2 = new THREE.Matrix4();
 
         const bestDisplay = displays.sort((a, b) => {
           const diff = +_isPolyfillDisplay(a) - _isPolyfillDisplay(b);
