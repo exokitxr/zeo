@@ -305,7 +305,7 @@ const _boot = () => {
   }
   if (flags.connect) {
     const nodeWebvrPath = path.join(requireRelative.resolve('node-webvr', path.join(__dirname, 'scripts', 'lib', 'windows', 'node-webvr')), '..');
-    const childProcess = child_process.spawn(path.join(nodeWebvrPath, 'run' + (process.platform === 'win32' ? '.cmd' : '.sh')), [fullUrl]);
+    const childProcess = child_process.spawn(path.join(nodeWebvrPath, 'run' + (process.platform === 'win32' ? '.cmd' : '.sh')), [fullUrl + '?e=hmd']);
     childProcess.on('error', err => {
       console.warn(err);
     });
