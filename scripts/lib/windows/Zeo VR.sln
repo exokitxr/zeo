@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zeo VR Server Reset", "Zeo 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zeo VR Connect", "Zeo VR Connect\Zeo VR Connect.csproj", "{6384BD92-C370-4B63-B957-B69FAD4C4F4D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zeo VR Server", "Zeo VR Server\Zeo VR Server.csproj", "{C4AC5366-FA27-445C-B745-3C6E17F83AF3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{6384BD92-C370-4B63-B957-B69FAD4C4F4D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6384BD92-C370-4B63-B957-B69FAD4C4F4D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6384BD92-C370-4B63-B957-B69FAD4C4F4D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C4AC5366-FA27-445C-B745-3C6E17F83AF3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C4AC5366-FA27-445C-B745-3C6E17F83AF3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C4AC5366-FA27-445C-B745-3C6E17F83AF3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C4AC5366-FA27-445C-B745-3C6E17F83AF3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
