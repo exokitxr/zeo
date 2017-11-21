@@ -412,9 +412,10 @@ class Zeo {
                       });
                       canvas.addEventListener('click', e => {
                         if (!webvr.isPresenting()) {
-                          const fx = e.clientX / canvas.width;
-                          const fy = e.clientY / canvas.height;
-                          if (fx >= 0.85 && fx <= 0.95 && fy >= 0.85 && fy <= 0.95) {
+                          const iconSize = canvas.width * 0.1;
+                          const fx = canvas.width - e.clientX;
+                          const fy = canvas.height - e.clientY;
+                          if (fx >= iconSize*0.5 && fx <= iconSize*1.5 && fy >= iconSize*0.5 && fy <= iconSize*1.5) {
                             if (webvr.supportsWebVR()) {
                               _enterHeadsetVR();
                             }
