@@ -226,6 +226,11 @@ class Hand {
                   console.warn('invalid message', m);
                 }
               } else {
+                if (o.byteOffset % 4 !== 0) {
+                  const b = new Uint8Array(new ArrayBuffer(o.byteLength));
+                  b.set(new Uint8Array(o.buffer, o.byteOffset));
+                  o = b;
+                }
                 const n = protocolUtils.parseUpdateN(o.buffer, o.byteOffset);
                 const grabbable = grabbables[n];
 
