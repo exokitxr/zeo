@@ -311,8 +311,9 @@ const _boot = () => {
     });
     childProcess.on('exit', code => {
       if (code !== 0) {
-        console.warn('connect process exited with code', code);
+        console.warn('Warning: connect process exited with nonzero status code', code);
       }
+      process.exit(code);
     });
   }
 
