@@ -582,16 +582,9 @@ class WebVR {
                           }
                         };
                         window.addEventListener('vrdisplaypresentchange', vrdisplaypresentchange);
-                        const keydown = e => {
-                          if (e.keyCode === 27) { // esc
-                            display.exitPresent();
-                          }
-                        };
-                        document.addEventListener('keydown', keydown);
 
                         cleanups.push(() => {
                           window.removeEventListener('vrdisplaypresentchange', vrdisplaypresentchange);
-                          document.removeEventListener('keydown', keydown);
                         });
                       }
                     };
