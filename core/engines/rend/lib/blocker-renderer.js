@@ -227,7 +227,7 @@ function renderVRButton(yes) {
     gl.canvas.width * 0.1,
     gl.canvas.width * 0.1 * textureInfo.height / textureInfo.width,
     0.85 * gl.canvas.width,
-    0.05 * gl.canvas.height
+    0.05 * gl.canvas.width
   );
 }
 
