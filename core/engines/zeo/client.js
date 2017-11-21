@@ -199,6 +199,102 @@ class Zeo {
                 const {EventEmitter} = events;
                 const {vridApi} = vridUtils;
 
+                const _requestImage = src => new Promise((accept, reject) => {
+                  const img = new Image();
+                  img.src = src;
+                  img.onload = () => {
+                    accept(img);
+                  };
+                  img.onerror = err => {
+                    reject(err);
+                  };
+                });
+                const _requestImageBitmap = src => _requestImage(src)
+                  .then(img => createImageBitmap(img, 0, 0, img.width, img.height, {
+                    imageOrientation: 'flipY',
+                  }));
+                const localMatrix = new THREE.Matrix4();
+                const blockerMesh = (() => {
+                  const geometry = new THREE.PlaneBufferGeometry(1, 1);
+
+                  const vertexShader = `\
+                    uniform mat4 u_matrix;
+
+                    varying vec2 v_texcoord;
+
+                    void main() {
+                      gl_Position = u_matrix * vec4(position, 1.0);
+                      v_texcoord = uv;
+                    }
+                  `;
+                  const fragmentShader = `\
+                    varying vec2 v_texcoord;
+
+                    uniform sampler2D u_texture;
+
+                    void main() {
+                      gl_FragColor = vec4(texture2D(u_texture, v_texcoord).rgb, 1.0);
+                    }
+                  `;
+                  const texture1 = new THREE.Texture(
+                    null,
+                    THREE.UVMapping,
+                    THREE.ClampToEdgeWrapping,
+                    THREE.ClampToEdgeWrapping,
+                    THREE.LinearFilter,
+                    THREE.LinearFilter,
+                    THREE.RGBAFormat,
+                    THREE.UnsignedByteType,
+                    1
+                  );
+                  _requestImageBitmap('/archae/zeo/img/google-cardboard.svg')
+                    .then(imageBitmap => {
+                      texture1.image = imageBitmap;
+                      texture1.needsUpdate = true;
+                    });
+                  const texture2 = new THREE.Texture(
+                    null,
+                    THREE.UVMapping,
+                    THREE.ClampToEdgeWrapping,
+                    THREE.ClampToEdgeWrapping,
+                    THREE.LinearFilter,
+                    THREE.LinearFilter,
+                    THREE.RGBAFormat,
+                    THREE.UnsignedByteType,
+                    1
+                  );
+                  _requestImageBitmap('/archae/zeo/img/google-cardboard-x.svg')
+                    .then(imageBitmap => {
+                      texture2.image = imageBitmap;
+                      texture2.needsUpdate = true;
+                    });
+                  const texWidth = renderer.domElement.width * 0.1;
+                  const texHeight = renderer.domElement.width * 0.1;
+                  const dstX = 0.9 * renderer.domElement.width;
+                  const dstY = 0.1 * renderer.domElement.width;
+                  const matrix = new THREE.Matrix4().makeOrthographic(0, renderer.domElement.width, renderer.domElement.height, 0, -1, 1);
+                  matrix.multiply(localMatrix.makeTranslation(dstX, dstY, 1));
+                  matrix.multiply(localMatrix.makeScale(texWidth, texHeight, 1));
+                  const material = new THREE.ShaderMaterial({
+                    uniforms: {
+                      u_matrix: {
+                        type: 'm4',
+                        value: matrix,
+                      },
+                      u_texture: {
+                        type: 't',
+                        value: webvr.supportsWebVR() ? texture1 : texture2,
+                      },
+                    },
+                    vertexShader,
+                    fragmentShader,
+                  });
+                  const mesh = new THREE.Mesh(geometry, material);
+                  mesh.frustumCulled = false;
+                  return mesh;
+                })();
+                scene.add(blockerMesh);
+
                 blocker.destroy();
 
                 vridApi.get('username')
@@ -245,10 +341,14 @@ class Zeo {
                 const _enterVR = ({stereoscopic, onExit}) => {
                   _stopRenderLoop();
 
+                  blockerMesh.visible = false;
+
                   const _onExit = () => {
                     onExit();
 
                     _enterNormal();
+
+                    blockerMesh.visible = true;
                   };
 
                   renderLoop = webvr.requestEnterVR({

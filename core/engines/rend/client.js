@@ -1,5 +1,3 @@
-const makeBlockerRenderer = require('./lib/blocker-renderer');
-
 class Rend {
   constructor(archae) {
     this._archae = archae;
@@ -45,11 +43,6 @@ class Rend {
         const {THREE, scene, renderer} = three;
         const {events} = jsUtils;
         const {EventEmitter} = events;
-
-        const blockerRenderer = makeBlockerRenderer({
-          THREE,
-          context: renderer.context,
-        });
 
         const auxObjects = {
           controllerMeshes: null,
@@ -157,13 +150,6 @@ class Rend {
           } */
         }
         const rendApi = new RendApi();
-
-        rendApi.on('afterRender', () => {
-          if (!webvr.isPresenting()) {
-            blockerRenderer.renderVRButton(webvr.supportsWebVR());
-          }
-        });
-
         return rendApi;
       }
     });
