@@ -112,8 +112,8 @@ class Inventory {
         '/core/utils/sprite-utils',
         '/core/utils/vrid-utils',
       ]),
-      _requestImageBitmap('/archae/inventory/img/menu.svg'),
-      _requestImageBitmap('/archae/inventory/img/arrow-left.svg'),
+      _requestImageBitmap('/archae/inventory/img/menu.png'),
+      _requestImageBitmap('/archae/inventory/img/arrow-left.png'),
     ]).then(([
       [
         bootstrap,
