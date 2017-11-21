@@ -303,8 +303,6 @@ class Zeo {
                     bootstrap.setAddress({username});
                   });
 
-                const supportsWebVR = webvr.supportsWebVR();
-
                 const _update = () => {
                   rend.update();
                 };
@@ -385,45 +383,7 @@ class Zeo {
                     if (live) {
                       renderer.domElement.style.display = 'block';
 
-                      // begin helper content
-
-                      const overlay = document.createElement('div');
-                      overlay.style.cssText = `\
-                        display: flex;
-                        position: absolute;
-                        top: 0;
-                        bottom: 0;
-                        left: 0;
-                        right: 0;
-                        align-items: center;
-                        font-family: ${biolumi.getFonts()};
-                        pointer-events: none;
-                      `;
-                      overlay.innerHTML = `\
-                        <div style="display: flex; width: 100%; margin: auto 0; padding: 20px 0; background-color: #000; color: #FFF; justify-content: center; pointer-events: auto;">
-                          <div style="display: flex; flex-direction: column; justify-content: center; align-items: center;" class=overlay-content></div>
-                        </div>
-                      `;
-                      document.body.insertBefore(overlay, document.body.firstChild);
-                      const overlayContent = overlay.querySelector('.overlay-content');
-
-                      const helper = document.createElement('div');
-                      helper.style.cssText = `\
-                        display: flex;
-                        flex-direction: column;
-                        justify-content: center;
-                        align-items: center;
-                      `;
-                      const fonts = biolumi.getFonts().replace(/"/g, "'");
-                      helper.innerHTML = `\
-                        <div style="display: flex;">
-                          <button style="position: relative; background-color: #FFF; border: 0; outline: none; cursor: pointer;" class=headset-button>${vrSvg}</button>
-                          <button style="position: relative; background-color: #FFF; border: 0; outline: none; cursor: pointer;" class=keyboard-button>${keyboardSvg}</button>
-                          <button style="position: relative; background-color: #FFF; border: 0; outline: none; cursor: pointer;" class=microphone-button>${microphoneOffSvg}</button>
-                          <a href="https://my.zeovr.io/" target="_blank" style="position: relative; display: flex; background-color: #FFF; border: 0; justify-content: center; align-items: center; outline: none; cursor: pointer;" class=account-button>${accountSvg}</a>
-                        </div>
-                      `;
-                      helper.addEventListener('dragover', e => {
+                      renderer.domElement.addEventListener('dragover', e => {
                         e.preventDefault(); // needed to prevent browser drag-and-drop behavior
                       });
 
@@ -431,85 +391,28 @@ class Zeo {
                         _enterVR({
                           stereoscopic: true,
                           onExit: () => {
-                            overlay.style.display = 'flex';
-
                             bootstrap.setVrMode(null);
                           },
                         });
 
                         bootstrap.setVrMode('hmd');
-
-                        overlay.style.display = 'none';
                       };
                       const _enterKeyboardVR = () => {
                         _enterVR({
                           stereoscopic: false,
                           onExit: () => {
-                            overlay.style.display = 'flex';
-
                             bootstrap.setVrMode(null);
                           },
                         });
 
                         bootstrap.setVrMode('keyboard');
-
-                        overlay.style.display = 'none';
                       };
 
-                      const _styleButton = button => {
-                        button.addEventListener('mouseover', e => {
-                          button.style.backgroundColor = '#2196F3';
-                          // button.style.borderColor = 'transparent';
-                          // button.style.color = '#000';
-                          button.querySelector('svg').style.fill = '#FFF';
-                        });
-                        button.addEventListener('mouseout', e => {
-                          button.style.backgroundColor = '#FFF';
-                          // button.style.borderColor = 'currentColor';
-                          // button.style.color = '#FFF';
-                          button.querySelector('svg').style.fill = null;
-                        });
-                      };
-
-                      const headsetButton = $$(helper, '.headset-button')[0];
-                      if (supportsWebVR) {
-                        _styleButton(headsetButton);
-
-                        headsetButton.addEventListener('click', e => {
-                          if (!webvr.isPresenting()) {
-                            _enterHeadsetVR();
-                          }
-                          e.preventDefault();
-                        });
-
-                        window.onvrdisplayactivate = null;
-                        window.addEventListener('vrdisplayactivate', e => {
-                          _enterHeadsetVR();
-                        });
-
-                        const urlRequestPresent = getQueryVariable('e');
-                        if (urlRequestPresent === 'hmd') {
-                          _enterHeadsetVR();
-                        } else if (urlRequestPresent === 'keyboard') {
-                          _enterKeyboardVR();
-                        }
-                      } else {
-                        // headsetButton.style.display = 'none';
-                        headsetButton.style.backgroundColor = '#666';
-                        headsetButton.style.cursor = null;
-                        const strikethroughEl = document.createElement('div');
-                        strikethroughEl.style.cssText = `position: absolute; top: 50%; left: 0; right: 0; height: 3px; margin-top: -1px; background-color: #F44336;`;
-                        headsetButton.appendChild(strikethroughEl);
-                      }
-
-                      const keyboardButton = $$(helper, '.keyboard-button')[0];
-                      _styleButton(keyboardButton);
-                      keyboardButton.addEventListener('click', e => {
-                        if (!webvr.isPresenting()) {
-                          _enterKeyboardVR();
-                        }
-                        e.preventDefault();
+                      window.onvrdisplayactivate = null;
+                      window.addEventListener('vrdisplayactivate', () => {
+                        _enterHeadsetVR();
                       });
+
                       canvas.addEventListener('click', e => {
                         if (!webvr.isPresenting()) {
                           const iconSize = canvas.width * 0.1;
@@ -525,7 +428,14 @@ class Zeo {
                         }
                       });
 
-                      let microphone = false;
+                      const urlRequestPresent = getQueryVariable('e');
+                      if (webvr.supportsWebVR() && urlRequestPresent === 'hmd') {
+                        _enterHeadsetVR();
+                      } else if (urlRequestPresent === 'keyboard') {
+                        _enterKeyboardVR();
+                      }
+
+                      /* let microphone = false;
                       const microphoneButton = $$(helper, '.microphone-button')[0];
                       _styleButton(microphoneButton);
                       const _setMicrophone = newMicrophone => {
@@ -543,14 +453,7 @@ class Zeo {
                         _setMicrophone(!microphone);
                         
                         e.preventDefault();
-                      });
-
-                      const accountButton = $$(helper, '.account-button')[0];
-                      _styleButton(accountButton);
-
-                      overlayContent.appendChild(helper);
-
-                      // end helper content
+                      }); */
 
                       class Listener {
                         constructor(handler, priority) {
@@ -558,44 +461,6 @@ class Zeo {
                           this.priority = priority;
                         }
                       }
-
-                      const _makeEventListener = () => {
-                        const listeners = [];
-
-                        const result = e => {
-                          let live = true;
-                          e.stopImmediatePropagation = (stopImmediatePropagation => () => {
-                            live = false;
-
-                            stopImmediatePropagation.call(e);
-                          })(e.stopImmediatePropagation);
-
-                          const oldListeners = listeners.slice();
-                          for (let i = 0; i < oldListeners.length; i++) {
-                            const listener = oldListeners[i];
-                            const {handler} = listener;
-
-                            handler(e);
-
-                            if (!live) {
-                              break;
-                            }
-                          }
-                        };
-                        result.add = (handler, {priority}) => {
-                          const listener = new Listener(handler, priority);
-                          listeners.push(listener);
-                          listeners.sort((a, b) => b.priority - a.priority);
-                        };
-                        result.remove = handler => {
-                          const index = listeners.indexOf(handler);
-                          if (index !== -1) {
-                            listeners.splice(index, 1);
-                          }
-                        };
-
-                        return result;
-                      };
 
                       this._cleanup = () => {
                         _stopRenderLoop();
