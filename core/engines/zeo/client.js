@@ -297,9 +297,10 @@ class Zeo {
                         right: 0;
                         align-items: center;
                         font-family: ${biolumi.getFonts()};
+                        pointer-events: none;
                       `;
                       overlay.innerHTML = `\
-                        <div style="display: flex; width: 100%; margin: auto 0; padding: 20px 0; background-color: #000; color: #FFF; justify-content: center;">
+                        <div style="display: flex; width: 100%; margin: auto 0; padding: 20px 0; background-color: #000; color: #FFF; justify-content: center; pointer-events: auto;">
                           <div style="display: flex; flex-direction: column; justify-content: center; align-items: center;" class=overlay-content></div>
                         </div>
                       `;
