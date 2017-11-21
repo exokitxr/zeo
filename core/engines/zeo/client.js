@@ -247,7 +247,7 @@ class Zeo {
                     THREE.UnsignedByteType,
                     1
                   );
-                  _requestImageBitmap('/archae/zeo/img/google-cardboard.svg')
+                  _requestImageBitmap('/archae/zeo/img/google-cardboard.png')
                     .then(imageBitmap => {
                       texture1.image = imageBitmap;
                       texture1.needsUpdate = true;
@@ -263,7 +263,7 @@ class Zeo {
                     THREE.UnsignedByteType,
                     1
                   );
-                  _requestImageBitmap('/archae/zeo/img/google-cardboard-x.svg')
+                  _requestImageBitmap('/archae/zeo/img/google-cardboard-x.png')
                     .then(imageBitmap => {
                       texture2.image = imageBitmap;
                       texture2.needsUpdate = true;
