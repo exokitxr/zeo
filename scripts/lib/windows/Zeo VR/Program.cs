@@ -14,7 +14,7 @@ namespace Zeo_VR
             Process cmd = new Process();
 
             cmd.StartInfo.FileName = "node\\node.exe";
-            cmd.StartInfo.Arguments = "index.js";
+            cmd.StartInfo.Arguments = "index.js server connect";
             cmd.StartInfo.RedirectStandardInput = true;
             cmd.StartInfo.RedirectStandardOutput = true;
             cmd.StartInfo.RedirectStandardError = true;
