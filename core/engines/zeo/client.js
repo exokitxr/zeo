@@ -410,21 +410,19 @@ class Zeo {
                         }
                         e.preventDefault();
                       });
-                      if (canvas.on) {
-                        canvas.on('click', e => {
-                          if (!webvr.isPresenting()) {
-                            const fx = e.clientX / canvas.width;
-                            const fy = e.clientY / canvas.height;
-                            if (fx >= 0.85 && fx <= 0.95 && fy >= 0.85 && fy <= 0.95) {
-                              if (webvr.supportsWebVR()) {
-                                _enterHeadsetVR();
-                              }
-                            } else {
-                              _enterKeyboardVR();
+                      canvas.addEventListener('click', e => {
+                        if (!webvr.isPresenting()) {
+                          const fx = e.clientX / canvas.width;
+                          const fy = e.clientY / canvas.height;
+                          if (fx >= 0.85 && fx <= 0.95 && fy >= 0.85 && fy <= 0.95) {
+                            if (webvr.supportsWebVR()) {
+                              _enterHeadsetVR();
                             }
+                          } else {
+                            _enterKeyboardVR();
                           }
-                        });
-                      }
+                        }
+                      });
 
                       let microphone = false;
                       const microphoneButton = $$(helper, '.microphone-button')[0];
