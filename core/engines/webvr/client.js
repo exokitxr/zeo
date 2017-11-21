@@ -1072,7 +1072,7 @@ class WebVR {
             const pointerlockchange = e => {
               const {isPresenting: wasPresenting} = this;
 
-              const isPresenting = document.nativePointerLockElement !== null || document.pointerLockElement !== null;
+              const isPresenting = Boolean(document.nativePointerLockElement || document.pointerLockElement);
               this.isPresenting = isPresenting;
 
               if (!isPresenting) {
