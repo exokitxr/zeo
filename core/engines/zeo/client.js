@@ -26,7 +26,7 @@ class Zeo {
 
     const _requestBlocker = () => new Promise((accept, reject) => {
       const nativeHtml = document.createElement('native-html');
-      nativeHtml.show();
+      nativeHtml.show && nativeHtml.show();
 
       const loaderOverlay = $('#loader-overlay')[0];
       const loaderPlugin = $('#loader-plugin')[0];
