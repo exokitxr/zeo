@@ -382,12 +382,23 @@ class WebVR {
                     renderer.vr.enabled = true;
                     renderer.vr.setDevice(display);
 
+                    const leftEye = display.getEyeParameters('left');
+                    const rightEye = display.getEyeParameters('right');
+                    const width = Math.max(leftEye.renderWidth, rightEye.renderWidth) * 2;
+                    const height = Math.max(leftEye.renderHeight, rightEye.renderHeight);
+                    renderer.setSize(width, height);
+                    renderer.setPixelRatio(1);
+
+                    /* renderer.domElement.style.width = (width / window.devicePixelRatio) + 'px';
+                    renderer.domElement.style.height = (height / window.devicePixelRatio) + 'px'; */
+
                     cleanups.push(() => {
                       this.display = null;
                       this.stereoscopic = false;
 
                       renderer.vr.enabled = false;
                       renderer.vr.setDevice(null);
+
                       renderer.setSize(window.innerWidth, window.innerHeight);
                       renderer.setPixelRatio(window.devicePixelRatio);
                     });
