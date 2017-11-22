@@ -57,12 +57,8 @@ class Three {
         scene.add(cameraParent);
 
         const canvas = (() => {
-          const nativeCanvas = document.createElement('native-canvas', window.devicePixelRatio * window.innerWidth, window.devicePixelRatio * window.innerHeight);
+          const nativeCanvas = document.createElement('native-canvas', Math.floor(window.innerWidth * window.devicePixelRatio), Math.floor(window.innerHeight * window.devicePixelRatio));
           if (nativeCanvas.getContext) {
-            nativeCanvas.style = {
-              width: nativeCanvas.width,
-              height: nativeCanvas.height,
-            };
             return nativeCanvas;
           } else {
             const canvas = document.createElement('canvas');
