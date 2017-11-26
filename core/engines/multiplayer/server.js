@@ -111,7 +111,7 @@ class Multiplayer {
                 }
 
                 multiplayerApi.emit('playerEnter', {
-                  id: n,
+                  id: String(n),
                   username,
                 });
               };
@@ -216,7 +216,7 @@ class Multiplayer {
 
                 connections.splice(connections.indexOf(c), 1);
 
-                multiplayerApi.emit('playerLeave', n);
+                multiplayerApi.emit('playerLeave', String(n));
               });
 
               connections.push(c);
