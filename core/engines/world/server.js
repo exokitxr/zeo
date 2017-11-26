@@ -64,6 +64,7 @@ class World {
     return Promise.all([
       archae.requestPlugins([
         '/core/engines/multiplayer',
+        '/core/engines/analytics',
       ]),
       _requestTagsJson(),
       _requestFilesJson(),
@@ -72,6 +73,7 @@ class World {
       .then(([
         [
           multiplayer,
+          analytics,
         ],
         tagsJson,
         filesJson,
@@ -129,13 +131,18 @@ class World {
             _saveTags();
 
             _broadcastGlobal('addTag', [userId, itemSpec]);
+
+            analytics.add(itemSpec);
           };
           const _removeTag = (userId, id) => {
+            const itemSpec = tagsJson.tags[id];
             delete tagsJson.tags[id];
 
             _saveTags();
 
             _broadcastGlobal('removeTag', [userId, id]);
+
+            analytics.remove(itemSpec);
           };
           const _setTagAttribute = (userId, id, {name, value}) => {
             const itemSpec = tagsJson.tags[id];

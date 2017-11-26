@@ -53,7 +53,6 @@ class World {
       '/core/engines/hand',
       '/core/engines/loader',
       '/core/engines/tags',
-      '/core/engines/analytics',
       '/core/utils/js-utils',
       '/core/utils/network-utils',
       '/core/utils/geometry-utils',
@@ -73,7 +72,6 @@ class World {
       hand,
       loader,
       tags,
-      analytics,
       jsUtils,
       networkUtils,
       geometryUtils,
@@ -198,8 +196,6 @@ class World {
 
           elementManager.add(tagMesh);
 
-          analytics.add(item);
-
           return result;
         };
         const _handleAddTags = (userId, itemSpecs) => {
@@ -218,8 +214,6 @@ class World {
           }
 
           tags.destroyTag(tagMesh);
-
-          analytics.remove(item);
 
           return result;
         };
