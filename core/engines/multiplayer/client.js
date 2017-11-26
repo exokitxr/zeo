@@ -298,7 +298,7 @@ class Multiplayer {
           let pendingMessage = null;
 
           const username = 'lol';
-          connection = new AutoWs(_relativeWsUrl(`archae/multiplayerWs?id=${encodeURIComponent(String(multiplayerApi.getId()))}&username=${username}}`));
+          connection = new AutoWs(_relativeWsUrl(`archae/multiplayerWs?id=${encodeURIComponent(String(multiplayerApi.getId()))}&username=${username}`));
           connection.on('message', msg => {
             const {data} = msg;
 
