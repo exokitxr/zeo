@@ -8,7 +8,6 @@ class Inventory {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {site: {url: siteUrl}}} = archae;
     const {express, app, dirname} = archae.getCore();
 
     const inventoryImgStatic = express.static(path.join(__dirname, 'lib', 'img'));

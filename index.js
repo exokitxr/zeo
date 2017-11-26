@@ -121,7 +121,7 @@ const config = {
     config: {
       defaultsDirectory,
     },
-    site: {
+    /* site: {
       url: siteUrl,
     },
     vrid: {
@@ -129,7 +129,7 @@ const config = {
     },
     crds: {
       url: crdsUrl,
-    },
+    }, */
     server: {
       url: fullUrl,
       name: serverName,
