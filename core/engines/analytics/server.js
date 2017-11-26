@@ -50,7 +50,7 @@ class Analytics {
 
         const {port} = _parseUrlSpec(serverUrl);
         const ws = new AutoWs(`wss://my-site.zeovr.io/analytics/mods?name=${serverName}&port=${port}`);
-        let needsUpdate = true;
+        let needsUpdate = false;
         ws.on('connect', () => {
           if (needsUpdate) {
             for (let i = 0; i < modSpecs.length; i++) {
