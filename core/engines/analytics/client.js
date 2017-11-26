@@ -5,6 +5,13 @@ class Analytics {
 
   mount() {
     const {_archae: archae} = this;
+     const {
+      metadata: {
+        server: {
+          url: serverUrl,
+        },
+      },
+    } = archae;
 
     const cleanups = [];
     this._cleanup = () => {
@@ -19,6 +26,15 @@ class Analytics {
       live = false;
     });
 
+    const _parseUrlSpec = url => {
+      const match = url.match(/^(?:([^:]+):\/\/)([^:]+)(?::([0-9]*?))?$/);
+      return match && {
+        protocol: match[1],
+        host: match[2],
+        port: match[3] ? parseInt(match[3], 10) : null,
+      };
+    };
+
     return archae.requestPlugins([
       '/core/utils/network-utils',
     ]).then(([
@@ -29,7 +45,8 @@ class Analytics {
 
         const modSpecs = [];
 
-        const ws = new AutoWs('wss://my-site.zeovr.io/analytics/mods');
+        const {port} = _parseUrlSpec(serverUrl);
+        const ws = new AutoWs(`wss://my-site.zeovr.io/analytics/mods?port=${port}`);
         let needsUpdate = true;
         ws.on('connect', () => {
           if (needsUpdate) {
