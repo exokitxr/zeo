@@ -16,103 +16,97 @@ class Bootstrap {
 
     return archae.requestPlugins([
       '/core/utils/js-utils',
-      '/core/utils/network-utils',
     ])
       .then(([
         jsUtils,
-        networkUtils,
       ]) => {
         if (live) {
           const {events} = jsUtils;
           const {EventEmitter} = events;
-          const {AutoWs} = networkUtils;
 
-          let connectionState = null;
-          const connection = (() => {
-            const connection = new AutoWs(_relativeWsUrl('archae/bootstrapWs'));
-            connection.on('message', msg => {
-              const {
-                connectionState: newConnectionState,
-                startTime: newStartTime,
-              } = JSON.parse(msg.data);
-
-              newConnectionState !== undefined && bootstrapApi.setConnectionState(newConnectionState);
-              newStartTime !== undefined && worldTimer.setStartTime(newStartTime);
-            });
-            return connection;
-          })();
-          this._cleanup = () => {
-            connection.destroy();
+          const _resJson = res => {
+            if (res.status >= 200 && res.status < 300) {
+              return res.json();
+            } else if (res.status === 404) {
+              return Promise.resolve(null);
+            } else {
+              return Promise.reject({
+                status: res.status,
+                stack: 'API returned invalid status code: ' + res.status,
+              });
+            }
           };
 
-          let vrMode = null;
-          let roamMode = 'physical';
-          class WorldTimer {
-            constructor(startTime = Date.now()) {
-              this.startTime = startTime;
-            }
+          return fetch('archae/bootstrap')
+            .then(_resJson)
+            .then(bootstrapSpec => {
+              const {startTime} = bootstrapSpec;
 
-            getWorldTime() {
-              const now = Date.now();
-              const worldTime = now - this.startTime;
-              return worldTime;
-            }
+              let vrMode = null;
+              let roamMode = 'physical';
+              class WorldTimer {
+                constructor(startTime = Date.now()) {
+                  this.startTime = startTime;
+                }
 
-            setStartTime(startTime) {
-              this.startTime = startTime;
-            }
-          }
-          const worldTimer = new WorldTimer();
+                getWorldTime() {
+                  const now = Date.now();
+                  const worldTime = now - this.startTime;
+                  return worldTime;
+                }
 
-          let address = null;
+                setStartTime(startTime) {
+                  this.startTime = startTime;
+                }
+              }
+              const worldTimer = new WorldTimer();
 
-          class BootstrapApi extends EventEmitter {
-            getInitialUrl() {
-              return initialUrl;
-            }
+              let address = null;
 
-            getInitialPath() {
-              return initialPath;
-            }
+              class BootstrapApi extends EventEmitter {
+                getInitialUrl() {
+                  return initialUrl;
+                }
 
-            setConnectionState(newConnectionState) {
-              connectionState = newConnectionState;
-            }
+                getInitialPath() {
+                  return initialPath;
+                }
 
-            getVrMode() {
-              return vrMode;
-            }
+                getVrMode() {
+                  return vrMode;
+                }
 
-            setVrMode(newVrMode) {
-              vrMode = newVrMode;
-            }
+                setVrMode(newVrMode) {
+                  vrMode = newVrMode;
+                }
 
-            getRoamMode() {
-              return roamMode;
-            }
+                getRoamMode() {
+                  return roamMode;
+                }
 
-            toggleRoamMode() {
-              roamMode = roamMode === 'free' ? 'physical' : 'free';
-            }
+                toggleRoamMode() {
+                  roamMode = roamMode === 'free' ? 'physical' : 'free';
+                }
 
-            getWorldTime() {
-              return worldTimer.getWorldTime();
-            }
+                getWorldTime() {
+                  return worldTimer.getWorldTime();
+                }
 
-            getAddress() {
-              return address;
-            }
+                getAddress() {
+                  return address;
+                }
 
-            setAddress(newAddress) {
-              address = newAddress;
-            }
+                setAddress(newAddress) {
+                  address = newAddress;
+                }
 
-            navigate(url) {
-              document.location.href = url;
-            }
-          }
-          const bootstrapApi = new BootstrapApi();
-          return bootstrapApi;
+                navigate(url) {
+                  document.location.href = url;
+                }
+              }
+              const bootstrapApi = new BootstrapApi();
+              return bootstrapApi;
+            });
         }
       });
   }

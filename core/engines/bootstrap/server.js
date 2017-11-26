@@ -18,16 +18,16 @@ class Bootstrap {
     const {app, wss, dirname, dataDirectory} = archae.getCore();
     const {
       metadata: {
-        site: {
+        /* site: {
           url: siteUrl,
-        },
+        }, */
         server: {
           url: serverUrl,
         },
       },
     } = archae;
 
-    let live = true;
+    /* let live = true;
     this._cleanup = () => {
       live = false;
     };
@@ -38,8 +38,8 @@ class Bootstrap {
       .then(([
         config,
       ]) => {
-        if (live) {
-          const _parseUrlSpec = url => {
+        if (live) { */
+          /* const _parseUrlSpec = url => {
             const match = url.match(/^(?:([^:]+):\/\/)([^:]+)(?::([0-9]*?))?$/);
             return match && {
               protocol: match[1],
@@ -48,11 +48,32 @@ class Bootstrap {
             };
           };
           const siteSpec = _parseUrlSpec(siteUrl);
-          const serverSpec = _parseUrlSpec(serverUrl);
+          const serverSpec = _parseUrlSpec(serverUrl); */
 
           const startTime = Date.now();
 
-          const cleanups = [];
+          function serveBootstrap(req, res, next) {
+            res.json({
+              startTime,
+            });
+          }
+          app.get('/archae/bootstrap', serveBootstrap);
+
+          this._cleanup = () => {
+            function removeMiddlewares(route, i, routes) {
+              if (
+                route.handle.name === 'serveBootstrap'
+              ) {
+                routes.splice(i, 1);
+              }
+              if (route.route) {
+                route.route.stack.forEach(removeMiddlewares);
+              }
+            }
+            app._router.stack.forEach(removeMiddlewares);
+          };
+
+          /* const cleanups = [];
           this._cleanup = () => {
             for (let i = 0; i < cleanups.length; i++) {
               const cleanup = cleanups[i];
@@ -219,9 +240,9 @@ class Bootstrap {
               clearInterval(serverAnnounceInterval);
               clearInterval(serverIconAnnounceInterval);
             });
-          }
-        }
-      });
+          } */
+        /* }
+      }); */
   }
 
   unmount() {
@@ -229,7 +250,7 @@ class Bootstrap {
   }
 }
 
-const _debounce = fn => {
+/* const _debounce = fn => {
   let running = false;
   let queued = false;
 
@@ -251,6 +272,6 @@ const _debounce = fn => {
     }
   };
   return _go;
-};
+}; */
 
 module.exports = Bootstrap;
