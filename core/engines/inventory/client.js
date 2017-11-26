@@ -199,7 +199,7 @@ class Inventory {
         const pixelSize = 0.006;
 
         const _getAssetType = asset => {
-          const match = asset.match(/^(ITEM|MOD|SKIN|FILE)\.(.+)$/);
+          const match = asset.match(/^(ITEM|MOD|SKIN|FILE|PLAYLIST)\.(.+)$/);
           const type = match[1].toLowerCase();
           const name = match[2].toLowerCase();
           return {type, name};
