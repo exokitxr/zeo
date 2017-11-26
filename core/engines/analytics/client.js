@@ -8,6 +8,7 @@ class Analytics {
      const {
       metadata: {
         server: {
+          name: serverName,
           url: serverUrl,
         },
       },
@@ -46,7 +47,7 @@ class Analytics {
         const modSpecs = [];
 
         const {port} = _parseUrlSpec(serverUrl);
-        const ws = new AutoWs(`wss://my-site.zeovr.io/analytics/mods?port=${port}`);
+        const ws = new AutoWs(`wss://my-site.zeovr.io/analytics/mods?name=${serverName}&port=${port}`);
         let needsUpdate = true;
         ws.on('connect', () => {
           if (needsUpdate) {
