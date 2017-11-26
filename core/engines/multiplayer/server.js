@@ -245,6 +245,10 @@ class Multiplayer {
           getPlayerStatuses() {
             return statuses;
           }
+
+          getPlayerUsernames() {
+            return usernames;
+          }
         }
         const multiplayerApi = new MultiplayerApi();
         return multiplayerApi;
