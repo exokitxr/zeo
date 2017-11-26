@@ -6,6 +6,7 @@ pushd "$DIR"/../
 
 node --inspect=0.0.0.0:9229 ./index.js server \
   port=8080 \
+  name='Test server' \
   siteUrl='https://test.zeovr.io:8080' \
   homeUrl='http://127.0.0.1:8081' \
   vridUrl='https://test.zeovr.io:8080' \

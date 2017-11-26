@@ -45,6 +45,7 @@ const flags = {
       return null;
     }
   })(),
+  name: _findArg('name'),
   dataDirectory: _findArg('dataDirectory'),
   cryptoDirectory: _findArg('cryptoDirectory'),
   installDirectory: _findArg('installDirectory'),
@@ -98,6 +99,7 @@ const siteUrl = flags.siteUrl || (protocolString + '://' + hostname + ':' + port
 const vridUrl = flags.vridUrl || (protocolString + '://' + hostname + ':' + port);
 const crdsUrl = flags.crdsUrl || (protocolString + '://' + hostname + ':' + port);
 const fullUrl = protocolString + '://127.0.0.1:' + port;
+const serverName = flags.name || 'Server';
 const maxUsers = (flags.maxUsers && parseInt(flags.maxUsers, 10)) || 4;
 const config = {
   dirname: __dirname,
@@ -130,6 +132,7 @@ const config = {
     },
     server: {
       url: fullUrl,
+      name: serverName,
       enabled: flags.server,
     },
     protocolString,
