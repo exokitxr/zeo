@@ -37,8 +37,10 @@ class Analytics {
     };
 
     return archae.requestPlugins([
+      '/core/engines/multiplayer',
       '/core/utils/network-utils',
     ]).then(([
+      multiplayer,
       networkUtils,
     ]) => {
       if (live) {
@@ -95,6 +97,31 @@ class Analytics {
               id,
             },
           }));
+        };
+
+        const _playerEnter = ({n, useraname}) => {
+          ws.send(JSON.stringify({
+            method: 'playerEnter',
+            args: {
+              n,
+              useraname,
+            },
+          }));
+        };
+        multiplayer.on('playerEnter', _playerEnter);
+        const _playerLeave = n => {
+          ws.send(JSON.stringify({
+            method: 'playerLeave',
+            args: {
+              n,
+            },
+          }));
+        };
+        multiplayer.on('playerLeave', _playerLeave);
+
+        this._cleanup = () => {
+          multiplayer.removeListener('playerEnter', _playerEnter);
+          multiplayer.removeListener('playerLeave', _playerLeave);
         };
 
         const analyticsApi = {
