@@ -457,8 +457,11 @@ class World {
               const plugins = [];
               for (const id in tagsJson.tags) {
                 const tagSpec = tagsJson.tags[id];
+
                 if (tagSpec.type === 'entity') {
                   plugins.push(path.isAbsolute(tagSpec.module) ? tagSpec.module : `${tagSpec.module}@${tagSpec.version}`);
+
+                  analytics.add(tagSpec);
                 }
               }
               return archae.requestPlugins(plugins, {
