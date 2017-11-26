@@ -21,13 +21,6 @@ class Multiplayer {
 
     return archae.requestPlugins([
       '/core/engines/three',
-      '/core/engines/webvr',
-      '/core/engines/resource',
-      '/core/engines/biolumi',
-      '/core/engines/rend',
-      '/core/utils/js-utils',
-      '/core/utils/network-utils',
-      '/core/utils/skin-utils',
     ]).then(([
       three,
     ]) => {
