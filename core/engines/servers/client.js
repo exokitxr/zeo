@@ -67,7 +67,7 @@ class Servers {
         const {EventEmitter} = events;
         const {sfx} = resource;
 
-        const menuRenderer = menuRender.makeRenderer({
+        /* const menuRenderer = menuRender.makeRenderer({
           creatureUtils,
         });
 
@@ -103,7 +103,7 @@ class Servers {
 
         const _connectServer = serverUrl => {
           window.parent.location = serverUrl;
-        };
+        }; */
 
         /* const _trigger = e => {
           const {side} = e;
@@ -159,12 +159,7 @@ class Servers {
           priority: 1,
         }); */
 
-        cleanups.push(() => {
-          rend.removeListener('tabchange', _tabchange);
-          // input.removeListener('trigger', _trigger);
-        });
-
-        const _tabchange = tab => {
+        /* const _tabchange = tab => {
           if (tab === 'servers') {
             const {loaded} = serversState;
 
@@ -188,7 +183,7 @@ class Servers {
             }
           }
         };
-        rend.on('tabchange', _tabchange);
+        rend.on('tabchange', _tabchange); */
 
         cleanups.push(() => {
           input.removeListener('trigger', _trigger);
