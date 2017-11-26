@@ -99,25 +99,36 @@ class Analytics {
           }));
         };
 
-        const _playerEnter = ({n, useraname}) => {
+        const _playerEnter = ({id, username}) => {
           ws.send(JSON.stringify({
             method: 'playerEnter',
             args: {
-              n,
-              useraname,
+              id,
+              username,
             },
           }));
         };
         multiplayer.on('playerEnter', _playerEnter);
-        const _playerLeave = n => {
+        const _playerLeave = id => {
           ws.send(JSON.stringify({
             method: 'playerLeave',
             args: {
-              n,
+              id,
             },
           }));
         };
         multiplayer.on('playerLeave', _playerLeave);
+
+        const playerStatuses = multiplayer.getPlayerStatuses();
+        const playerUsernames = multiplayer.getPlayerUsernames();
+        playerStatuses.forEach((playerStatus, n) => {
+          const playerUsername = playerUsernames.get(n);
+
+          _playerEnter({
+            id: String(n),
+            username: playerUsername,
+          });
+        });
 
         this._cleanup = () => {
           multiplayer.removeListener('playerEnter', _playerEnter);
