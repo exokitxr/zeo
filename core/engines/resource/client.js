@@ -119,7 +119,6 @@ class Assets {
       ]),
       _requestJson(hmdModelPath),
       _requestJson(controllerModelPath),
-      _requestImage(imgPath + '/cursor.svg'),
       _requestFonts(),
       _requestSfx(),
     ])
@@ -127,7 +126,6 @@ class Assets {
         plugins,
         hmdModelJson,
         controllerModelJson,
-        cursorImg,
         fonts,
         sfx,
       ]) => {
@@ -161,7 +159,6 @@ class Assets {
             Promise.resolve(plugins),
             _requestHmdMesh(),
             _requestControllerMesh(),
-            Promise.resolve(cursorImg),
             Promise.resolve(sfx),
           ]);
         }
@@ -173,7 +170,6 @@ class Assets {
         ],
         hmdModelMesh,
         controllerModelMesh,
-        cursorImg,
         sfx,
       ]) => {
         if (live) {
@@ -337,7 +333,6 @@ class Assets {
             materials: {
               assets: assetsMaterial,
             },
-            cursorImg,
             sfx: sfx,
             getItemImageData: _getItemImageData,
             getModImageData: _getModImageData,

@@ -5,7 +5,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 pushd "$DIR"/../
 
 node --inspect=0.0.0.0:9229 ./index.js server \
-  port=8080 \
+  port=8000 \
   name='Test server' \
   siteUrl='https://test.zeovr.io:8080' \
   homeUrl='http://127.0.0.1:8081' \
