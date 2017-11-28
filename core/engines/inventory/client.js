@@ -167,9 +167,10 @@ class Inventory {
           if (item.type === 'entity') {
             mods.push(item);
             localMods = _getLocalMods();
-            serverBarValue = 0;
+            /* serverBarValue = 0;
             serverPage = 0;
-            serverPages = mods.length > 12 ? Math.ceil(mods.length / 12) : 0;
+            serverPages = mods.length > 12 ? Math.ceil(mods.length / 12) : 0; */
+
             _renderMenu();
             assetsMesh.render();
           }
@@ -256,28 +257,28 @@ class Inventory {
         );
 
         const _getLocalTabAssets = () => assets
-          .filter(assetSpec => _getAssetType(assetSpec.asset).type === tabType);
+          // .filter(assetSpec => _getAssetType(assetSpec.asset).type === tabType);
         const _getLocalAssets = () => _getLocalTabAssets()
           .slice(inventoryPage * 12, (inventoryPage + 1) * 12);
         const _getLocalMods = () => mods
-          .slice(serverPage * 12, (serverPage + 1) * 12);
+          // .slice(serverPage * 12, (serverPage + 1) * 12);
 
-        let tabIndex = 0;
-        let tabType = 'item';
+        /* let tabIndex = 0;
+        let tabType = 'item'; */
         let inventoryPage = 0;
         let localAssets = _getLocalAssets();
         const localTabAssets = _getLocalTabAssets();
-        let inventoryPages = localTabAssets.length > 12 ? Math.ceil(localTabAssets.length / 12) : 0;
+        let inventoryPages = localTabAssets.length > 12 ? Math.ceil(localTabAssets.length / 12) : 1;
         let inventoryBarValue = 0;
-        const inventoryIndices = {
+        /* const inventoryIndices = {
           left: -1,
           right: -1,
-        };
+        }; */
         let serverPage = 0;
         let localMods = _getLocalMods();
         let serverPages = mods.length > 12 ? Math.ceil(mods.length / 12) : 0;
         let serverBarValue = 0;
-        let serverIndex = -1;
+        // let serverIndex = -1;
         const _snapToIndex = (steps, value) => Math.floor(steps * value);
         const _snapToPixel = (max, steps, value) => {
           const stepIndex = _snapToIndex(steps, value);
@@ -317,6 +318,11 @@ class Inventory {
             ctx.fillRect(canvas.width * 1/8, 150 - 10, canvas.width / 8, 10);
           } else if (tab === 'files') {
             ctx.fillRect(canvas.width * 2/8, 150 - 10, canvas.width / 8, 10);
+
+            ctx.fillStyle = '#CCC';
+            ctx.fillRect(canvas.width - 60, 150 + (canvas.height - 150) * 0.05, 30, (canvas.height - 150) * 0.9);
+            ctx.fillStyle = '#ff4b4b';
+            ctx.fillRect(canvas.width - 60, 150 + (canvas.height - 150) * 0.05 + _snapToPixel((canvas.height - 150) * 0.9, inventoryPages, inventoryBarValue), 30, (canvas.height - 150) * 0.9 / inventoryPages);
           } else if (tab === 'settings') {
             ctx.fillRect(canvas.width * 3/8, 150 - 10, canvas.width / 8, 10);
           }
@@ -392,8 +398,8 @@ class Inventory {
             triggerdown,
           });
         };
-        /* let onmove = null;
-        const inventoryAnchors = [];
+        let onmove = null;
+        /* const inventoryAnchors = [];
         let index = 0;
         for (let dy = 0; dy < 4; dy++) {
           for (let dx = 0; dx < 3; dx++) {
@@ -564,51 +570,50 @@ class Inventory {
           return result;
         }; */
         const tabsAnchors = [];
-        _pushAnchor(tabsAnchors, Math.floor(canvas.width * 0/8), 0, Math.floor(canvas.width / 8), 150, (e, hoverState) => {
+        _pushAnchor(tabsAnchors, canvas.width * 0/8, 0, canvas.width / 8, 150, (e, hoverState) => {
           tab = 'status';
 
           _renderMenu();
-          /* serverIndex = -1;
-          plane.anchors = _getAnchors();
-
-          _renderMenu();
-          assetsMesh.render(); */
         });
-        _pushAnchor(tabsAnchors, Math.floor(canvas.width * 1/8), 0, Math.floor(canvas.width / 8), 150, (e, hoverState) => {
+        _pushAnchor(tabsAnchors, canvas.width * 1/8, 0, canvas.width / 8, 150, (e, hoverState) => {
           tab = 'server';
 
           _renderMenu();
-          /* serverIndex = -1;
-          plane.anchors = _getAnchors();
-
-          _renderMenu();
-          assetsMesh.render(); */
         });
-        _pushAnchor(tabsAnchors, Math.floor(canvas.width * 2/8), 0, Math.floor(canvas.width / 8), 150, (e, hoverState) => {
+        _pushAnchor(tabsAnchors, canvas.width * 2/8, 0, canvas.width / 8, 150, (e, hoverState) => {
           tab = 'files';
 
           _renderMenu();
-          /* serverIndex = -1;
           plane.anchors = _getAnchors();
-
-          _renderMenu();
-          assetsMesh.render(); */
         });
-        _pushAnchor(tabsAnchors, Math.floor(canvas.width * 3/8), 0, Math.floor(canvas.width / 8), 150, (e, hoverState) => {
+        _pushAnchor(tabsAnchors, canvas.width * 3/8, 0, canvas.width / 8, 150, (e, hoverState) => {
           tab = 'settings';
 
           _renderMenu();
-          /* serverIndex = -1;
-          plane.anchors = _getAnchors();
-
-          _renderMenu();
-          assetsMesh.render(); */
         });
         const statusAnchors = [];
+        const filesAnchors = [];
+        _pushAnchor(filesAnchors, canvas.width - 60, 150 + (canvas.height - 150) * 0.05, 30, (canvas.height - 150) * 0.9, (e, hoverState) => {
+          const {side} = e;
+
+          console.log('click');
+
+          onmove = () => {
+            const hoverState = uiTracker.getHoverState(side);
+            inventoryBarValue = Math.min(Math.max(hoverState.y - (150 + (canvas.height - 150) * 0.05), 0), (canvas.height - 150) * 0.9) / ((canvas.height - 150) * 0.9);
+            // inventoryIndices[side] = -1;
+            // wallet.selectAsset(side, null);
+
+            _renderMenu();
+            // _renderAssets();
+          };
+        });
         const _getAnchors = () => {
           const result = tabsAnchors.slice();
           if (tab === 'status') {
             result.push.apply(result, statusAnchors);
+          } else if (tab === 'files') {
+            result.push.apply(result, filesAnchors);
           }
           return result;
         };
@@ -747,7 +752,7 @@ class Inventory {
                       }
                     })
                     .filter(o => o !== null)
-                ).concat(
+                )/* .concat(
                   serverIndex === -1 ? localMods
                     .map((modSpec, i) =>
                       _requestAssetImageData('MOD.' + modSpec.displayName)
@@ -761,7 +766,7 @@ class Inventory {
                           oneVector
                         )))
                     ) : []
-                )
+                ) */
             )
             .then(geometrySpecs => {
               const positions = new Float32Array(NUM_POSITIONS);
@@ -880,10 +885,10 @@ class Inventory {
           }
         };
         input.on('triggerdown', _triggerdown);
-        /* const _triggerup = e => {
+        const _triggerup = e => {
           onmove = null;
         };
-        input.on('triggerup', _triggerup); */
+        input.on('triggerup', _triggerup);
 
         cleanups.push(() => {
           scene.remove(menuMesh);
@@ -907,11 +912,11 @@ class Inventory {
         });
 
         rend.on('update', () => {
-          /* const _updateMove = () => {
+          const _updateMove = () => {
             if (onmove) {
               onmove();
             }
-          }; */
+          };
           const _updateMenu = () => {
             if (menuState.open) {
               if (menuMesh.position.distanceTo(webvr.getStatus().hmd.worldPosition) > MENU_RANGE) {
@@ -966,7 +971,7 @@ class Inventory {
             }
           };
 
-          // _updateMove();
+          _updateMove();
           _updateMenu();
           _updateUiTracker();
           _updateAnimation();
