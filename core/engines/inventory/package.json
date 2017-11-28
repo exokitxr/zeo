@@ -4,5 +4,7 @@
   "version": "0.0.1",
   "client": "client.js",
   "server": "server.js",
-  "dependencies": {}
+  "dependencies": {
+    "html-tag-names": "^1.1.2"
+  }
 }

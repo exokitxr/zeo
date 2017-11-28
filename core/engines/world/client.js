@@ -775,6 +775,22 @@ class World {
           removeTags(ids) {
             _removeTags(ids);
           }
+
+          getTag(spec) {
+            const tagMeshes = elementManager.getTagMeshes();
+            for (const k in tagMeshes) {
+              const tagMesh = tagMeshes[k];
+              const {item} = tagMesh;
+              if (
+                (!spec.type || item.type === spec.type) &&
+                (!spec.name || item.name === spec.name) &&
+                (!spec.version || item.version === spec.version)
+              ) {
+                return tagMesh;
+              }
+            }
+            return null;
+          }
         }
         const worldApi = new WorldApi();
         return worldApi;

@@ -1,5 +1,6 @@
 const EffectComposer = require('./lib/three-extra/postprocessing/EffectComposer');
 const BlurShader = require('./lib/three-extra/shaders/BlurShader');
+const htmlTagNames = require('html-tag-names');
 const {
   WIDTH,
   HEIGHT,
@@ -625,7 +626,53 @@ class Inventory {
         for (let i = 0; i < 12; i++) {
           _pushAnchor(filesAnchors, 0, 150 + ((canvas.height - 150) * i/12), canvas.width * 0.95, (canvas.height - 150) / 12, (e, hoverState) => {
             const assetSpec = localAssets[i];
-            console.log('click file', assetSpec);
+            if (_getAssetType(assetSpec.asset).type === 'playlist') {
+              const allEnabled = assetSpec.playlist.every(playlistEntry => {
+                const {name, version} = playlistEntry;
+                return world.getTag({
+                  type: 'entity',
+                  name,
+                  version,
+                });
+              });
+
+              if (allEnabled) {
+                for (let i = 0; i < assetSpec.playlist.length; i++) {
+                  const {name, version} = assetSpec.playlist[i];
+                  const tagMesh = world.getTag({
+                    type: 'entity',
+                    name,
+                    version,
+                  });
+                  const {item} = tagMesh;
+                  const {id} = item;
+
+                  world.removeTag(id);
+                }
+              } else {
+                for (let i = 0; i < assetSpec.playlist.length; i++) {
+                  const {name, version} = assetSpec.playlist[i];
+                  if (!world.getTag({
+                    type: 'entity',
+                    name,
+                    version,
+                  })) {
+                    const itemSpec = {
+                      type: 'entity',
+                      id: _makeId(),
+                      name: name,
+                      displayName: name,
+                      version: version,
+                      module: name,
+                      tagName: _makeTagName(name),
+                      attributes: {},
+                      metadata: {},
+                    };
+                    world.addTag(itemSpec);
+                  }
+                }
+              }
+            }
           });
         }
         const _getAnchors = () => {
@@ -1026,6 +1073,21 @@ const _arrayify = (array, numElements) => {
     result[i] = array[i] || null;
   }
   return result;
+};
+const _makeId = () => Math.random().toString(36).substring(7);
+const _makeTagName = s => {
+  s = s
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, '-')
+    .replace(/--+/g, '-')
+    .replace(/(?:^-|-$)/g, '');
+  if (/^[0-9]/.test(s)) {
+    s = 'e-' + s;
+  }
+  if (htmlTagNames.includes(s)) {
+    s = 'e-' + s;
+  }
+  return s;
 };
 const _debounce = fn => {
   let running = false;
