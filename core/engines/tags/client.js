@@ -349,7 +349,7 @@ class Tags {
               });
             }
 
-            const componentApis = tagComponentApis[module];
+            const componentApis = tagComponentApis[module] || [];
             for (let i = 0; i < componentApis.length; i++) {
               const componentApi = componentApis[i];
               _removeEntityCallback(componentApi, element);
