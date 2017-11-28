@@ -588,11 +588,13 @@ class Inventory {
           tab = 'status';
 
           _renderMenu();
+          plane.anchors = _getAnchors();
         });
         _pushAnchor(tabsAnchors, canvas.width * 1/8, 0, canvas.width / 8, 150, (e, hoverState) => {
           tab = 'server';
 
           _renderMenu();
+          plane.anchors = _getAnchors();
         });
         _pushAnchor(tabsAnchors, canvas.width * 2/8, 0, canvas.width / 8, 150, (e, hoverState) => {
           tab = 'files';
@@ -604,6 +606,7 @@ class Inventory {
           tab = 'settings';
 
           _renderMenu();
+          plane.anchors = _getAnchors();
         });
         const statusAnchors = [];
         const filesAnchors = [];
