@@ -215,6 +215,8 @@ class World {
 
           tags.destroyTag(tagMesh);
 
+          elementManager.remove(tagMesh);
+
           return result;
         };
         const _handleRemoveTags = (userId, ids) => {
