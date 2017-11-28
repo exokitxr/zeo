@@ -323,6 +323,20 @@ class Inventory {
             ctx.fillRect(canvas.width - 60, 150 + (canvas.height - 150) * 0.05, 30, (canvas.height - 150) * 0.9);
             ctx.fillStyle = '#ff4b4b';
             ctx.fillRect(canvas.width - 60, 150 + (canvas.height - 150) * 0.05 + _snapToPixel((canvas.height - 150) * 0.9, inventoryPages, inventoryBarValue), 30, (canvas.height - 150) * 0.9 / inventoryPages);
+
+            for (let i = 0; i < localAssets.length; i++) {
+              const assetSpec = localAssets[i];
+              ctx.fillStyle = '#111';
+              ctx.fillText(_getAssetType(assetSpec.asset).name, canvas.width * 0.05, 150 + ((canvas.height - 150) * (i + 1)/12) - 30, canvas.width * 0.9);
+
+              /* for (let s = 0; s < SIDES.length; s++) {
+                const side = SIDES[s];
+                if (inventoryIndices[side] === i) {
+                  ctx.fillStyle = '#4CAF5080';
+                  ctx.fillRect(870 + dx * 150, 235 + dy * 155, 132, 132);
+                }
+              } */
+            }
           } else if (tab === 'settings') {
             ctx.fillRect(canvas.width * 3/8, 150 - 10, canvas.width / 8, 10);
           }
@@ -596,18 +610,21 @@ class Inventory {
         _pushAnchor(filesAnchors, canvas.width - 60, 150 + (canvas.height - 150) * 0.05, 30, (canvas.height - 150) * 0.9, (e, hoverState) => {
           const {side} = e;
 
-          console.log('click');
-
           onmove = () => {
             const hoverState = uiTracker.getHoverState(side);
             inventoryBarValue = Math.min(Math.max(hoverState.y - (150 + (canvas.height - 150) * 0.05), 0), (canvas.height - 150) * 0.9) / ((canvas.height - 150) * 0.9);
-            // inventoryIndices[side] = -1;
-            // wallet.selectAsset(side, null);
+            inventoryPage = _snapToIndex(inventoryPages, inventoryBarValue);
+            localAssets = _getLocalAssets();
 
             _renderMenu();
-            // _renderAssets();
           };
         });
+        for (let i = 0; i < 12; i++) {
+          _pushAnchor(filesAnchors, 0, 150 + ((canvas.height - 150) * i/12), canvas.width * 0.95, (canvas.height - 150) / 12, (e, hoverState) => {
+            const assetSpec = localAssets[i];
+            console.log('click file', assetSpec);
+          });
+        }
         const _getAnchors = () => {
           const result = tabsAnchors.slice();
           if (tab === 'status') {
