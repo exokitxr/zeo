@@ -112,7 +112,7 @@ class Inventory {
         '/core/utils/sprite-utils',
         '/core/utils/vrid-utils',
       ]),
-      _requestImageBitmap('/archae/inventory/img/menu.png'),
+      // _requestImageBitmap('/archae/inventory/img/menu.png'),
       _requestImageBitmap('/archae/inventory/img/arrow-left.png'),
     ]).then(([
       [
@@ -130,7 +130,7 @@ class Inventory {
         spriteUtils,
         vridUtils,
       ],
-      menuImg,
+      // menuImg,
       arrowLeftImg,
     ]) => {
       if (live) {
@@ -210,7 +210,7 @@ class Inventory {
             return resource.getItemImageData(name);
           } else if (type === 'mod') {
             return resource.getModImageData(name);
-          } else if (type === 'file') {
+          } else if (type === 'files') {
             return resource.getFileImageData(name);
           } else if (type === 'skin') {
             return resource.getSkinImageData(name);
@@ -284,8 +284,44 @@ class Inventory {
           const stepSize = max / steps;
           return stepIndex * stepSize;
         };
+
+        let tab = 'status';
         const _renderMenu = () => {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          // ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+          ctx.fillStyle = '#FFF';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+          ctx.fillStyle = '#111';
+          ctx.fillRect(0, 0, canvas.width, 150);
+          /* ctx.fillRect(Math.floor(canvas.width * 0.05), 0, Math.floor(canvas.width * 0.45), canvas.height * 0.45);
+          ctx.fillRect(Math.floor(canvas.width * 0.55), 0, Math.floor(canvas.width * 0.45), Math.floor(canvas.height * 0.45));
+          ctx.fillRect(Math.floor(canvas.width * 0.05), canvas.height * 0.5, Math.floor(canvas.width * 0.45), canvas.height * 0.45);
+          ctx.fillRect(Math.floor(canvas.width * 0.55), canvas.height * 0.5, Math.floor(canvas.width * 0.45), Math.floor(canvas.height * 0.45)); */
+
+          ctx.font = '34px Open sans';
+          ctx.textBaseline = 'bottom';
+          ctx.fillStyle = tab === 'status' ? '#4CAF50' : '#FFF';
+          ctx.fillText('Status', canvas.width * 0/8 + (canvas.width/8 - ctx.measureText('Status').width)/2, 150 - 60, canvas.width / 8);
+          ctx.fillStyle = tab === 'server' ? '#4CAF50' : '#FFF';
+          ctx.fillText('Server', canvas.width * 1/8 + (canvas.width/8 - ctx.measureText('Server').width)/2, 150 - 60, canvas.width / 8);
+          ctx.fillStyle = tab === 'files' ? '#4CAF50' : '#FFF';
+          ctx.fillText('Files', canvas.width * 2/8 + (canvas.width/8 - ctx.measureText('Files').width)/2, 150 - 60, canvas.width / 8);
+          ctx.fillStyle = tab === 'settings' ? '#4CAF50' : '#FFF';
+          ctx.fillText('Settings', canvas.width * 3/8 + (canvas.width/8 - ctx.measureText('Settings').width)/2, 150 - 60, canvas.width / 8);
+
+          ctx.fillStyle = '#4CAF50';
+          if (tab === 'status') {
+            ctx.fillRect(canvas.width * 0/8, 150 - 10, canvas.width / 8, 10);
+          } else if (tab === 'server') {
+            ctx.fillRect(canvas.width * 1/8, 150 - 10, canvas.width / 8, 10);
+          } else if (tab === 'files') {
+            ctx.fillRect(canvas.width * 2/8, 150 - 10, canvas.width / 8, 10);
+          } else if (tab === 'settings') {
+            ctx.fillRect(canvas.width * 3/8, 150 - 10, canvas.width / 8, 10);
+          }
+
+          /* ctx.clearRect(0, 0, canvas.width, canvas.height);
           ctx.drawImage(menuImg, (canvas.width - menuImg.width) / 2, (canvas.height - menuImg.height) / 2, canvas.width, canvas.width * menuImg.height / menuImg.width);
           ctx.fillStyle = '#FFF';
           ctx.fillRect(850 + tabIndex * 126, 212, 125, 4);
@@ -333,7 +369,7 @@ class Inventory {
             ctx.textAlign = 'left';
             ctx.textBaseline = 'top';
             ctx.fillText(modSpec.displayName, 50, 200);
-          }
+          } */
           texture.needsUpdate = true;
         };
         _renderMenu();
@@ -356,7 +392,7 @@ class Inventory {
             triggerdown,
           });
         };
-        let onmove = null;
+        /* let onmove = null;
         const inventoryAnchors = [];
         let index = 0;
         for (let dy = 0; dy < 4; dy++) {
@@ -524,6 +560,55 @@ class Inventory {
             result.push.apply(result, serverBarAnchors);
           } else {
             result.push.apply(result, serverModAnchors);
+          }
+          return result;
+        }; */
+        const tabsAnchors = [];
+        _pushAnchor(tabsAnchors, Math.floor(canvas.width * 0/8), 0, Math.floor(canvas.width / 8), 150, (e, hoverState) => {
+          tab = 'status';
+
+          _renderMenu();
+          /* serverIndex = -1;
+          plane.anchors = _getAnchors();
+
+          _renderMenu();
+          assetsMesh.render(); */
+        });
+        _pushAnchor(tabsAnchors, Math.floor(canvas.width * 1/8), 0, Math.floor(canvas.width / 8), 150, (e, hoverState) => {
+          tab = 'server';
+
+          _renderMenu();
+          /* serverIndex = -1;
+          plane.anchors = _getAnchors();
+
+          _renderMenu();
+          assetsMesh.render(); */
+        });
+        _pushAnchor(tabsAnchors, Math.floor(canvas.width * 2/8), 0, Math.floor(canvas.width / 8), 150, (e, hoverState) => {
+          tab = 'files';
+
+          _renderMenu();
+          /* serverIndex = -1;
+          plane.anchors = _getAnchors();
+
+          _renderMenu();
+          assetsMesh.render(); */
+        });
+        _pushAnchor(tabsAnchors, Math.floor(canvas.width * 3/8), 0, Math.floor(canvas.width / 8), 150, (e, hoverState) => {
+          tab = 'settings';
+
+          _renderMenu();
+          /* serverIndex = -1;
+          plane.anchors = _getAnchors();
+
+          _renderMenu();
+          assetsMesh.render(); */
+        });
+        const statusAnchors = [];
+        const _getAnchors = () => {
+          const result = tabsAnchors.slice();
+          if (tab === 'status') {
+            result.push.apply(result, statusAnchors);
           }
           return result;
         };
@@ -718,7 +803,7 @@ class Inventory {
           mesh.render = _renderAssets;
           return mesh;
         })();
-        menuMesh.add(assetsMesh);
+        // menuMesh.add(assetsMesh); // XXX
 
         const trigger = e => {
           const {side} = e;
@@ -795,10 +880,10 @@ class Inventory {
           }
         };
         input.on('triggerdown', _triggerdown);
-        const _triggerup = e => {
+        /* const _triggerup = e => {
           onmove = null;
         };
-        input.on('triggerup', _triggerup);
+        input.on('triggerup', _triggerup); */
 
         cleanups.push(() => {
           scene.remove(menuMesh);
@@ -813,7 +898,7 @@ class Inventory {
           wallet.removeListener('assets', _walletAssets);
 
           input.removeListener('triggerdown', _triggerdown);
-          input.removeListener('triggerup', _triggerup);
+          // input.removeListener('triggerup', _triggerup);
           input.removeListener('menudown', _menudown);
 
           scene.onRenderEye = null;
@@ -822,11 +907,11 @@ class Inventory {
         });
 
         rend.on('update', () => {
-          const _updateMove = () => {
+          /* const _updateMove = () => {
             if (onmove) {
               onmove();
             }
-          };
+          }; */
           const _updateMenu = () => {
             if (menuState.open) {
               if (menuMesh.position.distanceTo(webvr.getStatus().hmd.worldPosition) > MENU_RANGE) {
@@ -881,7 +966,7 @@ class Inventory {
             }
           };
 
-          _updateMove();
+          // _updateMove();
           _updateMenu();
           _updateUiTracker();
           _updateAnimation();

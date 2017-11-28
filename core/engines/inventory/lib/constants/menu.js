@@ -1,5 +1,5 @@
 const WIDTH = 1920;
-const HEIGHT = Math.round(WIDTH * 0.5);
+const HEIGHT = Math.round(WIDTH * 3 / 4);
 const ASPECT_RATIO = WIDTH / HEIGHT;
 const WORLD_WIDTH = 2;
 const WORLD_HEIGHT = WORLD_WIDTH / ASPECT_RATIO;
