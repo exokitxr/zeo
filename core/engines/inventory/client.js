@@ -19,6 +19,7 @@ const width = 0.1;
 const height = 0.1;
 const pixelWidth = 128;
 const pixelHeight = 128;
+const numFilesPerPage = 10;
 
 const LENS_SHADER = {
   uniforms: {
@@ -181,7 +182,7 @@ class Inventory {
           assets = _quantizeAssets(newAssets);
           const localTabAssets = _getLocalTabAssets();
           inventoryPage = 0;
-          inventoryPages = localTabAssets.length > 12 ? Math.ceil(localTabAssets.length / 12) : 0;
+          inventoryPages = localTabAssets.length > numFilesPerPage ? Math.ceil(localTabAssets.length / numFilesPerPage) : 0;
           inventoryBarValue = 0;
           inventoryIndices.left = -1;
           inventoryIndices.right = -1;
@@ -260,7 +261,7 @@ class Inventory {
         const _getLocalTabAssets = () => assets
           // .filter(assetSpec => _getAssetType(assetSpec.asset).type === tabType);
         const _getLocalAssets = () => _getLocalTabAssets()
-          .slice(inventoryPage * 12, (inventoryPage + 1) * 12);
+          .slice(inventoryPage * numFilesPerPage, (inventoryPage + 1) * numFilesPerPage);
         const _getLocalMods = () => mods
           // .slice(serverPage * 12, (serverPage + 1) * 12);
 
@@ -269,7 +270,7 @@ class Inventory {
         let inventoryPage = 0;
         let localAssets = _getLocalAssets();
         const localTabAssets = _getLocalTabAssets();
-        let inventoryPages = localTabAssets.length > 12 ? Math.ceil(localTabAssets.length / 12) : 1;
+        let inventoryPages = localTabAssets.length > numFilesPerPage ? Math.ceil(localTabAssets.length / numFilesPerPage) : 1;
         let inventoryBarValue = 0;
         /* const inventoryIndices = {
           left: -1,
@@ -288,6 +289,7 @@ class Inventory {
         };
 
         let tab = 'status';
+        let subtab = 'item';
         const _renderMenu = () => {
           // ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -320,23 +322,41 @@ class Inventory {
           } else if (tab === 'files') {
             ctx.fillRect(canvas.width * 2/8, 150 - 10, canvas.width / 8, 10);
 
-            ctx.fillStyle = '#CCC';
-            ctx.fillRect(canvas.width - 60, 150 + (canvas.height - 150) * 0.05, 30, (canvas.height - 150) * 0.9);
-            ctx.fillStyle = '#ff4b4b';
-            ctx.fillRect(canvas.width - 60, 150 + (canvas.height - 150) * 0.05 + _snapToPixel((canvas.height - 150) * 0.9, inventoryPages, inventoryBarValue), 30, (canvas.height - 150) * 0.9 / inventoryPages);
+            // subheader
+            ctx.fillStyle = '#EEE';
+            ctx.fillRect(0, 150, canvas.width, 150);
+            ctx.fillStyle = '#4CAF50';
+            console.log('fill subtab', subtab);
+            if (subtab === 'items') {
+              ctx.fillRect(canvas.width * 0/8, 150*2 - 10, canvas.width / 8, 10);
+            } else if (subtab === 'media') {
+              ctx.fillRect(canvas.width * 1/8, 150*2 - 10, canvas.width / 8, 10);
+            } else if (subtab === 'data') {
+              ctx.fillRect(canvas.width * 2/8, 150*2 - 10, canvas.width / 8, 10);
+            } else if (subtab === 'playlists') {
+              ctx.fillRect(canvas.width * 3/8, 150*2 - 10, canvas.width / 8, 10);
+            }
 
+            ctx.fillStyle = subtab === 'items' ? '#4CAF50' : '#111';
+            ctx.fillText('Items', canvas.width * 0/8 + (canvas.width/8 - ctx.measureText('Items').width)/2, 150*2 - 60, canvas.width / 8);
+            ctx.fillStyle = subtab === 'media' ? '#4CAF50' : '#111';
+            ctx.fillText('Media', canvas.width * 1/8 + (canvas.width/8 - ctx.measureText('Media').width)/2, 150*2 - 60, canvas.width / 8);
+            ctx.fillStyle = subtab === 'data' ? '#4CAF50' : '#111';
+            ctx.fillText('Data', canvas.width * 2/8 + (canvas.width/8 - ctx.measureText('Data').width)/2, 150*2 - 60, canvas.width / 8);
+            ctx.fillStyle = subtab === 'playlists' ? '#4CAF50' : '#111';
+            ctx.fillText('Playlists', canvas.width * 3/8 + (canvas.width/8 - ctx.measureText('Playlists').width)/2, 150*2 - 60, canvas.width / 8);
+
+            // bar
+            ctx.fillStyle = '#CCC';
+            ctx.fillRect(canvas.width - 60, 150*2 + (canvas.height - 150*2) * 0.05, 30, (canvas.height - 150*2) * 0.9);
+            ctx.fillStyle = '#ff4b4b';
+            ctx.fillRect(canvas.width - 60, 150*2 + (canvas.height - 150*2) * 0.05 + _snapToPixel((canvas.height - 150*2) * 0.9, inventoryPages, inventoryBarValue), 30, (canvas.height - 150*2) * 0.9 / inventoryPages);
+
+            // files
             for (let i = 0; i < localAssets.length; i++) {
               const assetSpec = localAssets[i];
               ctx.fillStyle = '#111';
-              ctx.fillText(_getAssetType(assetSpec.asset).name, canvas.width * 0.05, 150 + ((canvas.height - 150) * (i + 1)/12) - 30, canvas.width * 0.9);
-
-              /* for (let s = 0; s < SIDES.length; s++) {
-                const side = SIDES[s];
-                if (inventoryIndices[side] === i) {
-                  ctx.fillStyle = '#4CAF5080';
-                  ctx.fillRect(870 + dx * 150, 235 + dy * 155, 132, 132);
-                }
-              } */
+              ctx.fillText(_getAssetType(assetSpec.asset).name, canvas.width * 0.05, 150*2 + ((canvas.height - 150*2) * (i + 1)/numFilesPerPage) - 30, canvas.width * 0.9);
             }
           } else if (tab === 'settings') {
             ctx.fillRect(canvas.width * 3/8, 150 - 10, canvas.width / 8, 10);
@@ -599,6 +619,7 @@ class Inventory {
         });
         _pushAnchor(tabsAnchors, canvas.width * 2/8, 0, canvas.width / 8, 150, (e, hoverState) => {
           tab = 'files';
+          subtab = 'items';
 
           _renderMenu();
           plane.anchors = _getAnchors();
@@ -611,20 +632,44 @@ class Inventory {
         });
         const statusAnchors = [];
         const filesAnchors = [];
-        _pushAnchor(filesAnchors, canvas.width - 60, 150 + (canvas.height - 150) * 0.05, 30, (canvas.height - 150) * 0.9, (e, hoverState) => {
+        _pushAnchor(filesAnchors, canvas.width - 60, 150*2 + (canvas.height - 150*2) * 0.05, 30, (canvas.height - 150*2) * 0.9, (e, hoverState) => {
           const {side} = e;
 
           onmove = () => {
             const hoverState = uiTracker.getHoverState(side);
-            inventoryBarValue = Math.min(Math.max(hoverState.y - (150 + (canvas.height - 150) * 0.05), 0), (canvas.height - 150) * 0.9) / ((canvas.height - 150) * 0.9);
+            inventoryBarValue = Math.min(Math.max(hoverState.y - (150*2 + (canvas.height - 150*2) * 0.05), 0), (canvas.height - 150*2) * 0.9) / ((canvas.height - 150*2) * 0.9);
             inventoryPage = _snapToIndex(inventoryPages, inventoryBarValue);
             localAssets = _getLocalAssets();
 
             _renderMenu();
           };
         });
-        for (let i = 0; i < 12; i++) {
-          _pushAnchor(filesAnchors, 0, 150 + ((canvas.height - 150) * i/12), canvas.width * 0.95, (canvas.height - 150) / 12, (e, hoverState) => {
+        _pushAnchor(filesAnchors, canvas.width * 0/8, 150, canvas.width / 8, 150, (e, hoverState) => {
+          subtab = 'items';
+
+          _renderMenu();
+          plane.anchors = _getAnchors();
+        });
+        _pushAnchor(filesAnchors, canvas.width * 1/8, 150, canvas.width / 8, 150, (e, hoverState) => {
+          subtab = 'media';
+
+          _renderMenu();
+          plane.anchors = _getAnchors();
+        });
+        _pushAnchor(filesAnchors, canvas.width * 2/8, 150, canvas.width / 8, 150, (e, hoverState) => {
+          subtab = 'data';
+
+          _renderMenu();
+          plane.anchors = _getAnchors();
+        });
+        _pushAnchor(filesAnchors, canvas.width * 3/8, 150, canvas.width / 8, 150, (e, hoverState) => {
+          subtab = 'playlists';
+
+          _renderMenu();
+          plane.anchors = _getAnchors();
+        });
+        for (let i = 0; i < numFilesPerPage; i++) {
+          _pushAnchor(filesAnchors, 0, 150*2 + ((canvas.height - 150*2) * i/numFilesPerPage), canvas.width * 0.95, (canvas.height - 150*2) / numFilesPerPage, (e, hoverState) => {
             const assetSpec = localAssets[i];
             if (_getAssetType(assetSpec.asset).type === 'playlist') {
               const allEnabled = assetSpec.playlist.every(playlistEntry => {
