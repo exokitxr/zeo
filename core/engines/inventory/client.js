@@ -278,7 +278,7 @@ class Inventory {
         const zeroArray = new Float32Array(0);
         const zeroArray2 = new Float32Array(0);
         const zeroVector = new THREE.Vector3();
-        const pixelSize = 0.015;
+        const pixelSize = 0.013;
 
         const _requestAssetImageData = assetSpec => (() => {
           if (assetSpec.ext === 'itm') {
@@ -950,6 +950,7 @@ class Inventory {
               localAsset = localAssets[inventoryPage * numFilesPerPage + i];
 
               _renderMenu();
+              assetsMesh.render();
               assetsMesh.visible = true;
 
               filesAnchors = _getFilesAnchors();
@@ -1352,28 +1353,52 @@ class Inventory {
                         )))
                     ) : []
                 ) */
-            Promise.all([
-              _requestImageData('archae/inventory/img/up.png')
-                .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
-                  localVector.set(
-                    WORLD_WIDTH / 2 - pixelSize * 16 - pixelSize * 16*1.5,
-                    -WORLD_HEIGHT / 2 + pixelSize * 16,
-                    pixelSize * 16/2
-                  ),
-                  zeroQuaternion,
-                  oneVector
-                ))),
-              _requestImageData('archae/inventory/img/x.png')
-                .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
-                  localVector.set(
-                    WORLD_WIDTH / 2 - pixelSize * 16,
-                    -WORLD_HEIGHT / 2 + pixelSize * 16,
-                    pixelSize * 16/2
-                  ),
-                  zeroQuaternion,
-                  oneVector
-                ))),
-            ])
+            const promises = (() => {
+              if (localAsset) {
+                const grabbed = false; // XXX
+
+                if (!grabbed) {
+                  return [
+                    _requestAssetImageData(localAsset)
+                      .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
+                        localVector.set(
+                          WORLD_WIDTH / 2 - pixelSize * 16 - pixelSize * 16*0.75,
+                          -WORLD_HEIGHT / 2 + pixelSize * 16,
+                          pixelSize * 16/2
+                        ),
+                        zeroQuaternion,
+                        oneVector
+                      ))),
+                  ];
+                } else {
+                  return [
+                    _requestImageData('archae/inventory/img/up.png')
+                      .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
+                        localVector.set(
+                          WORLD_WIDTH / 2 - pixelSize * 16 - pixelSize * 16*1.5,
+                          -WORLD_HEIGHT / 2 + pixelSize * 16,
+                          pixelSize * 16/2
+                        ),
+                        zeroQuaternion,
+                        oneVector
+                      ))),
+                    _requestImageData('archae/inventory/img/x.png')
+                      .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
+                        localVector.set(
+                          WORLD_WIDTH / 2 - pixelSize * 16,
+                          -WORLD_HEIGHT / 2 + pixelSize * 16,
+                          pixelSize * 16/2
+                        ),
+                        zeroQuaternion,
+                        oneVector
+                      ))),
+                  ];
+                }
+              } else {
+                return [];
+              }
+            })();
+            Promise.all(promises)
               .then(geometrySpecs => {
                 const positions = new Float32Array(NUM_POSITIONS);
                 const colors = new Float32Array(NUM_POSITIONS);
