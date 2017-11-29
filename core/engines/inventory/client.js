@@ -114,7 +114,7 @@ class Inventory {
     const _requestModReadme = (name, version) => {
       let live = true;
       const result = new Promise((accept, reject) => {
-        _requestImageBitmap(`archae/rend/readmeImg/${name}/${version}`)
+        _requestImageBitmap(`archae/rend/readmeImg/?name=${name}&version=${version}`)
           .then(img => {
             if (live) {
               accept(img);
@@ -192,6 +192,16 @@ class Inventory {
         const {THREERenderPass, THREEShaderPass} = THREEEffectComposer;
         const THREEBlurShader = BlurShader(THREE);
 
+        const _updateInstalled = () => {
+          for (let i = 0; i < remoteMods.length; i++) {
+            const remoteMod = remoteMods[i];
+            const installed = tags.getTagMeshes()
+              .some(({item}) => item.type === 'entity' && item.name === remoteMod.name);
+            remoteMod.installed = installed;
+          }
+        };
+        _updateInstalled();
+
         const _quantizeAssets = assets => {
           const assetIndex = {};
           for (let i = 0; i < assets.length; i++) {
@@ -221,6 +231,8 @@ class Inventory {
             serverBarValue = 0;
             serverPage = 0;
             serverPages = mods.length > numModsPerPage ? Math.ceil(mods.length / numModsPerPage) : 0;
+
+            _updateInstalled();
 
             _renderMenu();
             assetsMesh.render();
@@ -313,7 +325,8 @@ class Inventory {
         const _getLocalMods = () =>
           (() => {
             if (subtab === 'installed') {
-              return mods;
+              return remoteMods
+                .filter(modSpec => modSpec.installed);
             } else if (subtab === 'remote') {
               return remoteMods
                 .filter(modSpec => !modSpec.local);
@@ -410,7 +423,7 @@ class Inventory {
               // img
               ctx.drawImage(
                 modReadmeImg,
-                0, (modPage / (modPages - 1)) * (canvas.height - 150*2), 640, canvas.height - 150*2,
+                0, (modPages > 1 ? (modPage / (modPages - 1)) : 0) * (canvas.height - 150*2), 640, canvas.height - 150*2,
                 canvas.width - 640 - 40, 150*2, 640, canvas.height - 150*2
               );
 
@@ -875,16 +888,18 @@ class Inventory {
 
         const serverAnchors = [];
         _pushAnchor(serverAnchors, canvas.width - 640 - 40 - 60, 150*2 + (canvas.height - 150*2) * 0.05, 30, (canvas.height - 150*2) * 0.9, (e, hoverState) => {
-          const {side} = e;
+          if (serverPages > 0) {
+            const {side} = e;
 
-          onmove = () => {
-            const hoverState = uiTracker.getHoverState(side);
-            serverBarValue = Math.min(Math.max(hoverState.y - (150*2 + (canvas.height - 150*2) * 0.05), 0), (canvas.height - 150*2) * 0.9) / ((canvas.height - 150*2) * 0.9);
-            serverPage = _snapToIndex(serverPages, serverBarValue);
-            localMods = _getLocalMods();
+            onmove = () => {
+              const hoverState = uiTracker.getHoverState(side);
+              serverBarValue = Math.min(Math.max(hoverState.y - (150*2 + (canvas.height - 150*2) * 0.05), 0), (canvas.height - 150*2) * 0.9) / ((canvas.height - 150*2) * 0.9);
+              serverPage = _snapToIndex(serverPages, serverBarValue);
+              localMods = _getLocalMods();
 
-            _renderMenu();
-          };
+              _renderMenu();
+            };
+          }
         });
         _pushAnchor(serverAnchors, canvas.width * 0/8, 150, canvas.width / 8, 150, (e, hoverState) => {
           subtab = 'installed';
@@ -933,7 +948,7 @@ class Inventory {
 
               modBarValue = 0;
               modPage = 0;
-              modPages = Math.ceil(img.height / (canvas.height - 150*2));
+              modPages = img.height > (canvas.height - 150*2) ? Math.ceil(img.height / (canvas.height - 150*2)) : 0;
 
               _renderMenu();
               plane.anchors = _getAnchors();
@@ -949,15 +964,17 @@ class Inventory {
 
         const modAnchors = serverAnchors.slice();
         _pushAnchor(modAnchors, canvas.width - 60, 150*2 + (canvas.height - 150*2) * 0.05, 30, (canvas.height - 150*2) * 0.9, (e, hoverState) => {
-          const {side} = e;
+          if (modPages > 0) {
+            const {side} = e;
 
-          onmove = () => {
-            const hoverState = uiTracker.getHoverState(side);
-            modBarValue = Math.min(Math.max(hoverState.y - (150*2 + (canvas.height - 150*2) * 0.05), 0), (canvas.height - 150*2) * 0.9) / ((canvas.height - 150*2) * 0.9);
-            modPage = _snapToIndex(modPages, modBarValue);
+            onmove = () => {
+              const hoverState = uiTracker.getHoverState(side);
+              modBarValue = Math.min(Math.max(hoverState.y - (150*2 + (canvas.height - 150*2) * 0.05), 0), (canvas.height - 150*2) * 0.9) / ((canvas.height - 150*2) * 0.9);
+              modPage = _snapToIndex(modPages, modBarValue);
 
-            _renderMenu();
-          };
+              _renderMenu();
+            };
+          }
         });
 
         const _getAnchors = () => {
