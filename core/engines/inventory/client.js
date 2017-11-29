@@ -349,7 +349,7 @@ class Inventory {
         let serverBarValue = 0;
         // let serverIndex = -1;
 
-        const _snapToIndex = (steps, value) => Math.floor(steps * value);
+        const _snapToIndex = (steps, value) => Math.min(Math.floor(steps * value), steps - 1);
         const _snapToPixel = (max, steps, value) => {
           const stepIndex = _snapToIndex(steps, value);
           const stepSize = max / steps;
@@ -407,18 +407,31 @@ class Inventory {
             ctx.fillText('Local', canvas.width * 2/8 + (canvas.width/8 - ctx.measureText('Local').width)/2, 150*2 - 60, canvas.width / 8);
 
             if (modReadmeImg) {
+              // img
               ctx.drawImage(
                 modReadmeImg,
-                0, (modPage / modPages) * 640, 640, canvas.height - 150*2,
-                canvas.width - 640, 150*2, 640, canvas.height - 150*2
+                0, (modPage / (modPages - 1)) * (canvas.height - 150*2), 640, canvas.height - 150*2,
+                canvas.width - 640 - 40, 150*2, 640, canvas.height - 150*2
+              );
+
+              // bar
+              ctx.fillStyle = '#CCC';
+              ctx.fillRect(canvas.width - 60, 150*2 + (canvas.height - 150*2) * 0.05, 30, (canvas.height - 150*2) * 0.9);
+              ctx.fillStyle = '#ff4b4b';
+              ctx.fillRect(canvas.width - 60, 150*2 + (canvas.height - 150*2) * 0.05 + _snapToPixel((canvas.height - 150*2) * 0.9, modPages, modBarValue), 30, (canvas.height - 150*2) * 0.9 / modPages);
+            } else {
+              // placeholder
+              ctx.fillStyle = '#EEE';
+              ctx.fillRect(
+                canvas.width - 640 - 40, 150*2, 640, canvas.height - 150*2
               );
             }
 
             // bar
             ctx.fillStyle = '#CCC';
-            ctx.fillRect(canvas.width - 60, 150*2 + (canvas.height - 150*2) * 0.05, 30, (canvas.height - 150*2) * 0.9);
+            ctx.fillRect(canvas.width - 640 - 40 - 60, 150*2 + (canvas.height - 150*2) * 0.05, 30, (canvas.height - 150*2) * 0.9);
             ctx.fillStyle = '#ff4b4b';
-            ctx.fillRect(canvas.width - 60, 150*2 + (canvas.height - 150*2) * 0.05 + _snapToPixel((canvas.height - 150*2) * 0.9, serverPages, serverBarValue), 30, (canvas.height - 150*2) * 0.9 / serverPages);
+            ctx.fillRect(canvas.width - 640 - 40 - 60, 150*2 + (canvas.height - 150*2) * 0.05 + _snapToPixel((canvas.height - 150*2) * 0.9, serverPages, serverBarValue), 30, (canvas.height - 150*2) * 0.9 / serverPages);
 
             // files
             for (let i = 0; i < localMods.length; i++) {
@@ -861,7 +874,7 @@ class Inventory {
         }
 
         const serverAnchors = [];
-        _pushAnchor(serverAnchors, canvas.width - 60, 150*2 + (canvas.height - 150*2) * 0.05, 30, (canvas.height - 150*2) * 0.9, (e, hoverState) => {
+        _pushAnchor(serverAnchors, canvas.width - 640 - 40 - 60, 150*2 + (canvas.height - 150*2) * 0.05, 30, (canvas.height - 150*2) * 0.9, (e, hoverState) => {
           const {side} = e;
 
           onmove = () => {
@@ -907,7 +920,7 @@ class Inventory {
           plane.anchors = _getAnchors();
         });
         for (let i = 0; i < numModsPerPage; i++) {
-          _pushAnchor(serverAnchors, 0, 150*2 + ((canvas.height - 150*2) * i/numModsPerPage), canvas.width * 0.95, (canvas.height - 150*2) / numModsPerPage, (e, hoverState) => {
+          _pushAnchor(serverAnchors, 0, 150*2 + ((canvas.height - 150*2) * i/numModsPerPage), canvas.width - 640 - 40 - 60, (canvas.height - 150*2) / numModsPerPage, (e, hoverState) => {
             localMod = localMods[i];
             modReadmeImg = null;
             if (modReadmeImgPromise) {
@@ -920,7 +933,7 @@ class Inventory {
 
               modBarValue = 0;
               modPage = 0;
-              modPages = Math.ceil(img.width / (canvas.height - 150*2));
+              modPages = Math.ceil(img.height / (canvas.height - 150*2));
 
               _renderMenu();
               plane.anchors = _getAnchors();
@@ -934,12 +947,29 @@ class Inventory {
           });
         }
 
+        const modAnchors = serverAnchors.slice();
+        _pushAnchor(modAnchors, canvas.width - 60, 150*2 + (canvas.height - 150*2) * 0.05, 30, (canvas.height - 150*2) * 0.9, (e, hoverState) => {
+          const {side} = e;
+
+          onmove = () => {
+            const hoverState = uiTracker.getHoverState(side);
+            modBarValue = Math.min(Math.max(hoverState.y - (150*2 + (canvas.height - 150*2) * 0.05), 0), (canvas.height - 150*2) * 0.9) / ((canvas.height - 150*2) * 0.9);
+            modPage = _snapToIndex(modPages, modBarValue);
+
+            _renderMenu();
+          };
+        });
+
         const _getAnchors = () => {
           const result = tabsAnchors.slice();
           if (tab === 'status') {
             result.push.apply(result, statusAnchors);
           } else if (tab === 'server') {
-            result.push.apply(result, serverAnchors);
+            if (!modReadmeImg) {
+              result.push.apply(result, serverAnchors);
+            } else {
+              result.push.apply(result, modAnchors);
+            }
           } else if (tab === 'files') {
             result.push.apply(result, filesAnchors);
           }
