@@ -73,19 +73,4 @@ class Rend {
   }
 }
 
-const _jsonParse = s => {
-  let error = null;
-  let result;
-  try {
-    result = JSON.parse(s);
-  } catch (err) {
-    error = err;
-  }
-  if (!error) {
-    return result;
-  } else {
-    return undefined;
-  }
-};
-
 module.exports = Rend;
