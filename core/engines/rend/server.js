@@ -66,7 +66,7 @@ class Rend {
               });
           }
           app.get('/archae/rend/mods', serveMods);
-          function serveReadmeImg(req, res, next) {
+          function serveReadmeImg(req, res, next) { // XXX make this respect version
             const width = parseInt(req.query.width, 10) || 640;
             const height = parseInt(req.query.height, 10) || 480;
             const devicePixelRatio = parseInt(req.query.devicePixelRatio, 10) || 1;
@@ -124,7 +124,7 @@ class Rend {
                 res.send(err.stack);
               });
           }
-          app.get('/archae/rend/readmeImg/:mod', serveReadmeImg);
+          app.get('/archae/rend/readmeImg/:mod/:version', serveReadmeImg);
 
           this._cleanup = () => {
             browser.close();
