@@ -449,8 +449,16 @@ class Inventory {
             // files
             for (let i = 0; i < localMods.length; i++) {
               const modSpec = localMods[i];
-              ctx.fillStyle = '#111';
-              ctx.fillText(modSpec.displayName, canvas.width * 0.05, 150*2 + ((canvas.height - 150*2) * (i + 1)/numFilesPerPage) - 30, canvas.width * 0.9);
+
+              if (localMod === modSpec) {
+                ctx.fillStyle = '#2196F3';
+                ctx.fillRect(0, 150*2 + ((canvas.height - 150*2) * i/numModsPerPage), canvas.width - 640 - 40 - 60, (canvas.height - 150*2) / numModsPerPage);
+                ctx.fillStyle = '#FFF';
+                ctx.fillText(modSpec.displayName, canvas.width * 0.05, 150*2 + ((canvas.height - 150*2) * (i + 1)/numFilesPerPage) - 30, canvas.width * 0.9);
+              } else {
+                ctx.fillStyle = '#111';
+                ctx.fillText(modSpec.displayName, canvas.width * 0.05, 150*2 + ((canvas.height - 150*2) * (i + 1)/numFilesPerPage) - 30, canvas.width * 0.9);
+              }
             }
           } else if (tab === 'files') {
             ctx.fillRect(canvas.width * 2/8, 150 - 10, canvas.width / 8, 10);
