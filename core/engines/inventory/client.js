@@ -111,6 +111,18 @@ class Inventory {
     });
     const _requestImageBitmap = src => _requestImage(src)
       .then(img => createImageBitmap(img, 0, 0, img.width, img.height));
+    const imageDataCanvas = document.createElement('canvas');
+    const imageDataCtx = imageDataCanvas.getContext('2d');
+    const _requestImageData = src => _requestImageBitmap(src)
+      .then(img => {
+        const {width, height} = img;
+
+        imageDataCanvas.width = width;
+        imageDataCanvas.height = height;
+        imageDataCtx.drawImage(img, 0, 0);
+        const {data} = imageDataCtx.getImageData(0, 0, width, height);
+        return {width, height, data};
+      });
     const _requestModReadme = (name, version) => {
       let live = true;
       const result = new Promise((accept, reject) => {
@@ -255,7 +267,7 @@ class Inventory {
           inventoryBarValue = 0;
 
           _renderMenu();
-          assetsMesh.render();
+          // assetsMesh.render();
         };
         wallet.on('assets', _walletAssets);
 
@@ -266,7 +278,7 @@ class Inventory {
         const zeroArray = new Float32Array(0);
         const zeroArray2 = new Float32Array(0);
         const zeroVector = new THREE.Vector3();
-        const pixelSize = 0.006;
+        const pixelSize = 0.015;
 
         const _requestAssetImageData = assetSpec => (() => {
           if (assetSpec.ext === 'itm') {
@@ -804,6 +816,8 @@ class Inventory {
           tab = 'status';
 
           _renderMenu();
+          assetsMesh.visible = false;
+
           plane.anchors = _getAnchors();
         });
         _pushAnchor(tabsAnchors, canvas.width * 1/8, 0, canvas.width / 8, 150, (e, hoverState) => {
@@ -816,6 +830,7 @@ class Inventory {
           serverPages = localMods.length > numModsPerPage ? Math.ceil(localMods.length / numModsPerPage) : 0;
 
           _renderMenu();
+          assetsMesh.visible = false;
 
           serverAnchors = _getServerAnchors();
           modAnchors = _getModAnchors();
@@ -832,6 +847,7 @@ class Inventory {
           inventoryPages = localAssets.length > numFilesPerPage ? Math.ceil(localAssets.length / numFilesPerPage) : 0;
 
           _renderMenu();
+          assetsMesh.visible = false;
 
           filesAnchors = _getFilesAnchors();
           plane.anchors = _getAnchors();
@@ -840,6 +856,8 @@ class Inventory {
           tab = 'settings';
 
           _renderMenu();
+          assetsMesh.visible = false;
+
           plane.anchors = _getAnchors();
         });
 
@@ -859,6 +877,7 @@ class Inventory {
                 localAsset = null;
 
                 _renderMenu();
+                assetsMesh.visible = false;
 
                 filesAnchors = _getFilesAnchors();
                 plane.anchors = _getAnchors();
@@ -875,6 +894,7 @@ class Inventory {
             inventoryPages = localAssets.length > numFilesPerPage ? Math.ceil(localAssets.length / numFilesPerPage) : 0;
 
             _renderMenu();
+            assetsMesh.visible = false;
 
             filesAnchors = _getFilesAnchors();
             plane.anchors = _getAnchors();
@@ -889,6 +909,7 @@ class Inventory {
             inventoryPages = localAssets.length > numFilesPerPage ? Math.ceil(localAssets.length / numFilesPerPage) : 0;
 
             _renderMenu();
+            assetsMesh.visible = false;
 
             filesAnchors = _getFilesAnchors();
             plane.anchors = _getAnchors();
@@ -903,6 +924,7 @@ class Inventory {
             inventoryPages = localAssets.length > numFilesPerPage ? Math.ceil(localAssets.length / numFilesPerPage) : 0;
 
             _renderMenu();
+            assetsMesh.visible = false;
 
             filesAnchors = _getFilesAnchors();
             plane.anchors = _getAnchors();
@@ -917,6 +939,7 @@ class Inventory {
             inventoryPages = localAssets.length > numFilesPerPage ? Math.ceil(localAssets.length / numFilesPerPage) : 0;
 
             _renderMenu();
+            assetsMesh.visible = false;
 
             filesAnchors = _getFilesAnchors();
             plane.anchors = _getAnchors();
@@ -927,6 +950,7 @@ class Inventory {
               localAsset = localAssets[inventoryPage * numFilesPerPage + i];
 
               _renderMenu();
+              assetsMesh.visible = true;
 
               filesAnchors = _getFilesAnchors();
               plane.anchors = _getAnchors();
@@ -1279,8 +1303,9 @@ class Inventory {
           })();
           const material = assetsMaterial;
           const mesh = new THREE.Mesh(geometry, material);
+          mesh.visible = false;
           const _renderAssets = _debounce(next => {
-            Promise.all(
+            /* Promise.all(
               localAssets
                 .map((assetSpec, i) =>
                   _requestAssetImageData(assetSpec)
@@ -1312,7 +1337,7 @@ class Inventory {
                       }
                     })
                     .filter(o => o !== null)
-                )/* .concat(
+                ).concat(
                   serverIndex === -1 ? localMods
                     .map((modSpec, i) =>
                       _requestAssetImageData('MOD.' + modSpec.displayName)
@@ -1327,48 +1352,69 @@ class Inventory {
                         )))
                     ) : []
                 ) */
-            )
-            .then(geometrySpecs => {
-              const positions = new Float32Array(NUM_POSITIONS);
-              const colors = new Float32Array(NUM_POSITIONS);
-              const dys = new Float32Array(NUM_POSITIONS);
+            Promise.all([
+              _requestImageData('archae/inventory/img/up.png')
+                .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
+                  localVector.set(
+                    WORLD_WIDTH / 2 - pixelSize * 16 - pixelSize * 16*1.5,
+                    -WORLD_HEIGHT / 2 + pixelSize * 16,
+                    pixelSize * 16/2
+                  ),
+                  zeroQuaternion,
+                  oneVector
+                ))),
+              _requestImageData('archae/inventory/img/x.png')
+                .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
+                  localVector.set(
+                    WORLD_WIDTH / 2 - pixelSize * 16,
+                    -WORLD_HEIGHT / 2 + pixelSize * 16,
+                    pixelSize * 16/2
+                  ),
+                  zeroQuaternion,
+                  oneVector
+                ))),
+            ])
+              .then(geometrySpecs => {
+                const positions = new Float32Array(NUM_POSITIONS);
+                const colors = new Float32Array(NUM_POSITIONS);
+                const dys = new Float32Array(NUM_POSITIONS);
 
-              let attributeIndex = 0;
-              let dyIndex = 0;
+                let attributeIndex = 0;
+                let dyIndex = 0;
 
-              for (let i = 0; i < geometrySpecs.length; i++) {
-                const geometrySpec = geometrySpecs[i];
-                const {positions: newPositions, colors: newColors, dys: newDys} = geometrySpec;
+                for (let i = 0; i < geometrySpecs.length; i++) {
+                  const geometrySpec = geometrySpecs[i];
+                  const {positions: newPositions, colors: newColors, dys: newDys} = geometrySpec;
 
-                positions.set(newPositions, attributeIndex);
-                colors.set(newColors, attributeIndex);
-                dys.set(newDys, dyIndex);
+                  positions.set(newPositions, attributeIndex);
+                  colors.set(newColors, attributeIndex);
+                  dys.set(newDys, dyIndex);
 
-                attributeIndex += newPositions.length;
-                dyIndex += newDys.length;
+                  attributeIndex += newPositions.length;
+                  dyIndex += newDys.length;
 
-                cleanups.push(() => {
-                  spriteUtils.releaseSpriteGeometry(geometrySpec);
-                });
-              }
+                  cleanups.push(() => {
+                    spriteUtils.releaseSpriteGeometry(geometrySpec);
+                  });
+                }
 
-              geometry.addAttribute('position', new THREE.BufferAttribute(positions.subarray(0, attributeIndex), 3));
-              geometry.addAttribute('color', new THREE.BufferAttribute(colors.subarray(0, attributeIndex), 3));
-              geometry.addAttribute('dy', new THREE.BufferAttribute(dys.subarray(0, dyIndex), 2));
+                geometry.addAttribute('position', new THREE.BufferAttribute(positions.subarray(0, attributeIndex), 3));
+                geometry.addAttribute('color', new THREE.BufferAttribute(colors.subarray(0, attributeIndex), 3));
+                geometry.addAttribute('dy', new THREE.BufferAttribute(dys.subarray(0, dyIndex), 2));
 
-              next();
-            })
-            .catch(err => {
-              console.warn(err);
+                next();
+              })
+              .catch(err => {
+                console.warn(err);
 
-              next();
-            });
+                next();
+              });
           });
           _renderAssets();
           mesh.render = _renderAssets;
           return mesh;
         })();
-        // menuMesh.add(assetsMesh); // XXX
+        menuMesh.add(assetsMesh);
 
         const trigger = e => {
           const {side} = e;
