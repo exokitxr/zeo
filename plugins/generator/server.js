@@ -154,7 +154,9 @@ class Generator {
             _recurse();
           });
         } else {
-          console.warn(err);
+          if (err.message !== 'End of Stream') {
+            console.warn(err);
+          }
 
           // _recurse();
         }
