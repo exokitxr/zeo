@@ -348,8 +348,9 @@ class Inventory {
         let tabType = 'item'; */
         let inventoryPage = 0;
         let localAssets = _getLocalAssets();
-        const localTabAssets = _getLocalAssets();
-        let inventoryPages = localTabAssets.length > numFilesPerPage ? Math.ceil(localTabAssets.length / numFilesPerPage) : 0;
+        let localAsset = null;
+        //const localTabAssets = _getLocalAssets();
+        let inventoryPages = localAssets.length > numFilesPerPage ? Math.ceil(localAssets.length / numFilesPerPage) : 0;
         let inventoryBarValue = 0;
         /* const inventoryIndices = {
           left: -1,
@@ -505,6 +506,31 @@ class Inventory {
             ctx.fillStyle = subtab === 'pls' ? '#4CAF50' : '#111';
             ctx.fillText('Playlists', canvas.width * 3/8 + (canvas.width/8 - ctx.measureText('Playlists').width)/2, 150*2 - 60, canvas.width / 8);
 
+            // installer
+            if (localAsset) {
+              if (localAsset.ext === 'pls') {
+                const allInstalled = localAsset.playlist.every(playlistEntry => {
+                  const {name, version} = playlistEntry;
+                  return world.getTag({
+                    type: 'entity',
+                    name,
+                    version,
+                  });
+                });
+                if (allInstalled) {
+                  ctx.fillStyle = '#ff4b4b';
+                  ctx.fillRect(canvas.width - 640 - 40, 150*2, 640 + 40, 100);
+                  ctx.fillStyle = '#FFF';
+                  ctx.fillText('Active', canvas.width - 640 - 40 + (640 + 40 - ctx.measureText('Active').width)/2, 150*2 + 100 - 30);
+                } else {
+                  ctx.fillStyle = '#4CAF50';
+                  ctx.fillRect(canvas.width - 640 - 40, 150*2, 640 + 60, 100);
+                  ctx.fillStyle = '#FFF';
+                  ctx.fillText('Deactivate', canvas.width - 640 - 40 + (640 + 40 - ctx.measureText('Deactivate').width)/2, 150*2 + 100 - 30);
+                }
+              }
+            }
+
             // bar
             ctx.fillStyle = '#CCC';
             ctx.fillRect(canvas.width - 60, 150*2 + (canvas.height - 150*2) * 0.05, 30, (canvas.height - 150*2) * 0.9);
@@ -512,10 +538,19 @@ class Inventory {
             ctx.fillRect(canvas.width - 60, 150*2 + (canvas.height - 150*2) * 0.05 + _snapToPixel((canvas.height - 150*2) * 0.9, inventoryPages, inventoryBarValue), 30, (canvas.height - 150*2) * 0.9 / inventoryPages);
 
             // files
-            for (let i = 0; i < localAssets.length; i++) {
-              const assetSpec = localAssets[i];
-              ctx.fillStyle = '#111';
-              ctx.fillText(assetSpec.name, canvas.width * 0.05, 150*2 + ((canvas.height - 150*2) * (i + 1)/numFilesPerPage) - 30, canvas.width * 0.9);
+            const l = Math.min(localAssets.length - inventoryPage * numFilesPerPage, numFilesPerPage);
+            for (let i = 0; i < l; i++) {
+              const assetSpec = localAssets[inventoryPage * numFilesPerPage + i];
+
+              if (localAsset === assetSpec) {
+                ctx.fillStyle = '#2196F3';
+                ctx.fillRect(0, 150*2 + ((canvas.height - 150*2) * i/numModsPerPage), canvas.width - 640 - 40 - 60, (canvas.height - 150*2) / numModsPerPage);
+                ctx.fillStyle = '#FFF';
+                ctx.fillText(assetSpec.name, canvas.width * 0.05, 150*2 + ((canvas.height - 150*2) * (i + 1)/numFilesPerPage) - 30, canvas.width * 0.9);
+              } else {
+                ctx.fillStyle = '#111';
+                ctx.fillText(assetSpec.name, canvas.width * 0.05, 150*2 + ((canvas.height - 150*2) * (i + 1)/numFilesPerPage) - 30, canvas.width * 0.9);
+              }
             }
           } else if (tab === 'settings') {
             ctx.fillRect(canvas.width * 3/8, 150 - 10, canvas.width / 8, 10);
@@ -795,6 +830,8 @@ class Inventory {
           inventoryPages = localAssets.length > numFilesPerPage ? Math.ceil(localAssets.length / numFilesPerPage) : 0;
 
           _renderMenu();
+
+          filesAnchors = _getFilesAnchors();
           plane.anchors = _getAnchors();
         });
         _pushAnchor(tabsAnchors, canvas.width * 3/8, 0, canvas.width / 8, 150, (e, hoverState) => {
@@ -806,115 +843,138 @@ class Inventory {
 
         const statusAnchors = [];
 
-        const filesAnchors = [];
-        _pushAnchor(filesAnchors, canvas.width - 60, 150*2 + (canvas.height - 150*2) * 0.05, 30, (canvas.height - 150*2) * 0.9, (e, hoverState) => {
-          const {side} = e;
+        const _getFilesAnchors = () => {
+          const result = [];
+          _pushAnchor(result, canvas.width - 60, 150*2 + (canvas.height - 150*2) * 0.05, 30, (canvas.height - 150*2) * 0.9, (e, hoverState) => {
+            const {side} = e;
 
-          onmove = () => {
-            const hoverState = uiTracker.getHoverState(side);
-            inventoryBarValue = Math.min(Math.max(hoverState.y - (150*2 + (canvas.height - 150*2) * 0.05), 0), (canvas.height - 150*2) * 0.9) / ((canvas.height - 150*2) * 0.9);
-            inventoryPage = _snapToIndex(inventoryPages, inventoryBarValue);
+            onmove = () => {
+              const hoverState = uiTracker.getHoverState(side);
+              inventoryBarValue = Math.min(Math.max(hoverState.y - (150*2 + (canvas.height - 150*2) * 0.05), 0), (canvas.height - 150*2) * 0.9) / ((canvas.height - 150*2) * 0.9);
+              inventoryPage = _snapToIndex(inventoryPages, inventoryBarValue);
+              localAssets = _getLocalAssets();
+
+              _renderMenu();
+            };
+          });
+          _pushAnchor(result, canvas.width * 0/8, 150, canvas.width / 8, 150, (e, hoverState) => {
+            subtab = 'itm';
+
             localAssets = _getLocalAssets();
+            inventoryBarValue = 0;
+            inventoryPage = 0;
+            inventoryPages = localAssets.length > numFilesPerPage ? Math.ceil(localAssets.length / numFilesPerPage) : 0;
 
             _renderMenu();
-          };
-        });
-        _pushAnchor(filesAnchors, canvas.width * 0/8, 150, canvas.width / 8, 150, (e, hoverState) => {
-          subtab = 'itm';
 
-          localAssets = _getLocalAssets();
-          inventoryBarValue = 0;
-          inventoryPage = 0;
-          inventoryPages = localAssets.length > numFilesPerPage ? Math.ceil(localAssets.length / numFilesPerPage) : 0;
+            filesAnchors = _getFilesAnchors();
+            plane.anchors = _getAnchors();
+          });
+          _pushAnchor(result, canvas.width * 1/8, 150, canvas.width / 8, 150, (e, hoverState) => {
+            subtab = 'med';
 
-          _renderMenu();
-          plane.anchors = _getAnchors();
-        });
-        _pushAnchor(filesAnchors, canvas.width * 1/8, 150, canvas.width / 8, 150, (e, hoverState) => {
-          subtab = 'med';
+            localAssets = _getLocalAssets();
+            inventoryBarValue = 0;
+            inventoryPage = 0;
+            inventoryPages = localAssets.length > numFilesPerPage ? Math.ceil(localAssets.length / numFilesPerPage) : 0;
 
-          localAssets = _getLocalAssets();
-          inventoryBarValue = 0;
-          inventoryPage = 0;
-          inventoryPages = localAssets.length > numFilesPerPage ? Math.ceil(localAssets.length / numFilesPerPage) : 0;
+            _renderMenu();
 
-          _renderMenu();
-          plane.anchors = _getAnchors();
-        });
-        _pushAnchor(filesAnchors, canvas.width * 2/8, 150, canvas.width / 8, 150, (e, hoverState) => {
-          subtab = 'dat';
+            filesAnchors = _getFilesAnchors();
+            plane.anchors = _getAnchors();
+          });
+          _pushAnchor(result, canvas.width * 2/8, 150, canvas.width / 8, 150, (e, hoverState) => {
+            subtab = 'dat';
 
-          localAssets = _getLocalAssets();
-          inventoryBarValue = 0;
-          inventoryPage = 0;
-          inventoryPages = localAssets.length > numFilesPerPage ? Math.ceil(localAssets.length / numFilesPerPage) : 0;
+            localAssets = _getLocalAssets();
+            inventoryBarValue = 0;
+            inventoryPage = 0;
+            inventoryPages = localAssets.length > numFilesPerPage ? Math.ceil(localAssets.length / numFilesPerPage) : 0;
 
-          _renderMenu();
-          plane.anchors = _getAnchors();
-        });
-        _pushAnchor(filesAnchors, canvas.width * 3/8, 150, canvas.width / 8, 150, (e, hoverState) => {
-          subtab = 'pls';
+            _renderMenu();
 
-          localAssets = _getLocalAssets();
-          inventoryBarValue = 0;
-          inventoryPage = 0;
-          inventoryPages = localAssets.length > numFilesPerPage ? Math.ceil(localAssets.length / numFilesPerPage) : 0;
+            filesAnchors = _getFilesAnchors();
+            plane.anchors = _getAnchors();
+          });
+          _pushAnchor(result, canvas.width * 3/8, 150, canvas.width / 8, 150, (e, hoverState) => {
+            subtab = 'pls';
 
-          _renderMenu();
-          plane.anchors = _getAnchors();
-        });
-        for (let i = 0; i < numFilesPerPage; i++) {
-          _pushAnchor(filesAnchors, 0, 150*2 + ((canvas.height - 150*2) * i/numFilesPerPage), canvas.width * 0.95, (canvas.height - 150*2) / numFilesPerPage, (e, hoverState) => {
-            const assetSpec = localAssets[i];
-            if (assetSpec.ext === 'pls') {
-              const allEnabled = assetSpec.playlist.every(playlistEntry => {
-                const {name, version} = playlistEntry;
-                return world.getTag({
-                  type: 'entity',
-                  name,
-                  version,
-                });
-              });
+            localAssets = _getLocalAssets();
+            inventoryBarValue = 0;
+            inventoryPage = 0;
+            inventoryPages = localAssets.length > numFilesPerPage ? Math.ceil(localAssets.length / numFilesPerPage) : 0;
 
-              if (allEnabled) {
-                for (let i = 0; i < assetSpec.playlist.length; i++) {
-                  const {name, version} = assetSpec.playlist[i];
-                  const tagMesh = world.getTag({
+            _renderMenu();
+
+            filesAnchors = _getFilesAnchors();
+            plane.anchors = _getAnchors();
+          });
+          const l = Math.min(localAssets.length - inventoryPage * numFilesPerPage, numFilesPerPage);
+          for (let i = 0; i < l; i++) {
+            _pushAnchor(result, 0, 150*2 + ((canvas.height - 150*2) * i/numFilesPerPage), canvas.width - 640 - 40 - 60, (canvas.height - 150*2) / numFilesPerPage, (e, hoverState) => {
+              localAsset = localAssets[inventoryPage * numFilesPerPage + i];
+
+              _renderMenu();
+
+              filesAnchors = _getFilesAnchors();
+              plane.anchors = _getAnchors();
+            });
+          }
+          if (localAsset) {
+            if (localAsset.ext === 'pls') {
+              _pushAnchor(result, canvas.width - 640 - 40, 150*2, 640 + 40, 100, (e, hoverState) => {
+                const allInstalled = localAsset.playlist.every(playlistEntry => {
+                  const {name, version} = playlistEntry;
+                  return world.getTag({
                     type: 'entity',
                     name,
                     version,
                   });
-                  const {item} = tagMesh;
-                  const {id} = item;
-
-                  world.removeTag(id);
-                }
-              } else {
-                for (let i = 0; i < assetSpec.playlist.length; i++) {
-                  const {name, version} = assetSpec.playlist[i];
-                  if (!world.getTag({
-                    type: 'entity',
-                    name,
-                    version,
-                  })) {
-                    const itemSpec = {
+                });
+                if (allInstalled) {
+                  for (let i = 0; i < localAsset.playlist.length; i++) {
+                    const {name, version} = localAsset.playlist[i];
+                    const tagMesh = world.getTag({
                       type: 'entity',
-                      id: _makeId(),
-                      name: name,
-                      displayName: name,
-                      version: version,
-                      module: name,
-                      tagName: _makeTagName(name),
-                      attributes: {},
-                      metadata: {},
-                    };
-                    world.addTag(itemSpec);
+                      name,
+                      version,
+                    });
+                    const {item} = tagMesh;
+                    const {id} = item;
+
+                    world.removeTag(id);
+                  }
+                } else {
+                  for (let i = 0; i < localAsset.playlist.length; i++) {
+                    const {name, version} = localAsset.playlist[i];
+                    if (!world.getTag({
+                      type: 'entity',
+                      name,
+                      version,
+                    })) {
+                      const itemSpec = {
+                        type: 'entity',
+                        id: _makeId(),
+                        name: name,
+                        displayName: name,
+                        version: version,
+                        module: name,
+                        tagName: _makeTagName(name),
+                        attributes: {},
+                        metadata: {},
+                      };
+                      world.addTag(itemSpec);
+                    }
                   }
                 }
-              }
+
+                _renderMenu();
+              });
             }
-          });
-        }
+          }
+          return result;
+        };
+        let filesAnchors = _getFilesAnchors();
 
         const _getServerAnchors = () => {
           const result = [];
