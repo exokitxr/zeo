@@ -220,22 +220,29 @@ class Inventory {
         };
         let assets = _quantizeAssets(wallet.getAssets());
         let equipments = wallet.getEquipments();
-        let mods = tags.getTagMeshes()
+        /* let mods = tags.getTagMeshes()
           .filter(({item}) => item.type === 'entity')
-          .map(({item}) => item);
+          .map(({item}) => item); */
         const _worldAdd = tagMesh => {
           const {item} = tagMesh;
           if (item.type === 'entity') {
-            mods.push(item);
+            // mods.push(item);
             localMods = _getLocalMods();
+            serverAnchors = _getServerAnchors();
+            modAnchors = _getModAnchors();
             serverBarValue = 0;
             serverPage = 0;
-            serverPages = mods.length > numModsPerPage ? Math.ceil(mods.length / numModsPerPage) : 0;
+            serverPages = localMods.length > numModsPerPage ? Math.ceil(localMods.length / numModsPerPage) : 0;
 
             _updateInstalled();
 
             _renderMenu();
-            assetsMesh.render();
+
+            serverAnchors = _getServerAnchors();
+            modAnchors = _getModAnchors();
+            plane.anchors = _getAnchors();
+
+            // assetsMesh.render();
           }
         };
         world.on('add', _worldAdd);
@@ -322,22 +329,20 @@ class Inventory {
             }
           })
           .slice(inventoryPage * numFilesPerPage, (inventoryPage + 1) * numFilesPerPage);
-        const _getLocalMods = () =>
-          (() => {
-            if (subtab === 'installed') {
-              return remoteMods
-                .filter(modSpec => modSpec.installed);
-            } else if (subtab === 'remote') {
-              return remoteMods
-                .filter(modSpec => !modSpec.local);
-            } else if (subtab === 'local') {
-              return remoteMods
-                .filter(modSpec => modSpec.local);
-            } else {
-              return [];
-            }
-          })()
-          .slice(serverPage * numModsPerPage, (serverPage + 1) * numModsPerPage);
+        const _getLocalMods = () => {
+          if (subtab === 'installed') {
+            return remoteMods
+              .filter(modSpec => modSpec.installed);
+          } else if (subtab === 'remote') {
+            return remoteMods
+              .filter(modSpec => !modSpec.local);
+          } else if (subtab === 'local') {
+            return remoteMods
+              .filter(modSpec => modSpec.local);
+          } else {
+            return [];
+          }
+        };
 
         /* let tabIndex = 0;
         let tabType = 'item'; */
@@ -358,7 +363,7 @@ class Inventory {
         let modBarValue = 0;
         let modPage = 0;
         let modPages = 0;
-        let serverPages = mods.length > numModsPerPage ? Math.ceil(mods.length / numModsPerPage) : 1;
+        let serverPages = localMods.length > numModsPerPage ? Math.ceil(localMods.length / numModsPerPage) : 1;
         let serverBarValue = 0;
         // let serverIndex = -1;
 
@@ -460,8 +465,9 @@ class Inventory {
             ctx.fillRect(canvas.width - 640 - 40 - 60, 150*2 + (canvas.height - 150*2) * 0.05 + _snapToPixel((canvas.height - 150*2) * 0.9, serverPages, serverBarValue), 30, (canvas.height - 150*2) * 0.9 / serverPages);
 
             // files
-            for (let i = 0; i < localMods.length; i++) {
-              const modSpec = localMods[i];
+            const l = Math.min(localMods.length - serverPage * numModsPerPage, numModsPerPage);
+            for (let i = 0; i < l; i++) {
+              const modSpec = localMods[serverPage * numModsPerPage + i];
 
               if (localMod === modSpec) {
                 ctx.fillStyle = '#2196F3';
@@ -774,6 +780,9 @@ class Inventory {
           serverPages = localMods.length > numModsPerPage ? Math.ceil(localMods.length / numModsPerPage) : 0;
 
           _renderMenu();
+
+          serverAnchors = _getServerAnchors();
+          modAnchors = _getModAnchors();
           plane.anchors = _getAnchors();
         });
         _pushAnchor(tabsAnchors, canvas.width * 2/8, 0, canvas.width / 8, 150, (e, hoverState) => {
@@ -907,157 +916,179 @@ class Inventory {
           });
         }
 
-        const serverAnchors = [];
-        _pushAnchor(serverAnchors, canvas.width - 640 - 40 - 60, 150*2 + (canvas.height - 150*2) * 0.05, 30, (canvas.height - 150*2) * 0.9, (e, hoverState) => {
-          if (serverPages > 0) {
-            const {side} = e;
+        const _getServerAnchors = () => {
+          const result = [];
+          _pushAnchor(result, canvas.width - 640 - 40 - 60, 150*2 + (canvas.height - 150*2) * 0.05, 30, (canvas.height - 150*2) * 0.9, (e, hoverState) => {
+            if (serverPages > 0) {
+              const {side} = e;
 
-            onmove = () => {
-              const hoverState = uiTracker.getHoverState(side);
-              serverBarValue = Math.min(Math.max(hoverState.y - (150*2 + (canvas.height - 150*2) * 0.05), 0), (canvas.height - 150*2) * 0.9) / ((canvas.height - 150*2) * 0.9);
-              serverPage = _snapToIndex(serverPages, serverBarValue);
-              localMods = _getLocalMods();
+              onmove = () => {
+                const hoverState = uiTracker.getHoverState(side);
+                serverBarValue = Math.min(Math.max(hoverState.y - (150*2 + (canvas.height - 150*2) * 0.05), 0), (canvas.height - 150*2) * 0.9) / ((canvas.height - 150*2) * 0.9);
+                serverPage = _snapToIndex(serverPages, serverBarValue);
+                localMods = _getLocalMods();
 
-              _renderMenu();
-            };
-          }
-        });
-        _pushAnchor(serverAnchors, canvas.width * 0/8, 150, canvas.width / 8, 150, (e, hoverState) => {
-          subtab = 'installed';
+                _renderMenu();
 
-          localMods = _getLocalMods();
-          localMod = null;
-          modReadmeImg = null;
-          if (modReadmeImgPromise) {
-            modReadmeImgPromise.cancel();
-            modReadmeImgPromise = null;
-          }
-          modBarValue = 0;
-          modPage = 0;
-          modPages = 0;
-          serverBarValue = 0;
-          serverPage = 0;
-          serverPages = localMods.length > numModsPerPage ? Math.ceil(localMods.length / numModsPerPage) : 0;
+                serverAnchors = _getServerAnchors();
+                modAnchors = _getModAnchors();
+                plane.anchors = _getAnchors();
+              };
+            }
+          });
+          _pushAnchor(result, canvas.width * 0/8, 150, canvas.width / 8, 150, (e, hoverState) => {
+            subtab = 'installed';
 
-          _renderMenu();
-          plane.anchors = _getAnchors();
-        });
-        _pushAnchor(serverAnchors, canvas.width * 1/8, 150, canvas.width / 8, 150, (e, hoverState) => {
-          subtab = 'remote';
-
-          localMods = _getLocalMods();
-          localMod = null;
-          modReadmeImg = null;
-          if (modReadmeImgPromise) {
-            modReadmeImgPromise.cancel();
-            modReadmeImgPromise = null;
-          }
-          modBarValue = 0;
-          modPage = 0;
-          modPages = 0;
-          serverBarValue = 0;
-          serverPage = 0;
-          serverPages = localMods.length > numModsPerPage ? Math.ceil(localMods.length / numModsPerPage) : 0;
-
-          _renderMenu();
-          plane.anchors = _getAnchors();
-        });
-        _pushAnchor(serverAnchors, canvas.width * 2/8, 150, canvas.width / 8, 150, (e, hoverState) => {
-          subtab = 'local';
-
-          localMods = _getLocalMods();
-          localMod = null;
-          modReadmeImg = null;
-          if (modReadmeImgPromise) {
-            modReadmeImgPromise.cancel();
-            modReadmeImgPromise = null;
-          }
-          modBarValue = 0;
-          modPage = 0;
-          modPages = 0;
-          serverBarValue = 0;
-          serverPage = 0;
-          serverPages = localMods.length > numModsPerPage ? Math.ceil(localMods.length / numModsPerPage) : 0;
-
-          _renderMenu();
-          plane.anchors = _getAnchors();
-        });
-        for (let i = 0; i < numModsPerPage; i++) {
-          _pushAnchor(serverAnchors, 0, 150*2 + ((canvas.height - 150*2) * i/numModsPerPage), canvas.width - 640 - 40 - 60, (canvas.height - 150*2) / numModsPerPage, (e, hoverState) => {
-            localMod = localMods[i];
+            localMods = _getLocalMods();
+            localMod = null;
             modReadmeImg = null;
             if (modReadmeImgPromise) {
               modReadmeImgPromise.cancel();
               modReadmeImgPromise = null;
             }
-            modReadmeImgPromise = _requestModReadme(localMod.name, localMod.version);
-            modReadmeImgPromise.then(img => {
-              modReadmeImg = img;
-              modReadmeImgPromise = null;
+            modBarValue = 0;
+            modPage = 0;
+            modPages = 0;
+            serverBarValue = 0;
+            serverPage = 0;
+            serverPages = localMods.length > numModsPerPage ? Math.ceil(localMods.length / numModsPerPage) : 0;
 
+            _renderMenu();
+
+            serverAnchors = _getServerAnchors();
+            modAnchors = _getModAnchors();
+            plane.anchors = _getAnchors();
+          });
+          _pushAnchor(result, canvas.width * 1/8, 150, canvas.width / 8, 150, (e, hoverState) => {
+            subtab = 'remote';
+
+            localMods = _getLocalMods();
+            localMod = null;
+            modReadmeImg = null;
+            if (modReadmeImgPromise) {
+              modReadmeImgPromise.cancel();
+              modReadmeImgPromise = null;
+            }
+            modBarValue = 0;
+            modPage = 0;
+            modPages = 0;
+            serverBarValue = 0;
+            serverPage = 0;
+            serverPages = localMods.length > numModsPerPage ? Math.ceil(localMods.length / numModsPerPage) : 0;
+
+            _renderMenu();
+
+            serverAnchors = _getServerAnchors();
+            modAnchors = _getModAnchors();
+            plane.anchors = _getAnchors();
+          });
+          _pushAnchor(result, canvas.width * 2/8, 150, canvas.width / 8, 150, (e, hoverState) => {
+            subtab = 'local';
+
+            localMods = _getLocalMods();
+            localMod = null;
+            modReadmeImg = null;
+            if (modReadmeImgPromise) {
+              modReadmeImgPromise.cancel();
+              modReadmeImgPromise = null;
+            }
+            modBarValue = 0;
+            modPage = 0;
+            modPages = 0;
+            serverBarValue = 0;
+            serverPage = 0;
+            serverPages = localMods.length > numModsPerPage ? Math.ceil(localMods.length / numModsPerPage) : 0;
+
+            _renderMenu();
+
+            serverAnchors = _getServerAnchors();
+            modAnchors = _getModAnchors();
+            plane.anchors = _getAnchors();
+          });
+          const l = Math.min(localMods.length - serverPage * numModsPerPage, numModsPerPage);
+          for (let i = 0; i < l; i++) {
+            _pushAnchor(result, 0, 150*2 + ((canvas.height - 150*2) * i/numModsPerPage), canvas.width - 640 - 40 - 60, (canvas.height - 150*2) / numModsPerPage, (e, hoverState) => {
+              localMod = localMods[serverPage * numModsPerPage + i];
+              modReadmeImg = null;
+              if (modReadmeImgPromise) {
+                modReadmeImgPromise.cancel();
+                modReadmeImgPromise = null;
+              }
+              modReadmeImgPromise = _requestModReadme(localMod.name, localMod.version);
+              modReadmeImgPromise.then(img => {
+                modReadmeImg = img;
+                modReadmeImgPromise = null;
+
+                modBarValue = 0;
+                modPage = 0;
+                modPages = img.height > (canvas.height - 150*2) ? Math.ceil(img.height / (canvas.height - 150*2)) : 0;
+
+                _renderMenu();
+                plane.anchors = _getAnchors();
+              });
               modBarValue = 0;
               modPage = 0;
-              modPages = img.height > (canvas.height - 150*2) ? Math.ceil(img.height / (canvas.height - 150*2)) : 0;
+              modPages = 0;
 
               _renderMenu();
               plane.anchors = _getAnchors();
             });
-            modBarValue = 0;
-            modPage = 0;
-            modPages = 0;
+          }
+          return result;
+        };
+        let serverAnchors = _getServerAnchors();
 
-            _renderMenu();
-            plane.anchors = _getAnchors();
+        const _getModAnchors = () => {
+          const result = serverAnchors.slice();
+          _pushAnchor(result, canvas.width - 60, 150*2 + 100 + (canvas.height - 150*2 - 100) * 0.05, 30, (canvas.height - 150*2 - 100) * 0.9, (e, hoverState) => {
+            if (modPages > 0) {
+              const {side} = e;
+
+              onmove = () => {
+                const hoverState = uiTracker.getHoverState(side);
+                modBarValue = Math.min(Math.max(hoverState.y - (150*2 + (canvas.height - 150*2) * 0.05), 0), (canvas.height - 150*2) * 0.9) / ((canvas.height - 150*2) * 0.9);
+                modPage = _snapToIndex(modPages, modBarValue);
+
+                _renderMenu();
+              };
+            }
           });
-        }
+          _pushAnchor(result, canvas.width - 640 - 40, 150*2, 640 + 40, 100, (e, hoverState) => {
+            const {name, version} = localMod;
 
-        const modAnchors = serverAnchors.slice();
-        _pushAnchor(modAnchors, canvas.width - 60, 150*2 + 100 + (canvas.height - 150*2 - 100) * 0.05, 30, (canvas.height - 150*2 - 100) * 0.9, (e, hoverState) => {
-          if (modPages > 0) {
-            const {side} = e;
+            if (localMod.installed) {
+              const tagMesh = world.getTag({
+                type: 'entity',
+                name,
+                version,
+              });
+              const {item} = tagMesh;
+              const {id} = item;
+              world.removeTag(id);
 
-            onmove = () => {
-              const hoverState = uiTracker.getHoverState(side);
-              modBarValue = Math.min(Math.max(hoverState.y - (150*2 + (canvas.height - 150*2) * 0.05), 0), (canvas.height - 150*2) * 0.9) / ((canvas.height - 150*2) * 0.9);
-              modPage = _snapToIndex(modPages, modBarValue);
-
+              _updateInstalled();
               _renderMenu();
-            };
-          }
-        });
-        _pushAnchor(modAnchors, canvas.width - 640 - 40, 150*2, 640 + 40, 100, (e, hoverState) => {
-          const {name, version} = localMod;
+            } else {
+              const itemSpec = {
+                type: 'entity',
+                id: _makeId(),
+                name: name,
+                displayName: name,
+                version: version,
+                module: name,
+                tagName: _makeTagName(name),
+                attributes: {},
+                metadata: {},
+              };
+              world.addTag(itemSpec);
 
-          if (localMod.installed) {
-            const tagMesh = world.getTag({
-              type: 'entity',
-              name,
-              version,
-            });
-            const {item} = tagMesh;
-            const {id} = item;
-            world.removeTag(id);
-
-            _updateInstalled();
-            _renderMenu();
-          } else {
-            const itemSpec = {
-              type: 'entity',
-              id: _makeId(),
-              name: name,
-              displayName: name,
-              version: version,
-              module: name,
-              tagName: _makeTagName(name),
-              attributes: {},
-              metadata: {},
-            };
-            world.addTag(itemSpec);
-
-            _updateInstalled();
-            _renderMenu();
-          }
-        });
+              _updateInstalled();
+              _renderMenu();
+            }
+          });
+          return result;
+        };
+        let modAnchors = _getModAnchors();
 
         const _getAnchors = () => {
           const result = tabsAnchors.slice();
