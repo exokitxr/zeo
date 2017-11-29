@@ -123,7 +123,7 @@ class Inventory {
         });
       }
     };
-    const _requestRemoteMods = () => fetch('https://my-site.zeovr.io/mods')
+    const _requestRemoteMods = () => fetch('archae/rend/search')
       .then(_resJson)
       .catch(err => {
         console.warn(err);
