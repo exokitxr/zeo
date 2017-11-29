@@ -136,6 +136,10 @@ class Notification {
 
             camera.matrixWorld.decompose(localVector, localQuaternion, localVector2);
             hudMesh.align(localVector, localQuaternion, localVector2, !oldVisible ? 1 : ((now - lastUpdateTime) * 0.02));
+
+            // sort last in render list
+            scene.remove(hudMesh);
+            scene.add(hudMesh);
           }
 
           lastUpdateTime = now;
