@@ -98,7 +98,7 @@ class Rend {
                             </style>
                           </head>
                           <body>
-                            ${modSpec.readme || '<h1>No readme</h1>'}
+                            ${modSpec.readme || '<div style="margin: 50px 0; font-size: 40px; text-align: center;">No readme</div>'}
                           </body>
                         </html>`
                       ))
