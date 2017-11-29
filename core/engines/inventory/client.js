@@ -926,6 +926,15 @@ class Inventory {
           subtab = 'installed';
 
           localMods = _getLocalMods();
+          localMod = null;
+          modReadmeImg = null;
+          if (modReadmeImgPromise) {
+            modReadmeImgPromise.cancel();
+            modReadmeImgPromise = null;
+          }
+          modBarValue = 0;
+          modPage = 0;
+          modPages = 0;
           serverBarValue = 0;
           serverPage = 0;
           serverPages = localMods.length > numModsPerPage ? Math.ceil(localMods.length / numModsPerPage) : 0;
@@ -937,6 +946,15 @@ class Inventory {
           subtab = 'remote';
 
           localMods = _getLocalMods();
+          localMod = null;
+          modReadmeImg = null;
+          if (modReadmeImgPromise) {
+            modReadmeImgPromise.cancel();
+            modReadmeImgPromise = null;
+          }
+          modBarValue = 0;
+          modPage = 0;
+          modPages = 0;
           serverBarValue = 0;
           serverPage = 0;
           serverPages = localMods.length > numModsPerPage ? Math.ceil(localMods.length / numModsPerPage) : 0;
@@ -948,6 +966,15 @@ class Inventory {
           subtab = 'local';
 
           localMods = _getLocalMods();
+          localMod = null;
+          modReadmeImg = null;
+          if (modReadmeImgPromise) {
+            modReadmeImgPromise.cancel();
+            modReadmeImgPromise = null;
+          }
+          modBarValue = 0;
+          modPage = 0;
+          modPages = 0;
           serverBarValue = 0;
           serverPage = 0;
           serverPages = localMods.length > numModsPerPage ? Math.ceil(localMods.length / numModsPerPage) : 0;
@@ -961,6 +988,7 @@ class Inventory {
             modReadmeImg = null;
             if (modReadmeImgPromise) {
               modReadmeImgPromise.cancel();
+              modReadmeImgPromise = null;
             }
             modReadmeImgPromise = _requestModReadme(localMod.name, localMod.version);
             modReadmeImgPromise.then(img => {
