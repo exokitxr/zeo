@@ -249,6 +249,7 @@ class Inventory {
         const _walletAssets = newAssets => {
           assets = _quantizeAssets(newAssets);
           localAssets = _getLocalAssets();
+          localAsset = null;
           inventoryPage = 0;
           inventoryPages = localAssets.length > numFilesPerPage ? Math.ceil(localAssets.length / numFilesPerPage) : 0;
           inventoryBarValue = 0;
@@ -825,6 +826,7 @@ class Inventory {
           subtab = 'itm';
 
           localAssets = _getLocalAssets();
+          localAsset = null;
           inventoryBarValue = 0;
           inventoryPage = 0;
           inventoryPages = localAssets.length > numFilesPerPage ? Math.ceil(localAssets.length / numFilesPerPage) : 0;
@@ -853,6 +855,7 @@ class Inventory {
               inventoryBarValue = Math.min(Math.max(hoverState.y - (150*2 + (canvas.height - 150*2) * 0.05), 0), (canvas.height - 150*2) * 0.9) / ((canvas.height - 150*2) * 0.9);
               inventoryPage = _snapToIndex(inventoryPages, inventoryBarValue);
               localAssets = _getLocalAssets();
+              localAsset = null;
 
               _renderMenu();
             };
@@ -861,6 +864,7 @@ class Inventory {
             subtab = 'itm';
 
             localAssets = _getLocalAssets();
+            localAsset = null;
             inventoryBarValue = 0;
             inventoryPage = 0;
             inventoryPages = localAssets.length > numFilesPerPage ? Math.ceil(localAssets.length / numFilesPerPage) : 0;
@@ -874,6 +878,7 @@ class Inventory {
             subtab = 'med';
 
             localAssets = _getLocalAssets();
+            localAsset = null;
             inventoryBarValue = 0;
             inventoryPage = 0;
             inventoryPages = localAssets.length > numFilesPerPage ? Math.ceil(localAssets.length / numFilesPerPage) : 0;
@@ -887,6 +892,7 @@ class Inventory {
             subtab = 'dat';
 
             localAssets = _getLocalAssets();
+            localAsset = null;
             inventoryBarValue = 0;
             inventoryPage = 0;
             inventoryPages = localAssets.length > numFilesPerPage ? Math.ceil(localAssets.length / numFilesPerPage) : 0;
@@ -900,6 +906,7 @@ class Inventory {
             subtab = 'pls';
 
             localAssets = _getLocalAssets();
+            localAsset = null;
             inventoryBarValue = 0;
             inventoryPage = 0;
             inventoryPages = localAssets.length > numFilesPerPage ? Math.ceil(localAssets.length / numFilesPerPage) : 0;
