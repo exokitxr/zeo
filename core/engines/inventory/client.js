@@ -21,6 +21,19 @@ const pixelWidth = 128;
 const pixelHeight = 128;
 const numFilesPerPage = 10;
 const numModsPerPage = 10;
+const _normalizeType = type => {
+  if (type === 'itm' || type === 'pls') {
+    return type;
+  } else if (
+    type === 'png' || type === 'jpg' || type === 'bmp' ||
+    type === 'mp3' || type === 'ogg' ||
+    type === 'fbx'
+  ) {
+    return 'med';
+  } else {
+    return 'dat';
+  }
+};
 
 const LENS_SHADER = {
   uniforms: {
@@ -149,12 +162,13 @@ class Inventory {
           const assetIndex = {};
           for (let i = 0; i < assets.length; i++) {
             const assetSpec = assets[i];
-            const {asset} = assetSpec;
-            let entry = assetIndex[asset];
+            const {id} = assetSpec;
+
+            let entry = assetIndex[id];
             if (!entry) {
               entry = _clone(assetSpec);
               entry.assets = [];
-              assetIndex[asset] = entry;
+              assetIndex[id] = entry;
             }
             entry.assets.push(assetSpec);
           }
@@ -181,12 +195,10 @@ class Inventory {
         world.on('add', _worldAdd);
         const _walletAssets = newAssets => {
           assets = _quantizeAssets(newAssets);
-          const localTabAssets = _getLocalTabAssets();
+          localAssets = _getLocalAssets();
           inventoryPage = 0;
-          inventoryPages = localTabAssets.length > numFilesPerPage ? Math.ceil(localTabAssets.length / numFilesPerPage) : 0;
+          inventoryPages = localAssets.length > numFilesPerPage ? Math.ceil(localAssets.length / numFilesPerPage) : 0;
           inventoryBarValue = 0;
-          /* inventoryIndices.left = -1;
-          inventoryIndices.right = -1; */
 
           _renderMenu();
           assetsMesh.render();
@@ -202,25 +214,19 @@ class Inventory {
         const zeroVector = new THREE.Vector3();
         const pixelSize = 0.006;
 
-        const _getAssetType = asset => {
-          const match = asset.match(/^(ITEM|MOD|SKIN|FILE|PLAYLIST)\.(.+)$/);
-          const type = match[1].toLowerCase();
-          const name = match[2].toLowerCase();
-          return {type, name};
-        };
-        const _requestAssetImageData = asset => (() => {
-          const {type, name} = _getAssetType(asset);
-          if (type === 'item') {
-            return resource.getItemImageData(name);
-          } else if (type === 'mod') {
+        const _requestAssetImageData = assetSpec => (() => {
+          if (assetSpec.ext === 'itm') {
+            return resource.getItemImageData(assetSpec.name);
+          } else /* if (asset.ext === 'files') */ {
+            return resource.getFileImageData(assetSpec.name);
+          }
+          /* } else if (type === 'mod') {
             return resource.getModImageData(name);
-          } else if (type === 'files') {
-            return resource.getFileImageData(name);
           } else if (type === 'skin') {
             return resource.getSkinImageData(name);
           } else {
             return Promise.resolve(null);
-          }
+          } */
         })().then(arrayBuffer => ({
           width: 16,
           height: 16,
@@ -259,18 +265,41 @@ class Inventory {
           16
         );
 
-        const _getLocalTabAssets = () => assets
-          // .filter(assetSpec => _getAssetType(assetSpec.asset).type === tabType);
-        const _getLocalAssets = () => _getLocalTabAssets()
+        let tab = 'status';
+        let subtab = 'itm';
+        const _getLocalAssets = () => assets
+          .filter(assetSpec => {
+            if (tab === 'files') {
+              return _normalizeType(assetSpec.ext) === subtab;
+            } else {
+              return true;
+            }
+          })
           .slice(inventoryPage * numFilesPerPage, (inventoryPage + 1) * numFilesPerPage);
         const _getLocalMods = () => mods
+          .filter(modSpec => {
+            return true; // XXX
+            if (type === 'server') {
+              if (subtab === 'installed') {
+                // XXX
+              } else if (subtab === 'remote') {
+                // XXX
+              } else if (subtab === 'local') {
+                // XXX
+              } else {
+                return false;
+              }
+            } else {
+              return true;
+            }
+          })
           .slice(serverPage * numModsPerPage, (serverPage + 1) * numModsPerPage);
 
         /* let tabIndex = 0;
         let tabType = 'item'; */
         let inventoryPage = 0;
         let localAssets = _getLocalAssets();
-        const localTabAssets = _getLocalTabAssets();
+        const localTabAssets = _getLocalAssets();
         let inventoryPages = localTabAssets.length > numFilesPerPage ? Math.ceil(localTabAssets.length / numFilesPerPage) : 0;
         let inventoryBarValue = 0;
         /* const inventoryIndices = {
@@ -289,8 +318,6 @@ class Inventory {
           return stepIndex * stepSize;
         };
 
-        let tab = 'status';
-        let subtab = 'item';
         const _renderMenu = () => {
           // ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -359,23 +386,23 @@ class Inventory {
             ctx.fillStyle = '#EEE';
             ctx.fillRect(0, 150, canvas.width, 150);
             ctx.fillStyle = '#4CAF50';
-            if (subtab === 'items') {
+            if (subtab === 'itm') {
               ctx.fillRect(canvas.width * 0/8, 150*2 - 10, canvas.width / 8, 10);
-            } else if (subtab === 'media') {
+            } else if (subtab === 'med') {
               ctx.fillRect(canvas.width * 1/8, 150*2 - 10, canvas.width / 8, 10);
-            } else if (subtab === 'data') {
+            } else if (subtab === 'dat') {
               ctx.fillRect(canvas.width * 2/8, 150*2 - 10, canvas.width / 8, 10);
-            } else if (subtab === 'playlists') {
+            } else if (subtab === 'pls') {
               ctx.fillRect(canvas.width * 3/8, 150*2 - 10, canvas.width / 8, 10);
             }
 
-            ctx.fillStyle = subtab === 'items' ? '#4CAF50' : '#111';
+            ctx.fillStyle = subtab === 'itm' ? '#4CAF50' : '#111';
             ctx.fillText('Items', canvas.width * 0/8 + (canvas.width/8 - ctx.measureText('Items').width)/2, 150*2 - 60, canvas.width / 8);
-            ctx.fillStyle = subtab === 'media' ? '#4CAF50' : '#111';
+            ctx.fillStyle = subtab === 'med' ? '#4CAF50' : '#111';
             ctx.fillText('Media', canvas.width * 1/8 + (canvas.width/8 - ctx.measureText('Media').width)/2, 150*2 - 60, canvas.width / 8);
-            ctx.fillStyle = subtab === 'data' ? '#4CAF50' : '#111';
+            ctx.fillStyle = subtab === 'dat' ? '#4CAF50' : '#111';
             ctx.fillText('Data', canvas.width * 2/8 + (canvas.width/8 - ctx.measureText('Data').width)/2, 150*2 - 60, canvas.width / 8);
-            ctx.fillStyle = subtab === 'playlists' ? '#4CAF50' : '#111';
+            ctx.fillStyle = subtab === 'pls' ? '#4CAF50' : '#111';
             ctx.fillText('Playlists', canvas.width * 3/8 + (canvas.width/8 - ctx.measureText('Playlists').width)/2, 150*2 - 60, canvas.width / 8);
 
             // bar
@@ -388,7 +415,7 @@ class Inventory {
             for (let i = 0; i < localAssets.length; i++) {
               const assetSpec = localAssets[i];
               ctx.fillStyle = '#111';
-              ctx.fillText(_getAssetType(assetSpec.asset).name, canvas.width * 0.05, 150*2 + ((canvas.height - 150*2) * (i + 1)/numFilesPerPage) - 30, canvas.width * 0.9);
+              ctx.fillText(assetSpec.name, canvas.width * 0.05, 150*2 + ((canvas.height - 150*2) * (i + 1)/numFilesPerPage) - 30, canvas.width * 0.9);
             }
           } else if (tab === 'settings') {
             ctx.fillRect(canvas.width * 3/8, 150 - 10, canvas.width / 8, 10);
@@ -647,12 +674,22 @@ class Inventory {
           tab = 'server';
           subtab = 'installed';
 
+          localMods = _getLocalMods();
+          serverBarValue = 0;
+          serverPage = 0;
+          serverPages = mods.length > numModsPerPage ? Math.ceil(mods.length / numModsPerPage) : 0;
+
           _renderMenu();
           plane.anchors = _getAnchors();
         });
         _pushAnchor(tabsAnchors, canvas.width * 2/8, 0, canvas.width / 8, 150, (e, hoverState) => {
           tab = 'files';
-          subtab = 'items';
+          subtab = 'itm';
+
+          localAssets = _getLocalAssets();
+          inventoryBarValue = 0;
+          inventoryPage = 0;
+          inventoryPages = localAssets.length > numFilesPerPage ? Math.ceil(localAssets.length / numFilesPerPage) : 0;
 
           _renderMenu();
           plane.anchors = _getAnchors();
@@ -680,25 +717,45 @@ class Inventory {
           };
         });
         _pushAnchor(filesAnchors, canvas.width * 0/8, 150, canvas.width / 8, 150, (e, hoverState) => {
-          subtab = 'items';
+          subtab = 'itm';
+
+          localAssets = _getLocalAssets();
+          inventoryBarValue = 0;
+          inventoryPage = 0;
+          inventoryPages = localAssets.length > numFilesPerPage ? Math.ceil(localAssets.length / numFilesPerPage) : 0;
 
           _renderMenu();
           plane.anchors = _getAnchors();
         });
         _pushAnchor(filesAnchors, canvas.width * 1/8, 150, canvas.width / 8, 150, (e, hoverState) => {
-          subtab = 'media';
+          subtab = 'med';
+
+          localAssets = _getLocalAssets();
+          inventoryBarValue = 0;
+          inventoryPage = 0;
+          inventoryPages = localAssets.length > numFilesPerPage ? Math.ceil(localAssets.length / numFilesPerPage) : 0;
 
           _renderMenu();
           plane.anchors = _getAnchors();
         });
         _pushAnchor(filesAnchors, canvas.width * 2/8, 150, canvas.width / 8, 150, (e, hoverState) => {
-          subtab = 'data';
+          subtab = 'dat';
+
+          localAssets = _getLocalAssets();
+          inventoryBarValue = 0;
+          inventoryPage = 0;
+          inventoryPages = localAssets.length > numFilesPerPage ? Math.ceil(localAssets.length / numFilesPerPage) : 0;
 
           _renderMenu();
           plane.anchors = _getAnchors();
         });
         _pushAnchor(filesAnchors, canvas.width * 3/8, 150, canvas.width / 8, 150, (e, hoverState) => {
-          subtab = 'playlists';
+          subtab = 'pls';
+
+          localAssets = _getLocalAssets();
+          inventoryBarValue = 0;
+          inventoryPage = 0;
+          inventoryPages = localAssets.length > numFilesPerPage ? Math.ceil(localAssets.length / numFilesPerPage) : 0;
 
           _renderMenu();
           plane.anchors = _getAnchors();
@@ -706,7 +763,7 @@ class Inventory {
         for (let i = 0; i < numFilesPerPage; i++) {
           _pushAnchor(filesAnchors, 0, 150*2 + ((canvas.height - 150*2) * i/numFilesPerPage), canvas.width * 0.95, (canvas.height - 150*2) / numFilesPerPage, (e, hoverState) => {
             const assetSpec = localAssets[i];
-            if (_getAssetType(assetSpec.asset).type === 'playlist') {
+            if (assetSpec.ext === 'pls') {
               const allEnabled = assetSpec.playlist.every(playlistEntry => {
                 const {name, version} = playlistEntry;
                 return world.getTag({
@@ -910,7 +967,7 @@ class Inventory {
             Promise.all(
               localAssets
                 .map((assetSpec, i) =>
-                  _requestAssetImageData(assetSpec.asset)
+                  _requestAssetImageData(assetSpec)
                     .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
                       localVector.set(
                         WORLD_WIDTH * -0.01 + (i % 3) * WORLD_WIDTH * 0.065 * 1.2,
@@ -924,7 +981,7 @@ class Inventory {
                   equipments
                     .map((assetSpec, i) => {
                       if (assetSpec) {
-                        return _requestAssetImageData(assetSpec.asset)
+                        return _requestAssetImageData(assetSpec)
                           .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
                             localVector.set(
                               WORLD_WIDTH * -0.13,
