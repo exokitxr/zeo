@@ -20,6 +20,7 @@ const height = 0.1;
 const pixelWidth = 128;
 const pixelHeight = 128;
 const numFilesPerPage = 10;
+const numModsPerPage = 10;
 
 const LENS_SHADER = {
   uniforms: {
@@ -169,9 +170,9 @@ class Inventory {
           if (item.type === 'entity') {
             mods.push(item);
             localMods = _getLocalMods();
-            /* serverBarValue = 0;
+            serverBarValue = 0;
             serverPage = 0;
-            serverPages = mods.length > 12 ? Math.ceil(mods.length / 12) : 0; */
+            serverPages = mods.length > numModsPerPage ? Math.ceil(mods.length / numModsPerPage) : 0;
 
             _renderMenu();
             assetsMesh.render();
@@ -184,8 +185,8 @@ class Inventory {
           inventoryPage = 0;
           inventoryPages = localTabAssets.length > numFilesPerPage ? Math.ceil(localTabAssets.length / numFilesPerPage) : 0;
           inventoryBarValue = 0;
-          inventoryIndices.left = -1;
-          inventoryIndices.right = -1;
+          /* inventoryIndices.left = -1;
+          inventoryIndices.right = -1; */
 
           _renderMenu();
           assetsMesh.render();
@@ -263,14 +264,14 @@ class Inventory {
         const _getLocalAssets = () => _getLocalTabAssets()
           .slice(inventoryPage * numFilesPerPage, (inventoryPage + 1) * numFilesPerPage);
         const _getLocalMods = () => mods
-          // .slice(serverPage * 12, (serverPage + 1) * 12);
+          .slice(serverPage * numModsPerPage, (serverPage + 1) * numModsPerPage);
 
         /* let tabIndex = 0;
         let tabType = 'item'; */
         let inventoryPage = 0;
         let localAssets = _getLocalAssets();
         const localTabAssets = _getLocalTabAssets();
-        let inventoryPages = localTabAssets.length > numFilesPerPage ? Math.ceil(localTabAssets.length / numFilesPerPage) : 1;
+        let inventoryPages = localTabAssets.length > numFilesPerPage ? Math.ceil(localTabAssets.length / numFilesPerPage) : 0;
         let inventoryBarValue = 0;
         /* const inventoryIndices = {
           left: -1,
@@ -278,7 +279,7 @@ class Inventory {
         }; */
         let serverPage = 0;
         let localMods = _getLocalMods();
-        let serverPages = mods.length > 12 ? Math.ceil(mods.length / 12) : 0;
+        let serverPages = mods.length > numModsPerPage ? Math.ceil(mods.length / numModsPerPage) : 1;
         let serverBarValue = 0;
         // let serverIndex = -1;
         const _snapToIndex = (steps, value) => Math.floor(steps * value);
@@ -319,6 +320,38 @@ class Inventory {
             ctx.fillRect(canvas.width * 0/8, 150 - 10, canvas.width / 8, 10);
           } else if (tab === 'server') {
             ctx.fillRect(canvas.width * 1/8, 150 - 10, canvas.width / 8, 10);
+
+            // subheader
+            ctx.fillStyle = '#EEE';
+            ctx.fillRect(0, 150, canvas.width, 150);
+            ctx.fillStyle = '#4CAF50';
+            if (subtab === 'installed') {
+              ctx.fillRect(canvas.width * 0/8, 150*2 - 10, canvas.width / 8, 10);
+            } else if (subtab === 'remote') {
+              ctx.fillRect(canvas.width * 1/8, 150*2 - 10, canvas.width / 8, 10);
+            } else if (subtab === 'local') {
+              ctx.fillRect(canvas.width * 2/8, 150*2 - 10, canvas.width / 8, 10);
+            }
+
+            ctx.fillStyle = subtab === 'installed' ? '#4CAF50' : '#111';
+            ctx.fillText('Installed', canvas.width * 0/8 + (canvas.width/8 - ctx.measureText('Installed').width)/2, 150*2 - 60, canvas.width / 8);
+            ctx.fillStyle = subtab === 'remote' ? '#4CAF50' : '#111';
+            ctx.fillText('Remote', canvas.width * 1/8 + (canvas.width/8 - ctx.measureText('Remote').width)/2, 150*2 - 60, canvas.width / 8);
+            ctx.fillStyle = subtab === 'local' ? '#4CAF50' : '#111';
+            ctx.fillText('Local', canvas.width * 2/8 + (canvas.width/8 - ctx.measureText('Local').width)/2, 150*2 - 60, canvas.width / 8);
+
+            // bar
+            ctx.fillStyle = '#CCC';
+            ctx.fillRect(canvas.width - 60, 150*2 + (canvas.height - 150*2) * 0.05, 30, (canvas.height - 150*2) * 0.9);
+            ctx.fillStyle = '#ff4b4b';
+            ctx.fillRect(canvas.width - 60, 150*2 + (canvas.height - 150*2) * 0.05 + _snapToPixel((canvas.height - 150*2) * 0.9, serverPages, serverBarValue), 30, (canvas.height - 150*2) * 0.9 / serverPages);
+
+            // files
+            for (let i = 0; i < localMods.length; i++) {
+              const modSpec = localMods[i];
+              ctx.fillStyle = '#111';
+              ctx.fillText(modSpec.displayName, canvas.width * 0.05, 150*2 + ((canvas.height - 150*2) * (i + 1)/numFilesPerPage) - 30, canvas.width * 0.9);
+            }
           } else if (tab === 'files') {
             ctx.fillRect(canvas.width * 2/8, 150 - 10, canvas.width / 8, 10);
 
@@ -326,7 +359,6 @@ class Inventory {
             ctx.fillStyle = '#EEE';
             ctx.fillRect(0, 150, canvas.width, 150);
             ctx.fillStyle = '#4CAF50';
-            console.log('fill subtab', subtab);
             if (subtab === 'items') {
               ctx.fillRect(canvas.width * 0/8, 150*2 - 10, canvas.width / 8, 10);
             } else if (subtab === 'media') {
@@ -613,6 +645,7 @@ class Inventory {
         });
         _pushAnchor(tabsAnchors, canvas.width * 1/8, 0, canvas.width / 8, 150, (e, hoverState) => {
           tab = 'server';
+          subtab = 'installed';
 
           _renderMenu();
           plane.anchors = _getAnchors();
@@ -630,7 +663,9 @@ class Inventory {
           _renderMenu();
           plane.anchors = _getAnchors();
         });
+
         const statusAnchors = [];
+
         const filesAnchors = [];
         _pushAnchor(filesAnchors, canvas.width - 60, 150*2 + (canvas.height - 150*2) * 0.05, 30, (canvas.height - 150*2) * 0.9, (e, hoverState) => {
           const {side} = e;
@@ -720,10 +755,50 @@ class Inventory {
             }
           });
         }
+
+        const serverAnchors = [];
+        _pushAnchor(serverAnchors, canvas.width - 60, 150*2 + (canvas.height - 150*2) * 0.05, 30, (canvas.height - 150*2) * 0.9, (e, hoverState) => {
+          const {side} = e;
+
+          onmove = () => {
+            const hoverState = uiTracker.getHoverState(side);
+            serverBarValue = Math.min(Math.max(hoverState.y - (150*2 + (canvas.height - 150*2) * 0.05), 0), (canvas.height - 150*2) * 0.9) / ((canvas.height - 150*2) * 0.9);
+            serverPage = _snapToIndex(serverPages, serverBarValue);
+            localMods = _getLocalMods();
+
+            _renderMenu();
+          };
+        });
+        _pushAnchor(serverAnchors, canvas.width * 0/8, 150, canvas.width / 8, 150, (e, hoverState) => {
+          subtab = 'installed';
+
+          _renderMenu();
+          plane.anchors = _getAnchors();
+        });
+        _pushAnchor(serverAnchors, canvas.width * 1/8, 150, canvas.width / 8, 150, (e, hoverState) => {
+          subtab = 'remote';
+
+          _renderMenu();
+          plane.anchors = _getAnchors();
+        });
+        _pushAnchor(serverAnchors, canvas.width * 2/8, 150, canvas.width / 8, 150, (e, hoverState) => {
+          subtab = 'local';
+
+          _renderMenu();
+          plane.anchors = _getAnchors();
+        });
+        for (let i = 0; i < numModsPerPage; i++) {
+          _pushAnchor(serverAnchors, 0, 150*2 + ((canvas.height - 150*2) * i/numModsPerPage), canvas.width * 0.95, (canvas.height - 150*2) / numModsPerPage, (e, hoverState) => {
+            console.log('click mod', localMods[i]);
+          });
+        }
+
         const _getAnchors = () => {
           const result = tabsAnchors.slice();
           if (tab === 'status') {
             result.push.apply(result, statusAnchors);
+          } else if (tab === 'server') {
+            result.push.apply(result, serverAnchors);
           } else if (tab === 'files') {
             result.push.apply(result, filesAnchors);
           }
