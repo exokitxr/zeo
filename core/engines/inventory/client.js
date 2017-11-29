@@ -34,42 +34,6 @@ const _normalizeType = type => {
     return 'dat';
   }
 };
-function _getTextLines(text, ctx, maxWidth) {
-  const paragraphs = text.split('\n');
-  const lines = [];
-  while (paragraphs.length > 0) {
-    if (ctx.measureText(text).width < maxWidth) {
-        return paragraphs;
-    }
-    const words = paragraphs.shift().split(' ');
-    let line = '';
-    while (words.length > 0) {
-      while (ctx.measureText(words[0]).width >= maxWidth) {
-        const tmp = words[0];
-        words[0] = tmp.slice(0, -1);
-
-        if (words.length > 1) {
-          words[1] = tmp.slice(-1) + words[1];
-        } else {
-          words.push(tmp.slice(-1));
-        }
-      }
-      if (ctx.measureText(line + words[0]).width < maxWidth) {
-        line += words.shift() + ' ';
-      } else {
-        lines.push(line);
-        line = '';
-      }
-      if (words.length === 0) {
-        lines.push(line);
-      }
-    }
-    if (paragraphs.length > 0) {
-      lines.push('');
-    }
-  }
-  return lines;
-}
 
 const LENS_SHADER = {
   uniforms: {
@@ -147,6 +111,21 @@ class Inventory {
     });
     const _requestImageBitmap = src => _requestImage(src)
       .then(img => createImageBitmap(img, 0, 0, img.width, img.height));
+    const _requestModReadme = (name, version) => {
+      let live = true;
+      const result = new Promise((accept, reject) => {
+        _requestImageBitmap(`archae/rend/readmeImg/${name}/${version}`)
+          .then(img => {
+            if (live) {
+              accept(img);
+            }
+          }, reject)
+      });
+      result.cancel = () => {
+        live = false;
+      };
+      return result;
+    };
     const _resJson = res => {
       if (res.status >= 200 && res.status < 300) {
         return res.json();
@@ -361,7 +340,8 @@ class Inventory {
         let serverPage = 0;
         let localMods = _getLocalMods();
         let localMod = null;
-        let localModReadme = [];
+        let modReadmeImg = null;
+        let modReadmeImgPromise = null;
         let modBarValue = 0;
         let modPage = 0;
         let modPages = 0;
@@ -376,7 +356,6 @@ class Inventory {
           return stepIndex * stepSize;
         };
 
-        const fontSize = 34;
         const _renderMenu = () => {
           // ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -390,6 +369,7 @@ class Inventory {
           ctx.fillRect(Math.floor(canvas.width * 0.05), canvas.height * 0.5, Math.floor(canvas.width * 0.45), canvas.height * 0.45);
           ctx.fillRect(Math.floor(canvas.width * 0.55), canvas.height * 0.5, Math.floor(canvas.width * 0.45), Math.floor(canvas.height * 0.45)); */
 
+          const fontSize = 34;
           ctx.font = `${fontSize}px Open sans`;
           ctx.textBaseline = 'bottom';
           ctx.fillStyle = tab === 'status' ? '#4CAF50' : '#FFF';
@@ -426,9 +406,12 @@ class Inventory {
             ctx.fillStyle = subtab === 'local' ? '#4CAF50' : '#111';
             ctx.fillText('Local', canvas.width * 2/8 + (canvas.width/8 - ctx.measureText('Local').width)/2, 150*2 - 60, canvas.width / 8);
 
-            for (let i = 0; i < localModReadme.length; i++) {
-              const line = localModReadme[i];
-              ctx.fillText(line, canvas.width * 6/8, 150*2 + ((i+1) * fontSize * 1.4), canvas.width * 2/8);
+            if (modReadmeImg) {
+              ctx.drawImage(
+                modReadmeImg,
+                0, (modPage / modPages) * 640, 640, canvas.height - 150*2,
+                canvas.width - 640, 150*2, 640, canvas.height - 150*2
+              );
             }
 
             // bar
@@ -926,11 +909,25 @@ class Inventory {
         for (let i = 0; i < numModsPerPage; i++) {
           _pushAnchor(serverAnchors, 0, 150*2 + ((canvas.height - 150*2) * i/numModsPerPage), canvas.width * 0.95, (canvas.height - 150*2) / numModsPerPage, (e, hoverState) => {
             localMod = localMods[i];
-            ctx.font = `${fontSize}px Open sans`;
-            localModReadme = _getTextLines(localMod.readme, ctx, canvas.width * 2/8);
+            modReadmeImg = null;
+            if (modReadmeImgPromise) {
+              modReadmeImgPromise.cancel();
+            }
+            modReadmeImgPromise = _requestModReadme(localMod.name, localMod.version);
+            modReadmeImgPromise.then(img => {
+              modReadmeImg = img;
+              modReadmeImgPromise = null;
+
+              modBarValue = 0;
+              modPage = 0;
+              modPages = Math.ceil(img.width / (canvas.height - 150*2));
+
+              _renderMenu();
+              plane.anchors = _getAnchors();
+            });
             modBarValue = 0;
             modPage = 0;
-            modPages = localModReadme.length;
+            modPages = 0;
 
             _renderMenu();
             plane.anchors = _getAnchors();
