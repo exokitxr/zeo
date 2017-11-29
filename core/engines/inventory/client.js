@@ -34,6 +34,42 @@ const _normalizeType = type => {
     return 'dat';
   }
 };
+function _getTextLines(text, ctx, maxWidth) {
+  const paragraphs = text.split('\n');
+  const lines = [];
+  while (paragraphs.length > 0) {
+    if (ctx.measureText(text).width < maxWidth) {
+        return paragraphs;
+    }
+    const words = paragraphs.shift().split(' ');
+    let line = '';
+    while (words.length > 0) {
+      while (ctx.measureText(words[0]).width >= maxWidth) {
+        const tmp = words[0];
+        words[0] = tmp.slice(0, -1);
+
+        if (words.length > 1) {
+          words[1] = tmp.slice(-1) + words[1];
+        } else {
+          words.push(tmp.slice(-1));
+        }
+      }
+      if (ctx.measureText(line + words[0]).width < maxWidth) {
+        line += words.shift() + ' ';
+      } else {
+        lines.push(line);
+        line = '';
+      }
+      if (words.length === 0) {
+        lines.push(line);
+      }
+    }
+    if (paragraphs.length > 0) {
+      lines.push('');
+    }
+  }
+  return lines;
+}
 
 const LENS_SHADER = {
   uniforms: {
@@ -324,9 +360,15 @@ class Inventory {
         }; */
         let serverPage = 0;
         let localMods = _getLocalMods();
+        let localMod = null;
+        let localModReadme = [];
+        let modBarValue = 0;
+        let modPage = 0;
+        let modPages = 0;
         let serverPages = mods.length > numModsPerPage ? Math.ceil(mods.length / numModsPerPage) : 1;
         let serverBarValue = 0;
         // let serverIndex = -1;
+
         const _snapToIndex = (steps, value) => Math.floor(steps * value);
         const _snapToPixel = (max, steps, value) => {
           const stepIndex = _snapToIndex(steps, value);
@@ -334,6 +376,7 @@ class Inventory {
           return stepIndex * stepSize;
         };
 
+        const fontSize = 34;
         const _renderMenu = () => {
           // ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -347,7 +390,7 @@ class Inventory {
           ctx.fillRect(Math.floor(canvas.width * 0.05), canvas.height * 0.5, Math.floor(canvas.width * 0.45), canvas.height * 0.45);
           ctx.fillRect(Math.floor(canvas.width * 0.55), canvas.height * 0.5, Math.floor(canvas.width * 0.45), Math.floor(canvas.height * 0.45)); */
 
-          ctx.font = '34px Open sans';
+          ctx.font = `${fontSize}px Open sans`;
           ctx.textBaseline = 'bottom';
           ctx.fillStyle = tab === 'status' ? '#4CAF50' : '#FFF';
           ctx.fillText('Status', canvas.width * 0/8 + (canvas.width/8 - ctx.measureText('Status').width)/2, 150 - 60, canvas.width / 8);
@@ -382,6 +425,11 @@ class Inventory {
             ctx.fillText('Remote', canvas.width * 1/8 + (canvas.width/8 - ctx.measureText('Remote').width)/2, 150*2 - 60, canvas.width / 8);
             ctx.fillStyle = subtab === 'local' ? '#4CAF50' : '#111';
             ctx.fillText('Local', canvas.width * 2/8 + (canvas.width/8 - ctx.measureText('Local').width)/2, 150*2 - 60, canvas.width / 8);
+
+            for (let i = 0; i < localModReadme.length; i++) {
+              const line = localModReadme[i];
+              ctx.fillText(line, canvas.width * 6/8, 150*2 + ((i+1) * fontSize * 1.4), canvas.width * 2/8);
+            }
 
             // bar
             ctx.fillStyle = '#CCC';
@@ -877,7 +925,15 @@ class Inventory {
         });
         for (let i = 0; i < numModsPerPage; i++) {
           _pushAnchor(serverAnchors, 0, 150*2 + ((canvas.height - 150*2) * i/numModsPerPage), canvas.width * 0.95, (canvas.height - 150*2) / numModsPerPage, (e, hoverState) => {
-            console.log('click mod', localMods[i]);
+            localMod = localMods[i];
+            ctx.font = `${fontSize}px Open sans`;
+            localModReadme = _getTextLines(localMod.readme, ctx, canvas.width * 2/8);
+            modBarValue = 0;
+            modPage = 0;
+            modPages = localModReadme.length;
+
+            _renderMenu();
+            plane.anchors = _getAnchors();
           });
         }
 
