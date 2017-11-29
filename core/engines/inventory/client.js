@@ -693,7 +693,7 @@ class Inventory {
           localMods = _getLocalMods();
           serverBarValue = 0;
           serverPage = 0;
-          serverPages = mods.length > numModsPerPage ? Math.ceil(mods.length / numModsPerPage) : 0;
+          serverPages = localMods.length > numModsPerPage ? Math.ceil(localMods.length / numModsPerPage) : 0;
 
           _renderMenu();
           plane.anchors = _getAnchors();
@@ -848,7 +848,7 @@ class Inventory {
           localMods = _getLocalMods();
           serverBarValue = 0;
           serverPage = 0;
-          serverPages = mods.length > numModsPerPage ? Math.ceil(localMods.length / numModsPerPage) : 0;
+          serverPages = localMods.length > numModsPerPage ? Math.ceil(localMods.length / numModsPerPage) : 0;
 
           _renderMenu();
           plane.anchors = _getAnchors();
@@ -859,7 +859,7 @@ class Inventory {
           localMods = _getLocalMods();
           serverBarValue = 0;
           serverPage = 0;
-          serverPages = mods.length > numModsPerPage ? Math.ceil(localMods.length / numModsPerPage) : 0;
+          serverPages = localMods.length > numModsPerPage ? Math.ceil(localMods.length / numModsPerPage) : 0;
 
           _renderMenu();
           plane.anchors = _getAnchors();
@@ -870,7 +870,7 @@ class Inventory {
           localMods = _getLocalMods();
           serverBarValue = 0;
           serverPage = 0;
-          serverPages = mods.length > numModsPerPage ? Math.ceil(localMods.length / numModsPerPage) : 0;
+          serverPages = localMods.length > numModsPerPage ? Math.ceil(localMods.length / numModsPerPage) : 0;
 
           _renderMenu();
           plane.anchors = _getAnchors();
