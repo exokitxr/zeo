@@ -534,9 +534,9 @@ class Inventory {
 
             // bar
             ctx.fillStyle = '#CCC';
-            ctx.fillRect(canvas.width - 60, 150*2 + (canvas.height - 150*2) * 0.05, 30, (canvas.height - 150*2) * 0.9);
+            ctx.fillRect(canvas.width - 60, 150*2 + 100 + (canvas.height - 150*2 - 100) * 0.05, 30, (canvas.height - 150*2 - 100) * 0.9);
             ctx.fillStyle = '#ff4b4b';
-            ctx.fillRect(canvas.width - 60, 150*2 + (canvas.height - 150*2) * 0.05 + _snapToPixel((canvas.height - 150*2) * 0.9, inventoryPages, inventoryBarValue), 30, (canvas.height - 150*2) * 0.9 / inventoryPages);
+            ctx.fillRect(canvas.width - 60, 150*2 + 100 + (canvas.height - 150*2 - 100) * 0.05 + _snapToPixel((canvas.height - 150*2 - 100) * 0.9, inventoryPages, inventoryBarValue), 30, (canvas.height - 150*2 - 100) * 0.9 / inventoryPages);
 
             // files
             const l = Math.min(localAssets.length - inventoryPage * numFilesPerPage, numFilesPerPage);
@@ -847,18 +847,23 @@ class Inventory {
 
         const _getFilesAnchors = () => {
           const result = [];
-          _pushAnchor(result, canvas.width - 60, 150*2 + (canvas.height - 150*2) * 0.05, 30, (canvas.height - 150*2) * 0.9, (e, hoverState) => {
-            const {side} = e;
+          _pushAnchor(result, canvas.width - 60, 150*2 + 100 + (canvas.height - 150*2 - 100) * 0.05, 30, (canvas.height - 150*2 - 100) * 0.9, (e, hoverState) => {
+            if (inventoryPages > 0) {
+              const {side} = e;
 
-            onmove = () => {
-              const hoverState = uiTracker.getHoverState(side);
-              inventoryBarValue = Math.min(Math.max(hoverState.y - (150*2 + (canvas.height - 150*2) * 0.05), 0), (canvas.height - 150*2) * 0.9) / ((canvas.height - 150*2) * 0.9);
-              inventoryPage = _snapToIndex(inventoryPages, inventoryBarValue);
-              localAssets = _getLocalAssets();
-              localAsset = null;
+              onmove = () => {
+                const hoverState = uiTracker.getHoverState(side);
+                inventoryBarValue = Math.min(Math.max(hoverState.y - (150*2 + 100 + (canvas.height - 150*2 - 100) * 0.05), 0), (canvas.height - 150*2 - 100) * 0.9) / ((canvas.height - 150*2 - 100) * 0.9);
+                inventoryPage = _snapToIndex(inventoryPages, inventoryBarValue);
+                localAssets = _getLocalAssets();
+                localAsset = null;
 
-              _renderMenu();
-            };
+                _renderMenu();
+
+                filesAnchors = _getFilesAnchors();
+                plane.anchors = _getAnchors();
+              };
+            }
           });
           _pushAnchor(result, canvas.width * 0/8, 150, canvas.width / 8, 150, (e, hoverState) => {
             subtab = 'itm';
