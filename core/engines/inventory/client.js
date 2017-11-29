@@ -521,12 +521,12 @@ class Inventory {
                   ctx.fillStyle = '#ff4b4b';
                   ctx.fillRect(canvas.width - 640 - 40, 150*2, 640 + 40, 100);
                   ctx.fillStyle = '#FFF';
-                  ctx.fillText('Active', canvas.width - 640 - 40 + (640 + 40 - ctx.measureText('Active').width)/2, 150*2 + 100 - 30);
+                  ctx.fillText('Uninstall', canvas.width - 640 - 40 + (640 + 40 - ctx.measureText('Uninstall').width)/2, 150*2 + 100 - 30);
                 } else {
                   ctx.fillStyle = '#4CAF50';
                   ctx.fillRect(canvas.width - 640 - 40, 150*2, 640 + 60, 100);
                   ctx.fillStyle = '#FFF';
-                  ctx.fillText('Deactivate', canvas.width - 640 - 40 + (640 + 40 - ctx.measureText('Deactivate').width)/2, 150*2 + 100 - 30);
+                  ctx.fillText('Install', canvas.width - 640 - 40 + (640 + 40 - ctx.measureText('Install').width)/2, 150*2 + 100 - 30);
                 }
               }
             }
