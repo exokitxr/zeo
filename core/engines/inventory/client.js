@@ -111,6 +111,23 @@ class Inventory {
     });
     const _requestImageBitmap = src => _requestImage(src)
       .then(img => createImageBitmap(img, 0, 0, img.width, img.height));
+    const _resJson = res => {
+      if (res.status >= 200 && res.status < 300) {
+        return res.json();
+      } else if (res.status === 404) {
+        return Promise.resolve(null);
+      } else {
+        return Promise.reject({
+          status: res.status,
+          stack: 'API returned invalid status code: ' + res.status,
+        });
+      }
+    };
+    const _requestRemoteMods = () => fetch('https://my-site.zeovr.io/mods')
+      .then(_resJson)
+      .catch(err => {
+        console.warn(err);
+      });
 
     return Promise.all([
       archae.requestPlugins([
@@ -130,6 +147,7 @@ class Inventory {
       ]),
       // _requestImageBitmap('/archae/inventory/img/menu.png'),
       _requestImageBitmap('/archae/inventory/img/arrow-left.png'),
+      _requestRemoteMods(),
     ]).then(([
       [
         bootstrap,
@@ -148,6 +166,7 @@ class Inventory {
       ],
       // menuImg,
       arrowLeftImg,
+      remoteMods,
     ]) => {
       if (live) {
         const {THREE, scene, camera, renderer} = three;
@@ -276,23 +295,20 @@ class Inventory {
             }
           })
           .slice(inventoryPage * numFilesPerPage, (inventoryPage + 1) * numFilesPerPage);
-        const _getLocalMods = () => mods
-          .filter(modSpec => {
-            return true; // XXX
-            if (type === 'server') {
-              if (subtab === 'installed') {
-                // XXX
-              } else if (subtab === 'remote') {
-                // XXX
-              } else if (subtab === 'local') {
-                // XXX
-              } else {
-                return false;
-              }
+        const _getLocalMods = () =>
+          (() => {
+            if (subtab === 'installed') {
+              return mods;
+            } else if (subtab === 'remote') {
+              return remoteMods
+                .filter(modSpec => !modSpec.local);
+            } else if (subtab === 'local') {
+              return remoteMods
+                .filter(modSpec => modSpec.local);
             } else {
-              return true;
+              return [];
             }
-          })
+          })()
           .slice(serverPage * numModsPerPage, (serverPage + 1) * numModsPerPage);
 
         /* let tabIndex = 0;
@@ -829,17 +845,32 @@ class Inventory {
         _pushAnchor(serverAnchors, canvas.width * 0/8, 150, canvas.width / 8, 150, (e, hoverState) => {
           subtab = 'installed';
 
+          localMods = _getLocalMods();
+          serverBarValue = 0;
+          serverPage = 0;
+          serverPages = mods.length > numModsPerPage ? Math.ceil(localMods.length / numModsPerPage) : 0;
+
           _renderMenu();
           plane.anchors = _getAnchors();
         });
         _pushAnchor(serverAnchors, canvas.width * 1/8, 150, canvas.width / 8, 150, (e, hoverState) => {
           subtab = 'remote';
 
+          localMods = _getLocalMods();
+          serverBarValue = 0;
+          serverPage = 0;
+          serverPages = mods.length > numModsPerPage ? Math.ceil(localMods.length / numModsPerPage) : 0;
+
           _renderMenu();
           plane.anchors = _getAnchors();
         });
         _pushAnchor(serverAnchors, canvas.width * 2/8, 150, canvas.width / 8, 150, (e, hoverState) => {
           subtab = 'local';
+
+          localMods = _getLocalMods();
+          serverBarValue = 0;
+          serverPage = 0;
+          serverPages = mods.length > numModsPerPage ? Math.ceil(localMods.length / numModsPerPage) : 0;
 
           _renderMenu();
           plane.anchors = _getAnchors();
