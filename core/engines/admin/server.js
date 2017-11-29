@@ -53,22 +53,28 @@ class Admin {
 
         return _log()
           .then(() => {
-            if (serverEnabled && !noTty) {
-              const r = repl.start({ prompt: 'zeo> ' });
-              r.context.status = () => {
-                console.log('STATUS');
-              };
-              r.context.addMod = mod => {
-                world.addMod(mod);
-              };
-              r.context.removeMod = mod => {
-                if (!world.removeMod(mod)) {
-                  console.warn('no such mod:', JSON.stringify(mod));
-                }
-              };
-              r.on('exit', () => {
-                process.exit();
-              });
+            if (serverEnabled) {
+              if (!noTty) {
+                const r = repl.start({ prompt: 'zeo> ' });
+                r.context.status = () => {
+                  console.log('STATUS');
+                };
+                r.context.addMod = mod => {
+                  world.addMod(mod);
+                };
+                r.context.removeMod = mod => {
+                  if (!world.removeMod(mod)) {
+                    console.warn('no such mod:', JSON.stringify(mod));
+                  }
+                };
+                r.on('exit', () => {
+                  process.exit();
+                });
+              } else {
+                process.on('SIGINT', () => {
+                  process.exit(0);
+                });
+              }
             }
           });
       });
