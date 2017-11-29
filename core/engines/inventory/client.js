@@ -423,21 +423,34 @@ class Inventory {
               // img
               ctx.drawImage(
                 modReadmeImg,
-                0, (modPages > 1 ? (modPage / (modPages - 1)) : 0) * (canvas.height - 150*2), 640, canvas.height - 150*2,
-                canvas.width - 640 - 40, 150*2, 640, canvas.height - 150*2
+                0, (modPages > 1 ? (modPage / (modPages - 1)) : 0) * (canvas.height - 150*2 - 100), 640, canvas.height - 150*2,
+                canvas.width - 640 - 40, 150*2 + 100, 640, canvas.height - 150*2 - 100
               );
 
               // bar
               ctx.fillStyle = '#CCC';
-              ctx.fillRect(canvas.width - 60, 150*2 + (canvas.height - 150*2) * 0.05, 30, (canvas.height - 150*2) * 0.9);
+              ctx.fillRect(canvas.width - 60, 150*2 + 100 + (canvas.height - 150*2 - 100) * 0.05, 30, (canvas.height - 150*2 - 100) * 0.9);
               ctx.fillStyle = '#ff4b4b';
-              ctx.fillRect(canvas.width - 60, 150*2 + (canvas.height - 150*2) * 0.05 + _snapToPixel((canvas.height - 150*2) * 0.9, modPages, modBarValue), 30, (canvas.height - 150*2) * 0.9 / modPages);
+              ctx.fillRect(canvas.width - 60, 150*2 + 100 + (canvas.height - 150*2 - 100) * 0.05 + _snapToPixel((canvas.height - 150*2 - 100) * 0.9, modPages, modBarValue), 30, (canvas.height - 150*2) * 0.9 / modPages);
             } else {
               // placeholder
               ctx.fillStyle = '#EEE';
-              ctx.fillRect(
-                canvas.width - 640 - 40, 150*2, 640, canvas.height - 150*2
-              );
+              ctx.fillRect(canvas.width - 640 - 40, 150*2 + 100, 640, canvas.height - 150*2);
+            }
+
+            // installer
+            if (localMod) {
+              if (localMod.installed) {
+                ctx.fillStyle = '#ff4b4b';
+                ctx.fillRect(canvas.width - 640 - 40, 150*2, 640 + 40, 100);
+                ctx.fillStyle = '#FFF';
+                ctx.fillText('Running', canvas.width - 640 - 40 + (640 + 40 - ctx.measureText('Running').width)/2, 150*2 + 100 - 30);
+              } else {
+                ctx.fillStyle = '#4CAF50';
+                ctx.fillRect(canvas.width - 640 - 40, 150*2, 640 + 60, 100);
+                ctx.fillStyle = '#FFF';
+                ctx.fillText('Install', canvas.width - 640 - 40 + (640 + 40 - ctx.measureText('Install').width)/2, 150*2 + 100 - 30);
+              }
             }
 
             // bar
@@ -971,7 +984,7 @@ class Inventory {
         }
 
         const modAnchors = serverAnchors.slice();
-        _pushAnchor(modAnchors, canvas.width - 60, 150*2 + (canvas.height - 150*2) * 0.05, 30, (canvas.height - 150*2) * 0.9, (e, hoverState) => {
+        _pushAnchor(modAnchors, canvas.width - 60, 150*2 + 100 + (canvas.height - 150*2 - 100) * 0.05, 30, (canvas.height - 150*2 - 100) * 0.9, (e, hoverState) => {
           if (modPages > 0) {
             const {side} = e;
 
@@ -982,6 +995,13 @@ class Inventory {
 
               _renderMenu();
             };
+          }
+        });
+        _pushAnchor(modAnchors, canvas.width - 640 - 40, 150*2, 640 + 40, 100, (e, hoverState) => {
+          if (localMod.installed) {
+            console.log('uninstall'); // XXX
+          } else {
+            console.log('install'); // XXX
           }
         });
 
