@@ -110,34 +110,33 @@ class Wallet {
           new THREE.Vector3(0, 0, -1)
         );
 
-        const _requestAssetImageData = asset => (() => {
-          const match = asset.match(/^(ITEM|MOD|SKIN|FILE)\.(.+)$/);
-          const type = match[1];
-          const name = match[2];
-          if (type === 'ITEM') {
-            return resource.getItemImageData(name);
-          } else if (type === 'MOD') {
+        const _requestAssetImageData = assetSpec => (() => {
+          if (assetSpec.ext === 'itm') {
+            return resource.getItemImageData(assetSpec.name);
+          } else /* if (asset.ext === 'files') */ {
+            return resource.getFileImageData(assetSpec.name);
+          }
+          /* } else if (type === 'mod') {
             return resource.getModImageData(name);
-          } else if (type === 'FILE') {
-            return resource.getFileImageData(name);
-          } else if (type === 'SKIN') {
+          } else if (type === 'skin') {
             return resource.getSkinImageData(name);
           } else {
             return Promise.resolve(null);
-          }
+          } */
         })().then(arrayBuffer => ({
           width: 16,
           height: 16,
           data: new Uint8Array(arrayBuffer),
         }));
-        const _addStrgAsset = asset => vridApi.get('assets')
+        const _addStrgAsset = (name, ext) => vridApi.get('assets')
           .then(assets => {
             assets = assets || [];
-            let assetSpec = assets.find(assetSpec => assetSpec.asset === asset);
+            let assetSpec = assets.find(assetSpec => assetSpec.name === name && assetSpec.ext === ext);
             if (!assetSpec) {
               assetSpec = {
-                id: asset,
-                asset,
+                id: _makeId(),
+                name,
+                ext,
               };
               assets.push(assetSpec);
             }
@@ -154,7 +153,7 @@ class Wallet {
             return vridApi.set('assets', assets);
           });
 
-        const _addAsset = (id, type, value, n, physics, matrix) => {
+        const _addAsset = (id, type, name, ext, n, physics, matrix) => {
           const position = new THREE.Vector3(matrix[0], matrix[1], matrix[2]);
           const rotation = new THREE.Quaternion(matrix[3], matrix[4], matrix[5], matrix[6]);
           const scale = new THREE.Vector3(matrix[7], matrix[8], matrix[9]);
@@ -162,7 +161,8 @@ class Wallet {
           const assetInstance = assetsMesh.addAssetInstance(
             id,
             type,
-            value,
+            name,
+            ext,
             n,
             physics,
             position,
@@ -189,25 +189,27 @@ class Wallet {
               const {
                 id,
                 type,
-                value,
+                name,
+                ext,
                 n,
                 physics,
                 matrix,
               } = assetSpec;
 
-              _addAsset(id, type, value, n, physics, matrix);
+              _addAsset(id, type, name, ext, n, physics, matrix);
             }
           } else if (type === 'addAsset') {
             const {
               id,
               type,
-              value,
+              name,
+              ext,
               n,
               physics,
               matrix,
             } = args;
 
-            _addAsset(id, type, value, n, physics, matrix);
+            _addAsset(id, type, name, ext, n, physics, matrix);
           } else if (type === 'removeAsset') {
             const {
               id,
@@ -314,7 +316,7 @@ class Wallet {
             walletState.selectedAsset.right = null;
             walletState.assets = assets;
             const newEquipments = equipments.filter(equipmentSpec =>
-              !equipmentSpec || walletState.assets.some(assetSpec => assetSpec.asset === equipmentSpec.asset)
+              !equipmentSpec || walletState.assets.some(assetSpec => assetSpec.name === equipmentSpec.name && assetSpec.ext === equipmentSpec.ext)
             );
             walletState.equipments = newEquipments;
             walletState.numTags = assets.length;
@@ -387,9 +389,9 @@ class Wallet {
         };
         const _bindEquipmentApi = equipmentApi => {
           if (typeof equipmentApi.asset === 'string' && typeof equipmentApi.equipmentAddedCallback === 'function') {
-            const {asset} = equipmentApi;
+            const {name, ext} = equipmentApi;
 
-            const assetSpec = walletState.equipments.find(equipmentSpec => equipmentSpec && equipmentSpec.asset === asset);
+            const assetSpec = walletState.equipments.find(equipmentSpec => equipmentSpec && equipmentSpec.name === name && equipmentSpec.ext === ext);
             if (assetSpec) {
               equipmentApi.equipmentAddedCallback(assetSpec);
             }
@@ -397,9 +399,9 @@ class Wallet {
         };
         const _unbindEquipmentApi = equipmentApi => {
           if (typeof equipmentApi.asset === 'string' && typeof equipmentApi.equipmentRemovedCallback === 'function') {
-            const {asset} = equipmentApi;
+            const {name, ext} = equipmentApi;
 
-            const assetSpec = walletState.equipments.find(equipmentSpec => equipmentSpec && equipmentSpec.asset === asset);
+            const assetSpec = walletState.equipments.find(equipmentSpec => equipmentSpec && equipmentSpec.name === name && equipmentSpec.ext === ext);
             if (assetSpec) {
               equipmentApi.equipmentRemovedCallback(assetSpec);
             }
@@ -416,7 +418,8 @@ class Wallet {
                   constructor(
                     id,
                     type,
-                    value,
+                    name,
+                    ext,
                     n,
                     physics,
                     position,
@@ -430,7 +433,8 @@ class Wallet {
 
                     this.id = id;
                     this.type = type;
-                    this.value = value;
+                    this.name = name;
+                    this.ext = ext;
                     this.physics = physics;
                   }
 
@@ -545,8 +549,8 @@ class Wallet {
                 const assetInstances = [];
                 mesh.getAssetInstances = id => assetInstances;
                 mesh.getAssetInstance = id => assetInstances.find(assetInstance => assetInstance.id === id);
-                mesh.addAssetInstance = (id, type, value, n, physics, position, rotation, scale, localPosition, localRotation, localScale) => {
-                  const assetInstance = new AssetInstance(id, type, value, n, physics, position, rotation, scale, localPosition, localRotation, localScale);
+                mesh.addAssetInstance = (id, type, name, ext, n, physics, position, rotation, scale, localPosition, localRotation, localScale) => {
+                  const assetInstance = new AssetInstance(id, type, name, ext, n, physics, position, rotation, scale, localPosition, localRotation, localScale);
 
                   hand.addGrabbable(assetInstance);
                   assetInstances.push(assetInstance);
@@ -555,7 +559,7 @@ class Wallet {
                     let live = true;
 
                     const geometry = (() => {
-                      _requestAssetImageData(value)
+                      _requestAssetImageData({name, ext})
                         .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize))
                         .then(geometrySpec => {
                           if (live) {
@@ -819,8 +823,8 @@ class Wallet {
 
               const itemApis = {};
               const _bindAssetInstance = assetInstance => {
-                const {value} = assetInstance;
-                const itemEntry = itemApis[value];
+                const {name, ext} = assetInstance;
+                const itemEntry = itemApis[name + '.' + ext];
 
                 if (itemEntry) {
                   for (let i = 0; i < itemEntry.length; i++) {
@@ -833,8 +837,8 @@ class Wallet {
                 }
               };
               const _unbindAssetInstance = assetInstance => {
-                const {value} = assetInstance;
-                const itemEntry = itemApis[value];
+                const {name, ext} = assetInstance;
+                const itemEntry = itemApis[name + '.' + ext];
 
                 if (itemEntry) {
                   for (let i = 0; i < itemEntry.length; i++) {
@@ -848,9 +852,9 @@ class Wallet {
               };
               const _bindItemApi = itemApi => {
                 if (typeof itemApi.asset === 'string' && typeof itemApi.itemAddedCallback === 'function') {
-                  const {asset} = itemApi;
+                  const {name, ext} = itemApi;
                   const boundAssetInstances = assetsMesh.getAssetInstances()
-                    .filter(assetInstance => assetInstance.value === asset);
+                    .filter(assetInstance => assetInstance.name === name && assetInstance.ext === ext);
 
                   for (let i = 0; i < boundAssetInstances.length; i++) {
                     const assetInstance = boundAssetInstances[i];
@@ -860,9 +864,9 @@ class Wallet {
               };
               const _unbindItemApi = itemApi => {
                 if (typeof itemApi.asset === 'string' && typeof itemApi.itemRemovedCallback === 'function') {
-                  const {asset} = itemApi;
+                  const {name, ext} = itemApi;
                   const boundAssetInstances = assetsMesh.getAssetInstances()
-                    .filter(assetInstance => assetInstance.value === asset);
+                    .filter(assetInstance => assetInstance.name === name && assetInstance.ext === ext);
 
                   for (let i = 0; i < boundAssetInstances.length; i++) {
                     const assetInstance = boundAssetInstances[i];
@@ -928,16 +932,17 @@ class Wallet {
                 }
               };
 
-              const _pullItem = (asset, side) => {
+              const _pullItem = (name, ext, side) => {
                 const id = _makeId();
                 const itemSpec = {
                   type: 'asset',
                   id: id,
-                  name: asset,
-                  displayName: asset,
+                  name: name + '.' + ext,
+                  displayName: name + '.' + ext,
                   attributes: {
                     type: {value: 'asset'},
-                    value: {value: asset},
+                    name: {value: name},
+                    ext: {value: ext},
                     position: {value: DEFAULT_MATRIX},
                     owner: {value: null},
                     bindOwner: {value: null},
@@ -948,13 +953,13 @@ class Wallet {
                 const assetInstance = walletApi.makeItem(itemSpec);
                 assetInstance.grab(side);
 
-                const {assets: oldAssets} = walletState;
+                /* const {assets: oldAssets} = walletState;
                 _removeStrgAsset(asset)
-                  .then(() => {
+                  .then(() => { */
                     const {assets: newAssets} = walletState;
 
-                    if (oldAssets === newAssets) {
-                      const index = newAssets.findIndex(assetSpec => assetSpec.asset === asset);
+                    /* if (oldAssets === newAssets) { */
+                      const index = newAssets.findIndex(assetSpec => assetSpec.name === name && assetSpec.ext === ext);
                       if (index !== -1) {
                         newAssets.splice(index, 1);
 
@@ -962,7 +967,7 @@ class Wallet {
                         let removed = false;
                         for (let i = 0; i < equipments.length; i++) {
                           const equipmentSpec = equipments[i];
-                          if (equipmentSpec && equipmentSpec.asset === asset) {
+                          if (equipmentSpec && equipmentSpec.name === name && equipmentSpec.ext === ext) {
                             equipments[i] = null;
                             removed = true;
                           }
@@ -973,20 +978,20 @@ class Wallet {
 
                         // _updatePages();
                       }
-                    }
+                    /* }
                   })
                   .catch(err => {
                     console.warn(err);
-                  });
+                  }); */
 
-                const match = asset.match(/^MOD\.(.+)$/);
+                /* const match = asset.match(/^MOD\.(.+)$/);
                 if (match) {
                   const modName = match[1];
                   world.addMod(modName);
-                }
+                } */
 
                 sfx.drop.trigger();
-                const newNotification = notification.addNotification(`Pulled out ${asset}.`);
+                const newNotification = notification.addNotification(`Pulled out ${name}.${ext}.`);
                 setTimeout(() => {
                   notification.removeNotification(newNotification);
                 }, 3000);
@@ -996,18 +1001,18 @@ class Wallet {
 
                 const {type} = assetInstance;
                 if (type === 'asset') {
-                  const {value} = assetInstance;
+                  const {name, ext} = assetInstance;
                   const {assets: oldAssets} = walletState;
-                  _addStrgAsset(value)
+                  _addStrgAsset(name, ext)
                     .then(() => {
                       const {assets: newAssets} = walletState;
 
                       if (oldAssets === newAssets) {
-                        let newAsset = newAssets.find(assetSpec => assetSpec.asset === value);
+                        let newAsset = newAssets.find(assetSpec => assetSpec.name === name && assetSpec.ext === ext);
                         if (!newAsset) {
                           newAsset = {
-                            id: value,
-                            asset: value,
+                            name,
+                            ext,
                           };
                           newAssets.push(newAsset);
                         }
@@ -1023,11 +1028,11 @@ class Wallet {
                     });
 
                   sfx.drop.trigger();
-                  const newNotification = notification.addNotification(`Stored ${value}.`);
+                  const newNotification = notification.addNotification(`Stored ${name}.${ext}.`);
                   setTimeout(() => {
                     notification.removeNotification(newNotification);
                   }, 3000);
-                } else if (type === 'file') {
+                } /* else if (type === 'file') {
                   const {id, value} = assetInstance;
                   const {id: n, name} = value;
                   const file = fs.makeRemoteFile(n);
@@ -1090,7 +1095,7 @@ class Wallet {
                   setTimeout(() => {
                     notification.removeNotification(newNotification);
                   }, 3000);
-                }
+                } */
               };
               const _checkGripdown = side => {
                 const hoverState = hoverStates[side];
@@ -1103,7 +1108,7 @@ class Wallet {
 
                 if (!worldGrabAsset && asset && _isInBody(position)) {
                   const assetSpec = walletState.assets.find(assetSpec => assetSpec.id === asset);
-                  _pullItem(assetSpec.asset, side);
+                  _pullItem(assetSpec.name, assetSpec.ext, side);
 
                   return true;
                 } else {
@@ -1179,7 +1184,8 @@ class Wallet {
                     id,
                     attributes: {
                       type: {value: type},
-                      value: {value: value},
+                      name: {value: name},
+                      ext: {value: ext},
                       position: {value: matrix},
                       physics: {value: physics},
                     },
@@ -1192,7 +1198,8 @@ class Wallet {
                   const assetInstance = assetsMesh.addAssetInstance(
                     id,
                     type,
-                    value,
+                    name,
+                    ext,
                     n,
                     physics,
                     position,
@@ -1210,7 +1217,8 @@ class Wallet {
                     args: {
                       id,
                       type,
-                      value,
+                      name,
+                      ext,
                       n,
                       physics,
                       matrix,
@@ -1290,6 +1298,14 @@ class Wallet {
 
                   walletState.equipments = newEquipments;
                   _saveEquipments();
+                }
+
+                pullItem(asset, ext, side) {
+                  _pullItem(asset, ext, side);
+                }
+
+                storeItem(asset, side) {
+                  _storeItem(asset, side);
                 }
 
                 registerItem(pluginInstance, itemApi) {

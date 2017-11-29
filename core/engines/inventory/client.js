@@ -272,11 +272,10 @@ class Inventory {
         wallet.on('assets', _walletAssets);
 
         const localVector = new THREE.Vector3();
+        const localVector2 = new THREE.Vector3();
         const localMatrix = new THREE.Matrix4();
         const zeroQuaternion = new THREE.Quaternion();
         const oneVector = new THREE.Vector3(1, 1, 1);
-        const zeroArray = new Float32Array(0);
-        const zeroArray2 = new Float32Array(0);
         const zeroVector = new THREE.Vector3();
         const pixelSize = 0.013;
 
@@ -1441,19 +1440,6 @@ class Inventory {
         })();
         menuMesh.add(assetsMesh);
 
-        const trigger = e => {
-          const {side} = e;
-
-          if (menuState.open) {
-            sfx.digi_plink.trigger();
-
-            e.stopImmediatePropagation();
-          }
-        };
-        input.on('trigger', trigger, {
-          priority: -1,
-        });
-
         let animation = null;
         const _closeMenu = () => {
           // menuMesh.visible = false;
@@ -1521,6 +1507,44 @@ class Inventory {
         };
         input.on('triggerup', _triggerup);
 
+        const _trigger = e => {
+          const {side} = e;
+
+          if (menuState.open) {
+            sfx.digi_plink.trigger();
+
+            e.stopImmediatePropagation();
+          }
+        };
+        input.on('trigger', _trigger, {
+          priority: -1,
+        });
+
+        const _gripdown = e => {
+          const {side} = e;
+
+          const assetPosition = localVector.copy(zeroVector)
+            .applyMatrix4(
+              localMatrix.compose(
+                localVector2.set(
+                  WORLD_WIDTH / 2 - pixelSize * 16 - pixelSize * 16*0.75,
+                  -WORLD_HEIGHT / 2 + pixelSize * 16,
+                  pixelSize * 16/2
+                ),
+                zeroQuaternion,
+                oneVector
+              ).premultiply(assetsMesh.matrixWorld)
+            );
+          const {gamepads} = webvr.getStatus();
+          const gamepad = gamepads[side];
+          const distance = assetPosition.distanceTo(gamepad.worldPosition);
+          console.log('got distance', distance, pixelSize*16/2);
+          if (distance < pixelSize*16/2) {
+            wallet.pullItem(localAsset.name, localAsset.ext, side);
+          }
+        };
+        input.on('gripdown', _gripdown);
+
         cleanups.push(() => {
           scene.remove(menuMesh);
 
@@ -1533,9 +1557,11 @@ class Inventory {
           world.removeListener('add', _worldAdd);
           wallet.removeListener('assets', _walletAssets);
 
+          input.removeListener('menudown', _menudown);
           input.removeListener('triggerdown', _triggerdown);
           // input.removeListener('triggerup', _triggerup);
-          input.removeListener('menudown', _menudown);
+          input.removeListener('triggerup', _trigger);
+          input.removeListener('gripdown', _gripdown);
 
           scene.onRenderEye = null;
           scene.onBeforeRenderEye = null;
