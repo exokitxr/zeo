@@ -998,10 +998,36 @@ class Inventory {
           }
         });
         _pushAnchor(modAnchors, canvas.width - 640 - 40, 150*2, 640 + 40, 100, (e, hoverState) => {
+          const {name, version} = localMod;
+
           if (localMod.installed) {
-            console.log('uninstall'); // XXX
+            const tagMesh = world.getTag({
+              type: 'entity',
+              name,
+              version,
+            });
+            const {item} = tagMesh;
+            const {id} = item;
+            world.removeTag(id);
+
+            _updateInstalled();
+            _renderMenu();
           } else {
-            console.log('install'); // XXX
+            const itemSpec = {
+              type: 'entity',
+              id: _makeId(),
+              name: name,
+              displayName: name,
+              version: version,
+              module: name,
+              tagName: _makeTagName(name),
+              attributes: {},
+              metadata: {},
+            };
+            world.addTag(itemSpec);
+
+            _updateInstalled();
+            _renderMenu();
           }
         });
 
