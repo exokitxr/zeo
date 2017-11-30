@@ -274,34 +274,37 @@ class Assets {
               username: username,
             };
 
-            const menuUi = biolumi.makeUi({
-              width: MENU_WIDTH,
-              height: MENU_HEIGHT,
-              // color: [1, 1, 1, 0],
-            });
-            const mesh = menuUi.makePage(({
-              menu: menuState,
-            }) => ({
-              type: 'html',
-              src: menuRenderer.getMenuSrc({
-                menu: menuState,
-              }),
-              x: 0,
-              y: 0,
-              w: MENU_WIDTH,
-              h: MENU_HEIGHT,
-            }), {
-              type: 'menu',
-              state: {
-                menu: menuState,
-              },
-              worldWidth: WORLD_MENU_WIDTH,
-              worldHeight: WORLD_MENU_HEIGHT,
-            });
-            mesh.rotation.order = camera.rotation.order;
+            const canvas = document.createElement('canvas');
+            canvas.width = MENU_WIDTH;
+            canvas.height = MENU_HEIGHT;
 
-            const {page} = mesh;
-            page.update();
+            const ctx = canvas.getContext('2d');
+            const fontSize = 75;
+            ctx.font = `${fontSize}px Open sans`;
+            ctx.fillStyle = '#FFF';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#111';
+            ctx.fillText(`${username}'s Menu`, (canvas.width - ctx.measureText(username).width) / 2, (canvas.height - 75) / 2);
+
+            const texture = new THREE.Texture(
+              canvas,
+              THREE.UVMapping,
+              THREE.ClampToEdgeWrapping,
+              THREE.ClampToEdgeWrapping,
+              THREE.LinearFilter,
+              THREE.LinearFilter,
+              THREE.RGBAFormat,
+              THREE.UnsignedByteType,
+              16
+            );
+            texture.needsUpdate = true;
+
+            const geometry = new THREE.PlaneBufferGeometry(WORLD_MENU_WIDTH, WORLD_MENU_HEIGHT);
+            const material = new THREE.MeshBasicMaterial({
+              map: texture,
+              side: THREE.DoubleSide,
+            });
+            const mesh = new THREE.Mesh(geometry, material);
 
             mesh.update = menuStatus => {
               if (menuStatus.open) {
