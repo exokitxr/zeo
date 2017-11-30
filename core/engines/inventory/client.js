@@ -440,6 +440,8 @@ class Inventory {
             if (modReadmeImg) {
               if (subtab === 'installed') {
                 // config
+                const rowHeight = 100;
+
                 const {displayName, version} = localMod;
                 const tagMesh = world.getTag({
                   type: 'entity',
@@ -449,6 +451,7 @@ class Inventory {
                 const {item} = tagMesh;
                 const {attributes} = item;
                 const attributeSpecs = tags.getAttributeSpecsMap(displayName);
+                let i = 0;
                 for (const name in attributeSpecs) {
                   const attributeSpec = attributeSpecs[name];
                   const {type} = attributeSpec;
@@ -459,7 +462,26 @@ class Inventory {
                     value = attributeSpec.value;
                   }
 
+                  if (type === 'number') {
+                    const {min, max} = attributeSpec;
+
+                    if (min === undefined) {
+                      min = 0;
+                    }
+                    if (max === undefined) {
+                      max = 10;
+                    }
+
+                    const factor = (value - min) / (max - min);
+
+                    ctx.fillStyle = '#CCC';
+                    ctx.fillRect(canvas.width - 640 - 40, 150*2 + 100 + 40 + i*rowHeight, 640, 5);
+                    ctx.fillStyle = '#ff4b4b';
+                    ctx.fillRect(canvas.width - 640 - 40 + (factor / 640), 150*2 + 100 + 40 - 20 + i*rowHeight, 5, 20 + 5 + 20);
+                  }
+
                   console.log('render attribute', name, type, value); // XXX
+                  i++;
                 }
 
                 // bar
