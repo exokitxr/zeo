@@ -169,6 +169,7 @@ class Inventory {
         '/core/engines/wallet',
         '/core/engines/resource',
         '/core/engines/hand',
+        '/core/engines/notification',
         '/core/engines/anima',
         '/core/utils/sprite-utils',
         '/core/utils/vrid-utils',
@@ -189,6 +190,7 @@ class Inventory {
         wallet,
         resource,
         hand,
+        notification,
         anima,
         spriteUtils,
         vridUtils,
@@ -1590,6 +1592,12 @@ class Inventory {
 
             if (removeDistance < pixelSize*16/2) {
               wallet.destroyItem(grabbable);
+
+              const {name, ext} = grabbable;
+              const newNotification = notification.addNotification(`Discarded ${name}.${ext}.`);
+              setTimeout(() => {
+                notification.removeNotification(newNotification);
+              }, 3000);
 
               e.stopImmediatePropagation();
             }
