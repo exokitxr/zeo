@@ -11,9 +11,10 @@ constructor(archae) {
     const {ws, wss} = archae.getCore();
 
     class AssetInstance {
-      constructor(id, type, name, ext, n, physics, matrix) {
+      constructor(id, type, assetId, name, ext, n, physics, matrix) {
         this.id = id;
         this.type = type;
+        this.assetId = assetId;
         this.name = name;
         this.ext = ext;
         this.n = n;
@@ -51,11 +52,11 @@ constructor(archae) {
           const {method, args} = m;
 
           if (method === 'addAsset') {
-            const {id, type, name, ext, n, physics, matrix} = args;
-            const assetInstance = new AssetInstance(id, type, name, ext, n, physics, matrix);
+            const {id, type, assetId, name, ext, n, physics, matrix} = args;
+            const assetInstance = new AssetInstance(id, type, assetId, name, ext, n, physics, matrix);
             assetInstances.push(assetInstance);
 
-            _broadcast(JSON.stringify({type: 'addAsset', args: {id, type, name, ext, n, physics, matrix}}));
+            _broadcast(JSON.stringify({type: 'addAsset', args: {id, type, assetId, name, ext, n, physics, matrix}}));
           } else if (method === 'removeAsset') {
             const {id} = args;
             assetInstances.splice(assetInstances.findIndex(assetInstance => assetInstance.id === id), 1);
