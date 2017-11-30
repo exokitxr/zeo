@@ -1271,7 +1271,7 @@ class Inventory {
           const material = new THREE.MeshBasicMaterial({
             map: texture,
             side: THREE.DoubleSide,
-            transparent: true,
+            // transparent: true,
             // renderOrder: -1,
           });
           const mesh = new THREE.Mesh(geometry, material);
