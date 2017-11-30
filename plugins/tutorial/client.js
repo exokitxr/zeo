@@ -232,7 +232,7 @@ class Tutorial {
     this._cleanup = () => {
       live = false;
 
-      __destroy && destroy();
+      _destroy && _destroy();
 
       input.removeListener('_keydown', _keydown);
     };
