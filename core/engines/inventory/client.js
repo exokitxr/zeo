@@ -1521,27 +1521,29 @@ class Inventory {
         });
 
         const _gripdown = e => {
-          const {side} = e;
+          if (localAsset) {
+            const {side} = e;
 
-          const assetPosition = localVector.copy(zeroVector)
-            .applyMatrix4(
-              localMatrix.compose(
-                localVector2.set(
-                  WORLD_WIDTH / 2 - pixelSize * 16 - pixelSize * 16*0.75,
-                  -WORLD_HEIGHT / 2 + pixelSize * 16,
-                  pixelSize * 16/2
-                ),
-                zeroQuaternion,
-                oneVector
-              ).premultiply(assetsMesh.matrixWorld)
-            );
-          const {gamepads} = webvr.getStatus();
-          const gamepad = gamepads[side];
-          const distance = assetPosition.distanceTo(gamepad.worldPosition);
-          if (distance < pixelSize*16/2) {
-            wallet.pullItem(localAsset.name, localAsset.ext, side);
+            const assetPosition = localVector.copy(zeroVector)
+              .applyMatrix4(
+                localMatrix.compose(
+                  localVector2.set(
+                    WORLD_WIDTH / 2 - pixelSize * 16 - pixelSize * 16*0.75,
+                    -WORLD_HEIGHT / 2 + pixelSize * 16,
+                    pixelSize * 16/2
+                  ),
+                  zeroQuaternion,
+                  oneVector
+                ).premultiply(assetsMesh.matrixWorld)
+              );
+            const {gamepads} = webvr.getStatus();
+            const gamepad = gamepads[side];
+            const distance = assetPosition.distanceTo(gamepad.worldPosition);
+            if (distance < pixelSize*16/2) {
+              wallet.pullItem(localAsset, side);
 
-            e.stopImmediatePropagation();
+              e.stopImmediatePropagation();
+            }
           }
         };
         input.on('gripdown', _gripdown);
@@ -1568,9 +1570,9 @@ class Inventory {
           const addDistance = grabbable.position.distanceTo(addPosition);
 
           if (addDistance < pixelSize*16/2) {
-            console.log('add'); // XXX
+            wallet.storeItem(grabbable);
 
-            // e.stopImmediatePropagation();
+            e.stopImmediatePropagation();
           } else {
             const removePosition = localVector.copy(zeroVector)
               .applyMatrix4(
