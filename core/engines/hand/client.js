@@ -120,7 +120,12 @@ class Hand {
             } else {
               const n = protocolUtils.parseUpdateN(data);
               const grabbable = grabbables[n];
-              protocolUtils.parseUpdate(grabbable.position, grabbable.rotation, grabbable.scale, grabbable.localPosition, grabbable.localRotation, grabbable.localScale, data);
+              protocolUtils.parseUpdate(
+                grabbable.position, grabbable.rotation, grabbable.scale,
+                grabbable.localPosition, grabbable.localRotation, grabbable.localScale,
+                data
+              );
+
               grabbable.emitUpdate();
             }
           });
