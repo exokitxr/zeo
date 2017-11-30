@@ -284,7 +284,7 @@ class Wallet {
                 }
               });
 
-              const _isInBody = p => {
+              /* const _isInBody = p => {
                 const vrMode = bootstrap.getVrMode();
 
                 if (vrMode === 'hmd') {
@@ -312,7 +312,7 @@ class Wallet {
                     );
                   return p.distanceTo(bodyPosition) < 0.35;
                 }
-              };
+              }; */
 
               const _makeHoverState = () => ({
                 worldAsset: null,
@@ -462,9 +462,9 @@ class Wallet {
                         };
                         super.emit(t, e2);
 
-                        if (e2.live) {
+                        /* if (e2.live) {
                           _checkGripup(e2);
-                        }
+                        } */
 
                         break;
                       }
@@ -1090,7 +1090,7 @@ class Wallet {
                   }, 3000);
                 } */
               };
-              const _checkGripdown = side => {
+              /* const _checkGripdown = side => {
                 const hoverState = hoverStates[side];
                 const {worldGrabAsset} = hoverState;
                 const {selectedAsset} = walletState;
@@ -1126,7 +1126,7 @@ class Wallet {
               };
               input.on('gripdown', _gripdown, {
                 priority: -2,
-              });
+              }); */
 
               const _upload = ({file, dropMatrix}) => {
                 const id = String(file.n);
@@ -1156,7 +1156,7 @@ class Wallet {
 
               cleanups.push(() => {
                 // input.removeListener('trigger', _trigger);
-                input.removeListener('gripdown', _gripdown);
+                // input.removeListener('gripdown', _gripdown);
 
                 fs.removeListener('upload', _upload);
 
