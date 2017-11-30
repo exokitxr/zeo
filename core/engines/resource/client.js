@@ -43,6 +43,7 @@ const ASSET_SHADER = {
   ].join("\n")
 };
 const SFX = [
+  'click_tock_drop',
   'digi_click',
   'digi_cluck',
   'digi_drop',
