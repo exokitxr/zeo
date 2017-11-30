@@ -362,11 +362,6 @@ class Tags {
             }
 
             _removeModule(module)
-              .then(() => {
-                if (element.getAttribute('module') === module) {
-                  // nothing
-                }
-              })
               .catch(err => {
                 console.warn(err);
               });
@@ -1506,10 +1501,6 @@ class Tags {
               }
 
               return entityElement;
-            }
-
-            getTagComponentApis(tag) {
-              return tagComponentApis[tag];
             }
 
             makeListener(selector) {
