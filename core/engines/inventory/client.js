@@ -399,10 +399,6 @@ class Inventory {
 
           ctx.fillStyle = '#111';
           ctx.fillRect(0, 0, canvas.width, 150);
-          /* ctx.fillRect(Math.floor(canvas.width * 0.05), 0, Math.floor(canvas.width * 0.45), canvas.height * 0.45);
-          ctx.fillRect(Math.floor(canvas.width * 0.55), 0, Math.floor(canvas.width * 0.45), Math.floor(canvas.height * 0.45));
-          ctx.fillRect(Math.floor(canvas.width * 0.05), canvas.height * 0.5, Math.floor(canvas.width * 0.45), canvas.height * 0.45);
-          ctx.fillRect(Math.floor(canvas.width * 0.55), canvas.height * 0.5, Math.floor(canvas.width * 0.45), Math.floor(canvas.height * 0.45)); */
 
           const fontSize = 34;
           ctx.font = `${fontSize}px Open sans`;
@@ -442,18 +438,49 @@ class Inventory {
             ctx.fillText('Local', canvas.width * 2/8 + (canvas.width/8 - ctx.measureText('Local').width)/2, 150*2 - 60, canvas.width / 8);
 
             if (modReadmeImg) {
-              // img
-              ctx.drawImage(
-                modReadmeImg,
-                0, (modPages > 1 ? (modPage / (modPages - 1)) : 0) * (canvas.height - 150*2 - 100), 640, canvas.height - 150*2,
-                canvas.width - 640 - 40, 150*2 + 100, 640, canvas.height - 150*2 - 100
-              );
+              if (subtab === 'installed') {
+                // config
+                const {displayName, version} = localMod;
+                const tagMesh = world.getTag({
+                  type: 'entity',
+                  name: displayName,
+                  version,
+                });
+                const {item} = tagMesh;
+                const {attributes} = item;
+                const attributeSpecs = tags.getAttributeSpecsMap(displayName);
+                for (const name in attributeSpecs) {
+                  const attributeSpec = attributeSpecs[name];
+                  const {type} = attributeSpec;
 
-              // bar
-              ctx.fillStyle = '#CCC';
-              ctx.fillRect(canvas.width - 60, 150*2 + 100 + (canvas.height - 150*2 - 100) * 0.05, 30, (canvas.height - 150*2 - 100) * 0.9);
-              ctx.fillStyle = '#ff4b4b';
-              ctx.fillRect(canvas.width - 60, 150*2 + 100 + (canvas.height - 150*2 - 100) * 0.05 + _snapToPixel((canvas.height - 150*2 - 100) * 0.9, modPages, modBarValue), 30, (canvas.height - 150*2) * 0.9 / modPages);
+                  const attributeObject = attributes[name] || {};
+                  let {value} = attributeObject;
+                  if (value === undefined) {
+                    value = attributeSpec.value;
+                  }
+
+                  console.log('render attribute', name, type, value); // XXX
+                }
+
+                // bar
+                ctx.fillStyle = '#CCC';
+                ctx.fillRect(canvas.width - 60, 150*2 + 100 + (canvas.height - 150*2 - 100) * 0.05, 30, (canvas.height - 150*2 - 100) * 0.9);
+                ctx.fillStyle = '#ff4b4b';
+                ctx.fillRect(canvas.width - 60, 150*2 + 100 + (canvas.height - 150*2 - 100) * 0.05 + _snapToPixel((canvas.height - 150*2 - 100) * 0.9, modPages, modBarValue), 30, (canvas.height - 150*2) * 0.9 / modPages);
+              } else {
+                // img
+                ctx.drawImage(
+                  modReadmeImg,
+                  0, (modPages > 1 ? (modPage / (modPages - 1)) : 0) * (canvas.height - 150*2 - 100), 640, canvas.height - 150*2,
+                  canvas.width - 640 - 40, 150*2 + 100, 640, canvas.height - 150*2 - 100
+                );
+
+                // bar
+                ctx.fillStyle = '#CCC';
+                ctx.fillRect(canvas.width - 60, 150*2 + 100 + (canvas.height - 150*2 - 100) * 0.05, 30, (canvas.height - 150*2 - 100) * 0.9);
+                ctx.fillStyle = '#ff4b4b';
+                ctx.fillRect(canvas.width - 60, 150*2 + 100 + (canvas.height - 150*2 - 100) * 0.05 + _snapToPixel((canvas.height - 150*2 - 100) * 0.9, modPages, modBarValue), 30, (canvas.height - 150*2) * 0.9 / modPages);
+              }
             } else {
               // placeholder
               ctx.fillStyle = '#EEE';
