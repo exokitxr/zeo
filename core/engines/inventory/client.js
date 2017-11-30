@@ -1552,8 +1552,6 @@ class Inventory {
         hand.on('grab', _grab);
         const _release = e => {
           const {side, grabbable} = e;
-          const {gamepads} = webvr.getStatus(); // XXX
-          const gamepad = gamepads[side];
 
           const addPosition = localVector.copy(zeroVector)
             .applyMatrix4(
@@ -1568,8 +1566,6 @@ class Inventory {
               ).premultiply(assetsMesh.matrixWorld)
             );
           const addDistance = grabbable.position.distanceTo(addPosition);
-
-          console.log('add distance', addDistance);
 
           if (addDistance < pixelSize*16/2) {
             console.log('add'); // XXX
@@ -1590,12 +1586,10 @@ class Inventory {
               );
             const removeDistance = grabbable.position.distanceTo(removePosition);
 
-            console.log('remove distance', removeDistance);
-
             if (removeDistance < pixelSize*16/2) {
-              console.log('remove'); // XXX
+              wallet.destroyItem(grabbable);
 
-              // e.stopImmediatePropagation();
+              e.stopImmediatePropagation();
             }
           }
 
