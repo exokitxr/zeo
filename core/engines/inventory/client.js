@@ -269,7 +269,7 @@ class Inventory {
           inventoryBarValue = 0;
 
           _renderMenu();
-          // assetsMesh.render();
+          assetsMesh.visible = false;
         };
         wallet.on('assets', _walletAssets);
 
