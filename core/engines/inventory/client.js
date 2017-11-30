@@ -477,7 +477,13 @@ class Inventory {
                     ctx.fillStyle = '#CCC';
                     ctx.fillRect(canvas.width - 640 - 40, 150*2 + 100 + 40 + i*rowHeight, 640, 5);
                     ctx.fillStyle = '#ff4b4b';
-                    ctx.fillRect(canvas.width - 640 - 40 + (factor / 640), 150*2 + 100 + 40 - 20 + i*rowHeight, 5, 20 + 5 + 20);
+                    ctx.fillRect(canvas.width - 640 - 40 + (factor / 640), 150*2 + 100 + 40 - 25 + i*rowHeight, 5, 25 + 5 + 25);
+                  } else if (type === 'checkbox') {
+                    ctx.strokeStyle = '#111';
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(canvas.width - 640 - 40, 150*2 + 100 + 60 + i*rowHeight, 60, 30);
+                    ctx.fillStyle = '#111';
+                    ctx.fillRect(canvas.width - 640 - 40 + 4, 150*2 + 100 + 60 + 5 + i*rowHeight, (60 - 5*2)/2, 30 - 5*2);
                   }
 
                   console.log('render attribute', name, type, value); // XXX
