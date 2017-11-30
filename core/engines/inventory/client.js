@@ -225,10 +225,10 @@ class Inventory {
             let entry = assetIndex[id];
             if (!entry) {
               entry = _clone(assetSpec);
-              entry.assets = [];
+              // entry.assets = [];
               assetIndex[id] = entry;
             }
-            entry.assets.push(assetSpec);
+            // entry.assets.push(assetSpec);
           }
           return Object.keys(assetIndex).map(k => assetIndex[k]);
         };
