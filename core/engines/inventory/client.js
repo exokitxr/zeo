@@ -168,6 +168,7 @@ class Inventory {
         '/core/engines/tags',
         '/core/engines/wallet',
         '/core/engines/resource',
+        '/core/engines/hand',
         '/core/engines/anima',
         '/core/utils/sprite-utils',
         '/core/utils/vrid-utils',
@@ -187,6 +188,7 @@ class Inventory {
         tags,
         wallet,
         resource,
+        hand,
         anima,
         spriteUtils,
         vridUtils,
@@ -1354,9 +1356,7 @@ class Inventory {
                 ) */
             const promises = (() => {
               if (localAsset) {
-                const grabbed = false; // XXX
-
-                if (!grabbed) {
+                if (!SIDES.some(side => Boolean(hand.getGrabbedGrabbable(side)))) {
                   return [
                     _requestAssetImageData(localAsset)
                       .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
@@ -1538,12 +1538,70 @@ class Inventory {
           const {gamepads} = webvr.getStatus();
           const gamepad = gamepads[side];
           const distance = assetPosition.distanceTo(gamepad.worldPosition);
-          console.log('got distance', distance, pixelSize*16/2);
           if (distance < pixelSize*16/2) {
             wallet.pullItem(localAsset.name, localAsset.ext, side);
+
+            e.stopImmediatePropagation();
           }
         };
         input.on('gripdown', _gripdown);
+
+        const _grab = e => {
+          assetsMesh.render();
+        };
+        hand.on('grab', _grab);
+        const _release = e => {
+          const {side, grabbable} = e;
+          const {gamepads} = webvr.getStatus(); // XXX
+          const gamepad = gamepads[side];
+
+          const addPosition = localVector.copy(zeroVector)
+            .applyMatrix4(
+              localMatrix.compose(
+                localVector2.set(
+                  WORLD_WIDTH / 2 - pixelSize * 16 - pixelSize * 16*1.5,
+                  -WORLD_HEIGHT / 2 + pixelSize * 16,
+                  pixelSize * 16/2
+                ),
+                zeroQuaternion,
+                oneVector
+              ).premultiply(assetsMesh.matrixWorld)
+            );
+          const addDistance = grabbable.position.distanceTo(addPosition);
+
+          console.log('add distance', addDistance);
+
+          if (addDistance < pixelSize*16/2) {
+            console.log('add'); // XXX
+
+            // e.stopImmediatePropagation();
+          } else {
+            const removePosition = localVector.copy(zeroVector)
+              .applyMatrix4(
+                localMatrix.compose(
+                  localVector2.set(
+                    WORLD_WIDTH / 2 - pixelSize * 16,
+                    -WORLD_HEIGHT / 2 + pixelSize * 16,
+                    pixelSize * 16/2
+                  ),
+                  zeroQuaternion,
+                  oneVector
+                ).premultiply(assetsMesh.matrixWorld)
+              );
+            const removeDistance = grabbable.position.distanceTo(removePosition);
+
+            console.log('remove distance', removeDistance);
+
+            if (removeDistance < pixelSize*16/2) {
+              console.log('remove'); // XXX
+
+              // e.stopImmediatePropagation();
+            }
+          }
+
+          assetsMesh.render();
+        };
+        hand.on('release', _release);
 
         cleanups.push(() => {
           scene.remove(menuMesh);
@@ -1562,6 +1620,8 @@ class Inventory {
           // input.removeListener('triggerup', _triggerup);
           input.removeListener('triggerup', _trigger);
           input.removeListener('gripdown', _gripdown);
+          hand.removeListener('grab', _grab);
+          hand.removeListener('release', _release);
 
           scene.onRenderEye = null;
           scene.onBeforeRenderEye = null;
