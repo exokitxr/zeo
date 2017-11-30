@@ -212,7 +212,7 @@ class Inventory {
           for (let i = 0; i < remoteMods.length; i++) {
             const remoteMod = remoteMods[i];
             const installed = tags.getTagMeshes()
-              .some(({item}) => item.type === 'entity' && item.name === remoteMod.name);
+              .some(({item}) => item.type === 'entity' && item.name === remoteMod.displayName);
             remoteMod.installed = installed;
           }
         };
