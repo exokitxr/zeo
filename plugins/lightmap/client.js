@@ -256,7 +256,7 @@ class Lightmap {
       constructor() {
         super();
 
-        const worker = new Worker('archae/plugins/_plugins_lightmap/build/worker.js');
+        const worker = new Worker('archae/plugins/lightmap/build/worker.js');
         const queue = [];
         worker.addShape = (spec, transfers) => {
           worker.postMessage({

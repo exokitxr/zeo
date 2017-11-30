@@ -1,4 +1,4 @@
-const GENERATOR_PLUGIN = 'plugins-generator';
+const GENERATOR_PLUGIN = 'generator';
 
 const animalLib = require('animal-js');
 

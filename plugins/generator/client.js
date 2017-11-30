@@ -11,7 +11,7 @@ const {
 } = require('./lib/constants/constants');
 const protocolUtils = require('./lib/utils/protocol-utils');
 
-const HEALTH_PLUGIN = 'plugins-health';
+const HEALTH_PLUGIN = 'health';
 
 const dataSymbol = Symbol();
 
@@ -118,7 +118,7 @@ class Generator {
     };
     let bodyObjectBuffer = new ArrayBuffer(6 * 4);
 
-    const worker = new Worker('archae/plugins/_plugins_generator/build/worker.js');
+    const worker = new Worker('archae/plugins/generator/build/worker.js');
     let queues = {};
     let numRemovedQueues = 0;
     const _cleanupQueues = () => {

@@ -1,4 +1,4 @@
-const NPC_PLUGIN = 'plugins-npc';
+const NPC_PLUGIN = 'npc';
 const SWORD_LENGTH = 0.5;
 const dataSymbol = Symbol();
 

@@ -1,5 +1,5 @@
-const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
-const HEALTH_PLUGIN = 'plugins-health';
+const HEIGHTFIELD_PLUGIN = 'heightfield';
+const HEALTH_PLUGIN = 'health';
 const DEFAULT_MATRIX = [
   0, 0, 0,
   0, 0, 0, 1,

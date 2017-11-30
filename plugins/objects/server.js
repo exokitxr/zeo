@@ -16,7 +16,7 @@ const {
 } = require('./lib/constants/constants');
 const objectsLib = require('./lib/objects/server/index');
 
-const GENERATOR_PLUGIN = 'plugins-generator';
+const GENERATOR_PLUGIN = 'generator';
 
 class Objects {
   constructor(archae) {

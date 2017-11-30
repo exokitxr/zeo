@@ -14,7 +14,7 @@ const NUM_POSITIONS_CHUNK = 200 * 1024;
 const TEXTURE_SIZE = 1024;
 const TEXTURE_CHUNK_SIZE = 512;
 const NUM_TEXTURE_CHUNKS_WIDTH = TEXTURE_SIZE / TEXTURE_CHUNK_SIZE;
-const GENERATOR_PLUGIN = 'plugins-generator';
+const GENERATOR_PLUGIN = 'generator';
 
 class Grass {
   constructor(archae) {

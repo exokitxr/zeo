@@ -6,7 +6,7 @@ const PORTAL_BORDER_SIZE = PORTAL_SIZE * 0.1;
 const width = PORTAL_SIZE / 2;
 const height = PORTAL_SIZE;
 const border = PORTAL_BORDER_SIZE;
-const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
+const HEIGHTFIELD_PLUGIN = 'heightfield';
 const DEFAULT_MATRIX = [
   0, 0, 0,
   0, 0, 0, 1,

@@ -15,8 +15,8 @@ const DEFAULT_MATRIX = [
   0, 0, 0, 1,
   1, 1, 1,
 ];
-const LIGHTMAP_PLUGIN = 'plugins-lightmap';
-const DAY_NIGHT_SKYBOX_PLUGIN = 'plugins-day-night-skybox';
+const LIGHTMAP_PLUGIN = 'lightmap';
+const DAY_NIGHT_SKYBOX_PLUGIN = 'day-night-skybox';
 
 const TREE_SHADER = {
   uniforms: {
@@ -153,7 +153,7 @@ class Tree {
       live = false;
     };
 
-    const worker = new Worker('archae/plugins/_plugins_tree/build/worker.js');
+    const worker = new Worker('archae/plugins/tree/build/worker.js');
     const queue = [];
     worker.requestGenerate = (x, y) => new Promise((accept, reject) => {
       const buffer = buffers.alloc();

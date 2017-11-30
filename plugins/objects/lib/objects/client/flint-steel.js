@@ -1,5 +1,5 @@
-const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
-const PARTICLE_PLUGIN = 'plugins-particle';
+const HEIGHTFIELD_PLUGIN = 'heightfield';
+const PARTICLE_PLUGIN = 'particle';
 
 const dataSymbol = Symbol();
 

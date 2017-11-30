@@ -1,4 +1,4 @@
-const DAY_NIGHT_SKYBOX_PLUGIN = 'plugins-day-night-skybox';
+const DAY_NIGHT_SKYBOX_PLUGIN = 'day-night-skybox';
 const FOG_DENSITY = 0.01;
 const FOG_COLOR = 0xFFFFFF;
 

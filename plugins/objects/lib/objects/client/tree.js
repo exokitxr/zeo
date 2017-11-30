@@ -1,4 +1,4 @@
-// const LIGHTMAP_PLUGIN = 'plugins-lightmap';
+// const LIGHTMAP_PLUGIN = 'lightmap';
 const DEFAULT_MATRIX = [
   0, 0, 0,
   0, 0, 0, 1,

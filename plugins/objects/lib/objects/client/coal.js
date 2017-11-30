@@ -1,4 +1,4 @@
-const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
+const HEIGHTFIELD_PLUGIN = 'heightfield';
 const DEFAULT_MATRIX = [
   0, 0, 0,
   0, 0, 0, 1,

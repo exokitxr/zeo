@@ -6,7 +6,7 @@ const {
 const protocolUtils = require('./lib/utils/protocol-utils');
 
 const NUM_POSITIONS_CHUNK = 30 * 1024;
-const DAY_NIGHT_SKYBOX_PLUGIN = 'plugins-day-night-skybox';
+const DAY_NIGHT_SKYBOX_PLUGIN = 'day-night-skybox';
 
 class Ocean {
   mount() {
@@ -92,7 +92,7 @@ return;
 
     let generateBuffer = new ArrayBuffer(NUM_POSITIONS_CHUNK);
     let cullBuffer = new ArrayBuffer(4096);
-    const worker = new Worker('archae/plugins/_plugins_ocean/build/worker.js');
+    const worker = new Worker('archae/plugins/ocean/build/worker.js');
     let queues = {};
     let numRemovedQueues = 0;
     const _cleanupQueues = () => {

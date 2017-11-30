@@ -6,7 +6,7 @@ const fs = require('fs');
 const animalLib = require('animal-js');
 
 const NUM_CELLS = 16;
-const GENERATOR_PLUGIN = 'plugins-generator';
+const GENERATOR_PLUGIN = 'generator';
 
 class Mobs {
   constructor(archae) {

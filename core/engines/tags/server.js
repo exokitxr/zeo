@@ -80,7 +80,6 @@ class Tags {
 
     const _getWorldElement = () => worldElement;
     const _requestElement = (selector, {timeout = 30 * 1000} = {}) => {
-      selector = selector.toUpperCase();
       const element = worldElement.querySelector(selector);
 
       if (element) {
@@ -163,10 +162,6 @@ class Tags {
 }
 
 const nop = () => {};
-const _makeTagName = s => s
-  .toUpperCase()
-  .replace(/[^A-Z0-9-]/g, '-')
-  .replace(/--+/g, '-')
-  .replace(/(?:^-|-$)/g, '');
+const _makeTagName = s => /\//.test(s) ? s : s.replace(/@.*$/, '');
 
 module.exports = Tags;

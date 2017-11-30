@@ -8,9 +8,9 @@ const {
 const protocolUtils = require('./lib/utils/protocol-utils');
 
 const NUM_POSITIONS_CHUNK = 200 * 1024;
-const GENERATOR_PLUGIN = 'plugins-generator';
-const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
-const DAY_NIGHT_SKYBOX_PLUGIN = 'plugins-day-night-skybox';
+const GENERATOR_PLUGIN = 'generator';
+const HEIGHTFIELD_PLUGIN = 'heightfield';
+const DAY_NIGHT_SKYBOX_PLUGIN = 'day-night-skybox';
 
 const dataSymbol = Symbol();
 
@@ -309,7 +309,7 @@ class Grass {
 
         let generateBuffer = new ArrayBuffer(NUM_POSITIONS_CHUNK);
         let cullBuffer = new ArrayBuffer(100 * 1024);
-        const worker = new Worker('archae/plugins/_plugins_grass/build/worker.js');
+        const worker = new Worker('archae/plugins/grass/build/worker.js');
         let queues = {};
         let numRemovedQueues = 0;
         const _cleanupQueues = () => {

@@ -1,7 +1,7 @@
 const protocolUtils = require('./lib/utils/protocol-utils');
 const toolsLib = require('./lib/tools/index');
 
-const CRAFT_PLUGIN = 'plugins-craft';
+const CRAFT_PLUGIN = 'craft';
 
 class Tools {
   mount() {

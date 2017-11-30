@@ -1,4 +1,4 @@
-const CRAFT_PLUGIN = 'plugins-craft';
+const CRAFT_PLUGIN = 'craft';
 const DEFAULT_MATRIX = [
   0, 0, 0,
   0, 0, 0, 1,

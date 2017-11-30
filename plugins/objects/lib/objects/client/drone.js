@@ -1,4 +1,4 @@
-const GENERATOR_PLUGIN = 'plugins-generator';
+const GENERATOR_PLUGIN = 'generator';
 const width = 1920;
 const height = 1080;
 const DEFAULT_MATRIX = [

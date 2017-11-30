@@ -55,7 +55,7 @@ class Chest {
       }
     };
 
-    const worker = new Worker('archae/plugins/_plugins_chest/build/worker.js');
+    const worker = new Worker('archae/plugins/chest/build/worker.js');
     const queue = [];
     worker.requestGeometry = () => new Promise((accept, reject) => {
       const buffer = new ArrayBuffer(NUM_POSITIONS_CHUNK * 3 * 4);

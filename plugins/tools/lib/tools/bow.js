@@ -1,4 +1,4 @@
-const NPC_PLUGIN = 'plugins-npc';
+const NPC_PLUGIN = 'npc';
 const OTHER_SIDES = {
   left: 'right',
   right: 'left',

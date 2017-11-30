@@ -72,7 +72,7 @@ class Animal {
       }
     };
 
-    const worker = new Worker('archae/plugins/_plugins_animal/build/worker.js');
+    const worker = new Worker('archae/plugins/animal/build/worker.js');
     const queue = [];
     worker.requestAnimalGeometry = () => new Promise((accept, reject) => {
       const buffer = new ArrayBuffer(NUM_POSITIONS);

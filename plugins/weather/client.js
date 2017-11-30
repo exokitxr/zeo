@@ -7,7 +7,7 @@ const {
   TEXTURE_SIZE,
 } = require('./lib/constants/constants');
 
-const GENERATOR_PLUGIN = 'plugins-generator';
+const GENERATOR_PLUGIN = 'generator';
 
 class Weather {
   mount() {

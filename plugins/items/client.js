@@ -16,8 +16,8 @@ const DEFAULT_MATRIX = [
   0, 0, 0, 1,
   1, 1, 1,
 ];
-const LIGHTMAP_PLUGIN = 'plugins-lightmap';
-const DAY_NIGHT_SKYBOX_PLUGIN = 'plugins-day-night-skybox';
+const LIGHTMAP_PLUGIN = 'lightmap';
+const DAY_NIGHT_SKYBOX_PLUGIN = 'day-night-skybox';
 
 const ITEMS_SHADER = {
   uniforms: {
@@ -114,7 +114,7 @@ class Items {
 
     const buffers = bffr(NUM_POSITIONS_CHUNK, (RANGE + 1) * (RANGE + 1) * 2);
 
-    const worker = new Worker('archae/plugins/_plugins_items/build/worker.js');
+    const worker = new Worker('archae/plugins/items/build/worker.js');
     const queue = [];
     worker.requestGenerate = (x, y) => new Promise((accept, reject) => {
       const buffer = buffers.alloc();

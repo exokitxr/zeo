@@ -7,7 +7,7 @@ const protocolUtils = require('./lib/utils/protocol-utils');
 
 const NUM_POSITIONS_CHUNK = 100 * 1024;
 const CLOUD_SPEED = 1;
-const DAY_NIGHT_SKYBOX_PLUGIN = 'plugins-day-night-skybox';
+const DAY_NIGHT_SKYBOX_PLUGIN = 'day-night-skybox';
 
 const CLOUD_SHADER = {
   uniforms: {
@@ -151,7 +151,7 @@ class Cloud {
 
     let generateBuffer = new ArrayBuffer(NUM_POSITIONS_CHUNK);
     let cullBuffer = new ArrayBuffer(4096);
-    const worker = new Worker('archae/plugins/_plugins_cloud/build/worker.js');
+    const worker = new Worker('archae/plugins/cloud/build/worker.js');
     let queues = {};
     let numRemovedQueues = 0;
     const _cleanupQueues = () => {

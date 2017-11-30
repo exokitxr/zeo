@@ -149,9 +149,11 @@ class Tags {
             }
           }
           const _addModule = module => {
-            return modulesMutex.lock(module)
+            const moduleName = _getModuleName(module);
+
+            return modulesMutex.lock(moduleName)
               .then(unlock => new Promise((accept, reject) => {
-                const entry = modules.get(module);
+                const entry = modules.get(moduleName);
 
                 if (entry) {
                   entry.refCount++;
@@ -165,7 +167,7 @@ class Tags {
                       const entry = new ModuleTracker();
                       entry.refCount++;
 
-                      modules.set(module, entry);
+                      modules.set(moduleName, entry);
 
                       accept(false);
 
@@ -180,14 +182,16 @@ class Tags {
               }));
           };
           const _removeModule = module => {
-            return modulesMutex.lock(module)
+            const moduleName = _getModuleName(module);
+
+            return modulesMutex.lock(moduleName)
               .then(unlock => new Promise((accept, reject) => {
-                const entry = modules.get(module);
+                const entry = modules.get(moduleName);
 
                 if (entry.refCount === 1) {
                   loader.removePlugin(module)
                     .then(() => {
-                      modules.delete(module);
+                      modules.delete(moduleName);
 
                       accept();
 
@@ -324,7 +328,8 @@ class Tags {
             _addModule(module)
               .then(existed => {
                 if (existed) {
-                  const componentApis = tagComponentApis[module] || [];
+                  const moduleName = _getModuleName(module);
+                  const componentApis = tagComponentApis[moduleName] || [];
 
                   for (let i = 0; i < componentApis.length; i++) {
                     const componentApi = componentApis[i];
@@ -349,7 +354,8 @@ class Tags {
               });
             }
 
-            const componentApis = tagComponentApis[module] || [];
+            const moduleName = _getModuleName(module);
+            const componentApis = tagComponentApis[moduleName] || [];
             for (let i = 0; i < componentApis.length; i++) {
               const componentApi = componentApis[i];
               _removeEntityCallback(componentApi, element);
@@ -1291,16 +1297,16 @@ class Tags {
               const normalizedComponentApi = menuUtils.normalizeComponentApi(componentApi);
               componentApi[normalizedSymbol] = normalizedComponentApi;
 
-              const name = archae.getPath(pluginInstance);
+              const moduleName = _getModuleName(archae.getPath(pluginInstance));
 
-              let tagComponentApiComponents = tagComponentApis[name];
+              let tagComponentApiComponents = tagComponentApis[moduleName];
               if (!tagComponentApiComponents) {
                 tagComponentApiComponents = [];
-                tagComponentApis[name] = tagComponentApiComponents;
+                tagComponentApis[moduleName] = tagComponentApiComponents;
               }
               tagComponentApiComponents.push(normalizedComponentApi);
 
-              const entityTags = tagMeshes.filter(({item}) => item.type === 'entity' && item.module === name);
+              const entityTags = tagMeshes.filter(({item}) => item.type === 'entity' && item.module === moduleName);
               for (let i = 0; i < entityTags.length; i++) {
                 const entityTag = entityTags[i];
                 const {item} = entityTag;
@@ -1318,9 +1324,9 @@ class Tags {
             unregisterEntity(pluginInstance, componentApi) {
               const {[normalizedSymbol]: normalizedComponentApi} = componentApi;
 
-              const name = archae.getPath(pluginInstance);
+              const moduleName = _getModuleName(archae.getPath(pluginInstance));
 
-              const entityTags = tagMeshes.filter(({item}) => item.type === 'entity' && item.module === name && !item.instancing);
+              const entityTags = tagMeshes.filter(({item}) => item.type === 'entity' && item.module === moduleName && !item.instancing);
               for (let i = 0; i < entityTags.length; i++) {
                 const entityTag = entityTags[i];
                 const {item} = entityTag;
@@ -1331,10 +1337,10 @@ class Tags {
                 }
               }
 
-              const tagComponentApiComponents = tagComponentApis[name];
+              const tagComponentApiComponents = tagComponentApis[moduleName];
               tagComponentApiComponents.splice(tagComponentApiComponents.indexOf(normalizedComponentApi), 1);
               if (tagComponentApiComponents.length === 0) {
-                delete tagComponentApis[name];
+                delete tagComponentApis[moduleName];
               }
             }
 
@@ -1636,5 +1642,6 @@ const _shallowClone = o => {
 const _makeId = () => Math.random().toString(36).substring(7);
 const _clone = o => JSON.parse(JSON.stringify(o));
 const _getPlugin = (module, version) => /^\//.test(module) ? module : `${module}@${version}`;
+const _getModuleName = module => /^\//.test(module) ? module : module.replace(/@.*$/, '');
 
 module.exports = Tags;

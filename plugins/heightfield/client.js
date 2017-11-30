@@ -11,9 +11,9 @@ const {
   NUM_POSITIONS_CHUNK,
 } = require('./lib/constants/constants');
 
-const GENERATOR_PLUGIN = 'plugins-generator';
-const DAY_NIGHT_SKYBOX_PLUGIN = 'plugins-day-night-skybox';
-const HEALTH_PLUGIN = 'plugins-health';
+const GENERATOR_PLUGIN = 'generator';
+const DAY_NIGHT_SKYBOX_PLUGIN = 'day-night-skybox';
+const HEALTH_PLUGIN = 'health';
 const DEFAULT_USER_HEIGHT = 1.6;
 
 const dataSymbol = Symbol();

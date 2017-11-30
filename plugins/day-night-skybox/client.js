@@ -1,6 +1,6 @@
 const SkyShader = require('./lib/three-extra/SkyShader');
 
-const LIGHTMAP_PLUGIN = 'plugins-lightmap';
+const LIGHTMAP_PLUGIN = 'lightmap';
 const DAY_NIGHT_SPEED = 100;
 
 class DayNightSkybox {

@@ -1,5 +1,5 @@
 const NUM_CELLS_HEIGHT = 128;
-const GENERATOR_PLUGIN = 'plugins-generator';
+const GENERATOR_PLUGIN = 'generator';
 
 const dataSymbol = Symbol();
 

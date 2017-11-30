@@ -5,7 +5,7 @@ const RESOLUTION = 500;
 const width = PAPER_SIZE;
 const height = STAND_SIZE;
 const PENCIL_SIZE = 0.4;
-const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
+const HEIGHTFIELD_PLUGIN = 'heightfield';
 const DEFAULT_MATRIX = [
   0, 0, 0,
   0, 0, 0, 1,

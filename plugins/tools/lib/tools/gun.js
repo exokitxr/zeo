@@ -1,4 +1,4 @@
-const NPC_PLUGIN = 'plugins-npc';
+const NPC_PLUGIN = 'npc';
 const BULLET_SPEED = 0.03;
 const BULLET_TTL = 5 * 1000;
 const BULLET_LENGTH = 1;

@@ -1,8 +1,8 @@
-const GENERATOR_PLUGIN = 'plugins-generator';
-const HEIGHTFIELD_PLUGIN = 'plugins-heightfield';
-const DAY_NIGHT_SKYBOX_PLUGIN = 'plugins-day-night-skybox';
-const HEALTH_PLUGIN = 'plugins-health';
-const CRAFT_PLUGIN = 'plugins-craft';
+const GENERATOR_PLUGIN = 'generator';
+const HEIGHTFIELD_PLUGIN = 'heightfield';
+const DAY_NIGHT_SKYBOX_PLUGIN = 'day-night-skybox';
+const HEALTH_PLUGIN = 'health';
+const CRAFT_PLUGIN = 'craft';
 
 const {
   NUM_CELLS,
