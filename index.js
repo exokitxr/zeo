@@ -46,6 +46,7 @@ const flags = {
     }
   })(),
   name: _findArg('name'),
+  pluginsDirectory: _findArg('pluginsDirectory'),
   dataDirectory: _findArg('dataDirectory'),
   cryptoDirectory: _findArg('cryptoDirectory'),
   installDirectory: _findArg('installDirectory'),
