@@ -1599,6 +1599,8 @@ class Inventory {
                 notification.removeNotification(newNotification);
               }, 3000);
 
+              sfx.click_tock_drop.trigger();
+
               e.stopImmediatePropagation();
             }
           }
