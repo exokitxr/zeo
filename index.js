@@ -205,23 +205,6 @@ const _getPlugins = ({core = false, def = false} = {}) => {
       }
     });
   });
-  const _filterDirectories = files => {
-    const acc = [];
-
-    return Promise.all(files.map(file => new Promise((accept, reject) => {
-      fs.stat(file, (err, stats) => {
-        if (!err) {
-          if (stats.isDirectory()) {
-            acc.push(file);
-          }
-
-          accept();
-        } else {
-          reject(err);
-        }
-      });
-    }))).then(() => acc);
-  };
   const _readTagsJsonModules = p => new Promise((accept, reject) => {
     fs.readFile(p, 'utf8', (err, s) => {
       if (!err) {
@@ -233,7 +216,7 @@ const _getPlugins = ({core = false, def = false} = {}) => {
           const tagSpec = tags[id];
 
           if (tagSpec.type === 'entity') {
-            modules.push(config.dirname + tagSpec.module);
+            modules.push(tagSpec.module);
           }
         }
         accept(modules);
@@ -256,8 +239,8 @@ const _getPlugins = ({core = false, def = false} = {}) => {
       def ? _readTagsJsonModules(config.dirname + '/defaults/world/tags.json') : []
     )
   )
-    .then(files => _filterDirectories(_flatten(files)))
-    .then(directories => directories.map(directory => directory.slice(config.dirname.length)));
+    .then(files => _flatten(files))
+    .then(directories => directories.map(directory => directory.replace(config.dirname, '')));
 };
 
 const _listenLibs = () => {
