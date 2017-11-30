@@ -110,166 +110,6 @@ class Wallet {
           new THREE.Vector3(0, 0, -1)
         );
 
-        const _requestAssetImageData = assetSpec => (() => {
-          if (assetSpec.ext === 'itm') {
-            return resource.getItemImageData(assetSpec.name);
-          } else /* if (asset.ext === 'files') */ {
-            return resource.getFileImageData(assetSpec.name);
-          }
-          /* } else if (type === 'mod') {
-            return resource.getModImageData(name);
-          } else if (type === 'skin') {
-            return resource.getSkinImageData(name);
-          } else {
-            return Promise.resolve(null);
-          } */
-        })().then(arrayBuffer => ({
-          width: 16,
-          height: 16,
-          data: new Uint8Array(arrayBuffer),
-        }));
-        const _addStrgAsset = (name, ext) => vridApi.get('assets')
-          .then(assets => {
-            assets = assets || [];
-            let assetSpec = assets.find(assetSpec => assetSpec.name === name && assetSpec.ext === ext);
-            if (!assetSpec) {
-              assetSpec = {
-                id: _makeId(),
-                name,
-                ext,
-              };
-              assets.push(assetSpec);
-            }
-
-            return vridApi.set('assets', assets);
-          });
-        const _removeStrgAsset = asset => vridApi.get('assets')
-          .then(assets => {
-            assets = assets || [];
-            const assetSpecIndex = assets.findIndex(assetSpec => assetSpec.asset === asset);
-            if (assetSpecIndex !== -1) {
-              assets.splice(assetSpecIndex, 1);
-            }
-            return vridApi.set('assets', assets);
-          });
-
-        const _addAsset = (id, type, name, ext, n, physics, matrix) => {
-          const position = new THREE.Vector3(matrix[0], matrix[1], matrix[2]);
-          const rotation = new THREE.Quaternion(matrix[3], matrix[4], matrix[5], matrix[6]);
-          const scale = new THREE.Vector3(matrix[7], matrix[8], matrix[9]);
-
-          const assetInstance = assetsMesh.addAssetInstance(
-            id,
-            type,
-            name,
-            ext,
-            n,
-            physics,
-            position,
-            rotation,
-            scale,
-            zeroVector.clone(),
-            zeroQuaternion.clone(),
-            oneVector.clone()
-          );
-          _bindAssetInstance(assetInstance);
-          _bindAssetInstancePhysics(assetInstance);
-        };
-
-        const connection = new AutoWs(_relativeWsUrl('archae/walletWs'));
-        connection.on('message', e => {
-          const {data} = e;
-          const m = JSON.parse(data);
-          const {type, args} = m;
-
-          if (type === 'init') {
-            const {assets} = args;
-            for (let i = 0; i < assets.length; i++) {
-              const assetSpec = assets[i];
-              const {
-                id,
-                type,
-                name,
-                ext,
-                n,
-                physics,
-                matrix,
-              } = assetSpec;
-
-              _addAsset(id, type, name, ext, n, physics, matrix);
-            }
-          } else if (type === 'addAsset') {
-            const {
-              id,
-              type,
-              name,
-              ext,
-              n,
-              physics,
-              matrix,
-            } = args;
-
-            _addAsset(id, type, name, ext, n, physics, matrix);
-          } else if (type === 'removeAsset') {
-            const {
-              id,
-            } = args;
-
-            const assetInstance = assetsMesh.getAssetInstance(id);
-            _unbindAssetInstance(assetInstance);
-
-            assetsMesh.removeAssetInstance(id);
-          } else if (type === 'setPhysics') {
-            const {
-              id,
-              physics,
-            } = args;
-
-            const assetInstance = assetsMesh.getAssetInstance(id);
-            assetInstance.updatePhysics(physics);
-          } else {
-            console.warn('wallet got unknown message type:', JSON.stringify(type));
-          }
-        });
-
-        const _isInBody = p => {
-          const vrMode = bootstrap.getVrMode();
-
-          if (vrMode === 'hmd') {
-            const {hmd} = webvr.getStatus();
-            const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmd;
-            const hmdEuler = new THREE.Euler().setFromQuaternion(hmdRotation, camera.rotation.order);
-            hmdEuler.z = 0;
-            const hmdQuaternion = new THREE.Quaternion().setFromEuler(hmdEuler);
-            const bodyPosition = hmdPosition.clone()
-              .add(
-                new THREE.Vector3(0, -0.5, 0)
-                  .applyQuaternion(hmdQuaternion)
-              );
-            return p.distanceTo(bodyPosition) < 0.35;
-          } else if (vrMode === 'keyboard') {
-            const {hmd: {worldPosition, worldRotation}} = webvr.getStatus();
-            const hmdEuler = new THREE.Euler().setFromQuaternion(worldRotation, camera.rotation.order);
-            hmdEuler.x = 0;
-            hmdEuler.z = 0;
-            const hmdQuaternion = new THREE.Quaternion().setFromEuler(hmdEuler);
-            const bodyPosition = worldPosition.clone()
-              .add(
-                new THREE.Vector3(0, -0.4, 0.2)
-                  .applyQuaternion(hmdQuaternion)
-              );
-            return p.distanceTo(bodyPosition) < 0.35;
-          }
-        };
-
-        const _makeHoverState = () => ({
-          worldAsset: null,
-          worldGrabAsset: null,
-        });
-        const hoverStates = {
-          left: _makeHoverState(),
-          right: _makeHoverState(),
-        };
         const walletState = {
           loading: true,
           error: false,
@@ -283,20 +123,7 @@ class Wallet {
           numTags: 0,
           page: 0,
         };
-        const focusState = {
-          keyboardFocusState: null,
-        };
 
-        const _resJson = res => {
-          if (res.status >= 200 && res.status < 300) {
-            return res.json();
-          } else {
-            return Promise.reject({
-              status: res.status,
-              stack: 'API returned invalid status code: ' + res.status,
-            });
-          }
-        };
         const _requestAssets = () => vridApi.get('assets')
           .then(assets => assets || []);
         const _requestEquipments = () => vridApi.get('equipment')
@@ -321,7 +148,7 @@ class Wallet {
             walletState.equipments = newEquipments;
             walletState.numTags = assets.length;
 
-            _rebindEquipments(oldEquipments, newEquipments);
+            // _rebindEquipments(oldEquipments, newEquipments);
 
             // _updatePages();
           })
@@ -330,87 +157,253 @@ class Wallet {
 
             walletState.error = true;
           });
-        const _saveEquipments = _debounce(next => {
-          vridApi.set('equipment', walletState.equipments)
-            .then(() => {
-              next();
-            })
-            .catch(err => {
-              console.warn(err);
-
-              next();
-            });
-        });
-
-        const equipmentApis = {};
-        const _rebindEquipments = (oldEquipments, newEquipments) => {
-          const removedEquipments = oldEquipments.filter(oldEquipment =>
-            oldEquipment && !newEquipments.some(newEquipment => newEquipment && newEquipment.asset === oldEquipment.asset)
-          );
-          for (let i = 0; i < removedEquipments.length; i++) {
-            const removedEquipment = removedEquipments[i];
-            _unbindEquipment(removedEquipment);
-          }
-          const addedEquipments = newEquipments.filter(newEquipment => 
-            newEquipment && !oldEquipments.some(oldEquipment => oldEquipment && oldEquipment.asset === newEquipment.asset)
-          );
-          for (let i = 0; i < addedEquipments.length; i++) {
-            const addedEquipment = addedEquipments[i];
-            _bindEquipment(addedEquipment);
-          }
-        };
-        const _bindEquipment = assetSpec => {
-          const {asset} = assetSpec;
-          const equipmentEntry = equipmentApis[asset];
-
-          if (equipmentEntry) {
-            for (let i = 0; i < equipmentEntry.length; i++) {
-              const equipmentApi = equipmentEntry[i];
-
-              if (typeof equipmentApi.equipmentAddedCallback === 'function') {
-                equipmentApi.equipmentAddedCallback(assetSpec);
-              }
-            }
-          }
-        };
-        const _unbindEquipment = assetSpec => {
-          const {asset} = assetSpec;
-          const equipmentEntry = equipmentApis[asset];
-
-          if (equipmentEntry) {
-            for (let i = 0; i < equipmentEntry.length; i++) {
-              const equipmentApi = equipmentEntry[i];
-
-              if (typeof equipmentApi.equipmentRemovedCallback === 'function') {
-                equipmentApi.equipmentRemovedCallback(assetSpec);
-              }
-            }
-          }
-        };
-        const _bindEquipmentApi = equipmentApi => {
-          if (typeof equipmentApi.asset === 'string' && typeof equipmentApi.equipmentAddedCallback === 'function') {
-            const {name, ext} = equipmentApi;
-
-            const assetSpec = walletState.equipments.find(equipmentSpec => equipmentSpec && equipmentSpec.name === name && equipmentSpec.ext === ext);
-            if (assetSpec) {
-              equipmentApi.equipmentAddedCallback(assetSpec);
-            }
-          }
-        };
-        const _unbindEquipmentApi = equipmentApi => {
-          if (typeof equipmentApi.asset === 'string' && typeof equipmentApi.equipmentRemovedCallback === 'function') {
-            const {name, ext} = equipmentApi;
-
-            const assetSpec = walletState.equipments.find(equipmentSpec => equipmentSpec && equipmentSpec.name === name && equipmentSpec.ext === ext);
-            if (assetSpec) {
-              equipmentApi.equipmentRemovedCallback(assetSpec);
-            }
-          }
-        };
 
         return _refreshAssets()
           .then(() => {
             if (live) {
+
+              const _requestAssetImageData = assetSpec => (() => {
+                if (assetSpec.ext === 'itm') {
+                  return resource.getItemImageData(assetSpec.name);
+                } else /* if (asset.ext === 'files') */ {
+                  return resource.getFileImageData(assetSpec.name);
+                }
+                /* } else if (type === 'mod') {
+                  return resource.getModImageData(name);
+                } else if (type === 'skin') {
+                  return resource.getSkinImageData(name);
+                } else {
+                  return Promise.resolve(null);
+                } */
+              })().then(arrayBuffer => ({
+                width: 16,
+                height: 16,
+                data: new Uint8Array(arrayBuffer),
+              }));
+              const _addStrgAsset = (name, ext) => vridApi.get('assets')
+                .then(assets => {
+                  assets = assets || [];
+                  let assetSpec = assets.find(assetSpec => assetSpec.name === name && assetSpec.ext === ext);
+                  if (!assetSpec) {
+                    assetSpec = {
+                      id: _makeId(),
+                      name,
+                      ext,
+                    };
+                    assets.push(assetSpec);
+                  }
+
+                  return vridApi.set('assets', assets);
+                });
+              const _removeStrgAsset = asset => vridApi.get('assets')
+                .then(assets => {
+                  assets = assets || [];
+                  const assetSpecIndex = assets.findIndex(assetSpec => assetSpec.asset === asset);
+                  if (assetSpecIndex !== -1) {
+                    assets.splice(assetSpecIndex, 1);
+                  }
+                  return vridApi.set('assets', assets);
+                });
+
+              const _addAsset = (id, type, name, ext, n, physics, matrix) => {
+                const position = new THREE.Vector3(matrix[0], matrix[1], matrix[2]);
+                const rotation = new THREE.Quaternion(matrix[3], matrix[4], matrix[5], matrix[6]);
+                const scale = new THREE.Vector3(matrix[7], matrix[8], matrix[9]);
+
+                const assetInstance = assetsMesh.addAssetInstance(
+                  id,
+                  type,
+                  name,
+                  ext,
+                  n,
+                  physics,
+                  position,
+                  rotation,
+                  scale,
+                  zeroVector.clone(),
+                  zeroQuaternion.clone(),
+                  oneVector.clone()
+                );
+                _bindAssetInstance(assetInstance);
+                _bindAssetInstancePhysics(assetInstance);
+              };
+
+              const connection = new AutoWs(_relativeWsUrl('archae/walletWs'));
+              connection.on('message', e => {
+                const {data} = e;
+                const m = JSON.parse(data);
+                const {type, args} = m;
+
+                if (type === 'init') {
+                  const {assets} = args;
+                  for (let i = 0; i < assets.length; i++) {
+                    const assetSpec = assets[i];
+                    const {
+                      id,
+                      type,
+                      name,
+                      ext,
+                      n,
+                      physics,
+                      matrix,
+                    } = assetSpec;
+
+                    _addAsset(id, type, name, ext, n, physics, matrix);
+                  }
+                } else if (type === 'addAsset') {
+                  const {
+                    id,
+                    type,
+                    name,
+                    ext,
+                    n,
+                    physics,
+                    matrix,
+                  } = args;
+
+                  _addAsset(id, type, name, ext, n, physics, matrix);
+                } else if (type === 'removeAsset') {
+                  const {
+                    id,
+                  } = args;
+
+                  const assetInstance = assetsMesh.getAssetInstance(id);
+                  _unbindAssetInstance(assetInstance);
+
+                  assetsMesh.removeAssetInstance(id);
+                } else if (type === 'setPhysics') {
+                  const {
+                    id,
+                    physics,
+                  } = args;
+
+                  const assetInstance = assetsMesh.getAssetInstance(id);
+                  assetInstance.updatePhysics(physics);
+                } else {
+                  console.warn('wallet got unknown message type:', JSON.stringify(type));
+                }
+              });
+
+              const _isInBody = p => {
+                const vrMode = bootstrap.getVrMode();
+
+                if (vrMode === 'hmd') {
+                  const {hmd} = webvr.getStatus();
+                  const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmd;
+                  const hmdEuler = new THREE.Euler().setFromQuaternion(hmdRotation, camera.rotation.order);
+                  hmdEuler.z = 0;
+                  const hmdQuaternion = new THREE.Quaternion().setFromEuler(hmdEuler);
+                  const bodyPosition = hmdPosition.clone()
+                    .add(
+                      new THREE.Vector3(0, -0.5, 0)
+                        .applyQuaternion(hmdQuaternion)
+                    );
+                  return p.distanceTo(bodyPosition) < 0.35;
+                } else if (vrMode === 'keyboard') {
+                  const {hmd: {worldPosition, worldRotation}} = webvr.getStatus();
+                  const hmdEuler = new THREE.Euler().setFromQuaternion(worldRotation, camera.rotation.order);
+                  hmdEuler.x = 0;
+                  hmdEuler.z = 0;
+                  const hmdQuaternion = new THREE.Quaternion().setFromEuler(hmdEuler);
+                  const bodyPosition = worldPosition.clone()
+                    .add(
+                      new THREE.Vector3(0, -0.4, 0.2)
+                        .applyQuaternion(hmdQuaternion)
+                    );
+                  return p.distanceTo(bodyPosition) < 0.35;
+                }
+              };
+
+              const _makeHoverState = () => ({
+                worldAsset: null,
+                worldGrabAsset: null,
+              });
+              const hoverStates = {
+                left: _makeHoverState(),
+                right: _makeHoverState(),
+              };
+              const focusState = {
+                keyboardFocusState: null,
+              };
+
+              const _saveEquipments = _debounce(next => {
+                vridApi.set('equipment', walletState.equipments)
+                  .then(() => {
+                    next();
+                  })
+                  .catch(err => {
+                    console.warn(err);
+
+                    next();
+                  });
+              });
+
+              const equipmentApis = {};
+              const _rebindEquipments = (oldEquipments, newEquipments) => {
+                const removedEquipments = oldEquipments.filter(oldEquipment =>
+                  oldEquipment && !newEquipments.some(newEquipment => newEquipment && newEquipment.asset === oldEquipment.asset)
+                );
+                for (let i = 0; i < removedEquipments.length; i++) {
+                  const removedEquipment = removedEquipments[i];
+                  _unbindEquipment(removedEquipment);
+                }
+                const addedEquipments = newEquipments.filter(newEquipment => 
+                  newEquipment && !oldEquipments.some(oldEquipment => oldEquipment && oldEquipment.asset === newEquipment.asset)
+                );
+                for (let i = 0; i < addedEquipments.length; i++) {
+                  const addedEquipment = addedEquipments[i];
+                  _bindEquipment(addedEquipment);
+                }
+              };
+              const _bindEquipment = assetSpec => {
+                const {asset} = assetSpec;
+                const equipmentEntry = equipmentApis[asset];
+
+                if (equipmentEntry) {
+                  for (let i = 0; i < equipmentEntry.length; i++) {
+                    const equipmentApi = equipmentEntry[i];
+
+                    if (typeof equipmentApi.equipmentAddedCallback === 'function') {
+                      equipmentApi.equipmentAddedCallback(assetSpec);
+                    }
+                  }
+                }
+              };
+              const _unbindEquipment = assetSpec => {
+                const {asset} = assetSpec;
+                const equipmentEntry = equipmentApis[asset];
+
+                if (equipmentEntry) {
+                  for (let i = 0; i < equipmentEntry.length; i++) {
+                    const equipmentApi = equipmentEntry[i];
+
+                    if (typeof equipmentApi.equipmentRemovedCallback === 'function') {
+                      equipmentApi.equipmentRemovedCallback(assetSpec);
+                    }
+                  }
+                }
+              };
+              const _bindEquipmentApi = equipmentApi => {
+                if (typeof equipmentApi.asset === 'string' && typeof equipmentApi.equipmentAddedCallback === 'function') {
+                  const {name, ext} = equipmentApi;
+
+                  const assetSpec = walletState.equipments.find(equipmentSpec => equipmentSpec && equipmentSpec.name === name && equipmentSpec.ext === ext);
+                  if (assetSpec) {
+                    equipmentApi.equipmentAddedCallback(assetSpec);
+                  }
+                }
+              };
+              const _unbindEquipmentApi = equipmentApi => {
+                if (typeof equipmentApi.asset === 'string' && typeof equipmentApi.equipmentRemovedCallback === 'function') {
+                  const {name, ext} = equipmentApi;
+
+                  const assetSpec = walletState.equipments.find(equipmentSpec => equipmentSpec && equipmentSpec.name === name && equipmentSpec.ext === ext);
+                  if (assetSpec) {
+                    equipmentApi.equipmentRemovedCallback(assetSpec);
+                  }
+                }
+              };
+
               const _makeAssetsMesh = () => {
                 const mesh = new THREE.Object3D();
 
