@@ -148,10 +148,10 @@ class Tags {
               this.refCount = 0;
             }
           }
-          const _addModule = name => {
-            return modulesMutex.lock(name)
+          const _addModule = module => {
+            return modulesMutex.lock(module)
               .then(unlock => new Promise((accept, reject) => {
-                const entry = modules.get(name);
+                const entry = modules.get(module);
 
                 if (entry) {
                   entry.refCount++;
@@ -160,12 +160,12 @@ class Tags {
 
                   unlock();
                 } else {
-                  loader.requestPlugin(name)
+                  loader.requestPlugin(module)
                     .then(pluginInstance => {
                       const entry = new ModuleTracker();
                       entry.refCount++;
 
-                      modules.set(name, entry);
+                      modules.set(module, entry);
 
                       accept(false);
 
@@ -179,15 +179,15 @@ class Tags {
                 }
               }));
           };
-          const _removeModule = name => {
-            return modulesMutex.lock(name)
+          const _removeModule = module => {
+            return modulesMutex.lock(module)
               .then(unlock => new Promise((accept, reject) => {
-                const entry = modules.get(name);
+                const entry = modules.get(module);
 
                 if (entry.refCount === 1) {
-                  loader.removePlugin(name)
+                  loader.removePlugin(module)
                     .then(() => {
-                      modules.delete(name);
+                      modules.delete(module);
 
                       accept();
 
@@ -1309,7 +1309,7 @@ class Tags {
                 if (entityElement) {
                   _addEntityCallback(normalizedComponentApi, entityElement);
 
-                   const entityAttributes = _getElementJsonAttributes(entityElement);
+                  const entityAttributes = _getElementJsonAttributes(entityElement);
                   _entityValueChangedCallbacks(normalizedComponentApi, entityElement, entityAttributes);
                 }
               }
