@@ -233,7 +233,7 @@ class Inventory {
           return Object.keys(assetIndex).map(k => assetIndex[k]);
         };
         let assets = _quantizeAssets(wallet.getAssets());
-        let equipments = wallet.getEquipments();
+        // let equipments = wallet.getEquipments();
         /* let mods = tags.getTagMeshes()
           .filter(({item}) => item.type === 'entity')
           .map(({item}) => item); */
