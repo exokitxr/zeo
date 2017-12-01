@@ -450,7 +450,6 @@ class Inventory {
                 const tagMesh = world.getTag({
                   type: 'entity',
                   name: displayName,
-                  version,
                 });
                 const {item} = tagMesh;
                 const {attributes} = item;
@@ -629,7 +628,6 @@ class Inventory {
                   return world.getTag({
                     type: 'entity',
                     name,
-                    version,
                   });
                 });
                 if (allInstalled) {
@@ -847,7 +845,6 @@ class Inventory {
                   return world.getTag({
                     type: 'entity',
                     name,
-                    version,
                   });
                 });
                 if (allInstalled) {
@@ -856,7 +853,6 @@ class Inventory {
                     const tagMesh = world.getTag({
                       type: 'entity',
                       name,
-                      version,
                     });
                     const {item} = tagMesh;
                     const {id} = item;
@@ -879,7 +875,6 @@ class Inventory {
                     if (!world.getTag({
                       type: 'entity',
                       name,
-                      version,
                     })) {
                       const itemSpec = {
                         type: 'entity',
@@ -1059,7 +1054,6 @@ class Inventory {
               const tagMesh = world.getTag({
                 type: 'entity',
                 name,
-                version,
               });
               const {item} = tagMesh;
               const {id} = item;
