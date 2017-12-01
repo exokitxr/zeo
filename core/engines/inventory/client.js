@@ -287,6 +287,16 @@ class Inventory {
         const zeroVector = new THREE.Vector3();
         const pixelSize = 0.013;
 
+        const _requestModImageData = modSpec => resource.getModImageData(modSpec.name)
+          .then(arrayBuffer => {
+            console.log('got array buffer', arrayBuffer);
+            return arrayBuffer;
+          })
+          .then(arrayBuffer => ({
+            width: 16,
+            height: 16,
+            data: new Uint8Array(arrayBuffer),
+          }));
         const _requestAssetImageData = assetSpec => (() => {
           if (assetSpec.ext === 'itm') {
             return resource.getItemImageData(assetSpec.name);
@@ -529,7 +539,6 @@ class Inventory {
                     ctx.drawImage(linkImg, canvas.width - 640 - 40 + 640 - fontSize*2, 150*2 + 100 + 40 + i*rowHeight, fontSize*2, fontSize*2);
                   }
 
-                  console.log('render attribute', name, type, value, attributeSpec); // XXX
                   i++;
                 }
 
@@ -948,6 +957,7 @@ class Inventory {
             serverPages = localMods.length > numModsPerPage ? Math.ceil(localMods.length / numModsPerPage) : 0;
 
             _renderMenu();
+            assetsMesh.visible = false;
 
             serverAnchors = _getServerAnchors();
             modAnchors = _getModAnchors();
@@ -971,6 +981,7 @@ class Inventory {
             serverPages = localMods.length > numModsPerPage ? Math.ceil(localMods.length / numModsPerPage) : 0;
 
             _renderMenu();
+            assetsMesh.visible = false;
 
             serverAnchors = _getServerAnchors();
             modAnchors = _getModAnchors();
@@ -994,6 +1005,7 @@ class Inventory {
             serverPages = localMods.length > numModsPerPage ? Math.ceil(localMods.length / numModsPerPage) : 0;
 
             _renderMenu();
+            assetsMesh.visible = false;
 
             serverAnchors = _getServerAnchors();
             modAnchors = _getModAnchors();
@@ -1025,6 +1037,9 @@ class Inventory {
               modPages = 0;
 
               _renderMenu();
+              assetsMesh.render();
+              assetsMesh.visible = true;
+
               plane.anchors = _getAnchors();
             });
           }
@@ -1223,7 +1238,20 @@ class Inventory {
           mesh.visible = false;
           const _renderAssets = _debounce(next => {
             const promises = (() => {
-              if (localAsset) {
+              if (tab === 'server' && subtab === 'installed' && localMod) {
+                return [
+                  _requestModImageData(localMod)
+                    .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
+                      localVector.set(
+                        WORLD_WIDTH / 2 - pixelSize * 16 - pixelSize * 16*0.75,
+                        -WORLD_HEIGHT / 2 + pixelSize * 16,
+                        pixelSize * 16/2
+                      ),
+                      zeroQuaternion,
+                      oneVector
+                    ))),
+                ];
+              } else if (tab === 'files' && localAsset) {
                 if (!SIDES.some(side => Boolean(hand.getGrabbedGrabbable(side)))) {
                   return [
                     _requestAssetImageData(localAsset)
