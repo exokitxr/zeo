@@ -1,6 +1,7 @@
 const renderAttributes = (ctx, attributes, attributeSpecs, fontSize, w, h, {arrowDownImg, linkImg}) => {
-  // config
   const rowHeight = 100;
+
+  ctx.font = `${fontSize}px Open sans`;
 
   let i = 0;
   for (const name in attributeSpecs) {
