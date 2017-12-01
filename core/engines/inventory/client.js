@@ -176,6 +176,7 @@ class Inventory {
       ]),
       // _requestImageBitmap('/archae/inventory/img/menu.png'),
       _requestImageBitmap('/archae/inventory/img/arrow-left.png'),
+      _requestImageBitmap('/archae/inventory/img/link.png'),
       _requestRemoteMods(),
     ]).then(([
       [
@@ -197,6 +198,7 @@ class Inventory {
       ],
       // menuImg,
       arrowLeftImg,
+      linkImg,
       remoteMods,
     ]) => {
       if (live) {
@@ -489,6 +491,12 @@ class Inventory {
                     ctx.strokeRect(canvas.width - 640 - 40, 150*2 + 100 + 40 + i*rowHeight, 60, 30);
                     ctx.fillStyle = '#111';
                     ctx.fillRect(canvas.width - 640 - 40 + 4, 150*2 + 100 + 40 + 5 + i*rowHeight, (60 - 5*2)/2, 30 - 5*2);
+                  } else if (type === 'file') {
+                    ctx.fillStyle = '#EEE';
+                    ctx.fillRect(canvas.width - 640 - 40, 150*2 + 100 + 40 + i*rowHeight, 640 - fontSize*2, fontSize * 2);
+                    ctx.fillStyle = '#111';
+                    ctx.fillText(value, canvas.width - 640 - 40, 150*2 + 100 + 40 + fontSize*2 - fontSize*0.3 + i*rowHeight, 640);
+                    ctx.drawImage(linkImg, canvas.width - 640 - 40 + 640 - fontSize*2, 150*2 + 100 + 40 + i*rowHeight, fontSize*2, fontSize*2);
                   }
 
                   console.log('render attribute', name, type, value); // XXX
