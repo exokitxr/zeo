@@ -171,6 +171,7 @@ class Inventory {
         '/core/engines/hand',
         '/core/engines/notification',
         '/core/engines/anima',
+        '/core/utils/js-utils',
         '/core/utils/sprite-utils',
         '/core/utils/vrid-utils',
       ]),
@@ -194,6 +195,7 @@ class Inventory {
         hand,
         notification,
         anima,
+        jsUtils,
         spriteUtils,
         vridUtils,
       ],
@@ -206,6 +208,7 @@ class Inventory {
       if (live) {
         const {THREE, scene, camera, renderer} = three;
         const {materials: {assets: assetsMaterial}, sfx} = resource;
+        const {base64} = jsUtils;
         const {vridApi} = vridUtils;
 
         const THREEEffectComposer = EffectComposer(THREE);
@@ -287,11 +290,7 @@ class Inventory {
         const zeroVector = new THREE.Vector3();
         const pixelSize = 0.013;
 
-        const _requestModImageData = modSpec => resource.getModImageData(modSpec.name)
-          .then(arrayBuffer => {
-            console.log('got array buffer', arrayBuffer);
-            return arrayBuffer;
-          })
+        const _requestModImageData = modSpec => resource.getModImageData(modSpec.displayName)
           .then(arrayBuffer => ({
             width: 16,
             height: 16,
@@ -397,6 +396,7 @@ class Inventory {
         let serverPages = localMods.length > numModsPerPage ? Math.ceil(localMods.length / numModsPerPage) : 1;
         let serverBarValue = 0;
         // let serverIndex = -1;
+        let localGeometry = null;
 
         const _snapToIndex = (steps, value) => Math.min(Math.floor(steps * value), steps - 1);
         const _snapToPixel = (max, steps, value) => {
@@ -1241,21 +1241,10 @@ class Inventory {
               if (tab === 'server' && subtab === 'installed' && localMod) {
                 return [
                   _requestModImageData(localMod)
-                    .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
-                      localVector.set(
-                        WORLD_WIDTH / 2 - pixelSize * 16 - pixelSize * 16*0.75,
-                        -WORLD_HEIGHT / 2 + pixelSize * 16,
-                        pixelSize * 16/2
-                      ),
-                      zeroQuaternion,
-                      oneVector
-                    ))),
-                ];
-              } else if (tab === 'files' && localAsset) {
-                if (!SIDES.some(side => Boolean(hand.getGrabbedGrabbable(side)))) {
-                  return [
-                    _requestAssetImageData(localAsset)
-                      .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
+                    .then(imageData => {
+                      localGeometry = imageData.data.slice().buffer;
+
+                      return spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
                         localVector.set(
                           WORLD_WIDTH / 2 - pixelSize * 16 - pixelSize * 16*0.75,
                           -WORLD_HEIGHT / 2 + pixelSize * 16,
@@ -1263,7 +1252,26 @@ class Inventory {
                         ),
                         zeroQuaternion,
                         oneVector
-                      ))),
+                      ));
+                    }),
+                ];
+              } else if (tab === 'files' && localAsset) {
+                if (!SIDES.some(side => Boolean(hand.getGrabbedGrabbable(side)))) {
+                  return [
+                    _requestAssetImageData(localAsset)
+                      .then(imageData => {
+                      localGeometry = imageData.data.slice().buffer;
+
+                        return spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
+                          localVector.set(
+                            WORLD_WIDTH / 2 - pixelSize * 16 - pixelSize * 16*0.75,
+                            -WORLD_HEIGHT / 2 + pixelSize * 16,
+                            pixelSize * 16/2
+                          ),
+                          zeroQuaternion,
+                          oneVector
+                        ));
+                      }),
                   ];
                 } else {
                   return [
@@ -1313,9 +1321,7 @@ class Inventory {
                   attributeIndex += newPositions.length;
                   dyIndex += newDys.length;
 
-                  cleanups.push(() => {
-                    spriteUtils.releaseSpriteGeometry(geometrySpec);
-                  });
+                  spriteUtils.releaseSpriteGeometry(geometrySpec);
                 }
 
                 geometry.addAttribute('position', new THREE.BufferAttribute(positions.subarray(0, attributeIndex), 3));
@@ -1416,30 +1422,39 @@ class Inventory {
           priority: -1,
         });
 
+        const _isItemHovered = side => {
+          const assetPosition = localVector.copy(zeroVector)
+            .applyMatrix4(
+              localMatrix.compose(
+                localVector2.set(
+                  WORLD_WIDTH / 2 - pixelSize * 16 - pixelSize * 16*0.75,
+                  -WORLD_HEIGHT / 2 + pixelSize * 16,
+                  pixelSize * 16/2
+                ),
+                zeroQuaternion,
+                oneVector
+              ).premultiply(assetsMesh.matrixWorld)
+            );
+          const {gamepads} = webvr.getStatus();
+          const gamepad = gamepads[side];
+          const distance = assetPosition.distanceTo(gamepad.worldPosition);
+          return distance < pixelSize*16/2;
+        };
         const _gripdown = e => {
-          if (localAsset) {
-            const {side} = e;
+          const {side} = e;
 
-            const assetPosition = localVector.copy(zeroVector)
-              .applyMatrix4(
-                localMatrix.compose(
-                  localVector2.set(
-                    WORLD_WIDTH / 2 - pixelSize * 16 - pixelSize * 16*0.75,
-                    -WORLD_HEIGHT / 2 + pixelSize * 16,
-                    pixelSize * 16/2
-                  ),
-                  zeroQuaternion,
-                  oneVector
-                ).premultiply(assetsMesh.matrixWorld)
-              );
-            const {gamepads} = webvr.getStatus();
-            const gamepad = gamepads[side];
-            const distance = assetPosition.distanceTo(gamepad.worldPosition);
-            if (distance < pixelSize*16/2) {
-              wallet.pullItem(localAsset, side);
+          if (localMod && localMod.metadata && localMod.metadata.fileType && _isItemHovered(side)) {
+            const itemSpec = {
+              id: _makeId(),
+              name: 'new-item.' + localMod.metadata.fileType,
+              ext: 'itm',
+              icon: base64.encode(localGeometry),
+            };
+            wallet.pullItem(itemSpec, side);
+          } else if (localAsset && _isItemHovered(side)) {
+            wallet.pullItem(localAsset, side);
 
-              e.stopImmediatePropagation();
-            }
+            e.stopImmediatePropagation();
           }
         };
         input.on('gripdown', _gripdown);
