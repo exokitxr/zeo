@@ -863,6 +863,16 @@ class Inventory {
 
                     world.removeTag(id);
                   }
+
+                  localMod = null;
+                  modReadmeImg = null;
+                  if (modReadmeImgPromise) {
+                    modReadmeImgPromise.cancel();
+                    modReadmeImgPromise = null;
+                  }
+                  modBarValue = 0;
+                  modPage = 0;
+                  modPages = 0;
                 } else {
                   for (let i = 0; i < localAsset.playlist.length; i++) {
                     const {name, version} = localAsset.playlist[i];
@@ -883,6 +893,16 @@ class Inventory {
                         metadata: {},
                       };
                       world.addTag(itemSpec);
+
+                      localMod = null;
+                      modReadmeImg = null;
+                      if (modReadmeImgPromise) {
+                        modReadmeImgPromise.cancel();
+                        modReadmeImgPromise = null;
+                      }
+                      modBarValue = 0;
+                      modPage = 0;
+                      modPages = 0;
                     }
                   }
                 }
@@ -1045,6 +1065,16 @@ class Inventory {
               const {id} = item;
               world.removeTag(id);
 
+              localMod = null;
+              modReadmeImg = null;
+              if (modReadmeImgPromise) {
+                modReadmeImgPromise.cancel();
+                modReadmeImgPromise = null;
+              }
+              modBarValue = 0;
+              modPage = 0;
+              modPages = 0;
+
               _updateInstalled();
               _renderMenu();
             } else {
@@ -1060,6 +1090,16 @@ class Inventory {
                 metadata: {},
               };
               world.addTag(itemSpec);
+
+              localMod = null;
+              modReadmeImg = null;
+              if (modReadmeImgPromise) {
+                modReadmeImgPromise.cancel();
+                modReadmeImgPromise = null;
+              }
+              modBarValue = 0;
+              modPage = 0;
+              modPages = 0;
 
               _updateInstalled();
               _renderMenu();
