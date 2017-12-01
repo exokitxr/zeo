@@ -22,6 +22,8 @@ const pixelWidth = 128;
 const pixelHeight = 128;
 const numFilesPerPage = 10;
 const numModsPerPage = 10;
+const fontSize = 34;
+
 const _normalizeType = type => {
   if (type === 'itm' || type === 'pls') {
     return type;
@@ -283,6 +285,48 @@ class Inventory {
         };
         wallet.on('assets', _walletAssets);
 
+        const planeMeshes = {};
+        const _walletMenuOpen = ({id, position, rotation, scale, attributes, attributeSpecs}) => {
+          const canvas = document.createElement('canvas');
+          canvas.width = 640;
+          canvas.height = 640;
+
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#FFF';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          renderAttributes(ctx, attributes, attributeSpecs, fontSize, 0, 0, {arrowDownImg, linkImg});
+
+          const texture = new THREE.Texture(
+            canvas,
+            THREE.UVMapping,
+            THREE.ClampToEdgeWrapping,
+            THREE.ClampToEdgeWrapping,
+            THREE.LinearFilter,
+            THREE.LinearFilter,
+            THREE.RGBAFormat,
+            THREE.UnsignedByteType,
+            16
+          );
+          texture.needsUpdate = true;
+
+          const planeMesh = _makePlaneMesh(0.4, 0.4, texture);
+          planeMesh.position.copy(position);
+          planeMesh.quaternion.copy(rotation);
+          planeMesh.scale.copy(scale);
+          planeMesh.updateMatrixWorld();
+          scene.add(planeMesh);
+          planeMeshes[id] = planeMesh;
+        };
+        wallet.on('menuopen', _walletMenuOpen);
+        const _walletMenuClose = id => {
+          const planeMesh = planeMeshes[id];
+          scene.remove(planeMesh);
+          planeMesh.geometry.dispose();
+          planeMesh.material.dispose();
+          planeMeshes[id] = null; // XXX gc after a few iterations
+        };
+        wallet.on('menuclose', _walletMenuClose);
+
         const localVector = new THREE.Vector3();
         const localVector2 = new THREE.Vector3();
         const localMatrix = new THREE.Matrix4();
@@ -415,9 +459,8 @@ class Inventory {
           ctx.fillStyle = '#111';
           ctx.fillRect(0, 0, canvas.width, 150);
 
-          const fontSize = 34;
           ctx.font = `${fontSize}px Open sans`;
-          ctx.textBaseline = 'bottom';
+          // ctx.textBaseline = 'bottom';
           ctx.fillStyle = tab === 'status' ? '#4CAF50' : '#FFF';
           ctx.fillText('Status', canvas.width * 0/8 + (canvas.width/8 - ctx.measureText('Status').width)/2, 150 - 60, canvas.width / 8);
           ctx.fillStyle = tab === 'server' ? '#4CAF50' : '#FFF';
@@ -1121,17 +1164,17 @@ class Inventory {
         })();
         menuMesh.add(lensMesh);
 
-        const planeMesh = (() => {
-          const geometry = new THREE.PlaneBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT);
+        const _makePlaneMesh = (width, height, texture) => {
+          const geometry = new THREE.PlaneBufferGeometry(width, height);
           const material = new THREE.MeshBasicMaterial({
             map: texture,
             side: THREE.DoubleSide,
             // transparent: true,
             // renderOrder: -1,
           });
-          const mesh = new THREE.Mesh(geometry, material);
-          return mesh;
-        })();
+          return new THREE.Mesh(geometry, material);
+        };
+        const planeMesh = _makePlaneMesh(WORLD_WIDTH, WORLD_HEIGHT, texture);
         menuMesh.add(planeMesh);
 
         const {dotMeshes, boxMeshes} = uiTracker;
@@ -1454,6 +1497,8 @@ class Inventory {
 
           world.removeListener('add', _worldAdd);
           wallet.removeListener('assets', _walletAssets);
+          wallet.removeListener('menuopen', _walletMenuOpen);
+          wallet.removeListener('menuclose', _walletMenuClose);
 
           input.removeListener('menudown', _menudown);
           input.removeListener('triggerdown', _triggerdown);

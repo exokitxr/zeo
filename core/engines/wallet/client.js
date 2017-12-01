@@ -1151,10 +1151,10 @@ class Wallet {
               }); */
 
               const _menudown = e => {
-                const grabbedGrabbable = hand.getGrabbedGrabbable(e.side);
+                const grabbable = hand.getGrabbedGrabbable(e.side);
 
                 let match;
-                if (grabbedGrabbable && grabbedGrabbable.ext === 'itm' && (match = grabbedGrabbable.name.match(/\.([^\.]+)$/))) {
+                if (grabbable && grabbable.ext === 'itm' && (match = grabbable.name.match(/\.([^\.]+)$/))) {
                   const modName = match[1];
                   const tagMesh = world.getTag({
                     type: 'entity',
@@ -1165,19 +1165,15 @@ class Wallet {
                     const {item} = tagMesh;
                     const {attributes} = item;
                     const attributeSpecs = tags.getAttributeSpecsMap(modName);
-                    let i = 0;
-                    for (const name in attributeSpecs) {
-                      const attributeSpec = attributeSpecs[name];
-                      const {type} = attributeSpec;
 
-                      const attributeObject = attributes[name] || {};
-                      let {value} = attributeObject;
-                      if (value === undefined) {
-                        value = attributeSpec.value;
-                      }
-
-                      console.log('render attribute', name, type, value); // XXX actually render here
-                    }
+                    walletApi.emit('menuopen', {
+                      id: grabbable.assetId,
+                      position: grabbable.position,
+                      rotation: grabbable.rotation,
+                      scale: grabbable.scale,
+                      attributes,
+                      attributeSpecs,
+                    });
 
                     e.stopImmediatePropagation();
                   }
