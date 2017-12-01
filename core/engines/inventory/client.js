@@ -176,6 +176,7 @@ class Inventory {
       ]),
       // _requestImageBitmap('/archae/inventory/img/menu.png'),
       _requestImageBitmap('/archae/inventory/img/arrow-left.png'),
+      _requestImageBitmap('/archae/inventory/img/arrow-down.png'),
       _requestImageBitmap('/archae/inventory/img/link.png'),
       _requestRemoteMods(),
     ]).then(([
@@ -198,6 +199,7 @@ class Inventory {
       ],
       // menuImg,
       arrowLeftImg,
+      arrowDownImg,
       linkImg,
       remoteMods,
     ]) => {
@@ -485,6 +487,15 @@ class Inventory {
                     ctx.fillRect(canvas.width - 640 - 40, 150*2 + 100 + 40 + i*rowHeight, 640, 5);
                     ctx.fillStyle = '#ff4b4b';
                     ctx.fillRect(canvas.width - 640 - 40 + (factor / 640), 150*2 + 100 + 40 - 25 + i*rowHeight, 5, 25 + 5 + 25);
+                  } else if (type === 'select') {
+                    const {options} = attributeSpec;
+
+                    ctx.strokeStyle = '#111';
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(canvas.width - 640 - 40, 150*2 + 100 + 40 + i*rowHeight, 640, fontSize*2);
+                    ctx.fillStyle = '#111';
+                    ctx.fillText(value, canvas.width - 640 - 40, 150*2 + 100 + 40 + fontSize*2 - fontSize*0.3 + i*rowHeight, 640);
+                    ctx.drawImage(arrowDownImg, canvas.width - 640 - 40 + 640 - fontSize*2, 150*2 + 100 + 40 + i*rowHeight, fontSize*2, fontSize*2);
                   } else if (type === 'color') {
                     ctx.strokeStyle = '#111';
                     ctx.lineWidth = 3;
@@ -509,7 +520,7 @@ class Inventory {
                     ctx.drawImage(linkImg, canvas.width - 640 - 40 + 640 - fontSize*2, 150*2 + 100 + 40 + i*rowHeight, fontSize*2, fontSize*2);
                   }
 
-                  console.log('render attribute', name, type, value); // XXX
+                  console.log('render attribute', name, type, value, attributeSpec); // XXX
                   i++;
                 }
 
