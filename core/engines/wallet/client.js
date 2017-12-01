@@ -212,7 +212,7 @@ class Wallet {
                   return vridApi.set('assets', assets);
                 });
 
-              const _addAsset = (id, type, assetId, name, ext, n, physics, matrix) => {
+              const _addAsset = (id, type, assetId, name, ext, icon, n, physics, matrix) => {
                 const position = new THREE.Vector3(matrix[0], matrix[1], matrix[2]);
                 const rotation = new THREE.Quaternion(matrix[3], matrix[4], matrix[5], matrix[6]);
                 const scale = new THREE.Vector3(matrix[7], matrix[8], matrix[9]);
@@ -253,12 +253,13 @@ class Wallet {
                       assetId,
                       name,
                       ext,
+                      icon,
                       n,
                       physics,
                       matrix,
                     } = assetSpec;
 
-                    _addAsset(id, type, assetId, name, ext, n, physics, matrix);
+                    _addAsset(id, type, assetId, name, ext, icon, n, physics, matrix);
                   }
                 } else if (type === 'addAsset') {
                   const {
@@ -267,12 +268,13 @@ class Wallet {
                     assetId,
                     name,
                     ext,
+                    icon,
                     n,
                     physics,
                     matrix,
                   } = args;
 
-                  _addAsset(id, type, assetId, name, ext, n, physics, matrix);
+                  _addAsset(id, type, assetId, name, ext, icon, n, physics, matrix);
                 } else if (type === 'removeAsset') {
                   const {
                     id,
