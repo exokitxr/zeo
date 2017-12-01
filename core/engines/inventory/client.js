@@ -466,7 +466,7 @@ class Inventory {
 
                   if (type === 'text') {
                     ctx.fillStyle = '#EEE';
-                    ctx.fillRect(canvas.width - 640 - 40, 150*2 + 100 + 40 + i*rowHeight, 640, fontSize * 2);
+                    ctx.fillRect(canvas.width - 640 - 40, 150*2 + 100 + 40 + i*rowHeight, 640, fontSize*2);
                     ctx.fillStyle = '#111';
                     ctx.fillText(value, canvas.width - 640 - 40, 150*2 + 100 + 40 + fontSize*2 - fontSize*0.3 + i*rowHeight, 640);
                   } else if (type === 'number') {
@@ -485,12 +485,22 @@ class Inventory {
                     ctx.fillRect(canvas.width - 640 - 40, 150*2 + 100 + 40 + i*rowHeight, 640, 5);
                     ctx.fillStyle = '#ff4b4b';
                     ctx.fillRect(canvas.width - 640 - 40 + (factor / 640), 150*2 + 100 + 40 - 25 + i*rowHeight, 5, 25 + 5 + 25);
+                  } else if (type === 'color') {
+                    ctx.strokeStyle = '#111';
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(canvas.width - 640 - 40, 150*2 + 100 + 40 + i*rowHeight, fontSize*2, fontSize*2);
+                    ctx.fillStyle = value;
+                    ctx.fillRect(canvas.width - 640 - 40 + 5, 150*2 + 100 + 40 + 5 + i*rowHeight, fontSize*2 - 5*2, fontSize*2 - 5*2);
+                    ctx.fillStyle = '#EEE';
+                    ctx.fillRect(canvas.width - 640 - 40 + fontSize*2, 150*2 + 100 + 40 + i*rowHeight, 640, fontSize*2);
+                    ctx.fillStyle = '#111';
+                    ctx.fillText(value, canvas.width - 640 - 40 + fontSize*2, 150*2 + 100 + 40 + fontSize*2 - fontSize*0.3 + i*rowHeight, 640);
                   } else if (type === 'checkbox') {
                     ctx.strokeStyle = '#111';
                     ctx.lineWidth = 3;
                     ctx.strokeRect(canvas.width - 640 - 40, 150*2 + 100 + 40 + i*rowHeight, 60, 30);
                     ctx.fillStyle = '#111';
-                    ctx.fillRect(canvas.width - 640 - 40 + 4, 150*2 + 100 + 40 + 5 + i*rowHeight, (60 - 5*2)/2, 30 - 5*2);
+                    ctx.fillRect(canvas.width - 640 - 40 + 5, 150*2 + 100 + 40 + 5 + i*rowHeight, (60 - 5*2)/2, 30 - 5*2);
                   } else if (type === 'file') {
                     ctx.fillStyle = '#EEE';
                     ctx.fillRect(canvas.width - 640 - 40, 150*2 + 100 + 40 + i*rowHeight, 640 - fontSize*2, fontSize * 2);
