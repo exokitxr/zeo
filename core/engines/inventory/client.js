@@ -466,7 +466,17 @@ class Inventory {
                     value = attributeSpec.value;
                   }
 
-                  if (type === 'text') {
+                  if (type === 'matrix') {
+                    ctx.fillStyle = '#EEE';
+                    ctx.fillRect(canvas.width - 640 - 40, 150*2 + 100 + 40 + i*rowHeight, 640, fontSize*2);
+                    ctx.fillStyle = '#111';
+                    ctx.fillText(value.join(','), canvas.width - 640 - 40, 150*2 + 100 + 40 + fontSize*2 - fontSize*0.3 + i*rowHeight, 640);
+                  } else if (type === 'vector') {
+                    ctx.fillStyle = '#EEE';
+                    ctx.fillRect(canvas.width - 640 - 40, 150*2 + 100 + 40 + i*rowHeight, 640, fontSize*2);
+                    ctx.fillStyle = '#111';
+                    ctx.fillText(value.join(','), canvas.width - 640 - 40, 150*2 + 100 + 40 + fontSize*2 - fontSize*0.3 + i*rowHeight, 640);
+                  } else if (type === 'text') {
                     ctx.fillStyle = '#EEE';
                     ctx.fillRect(canvas.width - 640 - 40, 150*2 + 100 + 40 + i*rowHeight, 640, fontSize*2);
                     ctx.fillStyle = '#111';
