@@ -50,6 +50,7 @@ class Wallet {
       '/core/engines/hand',
       '/core/engines/rend',
       '/core/engines/tags',
+      '/core/engines/world',
       '/core/engines/multiplayer',
       '/core/engines/stck',
       '/core/engines/notification',
@@ -72,6 +73,7 @@ class Wallet {
       hand,
       rend,
       tags,
+      world,
       multiplayer,
       stck,
       notification,
@@ -1149,16 +1151,34 @@ class Wallet {
               const _menudown = e => {
                 const grabbedGrabbable = hand.getGrabbedGrabbable(e.side);
 
-                if (grabbedGrabbable && grabbedGrabbable.ext === 'itm') {
-                  const match = grabbedGrabbable.name.match(/\.([^\.]+)$/);
+                let match;
+                if (grabbedGrabbable && grabbedGrabbable.ext === 'itm' && (match = grabbedGrabbable.name.match(/\.([^\.]+)$/))) {
+                  const modName = match[1];
+                  const tagMesh = world.getTag({
+                    type: 'entity',
+                    name: modName,
+                  });
 
-                  if (match) {
-                    const itemName = match[1];
+                  if (tagMesh) {
+                    const {item} = tagMesh;
+                    const {attributes} = item;
+                    const attributeSpecs = tags.getAttributeSpecsMap(modName);
+                    let i = 0;
+                    for (const name in attributeSpecs) {
+                      const attributeSpec = attributeSpecs[name];
+                      const {type} = attributeSpec;
 
-                    console.log('got grabbed grabbable', itemName); // XXX
+                      const attributeObject = attributes[name] || {};
+                      let {value} = attributeObject;
+                      if (value === undefined) {
+                        value = attributeSpec.value;
+                      }
+
+                      console.log('render attribute', name, type, value); // XXX actually render here
+                    }
+
+                    e.stopImmediatePropagation();
                   }
-
-                  e.stopImmediatePropagation();
                 }
               };
               input.on('menudown', _menudown, {
