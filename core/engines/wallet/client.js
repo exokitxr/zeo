@@ -1146,6 +1146,25 @@ class Wallet {
                 priority: -2,
               }); */
 
+              const _menudown = e => {
+                const grabbedGrabbable = hand.getGrabbedGrabbable(e.side);
+
+                if (grabbedGrabbable && grabbedGrabbable.ext === 'itm') {
+                  const match = grabbedGrabbable.name.match(/\.([^\.]+)$/);
+
+                  if (match) {
+                    const itemName = match[1];
+
+                    console.log('got grabbed grabbable', itemName); // XXX
+                  }
+
+                  e.stopImmediatePropagation();
+                }
+              };
+              input.on('menudown', _menudown, {
+                priority: 1,
+              });
+
               const _upload = ({file, dropMatrix}) => {
                 const id = String(file.n);
                 const itemSpec = {
@@ -1175,6 +1194,7 @@ class Wallet {
               cleanups.push(() => {
                 // input.removeListener('trigger', _trigger);
                 // input.removeListener('gripdown', _gripdown);
+                input.on('menudown', _menudown);
 
                 fs.removeListener('upload', _upload);
 
