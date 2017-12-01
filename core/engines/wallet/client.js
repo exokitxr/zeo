@@ -84,7 +84,7 @@ class Wallet {
     ]) => {
       if (live) {
         const {THREE, scene, camera} = three;
-        const {events} = jsUtils;
+        const {events, base64} = jsUtils;
         const {EventEmitter} = events;
         const {murmur} = hashUtils;
         const {AutoWs} = networkUtils;
@@ -164,7 +164,11 @@ class Wallet {
 
               const _requestAssetImageData = assetSpec => (() => {
                 if (assetSpec.ext === 'itm') {
-                  return resource.getItemImageData(assetSpec.name);
+                  if (assetSpec.icon) {
+                    return Promise.resolve(base64.decode(assetSpec.icon));
+                  } else {
+                    return resource.getItemImageData(assetSpec.name);
+                  }
                 } else /* if (asset.ext === 'files') */ {
                   return resource.getFileImageData(assetSpec.name);
                 }
@@ -180,7 +184,7 @@ class Wallet {
                 height: 16,
                 data: new Uint8Array(arrayBuffer),
               }));
-              const _addStrgAsset = (id, name, ext) => vridApi.get('assets')
+              const _addStrgAsset = (id, name, ext, icon) => vridApi.get('assets')
                 .then(assets => {
                   assets = assets || [];
                   let assetSpec = assets.find(assetSpec => assetSpec.id === id);
@@ -189,6 +193,7 @@ class Wallet {
                       id,
                       name,
                       ext,
+                      icon,
                     };
                     assets.push(assetSpec);
                   }
@@ -216,6 +221,7 @@ class Wallet {
                   assetId,
                   name,
                   ext,
+                  icon,
                   n,
                   physics,
                   position,
@@ -417,6 +423,7 @@ class Wallet {
                     assetId,
                     name,
                     ext,
+                    icon,
                     n,
                     physics,
                     position,
@@ -433,6 +440,7 @@ class Wallet {
                     this.assetId = assetId;
                     this.name = name;
                     this.ext = ext;
+                    this.icon = icon;
                     this.physics = physics;
                   }
 
@@ -547,8 +555,8 @@ class Wallet {
                 const assetInstances = [];
                 mesh.getAssetInstances = () => assetInstances;
                 mesh.getAssetInstance = id => assetInstances.find(assetInstance => assetInstance.id === id);
-                mesh.addAssetInstance = (id, type, assetId, name, ext, n, physics, position, rotation, scale, localPosition, localRotation, localScale) => {
-                  const assetInstance = new AssetInstance(id, type, assetId, name, ext, n, physics, position, rotation, scale, localPosition, localRotation, localScale);
+                mesh.addAssetInstance = (id, type, assetId, name, ext, icon, n, physics, position, rotation, scale, localPosition, localRotation, localScale) => {
+                  const assetInstance = new AssetInstance(id, type, assetId, name, ext, icon, n, physics, position, rotation, scale, localPosition, localRotation, localScale);
 
                   hand.addGrabbable(assetInstance);
                   assetInstances.push(assetInstance);
@@ -557,7 +565,7 @@ class Wallet {
                     let live = true;
 
                     const geometry = (() => {
-                      _requestAssetImageData({name, ext})
+                      _requestAssetImageData({name, ext, icon})
                         .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize))
                         .then(geometrySpec => {
                           if (live) {
@@ -933,7 +941,7 @@ class Wallet {
               };
 
               const _pullItem = (assetSpec, side) => {
-                const {id, name, ext} = assetSpec;
+                const {id, name, ext, icon = null} = assetSpec;
                 const itemSpec = {
                   type: 'asset',
                   id: _makeId(),
@@ -944,6 +952,7 @@ class Wallet {
                     id: {value: id},
                     name: {value: name},
                     ext: {value: ext},
+                    icon: {value: icon},
                     position: {value: DEFAULT_MATRIX},
                     owner: {value: null},
                     bindOwner: {value: null},
@@ -1002,9 +1011,9 @@ class Wallet {
 
                 const {type} = assetInstance;
                 if (type === 'asset') {
-                  const {assetId, name, ext} = assetInstance;
+                  const {assetId, name, ext, icon} = assetInstance;
                   const {assets: oldAssets} = walletState;
-                  _addStrgAsset(assetId, name, ext)
+                  _addStrgAsset(assetId, name, ext, icon)
                     .then(() => {
                       const {assets: newAssets} = walletState;
 
@@ -1189,6 +1198,7 @@ class Wallet {
                       id: {value: assetId},
                       name: {value: name},
                       ext: {value: ext},
+                      icon: {value: icon},
                       position: {value: matrix},
                       physics: {value: physics},
                     },
@@ -1204,6 +1214,7 @@ class Wallet {
                     assetId,
                     name,
                     ext,
+                    icon,
                     n,
                     physics,
                     position,
@@ -1224,6 +1235,7 @@ class Wallet {
                       assetId,
                       name,
                       ext,
+                      icon,
                       n,
                       physics,
                       matrix,
