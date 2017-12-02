@@ -91,11 +91,21 @@ const renderAttributes = (ctx, attributes, attributeSpecs, fontSize, w, h, menuS
       ctx.fillStyle = '#111';
       ctx.fillText(value, w + fontSize*2, h + fontSize*2 - fontSize*0.3 + i*rowHeight, 640);
     } else if (type === 'checkbox') {
-      ctx.strokeStyle = '#111';
-      ctx.lineWidth = 3;
-      ctx.strokeRect(w, h + i*rowHeight, 60, 30);
-      ctx.fillStyle = '#111';
-      ctx.fillRect(w + 5, h + 5 + i*rowHeight, (60 - 5*2)/2, 30 - 5*2);
+      if (value) {
+        ctx.strokeStyle = '#111';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(w, h + i*rowHeight, 60, 30);
+
+        ctx.fillStyle = '#111';
+        ctx.fillRect(w + 30, h + 5 + i*rowHeight, (60 - 5*2)/2, 30 - 5*2);
+      } else {
+        ctx.strokeStyle = '#CCC';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(w, h + i*rowHeight, 60, 30);
+
+        ctx.fillStyle = '#CCC';
+        ctx.fillRect(w + 5, h + 5 + i*rowHeight, (60 - 5*2)/2, 30 - 5*2);
+      }
     } else if (type === 'file') {
       ctx.fillStyle = '#EEE';
       ctx.fillRect(w, h + i*rowHeight, 640 - fontSize*2, fontSize*2);
@@ -106,10 +116,10 @@ const renderAttributes = (ctx, attributes, attributeSpecs, fontSize, w, h, menuS
   }
 };
 
-const getAttributesAnchors = (attributeSpecs, fontSize, w, h, menuState, {focus}) => {
+const getAttributesAnchors = (attributes, attributeSpecs, fontSize, w, h, menuState, {focus}) => {
   const result = [];
 
-  const _pushAnchor = (x, y, w, h, name, type) => {
+  const _pushAnchor = (x, y, w, h, name, type, value) => {
     result.push({
       left: x,
       right: x + w,
@@ -122,6 +132,7 @@ const getAttributesAnchors = (attributeSpecs, fontSize, w, h, menuState, {focus}
         focus({
           name,
           type,
+          value,
           fx,
           fy,
         });
@@ -130,34 +141,40 @@ const getAttributesAnchors = (attributeSpecs, fontSize, w, h, menuState, {focus}
   };
 
   let i = 0;
-  for (const name in attributeSpecs) {
-    const attributeSpec = attributeSpecs[name];
+  for (const attributeName in attributeSpecs) {
+    const attributeSpec = attributeSpecs[attributeName];
     const {type} = attributeSpec;
 
+    const attributeObject = attributes[attributeName] || {};
+    let {value} = attributeObject;
+    if (value === undefined) {
+      value = attributeSpec.value;
+    }
+
     if (type === 'matrix') {
-      _pushAnchor(w, h + i*rowHeight, 640, fontSize*2, name, type);
+      _pushAnchor(w, h + i*rowHeight, 640, fontSize*2, attributeName, type, value);
     } else if (type === 'vector') {
-      _pushAnchor(w, h + i*rowHeight, 640, fontSize*2, name, type);
+      _pushAnchor(w, h + i*rowHeight, 640, fontSize*2, attributeName, type, value);
     } else if (type === 'text') {
-      _pushAnchor(w, h + i*rowHeight, 640, fontSize*2, name, type);
+      _pushAnchor(w, h + i*rowHeight, 640, fontSize*2, attributeName, type, value);
     } else if (type === 'number') {
-      _pushAnchor(w, h - 25 + i*rowHeight, 640, 25 + 5 + 25, name, type);
+      _pushAnchor(w, h - 25 + i*rowHeight, 640, 25 + 5 + 25, attributeName, type, value);
     } else if (type === 'select') {
-      if (menuState.focus !== name) {
-        _pushAnchor(w, h + i*rowHeight, 640, fontSize*2, name, type);
+      if (menuState.focus !== attributeName) {
+        _pushAnchor(w, h + i*rowHeight, 640, fontSize*2, attributeName, type, value);
       } else {
         const {options} = attributeSpec;
         for (let j = 0; j < options.length; j++) {
-          _pushAnchor(w, h + i*rowHeight + j*fontSize*2, 640, fontSize*2, name, type);
+          _pushAnchor(w, h + i*rowHeight + j*fontSize*2, 640, fontSize*2, attributeName, type, value);
         }
       }
     } else if (type === 'color') {
-      _pushAnchor(w, h + i*rowHeight, fontSize*2, fontSize*2, name, type);
-      _pushAnchor(w + fontSize*2, h + i*rowHeight, 640 - fontSize*2, fontSize*2, name, type);
+      _pushAnchor(w, h + i*rowHeight, fontSize*2, fontSize*2, attributeName, type, value);
+      _pushAnchor(w + fontSize*2, h + i*rowHeight, 640 - fontSize*2, fontSize*2, attributeName, type, value);
     } else if (type === 'checkbox') {
-      _pushAnchor(w, h + i*rowHeight, 640, 30, name, type);
+      _pushAnchor(w, h + i*rowHeight, 640, 30, attributeName, type, value);
     } else if (type === 'file') {
-      _pushAnchor(w, h + i*rowHeight, 640 - fontSize*2, fontSize*2, name, type);
+      _pushAnchor(w, h + i*rowHeight, 640 - fontSize*2, fontSize*2, attributeName, type, value);
     }
 
     i++;

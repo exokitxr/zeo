@@ -356,8 +356,8 @@ class Inventory {
           planeMesh.plane = plane;
 
           const _updateAttributesAnchors = () => {
-            plane.anchors = getAttributesAnchors(attributeSpecs, fontSize, 0, 0, itemMenuState, {
-              focus: ({name: attributeName, type, fx, fy}) => {
+            plane.anchors = getAttributesAnchors(attributes, attributeSpecs, fontSize, 0, 0, itemMenuState, {
+              focus: ({name: attributeName, type, value, fx, fy}) => {
                 // console.log('on focus 1', grabbable, attributeName, type, fx, fy);
 
                 if (type === 'number') {
@@ -377,6 +377,14 @@ class Inventory {
                   itemMenuState.focus = null;
                 } else if (type === 'select') {
                   itemMenuState.focus = attributeName;
+                } else if (type === 'checkbox') {
+                  tags.emit('setAttribute', {
+                    id: tagMesh.item.id,
+                    name: attributeName,
+                    value: !value,
+                  });
+
+                  itemMenuState.focus = null;
                 } else {
                   itemMenuState.focus = null;
                 }
@@ -567,7 +575,7 @@ class Inventory {
             if (modReadmeImg) {
               if (subtab === 'installed') {
                 // config
-                const {displayName} = localMod;
+                /* const {displayName} = localMod;
                 const tagMesh = world.getTag({
                   type: 'entity',
                   name: displayName,
@@ -575,7 +583,8 @@ class Inventory {
                 const {item} = tagMesh;
                 const {attributes} = item;
                 const attributeSpecs = tags.getAttributeSpecsMap(displayName);
-                renderAttributes(ctx, attributes, attributeSpecs, fontSize, canvas.width - 640 - 40, 150*2 + 100 + 40, {}, {arrowDownImg, linkImg});
+                renderAttributes(ctx, attributes, attributeSpecs, fontSize, canvas.width - 640 - 40, 150*2 + 100 + 40, {}, {arrowDownImg, linkImg}); */
+                // XXX render pointer to item grab
 
                 // bar
                 ctx.fillStyle = '#CCC';
@@ -1153,16 +1162,6 @@ class Inventory {
               _renderMenu();
             }
           });
-
-          if (localMod) {
-            const {displayName} = localMod;
-            const attributeSpecs = tags.getAttributeSpecsMap(displayName);
-            result.push.apply(result, getAttributesAnchors(attributeSpecs, fontSize, canvas.width - 640 - 40, 150*2 + 100 + 40, {}, {
-              focus: ({name, type, fx, fy}) => {
-                // console.log('on focus 2', name, type, fx, fy);
-              },
-            }));
-          }
 
           return result;
         };
