@@ -82,15 +82,26 @@ const renderAttributes = (ctx, attributes, attributeSpecs, fontSize, w, h, {arro
   }
 };
 
-const getAttributesAnchors = (attributeSpecs, fontSize, w, h) => {
+const getAttributesAnchors = (attributeSpecs, fontSize, w, h, {focus}) => {
   const result = [];
 
-  const _pushAnchor = (x, y, w, h) => {
+  const _pushAnchor = (x, y, w, h, name, type) => {
     result.push({
       left: x,
       right: x + w,
       top: y,
       bottom: y + h,
+      triggerdown: (e, hoverState) => {
+        const fx = (hoverState.x - x) / w;
+        const fy = (hoverState.y - y) / h;
+
+        focus({
+          name,
+          type,
+          fx,
+          fy,
+        });
+      },
     });
   };
 
@@ -99,22 +110,22 @@ const getAttributesAnchors = (attributeSpecs, fontSize, w, h) => {
     const {type} = attributeSpecs[name];
 
     if (type === 'matrix') {
-      _pushAnchor(w, h + i*rowHeight, 640, fontSize*2);
+      _pushAnchor(w, h + i*rowHeight, 640, fontSize*2, name, type);
     } else if (type === 'vector') {
-      _pushAnchor(w, h + i*rowHeight, 640, fontSize*2);
+      _pushAnchor(w, h + i*rowHeight, 640, fontSize*2, name, type);
     } else if (type === 'text') {
-      _pushAnchor(w, h + i*rowHeight, 640, fontSize*2);
+      _pushAnchor(w, h + i*rowHeight, 640, fontSize*2, name, type);
     } else if (type === 'number') {
-      _pushAnchor(w, h - 25 + i*rowHeight, 640, 25 + 5 + 25);
+      _pushAnchor(w, h - 25 + i*rowHeight, 640, 25 + 5 + 25, name, type);
     } else if (type === 'select') {
-      _pushAnchor(w, h + i*rowHeight, 640, fontSize*2);
+      _pushAnchor(w, h + i*rowHeight, 640, fontSize*2, name, type);
     } else if (type === 'color') {
-      _pushAnchor(w, h + i*rowHeight, fontSize*2, fontSize*2);
-      _pushAnchor(w + fontSize*2, h + i*rowHeight, 640 - fontSize*2, fontSize*2);
+      _pushAnchor(w, h + i*rowHeight, fontSize*2, fontSize*2, name, type);
+      _pushAnchor(w + fontSize*2, h + i*rowHeight, 640 - fontSize*2, fontSize*2, name, type);
     } else if (type === 'checkbox') {
-      _pushAnchor(w, h + i*rowHeight, 640, 30);
+      _pushAnchor(w, h + i*rowHeight, 640, 30, name, type);
     } else if (type === 'file') {
-      _pushAnchor(w, h + i*rowHeight, 640 - fontSize*2, fontSize*2);
+      _pushAnchor(w, h + i*rowHeight, 640 - fontSize*2, fontSize*2, name, type);
     }
 
     i++;

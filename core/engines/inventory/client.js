@@ -343,7 +343,11 @@ class Inventory {
           plane.worldWidth = worldSize;
           plane.worldHeight = worldSize;
           plane.open = true;
-          plane.anchors = getAttributesAnchors(attributeSpecs, fontSize, 0, 0);
+          plane.anchors = getAttributesAnchors(attributeSpecs, fontSize, 0, 0, {
+            focus: ({name, type, fx, fy}) => {
+              console.log('on focus 1', name, type, fx, fy);
+            },
+          });
           planeMesh.add(plane);
           planeMesh.plane = plane;
 
@@ -1116,7 +1120,11 @@ class Inventory {
           if (localMod) {
             const {displayName} = localMod;
             const attributeSpecs = tags.getAttributeSpecsMap(displayName);
-            result.push.apply(result, getAttributesAnchors(attributeSpecs, fontSize, canvas.width - 640 - 40, 150*2 + 100 + 40));
+            result.push.apply(result, getAttributesAnchors(attributeSpecs, fontSize, canvas.width - 640 - 40, 150*2 + 100 + 40, {
+              focus: ({name, type, fx, fy}) => {
+                console.log('on focus 2', name, type, fx, fy);
+              },
+            }));
           }
 
           return result;
