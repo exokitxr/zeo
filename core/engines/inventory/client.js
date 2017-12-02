@@ -301,7 +301,7 @@ class Inventory {
             numPlaneMeshCloses = 0;
           }
         };
-        const _walletMenuOpen = ({grabbable, attributes, attributeSpecs}) => {
+        const _walletMenuOpen = ({tagMesh, grabbable, attributes, attributeSpecs}) => {
           const {assetId: id, position, rotation, scale} = grabbable;
 
           const size = 640;
@@ -312,9 +312,12 @@ class Inventory {
           canvas.height = size;
 
           const ctx = canvas.getContext('2d');
-          ctx.fillStyle = '#FFF';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-          renderAttributes(ctx, attributes, attributeSpecs, fontSize, 0, 0, {arrowDownImg, linkImg});
+          const _renderItemMenu = () => {
+            ctx.fillStyle = '#FFF';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            renderAttributes(ctx, attributes, attributeSpecs, fontSize, 0, 0, {arrowDownImg, linkImg});
+          };
+          _renderItemMenu();
 
           const texture = new THREE.Texture(
             canvas,
@@ -344,8 +347,25 @@ class Inventory {
           plane.worldHeight = worldSize;
           plane.open = true;
           plane.anchors = getAttributesAnchors(attributeSpecs, fontSize, 0, 0, {
-            focus: ({name, type, fx, fy}) => {
-              console.log('on focus 1', name, type, fx, fy);
+            focus: ({name: attributeName, type, fx, fy}) => {
+              console.log('on focus 1', grabbable, attributeName, type, fx, fy);
+
+              if (type === 'number') {
+                const {min, max, step} = attributeSpecs[attributeName];
+
+                let newValue = min + (fx * (max - min));
+                if (step > 0) {
+                  newValue = _roundToDecimals(Math.round(newValue / step) * step, 8);
+                }
+
+                tags.emit('setAttribute', {
+                  id: tagMesh.item.id,
+                  name: attributeName,
+                  value: newValue,
+                });
+
+                _renderItemMenu();
+              }
             },
           });
           planeMesh.add(plane);
@@ -1759,5 +1779,6 @@ const _debounce = fn => {
   };
   return _go;
 };
+const _roundToDecimals = (value, decimals) => Number(Math.round(value+'e'+decimals)+'e-'+decimals);
 
 module.exports = Inventory;

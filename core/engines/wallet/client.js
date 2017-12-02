@@ -1170,6 +1170,7 @@ class Wallet {
                     grabbable.disablePhysics();
 
                     walletApi.emit('menuopen', {
+                      tagMesh,
                       grabbable,
                       attributes,
                       attributeSpecs,
