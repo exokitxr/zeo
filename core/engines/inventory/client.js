@@ -381,8 +381,6 @@ class Inventory {
                   itemMenuState.focus = attributeName;
                 } else if (type === 'color') {
                   if (newValue !== undefined) {
-                    console.log('got color value', newValue);
-
                     tags.emit('setAttribute', {
                       id: tagMesh.item.id,
                       name: attributeName,
