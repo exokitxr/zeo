@@ -1626,7 +1626,6 @@ class Inventory {
           world.removeListener('add', _worldAdd);
           wallet.removeListener('assets', _walletAssets);
           wallet.removeListener('menuopen', _walletMenuOpen);
-          wallet.removeListener('menuclose', _walletMenuClose);
 
           input.removeListener('menudown', _menudown);
           input.removeListener('triggerdown', _triggerdown);
