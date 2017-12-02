@@ -1,6 +1,6 @@
-const renderAttributes = (ctx, attributes, attributeSpecs, fontSize, w, h, {arrowDownImg, linkImg}) => {
-  const rowHeight = 100;
+const rowHeight = 100;
 
+const renderAttributes = (ctx, attributes, attributeSpecs, fontSize, w, h, {arrowDownImg, linkImg}) => {
   ctx.font = `${fontSize}px Open sans`;
 
   let i = 0;
@@ -82,6 +82,48 @@ const renderAttributes = (ctx, attributes, attributeSpecs, fontSize, w, h, {arro
   }
 };
 
+const getAttributesAnchors = (attributeSpecs, fontSize, w, h) => {
+  const result = [];
+
+  const _pushAnchor = (x, y, w, h) => {
+    result.push({
+      left: x,
+      right: x + w,
+      top: y,
+      bottom: y + h,
+    });
+  };
+
+  let i = 0;
+  for (const name in attributeSpecs) {
+    const {type} = attributeSpecs[name];
+
+    if (type === 'matrix') {
+      _pushAnchor(w, h + i*rowHeight, 640, fontSize*2);
+    } else if (type === 'vector') {
+      _pushAnchor(w, h + i*rowHeight, 640, fontSize*2);
+    } else if (type === 'text') {
+      _pushAnchor(w, h + i*rowHeight, 640, fontSize*2);
+    } else if (type === 'number') {
+      _pushAnchor(w, h - 25 + i*rowHeight, 640, 25 + 5 + 25);
+    } else if (type === 'select') {
+      _pushAnchor(w, h + i*rowHeight, 640, fontSize*2);
+    } else if (type === 'color') {
+      _pushAnchor(w, h + i*rowHeight, fontSize*2, fontSize*2);
+      _pushAnchor(w + fontSize*2, h + i*rowHeight, 640, fontSize*2);
+    } else if (type === 'checkbox') {
+      _pushAnchor(w, h + i*rowHeight, 640, 30);
+    } else if (type === 'file') {
+      _pushAnchor(w, h + i*rowHeight, 640 - fontSize*2, fontSize * 2);
+    }
+
+    i++;
+  }
+
+  return result;
+};
+
 module.exports = {
   renderAttributes,
+  getAttributesAnchors,
 };

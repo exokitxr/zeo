@@ -10,7 +10,7 @@ const {
 
   DEFAULT_USER_HEIGHT,
 } = require('./lib/constants/menu');
-const {renderAttributes} = require('./lib/render/inventory');
+const {renderAttributes, getAttributesAnchors} = require('./lib/render/inventory');
 
 const NUM_POSITIONS = 500 * 1024;
 const MENU_RANGE = 3;
@@ -526,9 +526,7 @@ class Inventory {
             if (modReadmeImg) {
               if (subtab === 'installed') {
                 // config
-                const rowHeight = 100;
-
-                const {displayName, version} = localMod;
+                const {displayName} = localMod;
                 const tagMesh = world.getTag({
                   type: 'entity',
                   name: displayName,
@@ -629,7 +627,7 @@ class Inventory {
             if (localAsset) {
               if (localAsset.ext === 'pls') {
                 const allInstalled = localAsset.playlist.every(playlistEntry => {
-                  const {name, version} = playlistEntry;
+                  const {name} = playlistEntry;
                   return world.getTag({
                     type: 'entity',
                     name,
@@ -847,7 +845,7 @@ class Inventory {
             if (localAsset.ext === 'pls') {
               _pushAnchor(result, canvas.width - 640 - 40, 150*2, 640 + 40, 100, (e, hoverState) => {
                 const allInstalled = localAsset.playlist.every(playlistEntry => {
-                  const {name, version} = playlistEntry;
+                  const {name} = playlistEntry;
                   return world.getTag({
                     type: 'entity',
                     name,
@@ -855,7 +853,7 @@ class Inventory {
                 });
                 if (allInstalled) {
                   for (let i = 0; i < localAsset.playlist.length; i++) {
-                    const {name, version} = localAsset.playlist[i];
+                    const {name} = localAsset.playlist[i];
                     const tagMesh = world.getTag({
                       type: 'entity',
                       name,
@@ -1032,6 +1030,7 @@ class Inventory {
               modBarValue = 0;
               modPage = 0;
               modPages = 0;
+              modAnchors = _getModAnchors();
 
               _renderMenu();
               assetsMesh.render();
@@ -1046,6 +1045,7 @@ class Inventory {
 
         const _getModAnchors = () => {
           const result = serverAnchors.slice();
+
           _pushAnchor(result, canvas.width - 60, 150*2 + 100 + (canvas.height - 150*2 - 100) * 0.05, 30, (canvas.height - 150*2 - 100) * 0.9, (e, hoverState) => {
             if (modPages > 0) {
               const {side} = e;
@@ -1059,6 +1059,7 @@ class Inventory {
               };
             }
           });
+
           _pushAnchor(result, canvas.width - 640 - 40, 150*2, 640 + 40, 100, (e, hoverState) => {
             const {name, version} = localMod;
 
@@ -1111,6 +1112,13 @@ class Inventory {
               _renderMenu();
             }
           });
+
+          if (localMod) {
+            const {displayName} = localMod;
+            const attributeSpecs = tags.getAttributeSpecsMap(displayName);
+            result.push.apply(result, getAttributesAnchors(attributeSpecs, fontSize, canvas.width - 640 - 40, 150*2 + 100 + 40));
+          }
+
           return result;
         };
         let modAnchors = _getModAnchors();
