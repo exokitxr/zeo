@@ -61,7 +61,7 @@ const renderAttributes = (ctx, attributes, attributeSpecs, fontSize, w, h, {arro
       ctx.fillStyle = value;
       ctx.fillRect(w + 5, h + 5 + i*rowHeight, fontSize*2 - 5*2, fontSize*2 - 5*2);
       ctx.fillStyle = '#EEE';
-      ctx.fillRect(w + fontSize*2, h + i*rowHeight, 640, fontSize*2);
+      ctx.fillRect(w + fontSize*2, h + i*rowHeight, 640 - fontSize*2, fontSize*2);
       ctx.fillStyle = '#111';
       ctx.fillText(value, w + fontSize*2, h + fontSize*2 - fontSize*0.3 + i*rowHeight, 640);
     } else if (type === 'checkbox') {
@@ -72,7 +72,7 @@ const renderAttributes = (ctx, attributes, attributeSpecs, fontSize, w, h, {arro
       ctx.fillRect(w + 5, h + 5 + i*rowHeight, (60 - 5*2)/2, 30 - 5*2);
     } else if (type === 'file') {
       ctx.fillStyle = '#EEE';
-      ctx.fillRect(w, h + i*rowHeight, 640 - fontSize*2, fontSize * 2);
+      ctx.fillRect(w, h + i*rowHeight, 640 - fontSize*2, fontSize*2);
       ctx.fillStyle = '#111';
       ctx.fillText(value, w, h + fontSize*2 - fontSize*0.3 + i*rowHeight, 640);
       ctx.drawImage(linkImg, w + 640 - fontSize*2, h + i*rowHeight, fontSize*2, fontSize*2);
@@ -110,11 +110,11 @@ const getAttributesAnchors = (attributeSpecs, fontSize, w, h) => {
       _pushAnchor(w, h + i*rowHeight, 640, fontSize*2);
     } else if (type === 'color') {
       _pushAnchor(w, h + i*rowHeight, fontSize*2, fontSize*2);
-      _pushAnchor(w + fontSize*2, h + i*rowHeight, 640, fontSize*2);
+      _pushAnchor(w + fontSize*2, h + i*rowHeight, 640 - fontSize*2, fontSize*2);
     } else if (type === 'checkbox') {
       _pushAnchor(w, h + i*rowHeight, 640, 30);
     } else if (type === 'file') {
-      _pushAnchor(w, h + i*rowHeight, 640 - fontSize*2, fontSize * 2);
+      _pushAnchor(w, h + i*rowHeight, 640 - fontSize*2, fontSize*2);
     }
 
     i++;
