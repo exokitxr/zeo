@@ -301,7 +301,9 @@ class Inventory {
             numPlaneMeshCloses = 0;
           }
         };
-        const _walletMenuOpen = ({id, position, rotation, scale, attributes, attributeSpecs}) => {
+        const _walletMenuOpen = ({grabbable, attributes, attributeSpecs}) => {
+          const {assetId: id, position, rotation, scale} = grabbable;
+
           const size = 640;
           const worldSize = 0.4;
 
@@ -331,6 +333,7 @@ class Inventory {
           planeMesh.position.copy(position);
           planeMesh.quaternion.copy(rotation);
           planeMesh.scale.copy(scale);
+          planeMesh.grabbable = grabbable;
           scene.add(planeMesh);
 
           const plane = new THREE.Object3D();
@@ -342,24 +345,15 @@ class Inventory {
           plane.open = true;
           plane.anchors = [];
           planeMesh.add(plane);
+          planeMesh.plane = plane;
 
           planeMesh.updateMatrixWorld()
-          plane.updateMatrixWorld();;
+          plane.updateMatrixWorld();
           planeMeshes[id] = planeMesh;
 
           uiTracker.addPlane(plane);
         };
         wallet.on('menuopen', _walletMenuOpen);
-        const _walletMenuClose = id => {
-          const planeMesh = planeMeshes[id];
-          scene.remove(planeMesh);
-          planeMesh.geometry.dispose();
-          planeMesh.material.dispose();
-          planeMeshes[id] = null;
-
-          _gcPlaneMeshes();
-        };
-        wallet.on('menuclose', _walletMenuClose);
 
         const localVector = new THREE.Vector3();
         const localVector2 = new THREE.Vector3();
@@ -1446,19 +1440,61 @@ class Inventory {
         const _gripdown = e => {
           const {side} = e;
 
-          if (localMod && localMod.metadata && localMod.metadata.fileType && _isItemHovered(side)) {
-            const itemSpec = {
-              id: _makeId(),
-              name: 'new-item.' + localMod.metadata.fileType,
-              ext: 'itm',
-              icon: base64.encode(localGeometry),
-            };
-            wallet.pullItem(itemSpec, side);
-          } else if (localAsset && _isItemHovered(side)) {
-            wallet.pullItem(localAsset, side);
+          const _handlePlaneMeshes = () => {
+            const {gamepads} = webvr.getStatus();
+            const gamepad = gamepads[side];
 
-            e.stopImmediatePropagation();
-          }
+            for (const id in planeMeshes) {
+              const planeMesh = planeMeshes[id];
+
+              if (planeMesh && planeMesh.position.distanceTo(gamepad.worldPosition) < 0.4) {
+                const {grabbable, plane} = planeMesh;
+
+                grabbable.show();
+                grabbable.grab(side);
+
+                uiTracker.removePlane(plane);
+
+                scene.remove(planeMesh);
+                planeMesh.geometry.dispose();
+                planeMesh.material.dispose();
+                planeMeshes[id] = null;
+
+                _gcPlaneMeshes();
+
+                return true;
+              }
+            }
+            return false;
+          };
+          const _handleMod = () => {
+            if (localMod && localMod.metadata && localMod.metadata.fileType && _isItemHovered(side)) {
+              const itemSpec = {
+                id: _makeId(),
+                name: 'new-item.' + localMod.metadata.fileType,
+                ext: 'itm',
+                icon: base64.encode(localGeometry),
+              };
+              wallet.pullItem(itemSpec, side);
+
+              return true;
+            } else {
+              return false;
+            }
+          };
+          const _handleFile = () => {
+            if (localAsset && _isItemHovered(side)) {
+              wallet.pullItem(localAsset, side);
+
+              e.stopImmediatePropagation();
+
+              return true;
+            } else {
+              return false;
+            }
+          };
+
+          _handlePlaneMeshes() || _handleMod() || _handleFile();
         };
         input.on('gripdown', _gripdown);
 
@@ -1467,32 +1503,14 @@ class Inventory {
         };
         hand.on('grab', _grab);
         const _release = e => {
-          const {side, grabbable} = e;
+          if (menuState.open) {
+            const {side, grabbable} = e;
 
-          const addPosition = localVector.copy(zeroVector)
-            .applyMatrix4(
-              localMatrix.compose(
-                localVector2.set(
-                  WORLD_WIDTH / 2 - pixelSize * 16 - pixelSize * 16*1.5,
-                  -WORLD_HEIGHT / 2 + pixelSize * 16,
-                  pixelSize * 16/2
-                ),
-                zeroQuaternion,
-                oneVector
-              ).premultiply(assetsMesh.matrixWorld)
-            );
-          const addDistance = grabbable.position.distanceTo(addPosition);
-
-          if (addDistance < pixelSize*16/2) {
-            wallet.storeItem(grabbable);
-
-            e.stopImmediatePropagation();
-          } else {
-            const removePosition = localVector.copy(zeroVector)
+            const addPosition = localVector.copy(zeroVector)
               .applyMatrix4(
                 localMatrix.compose(
                   localVector2.set(
-                    WORLD_WIDTH / 2 - pixelSize * 16,
+                    WORLD_WIDTH / 2 - pixelSize * 16 - pixelSize * 16*1.5,
                     -WORLD_HEIGHT / 2 + pixelSize * 16,
                     pixelSize * 16/2
                   ),
@@ -1500,24 +1518,46 @@ class Inventory {
                   oneVector
                 ).premultiply(assetsMesh.matrixWorld)
               );
-            const removeDistance = grabbable.position.distanceTo(removePosition);
+            const addDistance = grabbable.position.distanceTo(addPosition);
 
-            if (removeDistance < pixelSize*16/2) {
-              wallet.destroyItem(grabbable);
+            if (addDistance < pixelSize*16/2) {
+              wallet.storeItem(grabbable);
 
-              const {name, ext} = grabbable;
-              const newNotification = notification.addNotification(`Discarded ${name}.${ext}.`);
-              setTimeout(() => {
-                notification.removeNotification(newNotification);
-              }, 3000);
-
-              sfx.click_tock_drop.trigger();
+              assetsMesh.render();
 
               e.stopImmediatePropagation();
+            } else {
+              const removePosition = localVector.copy(zeroVector)
+                .applyMatrix4(
+                  localMatrix.compose(
+                    localVector2.set(
+                      WORLD_WIDTH / 2 - pixelSize * 16,
+                      -WORLD_HEIGHT / 2 + pixelSize * 16,
+                      pixelSize * 16/2
+                    ),
+                    zeroQuaternion,
+                    oneVector
+                  ).premultiply(assetsMesh.matrixWorld)
+                );
+              const removeDistance = grabbable.position.distanceTo(removePosition);
+
+              if (removeDistance < pixelSize*16/2) {
+                wallet.destroyItem(grabbable);
+
+                assetsMesh.render();
+
+                const {name, ext} = grabbable;
+                const newNotification = notification.addNotification(`Discarded ${name}.${ext}.`);
+                setTimeout(() => {
+                  notification.removeNotification(newNotification);
+                }, 3000);
+
+                sfx.click_tock_drop.trigger();
+
+                e.stopImmediatePropagation();
+              }
             }
           }
-
-          assetsMesh.render();
         };
         hand.on('release', _release);
 

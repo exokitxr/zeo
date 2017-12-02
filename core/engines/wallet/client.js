@@ -1166,11 +1166,11 @@ class Wallet {
                     const {attributes} = item;
                     const attributeSpecs = tags.getAttributeSpecsMap(modName);
 
+                    grabbable.hide();
+                    grabbable.disablePhysics();
+
                     walletApi.emit('menuopen', {
-                      id: grabbable.assetId,
-                      position: grabbable.position,
-                      rotation: grabbable.rotation,
-                      scale: grabbable.scale,
+                      grabbable,
                       attributes,
                       attributeSpecs,
                     });
