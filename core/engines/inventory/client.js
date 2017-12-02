@@ -357,17 +357,8 @@ class Inventory {
 
           const _updateAttributesAnchors = () => {
             plane.anchors = getAttributesAnchors(attributes, attributeSpecs, fontSize, 0, 0, itemMenuState, {
-              focus: ({name: attributeName, type, value, fx, fy}) => {
-                // console.log('on focus 1', grabbable, attributeName, type, fx, fy);
-
+              focus: ({name: attributeName, type, newValue}) => {
                 if (type === 'number') {
-                  const {min, max, step} = attributeSpecs[attributeName];
-
-                  let newValue = min + (fx * (max - min));
-                  if (step > 0) {
-                    newValue = _roundToDecimals(Math.round(newValue / step) * step, 8);
-                  }
-
                   tags.emit('setAttribute', {
                     id: tagMesh.item.id,
                     name: attributeName,
@@ -376,12 +367,18 @@ class Inventory {
 
                   itemMenuState.focus = null;
                 } else if (type === 'select') {
+                  tags.emit('setAttribute', {
+                    id: tagMesh.item.id,
+                    name: attributeName,
+                    value: newValue,
+                  });
+
                   itemMenuState.focus = attributeName;
                 } else if (type === 'checkbox') {
                   tags.emit('setAttribute', {
                     id: tagMesh.item.id,
                     name: attributeName,
-                    value: !value,
+                    value: newValue,
                   });
 
                   itemMenuState.focus = null;
@@ -1794,6 +1791,5 @@ const _debounce = fn => {
   };
   return _go;
 };
-const _roundToDecimals = (value, decimals) => Number(Math.round(value+'e'+decimals)+'e-'+decimals);
 
 module.exports = Inventory;

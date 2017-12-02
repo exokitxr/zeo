@@ -119,22 +119,33 @@ const renderAttributes = (ctx, attributes, attributeSpecs, fontSize, w, h, menuS
 const getAttributesAnchors = (attributes, attributeSpecs, fontSize, w, h, menuState, {focus}) => {
   const result = [];
 
-  const _pushAnchor = (x, y, w, h, name, type, value) => {
+  const _pushAnchor = (x, y, w, h, name, type, newValue) => {
     result.push({
       left: x,
       right: x + w,
       top: y,
       bottom: y + h,
       triggerdown: (e, hoverState) => {
-        const fx = (hoverState.x - x) / w;
-        const fy = (hoverState.y - y) / h;
+        if (type === 'number') {
+          const attributeSpec = attributeSpecs[name];
+          const {min, max, step} = attributeSpecs[name];
+
+          const fx = (hoverState.x - x) / w;
+
+          newValue = min + (fx * (max - min));
+          if (step > 0) {
+            newValue = _roundToDecimals(Math.round(newValue / step) * step, 8);
+          }
+        } else if (type === 'select') {
+          // nothing
+        } else if (type === 'checkbox') {
+          // nothing
+        }
 
         focus({
           name,
           type,
-          value,
-          fx,
-          fy,
+          newValue,
         });
       },
     });
@@ -152,29 +163,29 @@ const getAttributesAnchors = (attributes, attributeSpecs, fontSize, w, h, menuSt
     }
 
     if (type === 'matrix') {
-      _pushAnchor(w, h + i*rowHeight, 640, fontSize*2, attributeName, type, value);
+      _pushAnchor(w, h + i*rowHeight, 640, fontSize*2, attributeName, type);
     } else if (type === 'vector') {
-      _pushAnchor(w, h + i*rowHeight, 640, fontSize*2, attributeName, type, value);
+      _pushAnchor(w, h + i*rowHeight, 640, fontSize*2, attributeName, type);
     } else if (type === 'text') {
-      _pushAnchor(w, h + i*rowHeight, 640, fontSize*2, attributeName, type, value);
+      _pushAnchor(w, h + i*rowHeight, 640, fontSize*2, attributeName, type);
     } else if (type === 'number') {
-      _pushAnchor(w, h - 25 + i*rowHeight, 640, 25 + 5 + 25, attributeName, type, value);
+      _pushAnchor(w, h - 25 + i*rowHeight, 640, 25 + 5 + 25, attributeName, type);
     } else if (type === 'select') {
       if (menuState.focus !== attributeName) {
-        _pushAnchor(w, h + i*rowHeight, 640, fontSize*2, attributeName, type, value);
+        _pushAnchor(w, h + i*rowHeight, 640, fontSize*2, attributeName, type);
       } else {
         const {options} = attributeSpec;
         for (let j = 0; j < options.length; j++) {
-          _pushAnchor(w, h + i*rowHeight + j*fontSize*2, 640, fontSize*2, attributeName, type, value);
+          _pushAnchor(w, h + i*rowHeight + j*fontSize*2, 640, fontSize*2, attributeName, type, options[j]);
         }
       }
     } else if (type === 'color') {
-      _pushAnchor(w, h + i*rowHeight, fontSize*2, fontSize*2, attributeName, type, value);
-      _pushAnchor(w + fontSize*2, h + i*rowHeight, 640 - fontSize*2, fontSize*2, attributeName, type, value);
+      _pushAnchor(w, h + i*rowHeight, fontSize*2, fontSize*2, attributeName, type);
+      _pushAnchor(w + fontSize*2, h + i*rowHeight, 640 - fontSize*2, fontSize*2, attributeName, type);
     } else if (type === 'checkbox') {
-      _pushAnchor(w, h + i*rowHeight, 640, 30, attributeName, type, value);
+      _pushAnchor(w, h + i*rowHeight, 640, 30, attributeName, type, !value);
     } else if (type === 'file') {
-      _pushAnchor(w, h + i*rowHeight, 640 - fontSize*2, fontSize*2, attributeName, type, value);
+      _pushAnchor(w, h + i*rowHeight, 640 - fontSize*2, fontSize*2, attributeName, type);
     }
 
     i++;
@@ -182,6 +193,7 @@ const getAttributesAnchors = (attributes, attributeSpecs, fontSize, w, h, menuSt
 
   return result;
 };
+const _roundToDecimals = (value, decimals) => Number(Math.round(value+'e'+decimals)+'e-'+decimals);
 
 module.exports = {
   renderAttributes,
