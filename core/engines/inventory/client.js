@@ -1581,6 +1581,27 @@ class Inventory {
               })(),
               controllerMeshes: rend.getAuxObject('controllerMeshes'),
             });
+
+            const {gamepads} = webvr.getStatus();
+            const {boxMeshes} = uiTracker;
+            for (let i = 0; i < SIDES.length; i++) {
+              const side = SIDES[i];
+              const gamepad = gamepads[side];
+              const boxMesh = boxMeshes[side];
+
+              for (const id in planeMeshes) {
+                const planeMesh = planeMeshes[id];
+
+                if (planeMesh && planeMesh.position.distanceTo(gamepad.worldPosition) < 0.4) {
+                  boxMesh.position.copy(planeMesh.position);
+                  boxMesh.quaternion.copy(zeroQuaternion);
+                  boxMesh.scale.set(0.4, 0.4, 0.4);
+                  boxMesh.updateMatrixWorld();
+                  boxMesh.visible = true;
+                  break;
+                }
+              }
+            }
           };
           const _updateAnimation = () => {
             if (animation) {
