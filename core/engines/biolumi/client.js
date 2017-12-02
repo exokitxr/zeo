@@ -423,7 +423,6 @@ class Biolumi {
 
           class UiTracker {
             constructor() {
-              this.open = false;
               this.planes = [];
 
               const _makeHoverState = () => ({
@@ -448,10 +447,6 @@ class Biolumi {
                 left: _makeBoxMesh(),
                 right: _makeBoxMesh(),
               };
-            }
-
-            setOpen(open) {
-              this.open = open;
             }
 
             addPlane(plane) {
@@ -504,8 +499,9 @@ class Biolumi {
                 }
               };
 
-              const {planes, open} = this;
-              if (open && planes.length > 0) {
+              const {planes} = this;
+              const open = planes.some(plane => plane.open);
+              if (open) {
                 const {gamepads} = pose;
                 const {hoverStates, dotMeshes, boxMeshes} = this;
 
@@ -530,109 +526,116 @@ class Biolumi {
                     );
 
                     let found = false;
+                    let minDistance = Infinity;
                     for (let i = 0; i < planes.length; i++) {
                       const plane = planes[i];
 
-                      const normal = localVector2.copy(backwardVector)
-                        .applyQuaternion(localQuaternion.setFromRotationMatrix(plane.matrixWorld));
-                      const uiPlane = localPlane.setFromNormalAndCoplanarPoint(
-                        normal,
-                        localVector3.setFromMatrixPosition(plane.matrixWorld)
-                      );
-                      const intersectionPoint = uiPlane.intersectLine(controllerLine, localVector3);
-
-                      if (intersectionPoint) {
-                        hoverState.intersectionPoint = intersectionPoint;
-
-                        const {width, height, worldWidth, worldHeight} = plane;
-                        const worldPosition = localVector4.setFromMatrixPosition(plane.matrixWorld);
-                        const worldRotation = localQuaternion.setFromRotationMatrix(plane.matrixWorld);
-
-                        hoverState.target = plane;
-
-                        const yAxis = localPlane2.setFromNormalAndCoplanarPoint(
-                          localVector5.copy(rightVector)
-                            .applyQuaternion(worldRotation),
-                          localVector6.copy(worldPosition)
-                            .sub(localVector7.set(worldWidth / 2, 0, 0).applyQuaternion(worldRotation))
+                      if (plane.open) {
+                        const normal = localVector2.copy(backwardVector)
+                          .applyQuaternion(localQuaternion.setFromRotationMatrix(plane.matrixWorld));
+                        const uiPlane = localPlane.setFromNormalAndCoplanarPoint(
+                          normal,
+                          localVector3.setFromMatrixPosition(plane.matrixWorld)
                         );
-                        const x = yAxis.distanceToPoint(intersectionPoint) / worldWidth * width;
-                        const xAxis = localPlane3.setFromNormalAndCoplanarPoint(
-                          localVector5.copy(downVector)
-                            .applyQuaternion(worldRotation),
-                          localVector6.copy(worldPosition)
-                            .add(localVector7.set(0, worldHeight / 2, 0).applyQuaternion(worldRotation))
-                        );
-                        const y = xAxis.distanceToPoint(intersectionPoint) / worldHeight * height;
+                        const intersectionPoint = uiPlane.intersectLine(controllerLine, localVector3);
 
-                        hoverState.x = x;
-                        hoverState.y = y;
+                        if (intersectionPoint) {
+                          const distance = intersectionPoint.distanceTo(localLine.start);
 
-                        if (x >= 0 && x < width && y > 0 && y <= height) {
-                          let anchor = null;
-                          const {anchors} = plane;
-                          for (let i = 0; i < anchors.length; i++) {
-                            const a = anchors[i];
-                            if (x >= a.left && x <= a.right && y >= a.top && y <= a.bottom) {
-                              anchor = a;
-                              break;
-                            }
-                          }
+                          if (distance < minDistance) {
+                            hoverState.intersectionPoint = intersectionPoint;
 
-                          if (anchor) {
-                            hoverState.anchor = anchor;
-                            hoverState.value = (x - anchor.left) / (anchor.right - anchor.left);
-                            hoverState.crossValue = (y - anchor.top) / (anchor.bottom - anchor.top);
+                            const {width, height, worldWidth, worldHeight} = plane;
+                            const worldPosition = localVector4.setFromMatrixPosition(plane.matrixWorld);
+                            const worldRotation = localQuaternion.setFromRotationMatrix(plane.matrixWorld);
 
-                            const anchorMidpoint = localCoord.set(
-                              ((anchor.left + anchor.right) / 2) / width * worldWidth,
-                              ((anchor.top + anchor.bottom) / 2) / height * worldHeight
+                            hoverState.target = plane;
+
+                            const yAxis = localPlane2.setFromNormalAndCoplanarPoint(
+                              localVector5.copy(rightVector)
+                                .applyQuaternion(worldRotation),
+                              localVector6.copy(worldPosition)
+                                .sub(localVector7.set(worldWidth / 2, 0, 0).applyQuaternion(worldRotation))
                             );
-                            const anchorSize = localCoord2.set(
-                              (anchor.right - anchor.left) / width * worldWidth,
-                              (anchor.bottom - anchor.top) / height * worldHeight
+                            const x = yAxis.distanceToPoint(intersectionPoint) / worldWidth * width;
+                            const xAxis = localPlane3.setFromNormalAndCoplanarPoint(
+                              localVector5.copy(downVector)
+                                .applyQuaternion(worldRotation),
+                              localVector6.copy(worldPosition)
+                                .add(localVector7.set(0, worldHeight / 2, 0).applyQuaternion(worldRotation))
                             );
-                            boxMesh.position.copy(worldPosition)
-                              .add(
-                                localVector7.set((-worldWidth / 2) + anchorMidpoint.x, (worldHeight / 2) - anchorMidpoint.y, 0)
-                                  .applyQuaternion(worldRotation)
+                            const y = xAxis.distanceToPoint(intersectionPoint) / worldHeight * height;
+
+                            hoverState.x = x;
+                            hoverState.y = y;
+
+                            if (x >= 0 && x < width && y > 0 && y <= height) {
+                              let anchor = null;
+                              const {anchors} = plane;
+                              for (let i = 0; i < anchors.length; i++) {
+                                const a = anchors[i];
+                                if (x >= a.left && x <= a.right && y >= a.top && y <= a.bottom) {
+                                  anchor = a;
+                                  break;
+                                }
+                              }
+
+                              if (anchor) {
+                                hoverState.anchor = anchor;
+                                hoverState.value = (x - anchor.left) / (anchor.right - anchor.left);
+                                hoverState.crossValue = (y - anchor.top) / (anchor.bottom - anchor.top);
+
+                                const anchorMidpoint = localCoord.set(
+                                  ((anchor.left + anchor.right) / 2) / width * worldWidth,
+                                  ((anchor.top + anchor.bottom) / 2) / height * worldHeight
+                                );
+                                const anchorSize = localCoord2.set(
+                                  (anchor.right - anchor.left) / width * worldWidth,
+                                  (anchor.bottom - anchor.top) / height * worldHeight
+                                );
+                                boxMesh.position.copy(worldPosition)
+                                  .add(
+                                    localVector7.set((-worldWidth / 2) + anchorMidpoint.x, (worldHeight / 2) - anchorMidpoint.y, 0)
+                                      .applyQuaternion(worldRotation)
+                                  );
+                                boxMesh.quaternion.copy(worldRotation);
+                                boxMesh.scale.set(anchorSize.x, anchorSize.y, 0.01);
+                                boxMesh.updateMatrixWorld();
+
+                                if (!boxMesh.visible) {
+                                  boxMesh.visible = true;
+                                }
+                              } else {
+                                hoverState.anchor = null;
+                                hoverState.value = 0;
+                                hoverState.crossValue = 0;
+
+                                if (boxMesh.visible) {
+                                  boxMesh.visible = false;
+                                }
+                              }
+
+                              dotMesh.position.copy(intersectionPoint);
+                              dotMesh.quaternion.setFromUnitVectors(
+                                forwardVector,
+                                normal
                               );
-                            boxMesh.quaternion.copy(worldRotation);
-                            boxMesh.scale.set(anchorSize.x, anchorSize.y, 0.01);
-                            boxMesh.updateMatrixWorld();
+                              dotMesh.updateMatrixWorld();
+                              if (!gamepad.buttons.trigger.pressed && dotMesh.material.color.getHex() !== RAY_COLOR) {
+                                dotMesh.material.color.setHex(RAY_COLOR);
+                              } else if (gamepad.buttons.trigger.pressed && dotMesh.material.color.getHex() !== RAY_HIGHLIGHT_COLOR) {
+                                dotMesh.material.color.setHex(RAY_HIGHLIGHT_COLOR);
+                              }
+                              dotMesh.visible = true;
 
-                            if (!boxMesh.visible) {
-                              boxMesh.visible = true;
-                            }
-                          } else {
-                            hoverState.anchor = null;
-                            hoverState.value = 0;
-                            hoverState.crossValue = 0;
+                              rayMesh.scale.z = Math.max(distance, 0.001);
+                              rayMesh.updateMatrixWorld();
+                              rayMesh.visible = true;
 
-                            if (boxMesh.visible) {
-                              boxMesh.visible = false;
+                              found = true;
+                              minDistance = distance;
                             }
                           }
-
-                          dotMesh.position.copy(intersectionPoint);
-                          dotMesh.quaternion.setFromUnitVectors(
-                            forwardVector,
-                            normal
-                          );
-                          dotMesh.updateMatrixWorld();
-                          if (!gamepad.buttons.trigger.pressed && dotMesh.material.color.getHex() !== RAY_COLOR) {
-                            dotMesh.material.color.setHex(RAY_COLOR);
-                          } else if (gamepad.buttons.trigger.pressed && dotMesh.material.color.getHex() !== RAY_HIGHLIGHT_COLOR) {
-                            dotMesh.material.color.setHex(RAY_HIGHLIGHT_COLOR);
-                          }
-                          dotMesh.visible = true;
-
-                          rayMesh.scale.z = intersectionPoint.distanceTo(localLine.start);
-                          rayMesh.updateMatrixWorld();
-                          rayMesh.visible = true;
-
-                          found = true;
-                          break;
                         }
                       }
                     }

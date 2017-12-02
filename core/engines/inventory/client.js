@@ -285,11 +285,29 @@ class Inventory {
         };
         wallet.on('assets', _walletAssets);
 
-        const planeMeshes = {};
+        let planeMeshes = {};
+        let numPlaneMeshCloses = 0;
+        const _gcPlaneMeshes = () => {
+          if (++numPlaneMeshCloses >= 10) {
+            const newPlaneMeshes = {};
+            for (const id in planeMeshes) {
+              const planeMesh = planeMeshes[id]
+
+              if (planeMesh) {
+                planeMeshes[id] = planeMesh;
+              }
+            }
+            planeMeshes = newPlaneMeshes;
+            numPlaneMeshCloses = 0;
+          }
+        };
         const _walletMenuOpen = ({id, position, rotation, scale, attributes, attributeSpecs}) => {
+          const size = 640;
+          const worldSize = 0.4;
+
           const canvas = document.createElement('canvas');
-          canvas.width = 640;
-          canvas.height = 640;
+          canvas.width = size;
+          canvas.height = size;
 
           const ctx = canvas.getContext('2d');
           ctx.fillStyle = '#FFF';
@@ -309,13 +327,27 @@ class Inventory {
           );
           texture.needsUpdate = true;
 
-          const planeMesh = _makePlaneMesh(0.4, 0.4, texture);
+          const planeMesh = _makePlaneMesh(worldSize, worldSize, texture);
           planeMesh.position.copy(position);
           planeMesh.quaternion.copy(rotation);
           planeMesh.scale.copy(scale);
-          planeMesh.updateMatrixWorld();
           scene.add(planeMesh);
+
+          const plane = new THREE.Object3D();
+          plane.visible = false;
+          plane.width = size;
+          plane.height = size;
+          plane.worldWidth = worldSize;
+          plane.worldHeight = worldSize;
+          plane.open = true;
+          plane.anchors = [];
+          planeMesh.add(plane);
+
+          planeMesh.updateMatrixWorld()
+          plane.updateMatrixWorld();;
           planeMeshes[id] = planeMesh;
+
+          uiTracker.addPlane(plane);
         };
         wallet.on('menuopen', _walletMenuOpen);
         const _walletMenuClose = id => {
@@ -323,7 +355,9 @@ class Inventory {
           scene.remove(planeMesh);
           planeMesh.geometry.dispose();
           planeMesh.material.dispose();
-          planeMeshes[id] = null; // XXX gc after a few iterations
+          planeMeshes[id] = null;
+
+          _gcPlaneMeshes();
         };
         wallet.on('menuclose', _walletMenuClose);
 
@@ -658,6 +692,7 @@ class Inventory {
         plane.height = HEIGHT;
         plane.worldWidth = WORLD_WIDTH;
         plane.worldHeight = WORLD_HEIGHT;
+        plane.open = false;
         const _pushAnchor = (anchors, x, y, w, h, triggerdown = null) => {
           anchors.push({
             left: x,
@@ -1172,7 +1207,9 @@ class Inventory {
             // transparent: true,
             // renderOrder: -1,
           });
-          return new THREE.Mesh(geometry, material);
+          const mesh = new THREE.Mesh(geometry, material);
+          mesh.frustumCulled = false;
+          return mesh;
         };
         const planeMesh = _makePlaneMesh(WORLD_WIDTH, WORLD_HEIGHT, texture);
         menuMesh.add(planeMesh);
@@ -1314,9 +1351,8 @@ class Inventory {
         const _closeMenu = () => {
           // menuMesh.visible = false;
 
-          menuState.open = false; // XXX need to cancel other menu states as well
-
-          uiTracker.setOpen(false);
+          menuState.open = false;
+          plane.open = false;
 
           sfx.digi_powerdown.trigger();
 
@@ -1345,8 +1381,7 @@ class Inventory {
           menuState.position.copy(newMenuPosition);
           menuState.rotation.copy(newMenuRotation);
           menuState.scale.copy(newMenuScale);
-
-          uiTracker.setOpen(true);
+          plane.open = true;
 
           sfx.digi_slide.trigger();
 
