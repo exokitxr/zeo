@@ -1,14 +1,15 @@
 const rowHeight = 100;
 
-const renderAttributes = (ctx, attributes, attributeSpecs, fontSize, w, h, {arrowDownImg, linkImg}) => {
+const renderAttributes = (ctx, attributes, attributeSpecs, fontSize, w, h, menuState, {arrowDownImg, linkImg}) => {
   ctx.font = `${fontSize}px Open sans`;
 
-  let i = 0;
-  for (const name in attributeSpecs) {
-    const attributeSpec = attributeSpecs[name];
+  const attributeNames = Object.keys(attributeSpecs);
+  for (let i = attributeNames.length - 1; i >= 0; i--) {
+    const attributeName = attributeNames[i];
+    const attributeSpec = attributeSpecs[attributeName];
     const {type} = attributeSpec;
 
-    const attributeObject = attributes[name] || {};
+    const attributeObject = attributes[attributeName] || {};
     let {value} = attributeObject;
     if (value === undefined) {
       value = attributeSpec.value;
@@ -46,14 +47,39 @@ const renderAttributes = (ctx, attributes, attributeSpecs, fontSize, w, h, {arro
       ctx.fillStyle = '#ff4b4b';
       ctx.fillRect(w + (factor * 640), h - 25 + i*rowHeight, 5, 25 + 5 + 25);
     } else if (type === 'select') {
-      const {options} = attributeSpec;
+      if (menuState.focus !== attributeName) {
+        ctx.fillStyle = '#FFF';
+        ctx.fillRect(w, h + i*rowHeight, 640, fontSize*2);
 
-      ctx.strokeStyle = '#111';
-      ctx.lineWidth = 3;
-      ctx.strokeRect(w, h + i*rowHeight, 640, fontSize*2);
-      ctx.fillStyle = '#111';
-      ctx.fillText(value, w, h + fontSize*2 - fontSize*0.3 + i*rowHeight, 640);
-      ctx.drawImage(arrowDownImg, w + 640 - fontSize*2, h + i*rowHeight, fontSize*2, fontSize*2);
+        ctx.fillStyle = '#111';
+        ctx.fillText(value, w, h + fontSize*2 - fontSize*0.5 + i*rowHeight, 640);
+        ctx.drawImage(arrowDownImg, w + 640 - fontSize*2, h + i*rowHeight, fontSize*2, fontSize*2);
+
+        ctx.strokeStyle = '#111';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(w, h + i*rowHeight, 640, fontSize*2);
+      } else {
+        const {options} = attributeSpec;
+
+        ctx.fillStyle = '#FFF';
+        ctx.fillRect(w, h + i*rowHeight, 640, Math.max(options.length, 1) * fontSize*2);
+
+        for (let j = 0; j < options.length; j++) {
+          const option = options[j];
+
+          if (value === option) {
+            ctx.fillStyle = '#EEE';
+            ctx.fillRect(w, h + i*rowHeight + j*fontSize*2, 640, fontSize*2);
+          }
+
+          ctx.fillStyle = '#111';
+          ctx.fillText(option, w, h + fontSize*2 - fontSize*0.5 + i*rowHeight + j*fontSize*2, 640);
+        }
+
+        ctx.strokeStyle = '#111';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(w, h + i*rowHeight, 640, Math.max(options.length, 1) * fontSize*2);
+      }
     } else if (type === 'color') {
       ctx.strokeStyle = '#111';
       ctx.lineWidth = 3;
@@ -77,12 +103,10 @@ const renderAttributes = (ctx, attributes, attributeSpecs, fontSize, w, h, {arro
       ctx.fillText(value, w, h + fontSize*2 - fontSize*0.3 + i*rowHeight, 640);
       ctx.drawImage(linkImg, w + 640 - fontSize*2, h + i*rowHeight, fontSize*2, fontSize*2);
     }
-
-    i++;
   }
 };
 
-const getAttributesAnchors = (attributeSpecs, fontSize, w, h, {focus}) => {
+const getAttributesAnchors = (attributeSpecs, fontSize, w, h, menuState, {focus}) => {
   const result = [];
 
   const _pushAnchor = (x, y, w, h, name, type) => {
@@ -107,7 +131,8 @@ const getAttributesAnchors = (attributeSpecs, fontSize, w, h, {focus}) => {
 
   let i = 0;
   for (const name in attributeSpecs) {
-    const {type} = attributeSpecs[name];
+    const attributeSpec = attributeSpecs[name];
+    const {type} = attributeSpec;
 
     if (type === 'matrix') {
       _pushAnchor(w, h + i*rowHeight, 640, fontSize*2, name, type);
@@ -118,7 +143,14 @@ const getAttributesAnchors = (attributeSpecs, fontSize, w, h, {focus}) => {
     } else if (type === 'number') {
       _pushAnchor(w, h - 25 + i*rowHeight, 640, 25 + 5 + 25, name, type);
     } else if (type === 'select') {
-      _pushAnchor(w, h + i*rowHeight, 640, fontSize*2, name, type);
+      if (menuState.focus !== name) {
+        _pushAnchor(w, h + i*rowHeight, 640, fontSize*2, name, type);
+      } else {
+        const {options} = attributeSpec;
+        for (let j = 0; j < options.length; j++) {
+          _pushAnchor(w, h + i*rowHeight + j*fontSize*2, 640, fontSize*2, name, type);
+        }
+      }
     } else if (type === 'color') {
       _pushAnchor(w, h + i*rowHeight, fontSize*2, fontSize*2, name, type);
       _pushAnchor(w + fontSize*2, h + i*rowHeight, 640 - fontSize*2, fontSize*2, name, type);

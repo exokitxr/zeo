@@ -310,6 +310,7 @@ class Inventory {
           const canvas = document.createElement('canvas');
           canvas.width = size;
           canvas.height = size;
+          const ctx = canvas.getContext('2d');
 
           const texture = new THREE.Texture(
             canvas,
@@ -323,11 +324,14 @@ class Inventory {
             16
           );
 
-          const ctx = canvas.getContext('2d');
+          const itemMenuState = {
+            focus: null,
+          };
+
           const _renderItemMenu = () => {
             ctx.fillStyle = '#FFF';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            renderAttributes(ctx, attributes, attributeSpecs, fontSize, 0, 0, {arrowDownImg, linkImg});
+            renderAttributes(ctx, attributes, attributeSpecs, fontSize, 0, 0, itemMenuState, {arrowDownImg, linkImg});
 
             texture.needsUpdate = true;
           };
@@ -347,30 +351,42 @@ class Inventory {
           plane.worldWidth = worldSize;
           plane.worldHeight = worldSize;
           plane.open = true;
-          plane.anchors = getAttributesAnchors(attributeSpecs, fontSize, 0, 0, {
-            focus: ({name: attributeName, type, fx, fy}) => {
-              console.log('on focus 1', grabbable, attributeName, type, fx, fy);
-
-              if (type === 'number') {
-                const {min, max, step} = attributeSpecs[attributeName];
-
-                let newValue = min + (fx * (max - min));
-                if (step > 0) {
-                  newValue = _roundToDecimals(Math.round(newValue / step) * step, 8);
-                }
-
-                tags.emit('setAttribute', {
-                  id: tagMesh.item.id,
-                  name: attributeName,
-                  value: newValue,
-                });
-
-                _renderItemMenu();
-              }
-            },
-          });
+          plane.anchors = [];
           planeMesh.add(plane);
           planeMesh.plane = plane;
+
+          const _updateAttributesAnchors = () => {
+            plane.anchors = getAttributesAnchors(attributeSpecs, fontSize, 0, 0, itemMenuState, {
+              focus: ({name: attributeName, type, fx, fy}) => {
+                // console.log('on focus 1', grabbable, attributeName, type, fx, fy);
+
+                if (type === 'number') {
+                  const {min, max, step} = attributeSpecs[attributeName];
+
+                  let newValue = min + (fx * (max - min));
+                  if (step > 0) {
+                    newValue = _roundToDecimals(Math.round(newValue / step) * step, 8);
+                  }
+
+                  tags.emit('setAttribute', {
+                    id: tagMesh.item.id,
+                    name: attributeName,
+                    value: newValue,
+                  });
+
+                  itemMenuState.focus = null;
+                } else if (type === 'select') {
+                  itemMenuState.focus = attributeName;
+                } else {
+                  itemMenuState.focus = null;
+                }
+
+                _renderItemMenu();
+                _updateAttributesAnchors();
+              },
+            });
+          };
+          _updateAttributesAnchors();
 
           planeMesh.updateMatrixWorld()
           plane.updateMatrixWorld();
@@ -559,7 +575,7 @@ class Inventory {
                 const {item} = tagMesh;
                 const {attributes} = item;
                 const attributeSpecs = tags.getAttributeSpecsMap(displayName);
-                renderAttributes(ctx, attributes, attributeSpecs, fontSize, canvas.width - 640 - 40, 150*2 + 100 + 40, {arrowDownImg, linkImg});
+                renderAttributes(ctx, attributes, attributeSpecs, fontSize, canvas.width - 640 - 40, 150*2 + 100 + 40, {}, {arrowDownImg, linkImg});
 
                 // bar
                 ctx.fillStyle = '#CCC';
@@ -1141,9 +1157,9 @@ class Inventory {
           if (localMod) {
             const {displayName} = localMod;
             const attributeSpecs = tags.getAttributeSpecsMap(displayName);
-            result.push.apply(result, getAttributesAnchors(attributeSpecs, fontSize, canvas.width - 640 - 40, 150*2 + 100 + 40, {
+            result.push.apply(result, getAttributesAnchors(attributeSpecs, fontSize, canvas.width - 640 - 40, 150*2 + 100 + 40, {}, {
               focus: ({name, type, fx, fy}) => {
-                console.log('on focus 2', name, type, fx, fy);
+                // console.log('on focus 2', name, type, fx, fy);
               },
             }));
           }
