@@ -343,7 +343,7 @@ class Inventory {
           plane.worldWidth = worldSize;
           plane.worldHeight = worldSize;
           plane.open = true;
-          plane.anchors = [];
+          plane.anchors = getAttributesAnchors(attributeSpecs, fontSize, 0, 0);
           planeMesh.add(plane);
           planeMesh.plane = plane;
 
