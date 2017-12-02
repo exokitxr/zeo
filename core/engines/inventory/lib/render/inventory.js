@@ -44,7 +44,7 @@ const renderAttributes = (ctx, attributes, attributeSpecs, fontSize, w, h, {arro
       ctx.fillStyle = '#CCC';
       ctx.fillRect(w, h + i*rowHeight, 640, 5);
       ctx.fillStyle = '#ff4b4b';
-      ctx.fillRect(w + (factor / 640), h - 25 + i*rowHeight, 5, 25 + 5 + 25);
+      ctx.fillRect(w + (factor * 640), h - 25 + i*rowHeight, 5, 25 + 5 + 25);
     } else if (type === 'select') {
       const {options} = attributeSpec;
 

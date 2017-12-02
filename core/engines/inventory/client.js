@@ -311,14 +311,6 @@ class Inventory {
           canvas.width = size;
           canvas.height = size;
 
-          const ctx = canvas.getContext('2d');
-          const _renderItemMenu = () => {
-            ctx.fillStyle = '#FFF';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            renderAttributes(ctx, attributes, attributeSpecs, fontSize, 0, 0, {arrowDownImg, linkImg});
-          };
-          _renderItemMenu();
-
           const texture = new THREE.Texture(
             canvas,
             THREE.UVMapping,
@@ -330,7 +322,16 @@ class Inventory {
             THREE.UnsignedByteType,
             16
           );
-          texture.needsUpdate = true;
+
+          const ctx = canvas.getContext('2d');
+          const _renderItemMenu = () => {
+            ctx.fillStyle = '#FFF';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            renderAttributes(ctx, attributes, attributeSpecs, fontSize, 0, 0, {arrowDownImg, linkImg});
+
+            texture.needsUpdate = true;
+          };
+          _renderItemMenu();
 
           const planeMesh = _makePlaneMesh(worldSize, worldSize, texture);
           planeMesh.position.copy(position);
