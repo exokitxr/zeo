@@ -10,7 +10,7 @@ const {
 
   DEFAULT_USER_HEIGHT,
 } = require('./lib/constants/menu');
-const {renderAttributes, getAttributesAnchors} = require('./lib/render/inventory');
+const inventoryRenderer  = require('./lib/render/inventory');
 
 const NUM_POSITIONS = 500 * 1024;
 const MENU_RANGE = 3;
@@ -176,12 +176,13 @@ class Inventory {
         '/core/engines/anima',
         '/core/utils/js-utils',
         '/core/utils/sprite-utils',
-        '/core/utils/vrid-utils',
+        '/core/utils/menu-utils',
       ]),
       // _requestImageBitmap('/archae/inventory/img/menu.png'),
       _requestImageBitmap('/archae/inventory/img/arrow-left.png'),
       _requestImageBitmap('/archae/inventory/img/arrow-down.png'),
       _requestImageBitmap('/archae/inventory/img/link.png'),
+      // _requestImageBitmap('/archae/inventory/img/color.png'),
       _requestRemoteMods(),
     ]).then(([
       [
@@ -200,23 +201,27 @@ class Inventory {
         anima,
         jsUtils,
         spriteUtils,
-        vridUtils,
+        menuUtils,
       ],
       // menuImg,
       arrowLeftImg,
       arrowDownImg,
       linkImg,
+      // colorImg,
       remoteMods,
     ]) => {
       if (live) {
         const {THREE, scene, camera, renderer} = three;
         const {materials: {assets: assetsMaterial}, sfx} = resource;
         const {base64} = jsUtils;
-        const {vridApi} = vridUtils;
 
         const THREEEffectComposer = EffectComposer(THREE);
         const {THREERenderPass, THREEShaderPass} = THREEEffectComposer;
         const THREEBlurShader = BlurShader(THREE);
+
+        const {renderAttributes, getAttributesAnchors} = inventoryRenderer(THREE);
+
+        const colorWheelImg = menuUtils.getColorWheelImg();
 
         const _updateInstalled = () => {
           for (let i = 0; i < remoteMods.length; i++) {
@@ -331,7 +336,7 @@ class Inventory {
           const _renderItemMenu = () => {
             ctx.fillStyle = '#FFF';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            renderAttributes(ctx, attributes, attributeSpecs, fontSize, 0, 0, itemMenuState, {arrowDownImg, linkImg});
+            renderAttributes(ctx, attributes, attributeSpecs, fontSize, 0, 0, itemMenuState, {arrowDownImg, colorWheelImg, linkImg});
 
             texture.needsUpdate = true;
           };
@@ -356,7 +361,7 @@ class Inventory {
           planeMesh.plane = plane;
 
           const _updateAttributesAnchors = () => {
-            plane.anchors = getAttributesAnchors(attributes, attributeSpecs, fontSize, 0, 0, itemMenuState, {
+            plane.anchors = getAttributesAnchors(attributes, attributeSpecs, fontSize, 0, 0, itemMenuState, {colorWheelImg}, {
               focus: ({name: attributeName, type, newValue}) => {
                 if (type === 'number') {
                   tags.emit('setAttribute', {
@@ -374,6 +379,20 @@ class Inventory {
                   });
 
                   itemMenuState.focus = attributeName;
+                } else if (type === 'color') {
+                  if (newValue !== undefined) {
+                    console.log('got color value', newValue);
+
+                    tags.emit('setAttribute', {
+                      id: tagMesh.item.id,
+                      name: attributeName,
+                      value: newValue,
+                    });
+
+                    itemMenuState.focus = null;
+                  } else {
+                    itemMenuState.focus = attributeName;
+                  }
                 } else if (type === 'checkbox') {
                   tags.emit('setAttribute', {
                     id: tagMesh.item.id,
