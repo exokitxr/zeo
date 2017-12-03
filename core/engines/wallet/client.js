@@ -214,7 +214,7 @@ class Wallet {
                   return vridApi.set('assets', assets);
                 });
 
-              const _addAsset = (id, type, assetId, name, ext, path, attributes, icon, n, physics, matrix) => {
+              const _addAsset = (id, type, assetId, name, ext, path, attributes, icon, n, physics, matrix, open) => {
                 const position = new THREE.Vector3(matrix[0], matrix[1], matrix[2]);
                 const rotation = new THREE.Quaternion(matrix[3], matrix[4], matrix[5], matrix[6]);
                 const scale = new THREE.Vector3(matrix[7], matrix[8], matrix[9]);
@@ -230,6 +230,7 @@ class Wallet {
                   icon,
                   n,
                   physics,
+                  open,
                   position,
                   rotation,
                   scale,
@@ -239,6 +240,7 @@ class Wallet {
                 );
                 _bindAssetInstance(assetInstance);
                 _bindAssetInstancePhysics(assetInstance);
+                _bindAssetInstanceMenu(assetInstance);
               };
 
               const connection = new AutoWs(_relativeWsUrl('archae/walletWs'));
@@ -263,9 +265,10 @@ class Wallet {
                       n,
                       physics,
                       matrix,
+                      open,
                     } = assetSpec;
 
-                    _addAsset(id, type, assetId, name, ext, path, attributes, icon, n, physics, matrix);
+                    _addAsset(id, type, assetId, name, ext, path, attributes, icon, n, physics, matrix, open);
                   }
                 } else if (type === 'addAsset') {
                   const {
@@ -280,9 +283,10 @@ class Wallet {
                     n,
                     physics,
                     matrix,
+                    open,
                   } = args;
 
-                  _addAsset(id, type, assetId, name, ext, path, attributes, icon, n, physics, matrix);
+                  _addAsset(id, type, assetId, name, ext, path, attributes, icon, n, physics, matrix, open);
                 } else if (type === 'removeAsset') {
                   const {
                     id,
@@ -300,6 +304,14 @@ class Wallet {
 
                   const assetInstance = assetsMesh.getAssetInstance(id);
                   assetInstance.updatePhysics(physics);
+                } else if (type === 'setOpen') {
+                  const {
+                    id,
+                    open,
+                  } = args;
+
+                  const assetInstance = assetsMesh.getAssetInstance(id);
+                  assetInstance.updateOpen(open);
                 } else {
                   console.warn('wallet got unknown message type:', JSON.stringify(type));
                 }
@@ -440,6 +452,7 @@ class Wallet {
                     icon,
                     n,
                     physics,
+                    open,
                     position,
                     rotation,
                     scale,
@@ -458,6 +471,7 @@ class Wallet {
                     this.attributes = attributes;
                     this.icon = icon;
                     this.physics = physics;
+                    this.open = open;
                   }
 
                   emit(t, e) {
@@ -532,6 +546,19 @@ class Wallet {
                     this.emit('hide');
                   }
 
+                  setOpen(open) {
+                    this.open = open;
+                    this.emit('setOpen', open);
+
+                    connection.send(JSON.stringify({
+                      method: 'setOpen',
+                      args: {
+                        id: this.id,
+                        open,
+                      },
+                    }));
+                  }
+
                   enablePhysics() {
                     this.physics = true;
                     this.emit('physics', true);
@@ -563,6 +590,11 @@ class Wallet {
                     this.emit('physics', physics);
                   }
 
+                  updateOpen(open) {
+                    this.open = open;
+                    this.emit('setOpen', open);
+                  }
+
                   collide() {
                     this.emit('collide');
                   }
@@ -571,8 +603,8 @@ class Wallet {
                 const assetInstances = [];
                 mesh.getAssetInstances = () => assetInstances;
                 mesh.getAssetInstance = id => assetInstances.find(assetInstance => assetInstance.id === id);
-                mesh.addAssetInstance = (id, type, assetId, name, ext, path, attributes, icon, n, physics, position, rotation, scale, localPosition, localRotation, localScale) => {
-                  const assetInstance = new AssetInstance(id, type, assetId, name, ext, path, attributes, icon, n, physics, position, rotation, scale, localPosition, localRotation, localScale);
+                mesh.addAssetInstance = (id, type, assetId, name, ext, path, attributes, icon, n, physics, open, position, rotation, scale, localPosition, localRotation, localScale) => {
+                  const assetInstance = new AssetInstance(id, type, assetId, name, ext, path, attributes, icon, n, physics, open, position, rotation, scale, localPosition, localRotation, localScale);
 
                   hand.addGrabbable(assetInstance);
                   assetInstances.push(assetInstance);
@@ -955,6 +987,15 @@ class Wallet {
                   }
                 });
               };
+              const _bindAssetInstanceMenu = assetInstance => {
+                if (assetInstance.open) {
+                  wallet.emit('menuopen', assetInstance);
+                }
+
+                assetInstance.on('setOpen', open => {
+                  walletApi.emit(open ? 'menuopen' : 'menuclose', assetInstance);
+                });
+              };
 
               const _pullItem = (assetSpec, side) => {
                 const {id, name, ext, path, attributes, icon = null} = assetSpec;
@@ -973,6 +1014,7 @@ class Wallet {
                     icon: {value: icon},
                     position: {value: DEFAULT_MATRIX},
                     physics: {value: false},
+                    open: {value: false},
                   },
                   metadata: {},
                 };
@@ -1182,6 +1224,7 @@ class Wallet {
                       icon: {value: icon},
                       position: {value: matrix},
                       physics: {value: physics},
+                      open: {value: open},
                     },
                   } = itemSpec;
                   const n = murmur(id);
@@ -1200,6 +1243,7 @@ class Wallet {
                     icon,
                     n,
                     physics,
+                    open,
                     position,
                     rotation,
                     scale,
@@ -1209,6 +1253,7 @@ class Wallet {
                   );
                   _bindAssetInstance(assetInstance);
                   _bindAssetInstancePhysics(assetInstance);
+                  _bindAssetInstanceMenu(assetInstance);
 
                   connection.send(JSON.stringify({
                     method: 'addAsset',
@@ -1224,6 +1269,7 @@ class Wallet {
                       n,
                       physics,
                       matrix,
+                      open,
                     },
                   }));
 

@@ -309,116 +309,8 @@ class Inventory {
             numPlaneMeshCloses = 0;
           }
         };
-        const _walletMenuOpen = ({grabbable, attributeSpecs}) => {
+        const _walletMenuOpen = grabbable => {
           const {assetId: id, position, rotation, scale, attributes} = grabbable;
-
-          const size = 640;
-          const worldSize = 0.4;
-
-          const canvas = document.createElement('canvas');
-          canvas.width = size;
-          canvas.height = size;
-          const ctx = canvas.getContext('2d');
-
-          const texture = new THREE.Texture(
-            canvas,
-            THREE.UVMapping,
-            THREE.ClampToEdgeWrapping,
-            THREE.ClampToEdgeWrapping,
-            THREE.LinearFilter,
-            THREE.LinearFilter,
-            THREE.RGBAFormat,
-            THREE.UnsignedByteType,
-            16
-          );
-
-          const itemMenuState = {
-            focus: null,
-          };
-
-          const _renderItemMenu = () => {
-            ctx.fillStyle = '#FFF';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            renderAttributes(ctx, attributes, attributeSpecs, fontSize, 0, 0, itemMenuState, {arrowDownImg, colorWheelImg, linkImg});
-
-            texture.needsUpdate = true;
-          };
-          _renderItemMenu();
-
-          const planeMesh = _makePlaneMesh(worldSize, worldSize, texture);
-          planeMesh.position.copy(position);
-          planeMesh.quaternion.copy(rotation);
-          planeMesh.scale.copy(scale);
-          planeMesh.grabbable = grabbable;
-          scene.add(planeMesh);
-
-          const plane = new THREE.Object3D();
-          plane.visible = false;
-          plane.width = size;
-          plane.height = size;
-          plane.worldWidth = worldSize;
-          plane.worldHeight = worldSize;
-          plane.open = true;
-          plane.anchors = [];
-          planeMesh.add(plane);
-          planeMesh.plane = plane;
-
-          const _getAssetId = () => String(murmur(JSON.stringify([
-            grabbable.name,
-            grabbable.ext,
-            grabbable.path,
-            grabbable.attributes,
-          ])));
-          const _updateAttributesAnchors = () => {
-            plane.anchors = getAttributesAnchors(attributes, attributeSpecs, fontSize, 0, 0, itemMenuState, {colorWheelImg}, {
-              focus: ({name: attributeName, type, newValue}) => {
-                if (type === 'number') {
-                  attributes[attributeName].value = newValue; // XXX commit these to the backend
-                  grabbable.assetId = _getAssetId();
-
-                  itemMenuState.focus = null;
-                } else if (type === 'select') {
-                  if (newValue !== undefined) {
-                    attributes[attributeName].value = newValue;
-                    grabbable.assetId = _getAssetId();
-
-                    itemMenuState.focus = null;
-                  } else {
-                    itemMenuState.focus = attributeName;
-                  }
-                } else if (type === 'color') {
-                  if (newValue !== undefined) {
-                    attributes[attributeName].value = newValue;
-                    grabbable.assetId = _getAssetId();
-
-                    itemMenuState.focus = null;
-                  } else {
-                    itemMenuState.focus = attributeName;
-                  }
-                } else if (type === 'checkbox') {
-                  attributes[attributeName].value = newValue;
-                  grabbable.assetId = _getAssetId();
-
-                  itemMenuState.focus = null;
-                } else {
-                  itemMenuState.focus = null;
-                }
-
-                _renderItemMenu();
-                _updateAttributesAnchors();
-              },
-            });
-          };
-          _updateAttributesAnchors();
-
-          planeMesh.updateMatrixWorld()
-          plane.updateMatrixWorld();
-          planeMeshes[id] = planeMesh;
-
-          uiTracker.addPlane(plane);
-        };
-        const _menudown = e => {
-          const grabbable = hand.getGrabbedGrabbable(e.side);
 
           let match;
           if (grabbable && grabbable.ext === 'itm' && grabbable.path && (match = grabbable.path.match(/^(.+?)\/(.+?)$/))) {
@@ -430,16 +322,145 @@ class Inventory {
               const itemSpec = modSpec.metadata.items[0];
               const {attributes: attributeSpecs} = itemSpec;
 
-              grabbable.hide();
-              grabbable.disablePhysics();
+              const size = 640;
+              const worldSize = 0.4;
 
-              _walletMenuOpen({
-                grabbable,
-                attributeSpecs,
-              });
+              const canvas = document.createElement('canvas');
+              canvas.width = size;
+              canvas.height = size;
+              const ctx = canvas.getContext('2d');
 
-              e.stopImmediatePropagation();
-            } 
+              const texture = new THREE.Texture(
+                canvas,
+                THREE.UVMapping,
+                THREE.ClampToEdgeWrapping,
+                THREE.ClampToEdgeWrapping,
+                THREE.LinearFilter,
+                THREE.LinearFilter,
+                THREE.RGBAFormat,
+                THREE.UnsignedByteType,
+                16
+              );
+
+              const itemMenuState = {
+                focus: null,
+              };
+
+              const _renderItemMenu = () => {
+                ctx.fillStyle = '#FFF';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                renderAttributes(ctx, attributes, attributeSpecs, fontSize, 0, 0, itemMenuState, {arrowDownImg, colorWheelImg, linkImg});
+
+                texture.needsUpdate = true;
+              };
+              _renderItemMenu();
+
+              const planeMesh = _makePlaneMesh(worldSize, worldSize, texture);
+              planeMesh.position.copy(position);
+              planeMesh.quaternion.copy(rotation);
+              planeMesh.scale.copy(scale);
+              planeMesh.grabbable = grabbable;
+              scene.add(planeMesh);
+
+              const plane = new THREE.Object3D();
+              plane.visible = false;
+              plane.width = size;
+              plane.height = size;
+              plane.worldWidth = worldSize;
+              plane.worldHeight = worldSize;
+              plane.open = true;
+              plane.anchors = [];
+              planeMesh.add(plane);
+              planeMesh.plane = plane;
+
+              const _getAssetId = () => String(murmur(JSON.stringify([
+                grabbable.name,
+                grabbable.ext,
+                grabbable.path,
+                grabbable.attributes,
+              ])));
+              const _updateAttributesAnchors = () => {
+                plane.anchors = getAttributesAnchors(attributes, attributeSpecs, fontSize, 0, 0, itemMenuState, {colorWheelImg}, {
+                  focus: ({name: attributeName, type, newValue}) => {
+                    if (type === 'number') {
+                      attributes[attributeName].value = newValue; // XXX commit these to the backend
+                      grabbable.assetId = _getAssetId();
+
+                      itemMenuState.focus = null;
+                    } else if (type === 'select') {
+                      if (newValue !== undefined) {
+                        attributes[attributeName].value = newValue;
+                        grabbable.assetId = _getAssetId();
+
+                        itemMenuState.focus = null;
+                      } else {
+                        itemMenuState.focus = attributeName;
+                      }
+                    } else if (type === 'color') {
+                      if (newValue !== undefined) {
+                        attributes[attributeName].value = newValue;
+                        grabbable.assetId = _getAssetId();
+
+                        itemMenuState.focus = null;
+                      } else {
+                        itemMenuState.focus = attributeName;
+                      }
+                    } else if (type === 'checkbox') {
+                      attributes[attributeName].value = newValue;
+                      grabbable.assetId = _getAssetId();
+
+                      itemMenuState.focus = null;
+                    } else {
+                      itemMenuState.focus = null;
+                    }
+
+                    _renderItemMenu();
+                    _updateAttributesAnchors();
+                  },
+                });
+              };
+              _updateAttributesAnchors();
+
+              planeMesh.updateMatrixWorld()
+              plane.updateMatrixWorld();
+              planeMeshes[id] = planeMesh;
+
+              uiTracker.addPlane(plane);
+            }
+          }
+        };
+        wallet.on('menuopen', _walletMenuOpen);
+        // XXX handle all existing opens on init
+        const _walletMenuClose = grabbable => {
+          for (const id in planeMeshes) {
+            const planeMesh = planeMeshes[id];
+            if (planeMesh.grabbable === grabbable) {
+              const {plane} = planeMesh;
+
+              uiTracker.removePlane(plane);
+
+              scene.remove(planeMesh);
+              planeMesh.geometry.dispose();
+              planeMesh.material.dispose();
+              planeMeshes[id] = null;
+
+              _gcPlaneMeshes();
+
+              break;
+            }
+          }
+        };
+        wallet.on('menuclose', _walletMenuClose);
+
+        const _menudown = e => {
+          const grabbable = hand.getGrabbedGrabbable(e.side);
+
+          if (grabbable && grabbable.ext === 'itm') {
+            grabbable.setOpen(true);
+            grabbable.hide();
+            grabbable.disablePhysics();
+
+            e.stopImmediatePropagation();
           }
         };
         input.on('menudown', _menudown, {
@@ -1546,19 +1567,11 @@ class Inventory {
               const planeMesh = planeMeshes[id];
 
               if (planeMesh && planeMesh.position.distanceTo(gamepad.worldPosition) < 0.4) {
-                const {grabbable, plane} = planeMesh;
+                const {grabbable} = planeMesh;
 
+                grabbable.setOpen(false);
                 grabbable.show();
                 grabbable.grab(side);
-
-                uiTracker.removePlane(plane);
-
-                scene.remove(planeMesh);
-                planeMesh.geometry.dispose();
-                planeMesh.material.dispose();
-                planeMeshes[id] = null;
-
-                _gcPlaneMeshes();
 
                 return true;
               }
@@ -1684,6 +1697,8 @@ class Inventory {
 
           world.removeListener('add', _worldAdd);
           wallet.removeListener('assets', _walletAssets);
+          wallet.removeListener('menuopen', _walletMenuOpen);
+          wallet.removeListener('menuclose', _walletMenuClose);
 
           input.removeListener('menudown', _menudown);
           input.removeListener('menudown', _menudown2);
