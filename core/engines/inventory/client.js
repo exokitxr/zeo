@@ -1571,12 +1571,12 @@ class Inventory {
             return false;
           };
           const _handleMod = () => {
-            if (localMod && localMod.metadata && localMod.metadata.files && Array.isArray(localMod.metadata.files) && localMod.metadata.files.length > 0 && _isItemHovered(side)) {
+            if (localMod && localMod.metadata && localMod.metadata.items && Array.isArray(localMod.metadata.items) && localMod.metadata.items.length > 0 && _isItemHovered(side)) {
               const itemSpec = {
                 id: _makeId(),
                 name: 'new-item',
                 ext: 'itm',
-                path: localMod.displayName + '/' + localMod.metadata.files[0].type,
+                path: localMod.displayName + '/' + localMod.metadata.items[0].type,
                 icon: base64.encode(localGeometry),
               };
               wallet.pullItem(itemSpec, side);
