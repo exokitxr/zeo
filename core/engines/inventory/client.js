@@ -175,6 +175,7 @@ class Inventory {
         '/core/engines/notification',
         '/core/engines/anima',
         '/core/utils/js-utils',
+        '/core/utils/hash-utils',
         '/core/utils/sprite-utils',
         '/core/utils/menu-utils',
       ]),
@@ -200,6 +201,7 @@ class Inventory {
         notification,
         anima,
         jsUtils,
+        hashUtils,
         spriteUtils,
         menuUtils,
       ],
@@ -214,6 +216,7 @@ class Inventory {
         const {THREE, scene, camera, renderer} = three;
         const {materials: {assets: assetsMaterial}, sfx} = resource;
         const {base64} = jsUtils;
+        const {murmur} = hashUtils;
 
         const THREEEffectComposer = EffectComposer(THREE);
         const {THREERenderPass, THREEShaderPass} = THREEEffectComposer;
@@ -360,16 +363,19 @@ class Inventory {
           planeMesh.add(plane);
           planeMesh.plane = plane;
 
+          const _getAssetId = () => String(murmur(JSON.stringify(grabbable.path + ':' + JSON.stringify(grabbable.attributes))));
           const _updateAttributesAnchors = () => {
             plane.anchors = getAttributesAnchors(attributes, attributeSpecs, fontSize, 0, 0, itemMenuState, {colorWheelImg}, {
               focus: ({name: attributeName, type, newValue}) => {
                 if (type === 'number') {
-                  attributes[attributeName].value = newValue;
+                  attributes[attributeName].value = newValue; // XXX commit these to the backend
+                  grabbable.assetId = _getAssetId();
 
                   itemMenuState.focus = null;
                 } else if (type === 'select') {
                   if (newValue !== undefined) {
                     attributes[attributeName].value = newValue;
+                    grabbable.assetId = _getAssetId();
 
                     itemMenuState.focus = null;
                   } else {
@@ -378,6 +384,7 @@ class Inventory {
                 } else if (type === 'color') {
                   if (newValue !== undefined) {
                     attributes[attributeName].value = newValue;
+                    grabbable.assetId = _getAssetId();
 
                     itemMenuState.focus = null;
                   } else {
@@ -385,6 +392,7 @@ class Inventory {
                   }
                 } else if (type === 'checkbox') {
                   attributes[attributeName].value = newValue;
+                  grabbable.assetId = _getAssetId();
 
                   itemMenuState.focus = null;
                 } else {
