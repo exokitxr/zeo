@@ -306,8 +306,8 @@ class Inventory {
             numPlaneMeshCloses = 0;
           }
         };
-        const _walletMenuOpen = ({tagMesh, grabbable, attributes, attributeSpecs}) => {
-          const {assetId: id, position, rotation, scale} = grabbable;
+        const _walletMenuOpen = ({grabbable, attributeSpecs}) => {
+          const {assetId: id, position, rotation, scale, attributes} = grabbable;
 
           const size = 640;
           const worldSize = 0.4;
@@ -364,39 +364,27 @@ class Inventory {
             plane.anchors = getAttributesAnchors(attributes, attributeSpecs, fontSize, 0, 0, itemMenuState, {colorWheelImg}, {
               focus: ({name: attributeName, type, newValue}) => {
                 if (type === 'number') {
-                  tags.emit('setAttribute', {
-                    id: tagMesh.item.id,
-                    name: attributeName,
-                    value: newValue,
-                  });
+                  attributes[attributeName].value = newValue;
 
                   itemMenuState.focus = null;
                 } else if (type === 'select') {
-                  tags.emit('setAttribute', {
-                    id: tagMesh.item.id,
-                    name: attributeName,
-                    value: newValue,
-                  });
+                  if (newValue !== undefined) {
+                    attributes[attributeName].value = newValue;
 
-                  itemMenuState.focus = attributeName;
+                    itemMenuState.focus = null;
+                  } else {
+                    itemMenuState.focus = attributeName;
+                  }
                 } else if (type === 'color') {
                   if (newValue !== undefined) {
-                    tags.emit('setAttribute', {
-                      id: tagMesh.item.id,
-                      name: attributeName,
-                      value: newValue,
-                    });
+                    attributes[attributeName].value = newValue;
 
                     itemMenuState.focus = null;
                   } else {
                     itemMenuState.focus = attributeName;
                   }
                 } else if (type === 'checkbox') {
-                  tags.emit('setAttribute', {
-                    id: tagMesh.item.id,
-                    name: attributeName,
-                    value: newValue,
-                  });
+                  attributes[attributeName].value = newValue;
 
                   itemMenuState.focus = null;
                 } else {
@@ -423,23 +411,17 @@ class Inventory {
           if (grabbable && grabbable.ext === 'itm' && grabbable.path && (match = grabbable.path.match(/^(.+?)\/(.+?)$/))) {
             const modName = match[1];
             const fileType = match[2];
-            const tagMesh = world.getTag({
-              type: 'entity',
-              name: modName,
-            });
 
-            if (tagMesh) {
-              const {item} = tagMesh;
-              const {attributes} = item;
-              const attributeSpecs = tags.getAttributeSpecsMap(modName);
+            const modSpec = remoteMods.find(modSpec => modSpec.name === modName);
+            if (modSpec && modSpec.metadata && modSpec.metadata.items && Array.isArray(modSpec.metadata.items) && modSpec.metadata.items.length > 0) {
+              const itemSpec = modSpec.metadata.items[0];
+              const {attributes: attributeSpecs} = itemSpec;
 
               grabbable.hide();
               grabbable.disablePhysics();
 
               _walletMenuOpen({
-                tagMesh,
                 grabbable,
-                attributes,
                 attributeSpecs,
               });
 
@@ -1572,11 +1554,24 @@ class Inventory {
           };
           const _handleMod = () => {
             if (localMod && localMod.metadata && localMod.metadata.items && Array.isArray(localMod.metadata.items) && localMod.metadata.items.length > 0 && _isItemHovered(side)) {
+              const attributes = (() => {
+                const itemSpec = localMod.metadata.items[0];
+                const {attributes} = itemSpec;
+
+                const result = {};
+                for (const attributeName in attributes) {
+                  const attributeSpec = attributes[attributeName];
+                  const {value} = attributeSpec;
+                  result[attributeName] = {value};
+                }
+                return result;
+              })();
               const itemSpec = {
                 id: _makeId(),
                 name: 'new-item',
                 ext: 'itm',
                 path: localMod.displayName + '/' + localMod.metadata.items[0].type,
+                attributes,
                 icon: base64.encode(localGeometry),
               };
               wallet.pullItem(itemSpec, side);

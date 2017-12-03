@@ -186,7 +186,7 @@ class Wallet {
                 height: 16,
                 data: new Uint8Array(arrayBuffer),
               }));
-              const _addStrgAsset = (id, name, ext, path, icon) => vridApi.get('assets')
+              const _addStrgAsset = (id, name, ext, path, attributes, icon) => vridApi.get('assets')
                 .then(assets => {
                   assets = assets || [];
                   let assetSpec = assets.find(assetSpec => assetSpec.id === id);
@@ -196,6 +196,7 @@ class Wallet {
                       name,
                       ext,
                       path,
+                      attributes,
                       icon,
                     };
                     assets.push(assetSpec);
@@ -213,7 +214,7 @@ class Wallet {
                   return vridApi.set('assets', assets);
                 });
 
-              const _addAsset = (id, type, assetId, name, ext, path, icon, n, physics, matrix) => {
+              const _addAsset = (id, type, assetId, name, ext, path, attributes, icon, n, physics, matrix) => {
                 const position = new THREE.Vector3(matrix[0], matrix[1], matrix[2]);
                 const rotation = new THREE.Quaternion(matrix[3], matrix[4], matrix[5], matrix[6]);
                 const scale = new THREE.Vector3(matrix[7], matrix[8], matrix[9]);
@@ -225,6 +226,7 @@ class Wallet {
                   name,
                   ext,
                   path,
+                  attributes,
                   icon,
                   n,
                   physics,
@@ -256,13 +258,14 @@ class Wallet {
                       name,
                       ext,
                       path,
+                      attributes,
                       icon,
                       n,
                       physics,
                       matrix,
                     } = assetSpec;
 
-                    _addAsset(id, type, assetId, name, ext, path, icon, n, physics, matrix);
+                    _addAsset(id, type, assetId, name, ext, path, attributes, icon, n, physics, matrix);
                   }
                 } else if (type === 'addAsset') {
                   const {
@@ -272,13 +275,14 @@ class Wallet {
                     name,
                     ext,
                     path,
+                    attributes,
                     icon,
                     n,
                     physics,
                     matrix,
                   } = args;
 
-                  _addAsset(id, type, assetId, name, ext, path, icon, n, physics, matrix);
+                  _addAsset(id, type, assetId, name, ext, path, attributes, icon, n, physics, matrix);
                 } else if (type === 'removeAsset') {
                   const {
                     id,
@@ -432,6 +436,7 @@ class Wallet {
                     name,
                     ext,
                     path,
+                    attributes,
                     icon,
                     n,
                     physics,
@@ -450,6 +455,7 @@ class Wallet {
                     this.name = name;
                     this.ext = ext;
                     this.path = path;
+                    this.attributes = attributes;
                     this.icon = icon;
                     this.physics = physics;
                   }
@@ -565,8 +571,8 @@ class Wallet {
                 const assetInstances = [];
                 mesh.getAssetInstances = () => assetInstances;
                 mesh.getAssetInstance = id => assetInstances.find(assetInstance => assetInstance.id === id);
-                mesh.addAssetInstance = (id, type, assetId, name, ext, path, icon, n, physics, position, rotation, scale, localPosition, localRotation, localScale) => {
-                  const assetInstance = new AssetInstance(id, type, assetId, name, ext, path, icon, n, physics, position, rotation, scale, localPosition, localRotation, localScale);
+                mesh.addAssetInstance = (id, type, assetId, name, ext, path, attributes, icon, n, physics, position, rotation, scale, localPosition, localRotation, localScale) => {
+                  const assetInstance = new AssetInstance(id, type, assetId, name, ext, path, attributes, icon, n, physics, position, rotation, scale, localPosition, localRotation, localScale);
 
                   hand.addGrabbable(assetInstance);
                   assetInstances.push(assetInstance);
@@ -575,7 +581,7 @@ class Wallet {
                     let live = true;
 
                     const geometry = (() => {
-                      _requestAssetImageData({name, ext, path, icon})
+                      _requestAssetImageData({name, ext, path, attributes, icon})
                         .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize))
                         .then(geometrySpec => {
                           if (live) {
@@ -951,7 +957,7 @@ class Wallet {
               };
 
               const _pullItem = (assetSpec, side) => {
-                const {id, name, ext, path, icon = null} = assetSpec;
+                const {id, name, ext, path, attributes, icon = null} = assetSpec;
                 const itemSpec = {
                   type: 'asset',
                   id: _makeId(),
@@ -963,10 +969,9 @@ class Wallet {
                     name: {value: name},
                     ext: {value: ext},
                     path: {value: path},
+                    attributes: {value: attributes},
                     icon: {value: icon},
                     position: {value: DEFAULT_MATRIX},
-                    owner: {value: null},
-                    bindOwner: {value: null},
                     physics: {value: false},
                   },
                   metadata: {},
@@ -1024,7 +1029,7 @@ class Wallet {
                 if (type === 'asset') {
                   const {assetId, name, ext, path, icon} = assetInstance;
                   const {assets: oldAssets} = walletState;
-                  _addStrgAsset(assetId, name, ext, path, icon)
+                  _addStrgAsset(assetId, name, ext, path, attributes, icon)
                     .then(() => {
                       const {assets: newAssets} = walletState;
 
@@ -1036,6 +1041,7 @@ class Wallet {
                             name,
                             ext,
                             path,
+                            attributes,
                           };
                           newAssets.push(newAsset);
                         }
@@ -1120,43 +1126,6 @@ class Wallet {
                   }, 3000);
                 } */
               };
-              /* const _checkGripdown = side => {
-                const hoverState = hoverStates[side];
-                const {worldGrabAsset} = hoverState;
-                const {selectedAsset} = walletState;
-                const asset = selectedAsset[side];
-                const {gamepads} = webvr.getStatus();
-                const gamepad = gamepads[side];
-                const {worldPosition: position} = gamepad;
-
-                if (!worldGrabAsset && asset && _isInBody(position)) {
-                  const assetSpec = walletState.assets.find(assetSpec => assetSpec.id === asset);
-                  _pullItem(assetSpec.name, assetSpec.ext, side);
-
-                  return true;
-                } else {
-                  return false;
-                }
-              };
-              const _checkGripup = e => {
-                const {item} = e;
-                const {position} = item;
-
-                if (_isInBody(position)) {
-                  _storeItem(item);
-
-                  e.stopImmediatePropagation();
-                }
-              };
-              const _gripdown = e => {
-                const {side} = e;
-                if (_checkGripdown(side)) {
-                  e.stopImmediatePropagation();
-                }
-              };
-              input.on('gripdown', _gripdown, {
-                priority: -2,
-              }); */
 
               const _upload = ({file, dropMatrix}) => {
                 const id = String(file.n);
@@ -1169,8 +1138,6 @@ class Wallet {
                     type: {value: 'file'},
                     value: {value: id},
                     position: {value: dropMatrix},
-                    owner: {value: null},
-                    bindOwner: {value: null},
                     physics: {value: true},
                   },
                   metadata: {},
@@ -1211,6 +1178,7 @@ class Wallet {
                       name: {value: name},
                       ext: {value: ext},
                       path: {value: path},
+                      attributes: {value: attributes},
                       icon: {value: icon},
                       position: {value: matrix},
                       physics: {value: physics},
@@ -1228,6 +1196,7 @@ class Wallet {
                     name,
                     ext,
                     path,
+                    attributes,
                     icon,
                     n,
                     physics,
@@ -1250,6 +1219,7 @@ class Wallet {
                       name,
                       ext,
                       path,
+                      attributes,
                       icon,
                       n,
                       physics,
@@ -1298,8 +1268,6 @@ class Wallet {
                         },
                       },
                       position: {value: matrix},
-                      owner: {value: null},
-                      bindOwner: {value: null},
                       physics: {value: true},
                     },
                     metadata: {},
