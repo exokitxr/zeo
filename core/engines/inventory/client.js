@@ -363,7 +363,12 @@ class Inventory {
           planeMesh.add(plane);
           planeMesh.plane = plane;
 
-          const _getAssetId = () => String(murmur(JSON.stringify(grabbable.path + ':' + JSON.stringify(grabbable.attributes))));
+          const _getAssetId = () => String(murmur(JSON.stringify([
+            grabbable.name,
+            grabbable.ext,
+            grabbable.path,
+            grabbable.attributes,
+          ])));
           const _updateAttributesAnchors = () => {
             plane.anchors = getAttributesAnchors(attributes, attributeSpecs, fontSize, 0, 0, itemMenuState, {colorWheelImg}, {
               focus: ({name: attributeName, type, newValue}) => {
