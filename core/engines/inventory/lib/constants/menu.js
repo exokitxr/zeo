@@ -5,6 +5,9 @@ const WORLD_WIDTH = 2;
 const WORLD_HEIGHT = WORLD_WIDTH / ASPECT_RATIO;
 const WORLD_DEPTH = WORLD_WIDTH / 50;
 
+const ITEM_MENU_SIZE = 640;
+const ITEM_MENU_WORLD_SIZE = 0.4;
+
 const DEFAULT_USER_HEIGHT = 1.6;
 
 module.exports = {
@@ -14,6 +17,9 @@ module.exports = {
   WORLD_WIDTH,
   WORLD_HEIGHT,
   WORLD_DEPTH,
+
+  ITEM_MENU_SIZE,
+  ITEM_MENU_WORLD_SIZE,
 
   DEFAULT_USER_HEIGHT,
 };

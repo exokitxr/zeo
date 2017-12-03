@@ -8,6 +8,9 @@ const {
   WORLD_HEIGHT,
   WORLD_DEPTH,
 
+  ITEM_MENU_SIZE,
+  ITEM_MENU_WORLD_SIZE,
+
   DEFAULT_USER_HEIGHT,
 } = require('./lib/constants/menu');
 const inventoryRenderer  = require('./lib/render/inventory');
@@ -322,12 +325,9 @@ class Inventory {
               const itemSpec = modSpec.metadata.items[0];
               const {attributes: attributeSpecs} = itemSpec;
 
-              const size = 640;
-              const worldSize = 0.4;
-
               const canvas = document.createElement('canvas');
-              canvas.width = size;
-              canvas.height = size;
+              canvas.width = ITEM_MENU_SIZE;
+              canvas.height = ITEM_MENU_SIZE;
               const ctx = canvas.getContext('2d');
 
               const texture = new THREE.Texture(
@@ -355,7 +355,7 @@ class Inventory {
               };
               _renderItemMenu();
 
-              const planeMesh = _makePlaneMesh(worldSize, worldSize, texture);
+              const planeMesh = _makePlaneMesh(ITEM_MENU_WORLD_SIZE, ITEM_MENU_WORLD_SIZE, texture);
               planeMesh.position.copy(position);
               planeMesh.quaternion.copy(rotation);
               planeMesh.scale.copy(scale);
@@ -364,10 +364,10 @@ class Inventory {
 
               const plane = new THREE.Object3D();
               plane.visible = false;
-              plane.width = size;
-              plane.height = size;
-              plane.worldWidth = worldSize;
-              plane.worldHeight = worldSize;
+              plane.width = ITEM_MENU_SIZE;
+              plane.height = ITEM_MENU_SIZE;
+              plane.worldWidth = ITEM_MENU_WORLD_SIZE;
+              plane.worldHeight = ITEM_MENU_WORLD_SIZE;
               plane.open = true;
               plane.anchors = [];
               planeMesh.add(plane);
@@ -1576,7 +1576,7 @@ class Inventory {
             for (const id in planeMeshes) {
               const planeMesh = planeMeshes[id];
 
-              if (planeMesh && planeMesh.position.distanceTo(gamepad.worldPosition) < 0.4) {
+              if (planeMesh && planeMesh.position.distanceTo(gamepad.worldPosition) < ITEM_MENU_WORLD_SIZE) {
                 const {grabbable} = planeMesh;
 
                 grabbable.setOpen(false);
@@ -1768,10 +1768,10 @@ class Inventory {
               for (const id in planeMeshes) {
                 const planeMesh = planeMeshes[id];
 
-                if (planeMesh && planeMesh.position.distanceTo(gamepad.worldPosition) < 0.4) {
+                if (planeMesh && planeMesh.position.distanceTo(gamepad.worldPosition) < ITEM_MENU_WORLD_SIZE) {
                   boxMesh.position.copy(planeMesh.position);
                   boxMesh.quaternion.copy(zeroQuaternion);
-                  boxMesh.scale.set(0.4, 0.4, 0.4);
+                  boxMesh.scale.set(ITEM_MENU_WORLD_SIZE, ITEM_MENU_WORLD_SIZE, ITEM_MENU_WORLD_SIZE);
                   boxMesh.updateMatrixWorld();
                   boxMesh.visible = true;
                   break;
