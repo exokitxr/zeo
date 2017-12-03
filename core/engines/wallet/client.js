@@ -163,7 +163,6 @@ class Wallet {
         return _refreshAssets()
           .then(() => {
             if (live) {
-
               const _requestAssetImageData = assetSpec => (() => {
                 if (assetSpec.ext === 'itm') {
                   if (assetSpec.icon) {
@@ -214,7 +213,7 @@ class Wallet {
                   return vridApi.set('assets', assets);
                 });
 
-              const _addAsset = (id, type, assetId, name, ext, path, attributes, icon, n, physics, matrix, open) => {
+              const _addAsset = (id, type, assetId, name, ext, path, attributes, icon, n, physics, matrix, visible, open) => {
                 const position = new THREE.Vector3(matrix[0], matrix[1], matrix[2]);
                 const rotation = new THREE.Quaternion(matrix[3], matrix[4], matrix[5], matrix[6]);
                 const scale = new THREE.Vector3(matrix[7], matrix[8], matrix[9]);
@@ -230,6 +229,7 @@ class Wallet {
                   icon,
                   n,
                   physics,
+                  visible,
                   open,
                   position,
                   rotation,
@@ -265,10 +265,11 @@ class Wallet {
                       n,
                       physics,
                       matrix,
+                      visible,
                       open,
                     } = assetSpec;
 
-                    _addAsset(id, type, assetId, name, ext, path, attributes, icon, n, physics, matrix, open);
+                    _addAsset(id, type, assetId, name, ext, path, attributes, icon, n, physics, matrix, visible, open);
                   }
                 } else if (type === 'addAsset') {
                   const {
@@ -283,10 +284,11 @@ class Wallet {
                     n,
                     physics,
                     matrix,
+                    visible,
                     open,
                   } = args;
 
-                  _addAsset(id, type, assetId, name, ext, path, attributes, icon, n, physics, matrix, open);
+                  _addAsset(id, type, assetId, name, ext, path, attributes, icon, n, physics, matrix, visible, open);
                 } else if (type === 'removeAsset') {
                   const {
                     id,
@@ -296,6 +298,14 @@ class Wallet {
                   _unbindAssetInstance(assetInstance);
 
                   assetsMesh.removeAssetInstance(id);
+                } else if (type === 'setVisible') {
+                  const {
+                    id,
+                    visible,
+                  } = args;
+
+                  const assetInstance = assetsMesh.getAssetInstance(id);
+                  assetInstance.updateVisible(visible);
                 } else if (type === 'setPhysics') {
                   const {
                     id,
@@ -452,6 +462,7 @@ class Wallet {
                     icon,
                     n,
                     physics,
+                    visible,
                     open,
                     position,
                     rotation,
@@ -471,6 +482,7 @@ class Wallet {
                     this.attributes = attributes;
                     this.icon = icon;
                     this.physics = physics;
+                    this.visible = visible;
                     this.open = open;
                   }
 
@@ -539,11 +551,29 @@ class Wallet {
                   }
 
                   show() {
-                    this.emit('show');
+                    this.visible = true;
+                    this.emit('setVisible', true);
+
+                    connection.send(JSON.stringify({
+                      method: 'setVisible',
+                      args: {
+                        id: this.id,
+                        visible: true,
+                      },
+                    }));
                   }
 
                   hide() {
-                    this.emit('hide');
+                    this.visible = false;
+                    this.emit('setVisible', false);
+
+                    connection.send(JSON.stringify({
+                      method: 'setVisible',
+                      args: {
+                        id: this.id,
+                        visible: false,
+                      },
+                    }));
                   }
 
                   setOpen(open) {
@@ -585,6 +615,11 @@ class Wallet {
                     }));
                   }
 
+                  updateVisible(visible) {
+                    this.visible = visible;
+                    this.emit('setVisible', visible);
+                  }
+
                   updatePhysics(physics) {
                     this.physics = physics;
                     this.emit('physics', physics);
@@ -603,8 +638,8 @@ class Wallet {
                 const assetInstances = [];
                 mesh.getAssetInstances = () => assetInstances;
                 mesh.getAssetInstance = id => assetInstances.find(assetInstance => assetInstance.id === id);
-                mesh.addAssetInstance = (id, type, assetId, name, ext, path, attributes, icon, n, physics, open, position, rotation, scale, localPosition, localRotation, localScale) => {
-                  const assetInstance = new AssetInstance(id, type, assetId, name, ext, path, attributes, icon, n, physics, open, position, rotation, scale, localPosition, localRotation, localScale);
+                mesh.addAssetInstance = (id, type, assetId, name, ext, path, attributes, icon, n, physics, visible, open, position, rotation, scale, localPosition, localRotation, localScale) => {
+                  const assetInstance = new AssetInstance(id, type, assetId, name, ext, path, attributes, icon, n, physics, visible, open, position, rotation, scale, localPosition, localRotation, localScale);
 
                   hand.addGrabbable(assetInstance);
                   assetInstances.push(assetInstance);
@@ -655,8 +690,9 @@ class Wallet {
                       return geometry;
                     })();
                     const material = assetsMaterial;
-                    const mesh = new THREE.Mesh(geometry, material);
 
+                    const mesh = new THREE.Mesh(geometry, material);
+                    mesh.visible = assetInstance.visible;
                     mesh.destroy = () => {
                       geometry.destroy();
 
@@ -709,11 +745,8 @@ class Wallet {
 
                     mesh.updateMatrixWorld();
                   });
-                  assetInstance.on('show', () => {
-                    mesh.visible = true;
-                  });
-                  assetInstance.on('hide', () => {
-                    mesh.visible = false;
+                  assetInstance.on('setVisible', visible => {
+                    mesh.visible = visible;
                   });
 
                   return assetInstance;
@@ -988,12 +1021,14 @@ class Wallet {
                 });
               };
               const _bindAssetInstanceMenu = assetInstance => {
-                if (assetInstance.open) {
-                  wallet.emit('menuopen', assetInstance);
-                }
+                assetInstance.once('update', () => {
+                  if (assetInstance.open) {
+                    walletApi.emit('menuopen', assetInstance);
+                  }
 
-                assetInstance.on('setOpen', open => {
-                  walletApi.emit(open ? 'menuopen' : 'menuclose', assetInstance);
+                  assetInstance.on('setOpen', open => {
+                    walletApi.emit(open ? 'menuopen' : 'menuclose', assetInstance);
+                  });
                 });
               };
 
@@ -1014,6 +1049,7 @@ class Wallet {
                     icon: {value: icon},
                     position: {value: DEFAULT_MATRIX},
                     physics: {value: false},
+                    visible: {value: true},
                     open: {value: false},
                   },
                   metadata: {},
@@ -1224,6 +1260,7 @@ class Wallet {
                       icon: {value: icon},
                       position: {value: matrix},
                       physics: {value: physics},
+                      visible: {value: visible},
                       open: {value: open},
                     },
                   } = itemSpec;
@@ -1243,6 +1280,7 @@ class Wallet {
                     icon,
                     n,
                     physics,
+                    visible,
                     open,
                     position,
                     rotation,
@@ -1269,6 +1307,7 @@ class Wallet {
                       n,
                       physics,
                       matrix,
+                      visible,
                       open,
                     },
                   }));
@@ -1319,6 +1358,10 @@ class Wallet {
                     metadata: {},
                   };
                   return walletApi.makeItem(itemSpec);
+                }
+
+                getAssetInstances() {
+                  return assetsMesh.getAssetInstances();
                 }
 
                 getAssets() {

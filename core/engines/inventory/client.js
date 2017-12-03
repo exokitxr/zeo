@@ -430,7 +430,6 @@ class Inventory {
           }
         };
         wallet.on('menuopen', _walletMenuOpen);
-        // XXX handle all existing opens on init
         const _walletMenuClose = grabbable => {
           for (const id in planeMeshes) {
             const planeMesh = planeMeshes[id];
@@ -456,6 +455,7 @@ class Inventory {
           const grabbable = hand.getGrabbedGrabbable(e.side);
 
           if (grabbable && grabbable.ext === 'itm') {
+            grabbable.release();
             grabbable.setOpen(true);
             grabbable.hide();
             grabbable.disablePhysics();
@@ -1329,6 +1329,16 @@ class Inventory {
           scene.add(dotMeshes[side]);
           scene.add(boxMeshes[side]);
         }
+
+        (() => {
+          const assetInstances = wallet.getAssetInstances();
+          for (let i = 0; i < assetInstances.length; i++) {
+            const assetInstance = assetInstances[i];
+            if (assetInstance.open) {
+              _walletMenuOpen(assetInstance);
+            }
+          }
+        })();
 
         const assetsMesh = (() => {
           const geometry = (() => {
