@@ -9,11 +9,12 @@ const {
   WORLD_DEPTH,
 
   ITEM_MENU_SIZE,
+  ITEM_MENU_BORDER_SIZE,
   ITEM_MENU_WORLD_SIZE,
 
   DEFAULT_USER_HEIGHT,
 } = require('./lib/constants/menu');
-const inventoryRenderer  = require('./lib/render/inventory');
+const inventoryRenderer = require('./lib/render/inventory');
 
 const NUM_POSITIONS = 500 * 1024;
 const MENU_RANGE = 3;
@@ -349,7 +350,7 @@ class Inventory {
               const _renderItemMenu = () => {
                 ctx.fillStyle = '#FFF';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
-                renderAttributes(ctx, attributes, attributeSpecs, fontSize, 0, 0, itemMenuState, {arrowDownImg, colorWheelImg, linkImg});
+                renderAttributes(ctx, attributes, attributeSpecs, fontSize, ITEM_MENU_BORDER_SIZE, ITEM_MENU_BORDER_SIZE, itemMenuState, {arrowDownImg, colorWheelImg, linkImg});
 
                 texture.needsUpdate = true;
               };
@@ -380,7 +381,7 @@ class Inventory {
                 grabbable.attributes,
               ])));
               const _updateAttributesAnchors = () => {
-                plane.anchors = getAttributesAnchors(attributes, attributeSpecs, fontSize, 0, 0, itemMenuState, {colorWheelImg}, {
+                plane.anchors = getAttributesAnchors(attributes, attributeSpecs, fontSize, ITEM_MENU_BORDER_SIZE, ITEM_MENU_BORDER_SIZE, itemMenuState, {colorWheelImg}, {
                   focus: ({name: attributeName, type, newValue}) => {
                     if (type === 'number') {
                       attributes[attributeName].value = newValue; // XXX commit these to the backend

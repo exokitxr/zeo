@@ -1,3 +1,9 @@
+const {
+  ITEM_MENU_SIZE,
+  ITEM_MENU_INNER_SIZE,
+  ITEM_MENU_WORLD_SIZE,
+} = require('../constants/menu');
+
 const rowHeight = 100;
 
 const _roundToDecimals = (value, decimals) => Number(Math.round(value+'e'+decimals)+'e-'+decimals);
@@ -22,19 +28,19 @@ module.exports = THREE => {
 
       if (type === 'matrix') {
         ctx.fillStyle = '#EEE';
-        ctx.fillRect(w, h + i*rowHeight, 640, fontSize*2);
+        ctx.fillRect(w, h + i*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2);
         ctx.fillStyle = '#111';
-        ctx.fillText(value.join(','), w, h + fontSize*2 - fontSize*0.3 + i*rowHeight, 640);
+        ctx.fillText(value.join(','), w, h + fontSize*2 - fontSize*0.3 + i*rowHeight, ITEM_MENU_INNER_SIZE);
       } else if (type === 'vector') {
         ctx.fillStyle = '#EEE';
-        ctx.fillRect(w, h + i*rowHeight, 640, fontSize*2);
+        ctx.fillRect(w, h + i*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2);
         ctx.fillStyle = '#111';
-        ctx.fillText(value.join(','), w, h + fontSize*2 - fontSize*0.3 + i*rowHeight, 640);
+        ctx.fillText(value.join(','), w, h + fontSize*2 - fontSize*0.3 + i*rowHeight, ITEM_MENU_INNER_SIZE);
       } else if (type === 'text') {
         ctx.fillStyle = '#EEE';
-        ctx.fillRect(w, h + i*rowHeight, 640, fontSize*2);
+        ctx.fillRect(w, h + i*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2);
         ctx.fillStyle = '#111';
-        ctx.fillText(value, w, h + fontSize*2 - fontSize*0.3 + i*rowHeight, 640);
+        ctx.fillText(value, w, h + fontSize*2 - fontSize*0.3 + i*rowHeight, ITEM_MENU_INNER_SIZE);
       } else if (type === 'number') {
         const {min, max} = attributeSpec;
 
@@ -48,42 +54,42 @@ module.exports = THREE => {
         const factor = (value - min) / (max - min);
 
         ctx.fillStyle = '#CCC';
-        ctx.fillRect(w, h + i*rowHeight, 640, 5);
+        ctx.fillRect(w, h + i*rowHeight, ITEM_MENU_INNER_SIZE, 5);
         ctx.fillStyle = '#ff4b4b';
-        ctx.fillRect(w + (factor * 640), h - 25 + i*rowHeight, 5, 25 + 5 + 25);
+        ctx.fillRect(w + (factor * ITEM_MENU_INNER_SIZE), h - 25 + i*rowHeight, 5, 25 + 5 + 25);
       } else if (type === 'select') {
         if (menuState.focus !== attributeName) {
           ctx.fillStyle = '#FFF';
-          ctx.fillRect(w, h + i*rowHeight, 640, fontSize*2);
+          ctx.fillRect(w, h + i*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2);
 
           ctx.fillStyle = '#111';
-          ctx.fillText(value, w, h + fontSize*2 - fontSize*0.5 + i*rowHeight, 640);
-          ctx.drawImage(arrowDownImg, w + 640 - fontSize*2, h + i*rowHeight, fontSize*2, fontSize*2);
+          ctx.fillText(value, w, h + fontSize*2 - fontSize*0.5 + i*rowHeight, ITEM_MENU_INNER_SIZE);
+          ctx.drawImage(arrowDownImg, w + ITEM_MENU_INNER_SIZE - fontSize*2, h + i*rowHeight, fontSize*2, fontSize*2);
 
           ctx.strokeStyle = '#111';
           ctx.lineWidth = 3;
-          ctx.strokeRect(w, h + i*rowHeight, 640, fontSize*2);
+          ctx.strokeRect(w, h + i*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2);
         } else {
           const {options} = attributeSpec;
 
           ctx.fillStyle = '#FFF';
-          ctx.fillRect(w, h + i*rowHeight, 640, Math.max(options.length, 1) * fontSize*2);
+          ctx.fillRect(w, h + i*rowHeight, ITEM_MENU_INNER_SIZE, Math.max(options.length, 1) * fontSize*2);
 
           for (let j = 0; j < options.length; j++) {
             const option = options[j];
 
             if (value === option) {
               ctx.fillStyle = '#EEE';
-              ctx.fillRect(w, h + i*rowHeight + j*fontSize*2, 640, fontSize*2);
+              ctx.fillRect(w, h + i*rowHeight + j*fontSize*2, ITEM_MENU_INNER_SIZE, fontSize*2);
             }
 
             ctx.fillStyle = '#111';
-            ctx.fillText(option, w, h + fontSize*2 - fontSize*0.5 + i*rowHeight + j*fontSize*2, 640);
+            ctx.fillText(option, w, h + fontSize*2 - fontSize*0.5 + i*rowHeight + j*fontSize*2, ITEM_MENU_INNER_SIZE);
           }
 
           ctx.strokeStyle = '#111';
           ctx.lineWidth = 3;
-          ctx.strokeRect(w, h + i*rowHeight, 640, Math.max(options.length, 1) * fontSize*2);
+          ctx.strokeRect(w, h + i*rowHeight, ITEM_MENU_INNER_SIZE, Math.max(options.length, 1) * fontSize*2);
         }
       } else if (type === 'color') {
         ctx.strokeStyle = '#111';
@@ -92,9 +98,9 @@ module.exports = THREE => {
         ctx.fillStyle = value;
         ctx.fillRect(w + 5, h + 5 + i*rowHeight, fontSize*2 - 5*2, fontSize*2 - 5*2);
         ctx.fillStyle = '#EEE';
-        ctx.fillRect(w + fontSize*2, h + i*rowHeight, 640 - fontSize*2, fontSize*2);
+        ctx.fillRect(w + fontSize*2, h + i*rowHeight, ITEM_MENU_INNER_SIZE - fontSize*2, fontSize*2);
         ctx.fillStyle = '#111';
-        ctx.fillText(value, w + fontSize*2, h + fontSize*2 - fontSize*0.3 + i*rowHeight, 640);
+        ctx.fillText(value, w + fontSize*2, h + fontSize*2 - fontSize*0.3 + i*rowHeight, ITEM_MENU_INNER_SIZE);
 
         if (menuState.focus === attributeName) {
           ctx.drawImage(colorWheelImg, w, h + i*rowHeight, 256, 256);
@@ -117,10 +123,10 @@ module.exports = THREE => {
         }
       } else if (type === 'file') {
         ctx.fillStyle = '#EEE';
-        ctx.fillRect(w, h + i*rowHeight, 640 - fontSize*2, fontSize*2);
+        ctx.fillRect(w, h + i*rowHeight, ITEM_MENU_INNER_SIZE - fontSize*2, fontSize*2);
         ctx.fillStyle = '#111';
-        ctx.fillText(value, w, h + fontSize*2 - fontSize*0.3 + i*rowHeight, 640);
-        ctx.drawImage(linkImg, w + 640 - fontSize*2, h + i*rowHeight, fontSize*2, fontSize*2);
+        ctx.fillText(value, w, h + fontSize*2 - fontSize*0.3 + i*rowHeight, ITEM_MENU_INNER_SIZE);
+        ctx.drawImage(linkImg, w + ITEM_MENU_INNER_SIZE - fontSize*2, h + i*rowHeight, fontSize*2, fontSize*2);
       }
     }
   };
@@ -179,20 +185,20 @@ module.exports = THREE => {
       }
 
       if (type === 'matrix') {
-        _pushAnchor(w, h + i*rowHeight, 640, fontSize*2, attributeName, type);
+        _pushAnchor(w, h + i*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2, attributeName, type);
       } else if (type === 'vector') {
-        _pushAnchor(w, h + i*rowHeight, 640, fontSize*2, attributeName, type);
+        _pushAnchor(w, h + i*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2, attributeName, type);
       } else if (type === 'text') {
-        _pushAnchor(w, h + i*rowHeight, 640, fontSize*2, attributeName, type);
+        _pushAnchor(w, h + i*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2, attributeName, type);
       } else if (type === 'number') {
-        _pushAnchor(w, h - 25 + i*rowHeight, 640, 25 + 5 + 25, attributeName, type);
+        _pushAnchor(w, h - 25 + i*rowHeight, ITEM_MENU_INNER_SIZE, 25 + 5 + 25, attributeName, type);
       } else if (type === 'select') {
         if (menuState.focus !== attributeName) {
-          _pushAnchor(w, h + i*rowHeight, 640, fontSize*2, attributeName, type);
+          _pushAnchor(w, h + i*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2, attributeName, type);
         } else {
           const {options} = attributeSpec;
           for (let j = 0; j < options.length; j++) {
-            _pushAnchor(w, h + i*rowHeight + j*fontSize*2, 640, fontSize*2, attributeName, type, options[j]);
+            _pushAnchor(w, h + i*rowHeight + j*fontSize*2, ITEM_MENU_INNER_SIZE, fontSize*2, attributeName, type, options[j]);
           }
         }
       } else if (type === 'color') {
@@ -201,11 +207,11 @@ module.exports = THREE => {
         }
 
         _pushAnchor(w, h + i*rowHeight, fontSize*2, fontSize*2, attributeName, type);
-        _pushAnchor(w + fontSize*2, h + i*rowHeight, 640 - fontSize*2, fontSize*2, attributeName, type);
+        _pushAnchor(w + fontSize*2, h + i*rowHeight, ITEM_MENU_INNER_SIZE - fontSize*2, fontSize*2, attributeName, type);
       } else if (type === 'checkbox') {
-        _pushAnchor(w, h + i*rowHeight, 640, 30, attributeName, type, !value);
+        _pushAnchor(w, h + i*rowHeight, ITEM_MENU_INNER_SIZE, 30, attributeName, type, !value);
       } else if (type === 'file') {
-        _pushAnchor(w, h + i*rowHeight, 640 - fontSize*2, fontSize*2, attributeName, type);
+        _pushAnchor(w, h + i*rowHeight, ITEM_MENU_INNER_SIZE - fontSize*2, fontSize*2, attributeName, type);
       }
 
       i++;
