@@ -202,7 +202,7 @@ class Assets {
 
           const _getItemImageData = name => fetch(API_PREFIX + 'imgData/items/' + name)
             .then(_resArrayBuffer);
-          const _getModImageData = name => fetch(API_PREFIX + 'imgData/mods/' + name)
+          const _getModFileImageData = (name, index) => fetch(API_PREFIX + 'imgData/mods/' + name + '/' + index)
             .then(_resArrayBuffer);
           const _getFileImageData = name => fetch(API_PREFIX + 'imgData/files/' + name)
             .then(_resArrayBuffer);
@@ -339,7 +339,7 @@ class Assets {
             },
             sfx: sfx,
             getItemImageData: _getItemImageData,
-            getModImageData: _getModImageData,
+            getModFileImageData: _getModFileImageData,
             getFileImageData: _getFileImageData,
             // getSkinImageData: _getSkinImageData,
             // makePlayerLabelMesh: _makePlayerLabelMesh,

@@ -186,7 +186,7 @@ class Wallet {
                 height: 16,
                 data: new Uint8Array(arrayBuffer),
               }));
-              const _addStrgAsset = (id, name, ext, icon) => vridApi.get('assets')
+              const _addStrgAsset = (id, name, ext, path, icon) => vridApi.get('assets')
                 .then(assets => {
                   assets = assets || [];
                   let assetSpec = assets.find(assetSpec => assetSpec.id === id);
@@ -195,6 +195,7 @@ class Wallet {
                       id,
                       name,
                       ext,
+                      path,
                       icon,
                     };
                     assets.push(assetSpec);
@@ -212,7 +213,7 @@ class Wallet {
                   return vridApi.set('assets', assets);
                 });
 
-              const _addAsset = (id, type, assetId, name, ext, icon, n, physics, matrix) => {
+              const _addAsset = (id, type, assetId, name, ext, path, icon, n, physics, matrix) => {
                 const position = new THREE.Vector3(matrix[0], matrix[1], matrix[2]);
                 const rotation = new THREE.Quaternion(matrix[3], matrix[4], matrix[5], matrix[6]);
                 const scale = new THREE.Vector3(matrix[7], matrix[8], matrix[9]);
@@ -223,6 +224,7 @@ class Wallet {
                   assetId,
                   name,
                   ext,
+                  path,
                   icon,
                   n,
                   physics,
@@ -253,13 +255,14 @@ class Wallet {
                       assetId,
                       name,
                       ext,
+                      path,
                       icon,
                       n,
                       physics,
                       matrix,
                     } = assetSpec;
 
-                    _addAsset(id, type, assetId, name, ext, icon, n, physics, matrix);
+                    _addAsset(id, type, assetId, name, ext, path, icon, n, physics, matrix);
                   }
                 } else if (type === 'addAsset') {
                   const {
@@ -268,13 +271,14 @@ class Wallet {
                     assetId,
                     name,
                     ext,
+                    path,
                     icon,
                     n,
                     physics,
                     matrix,
                   } = args;
 
-                  _addAsset(id, type, assetId, name, ext, icon, n, physics, matrix);
+                  _addAsset(id, type, assetId, name, ext, path, icon, n, physics, matrix);
                 } else if (type === 'removeAsset') {
                   const {
                     id,
@@ -427,6 +431,7 @@ class Wallet {
                     assetId,
                     name,
                     ext,
+                    path,
                     icon,
                     n,
                     physics,
@@ -444,6 +449,7 @@ class Wallet {
                     this.assetId = assetId;
                     this.name = name;
                     this.ext = ext;
+                    this.path = path;
                     this.icon = icon;
                     this.physics = physics;
                   }
@@ -559,8 +565,8 @@ class Wallet {
                 const assetInstances = [];
                 mesh.getAssetInstances = () => assetInstances;
                 mesh.getAssetInstance = id => assetInstances.find(assetInstance => assetInstance.id === id);
-                mesh.addAssetInstance = (id, type, assetId, name, ext, icon, n, physics, position, rotation, scale, localPosition, localRotation, localScale) => {
-                  const assetInstance = new AssetInstance(id, type, assetId, name, ext, icon, n, physics, position, rotation, scale, localPosition, localRotation, localScale);
+                mesh.addAssetInstance = (id, type, assetId, name, ext, path, icon, n, physics, position, rotation, scale, localPosition, localRotation, localScale) => {
+                  const assetInstance = new AssetInstance(id, type, assetId, name, ext, path, icon, n, physics, position, rotation, scale, localPosition, localRotation, localScale);
 
                   hand.addGrabbable(assetInstance);
                   assetInstances.push(assetInstance);
@@ -569,7 +575,7 @@ class Wallet {
                     let live = true;
 
                     const geometry = (() => {
-                      _requestAssetImageData({name, ext, icon})
+                      _requestAssetImageData({name, ext, path, icon})
                         .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize))
                         .then(geometrySpec => {
                           if (live) {
@@ -833,8 +839,8 @@ class Wallet {
 
               const itemApis = {};
               const _bindAssetInstance = assetInstance => {
-                const {name, ext} = assetInstance;
-                const itemEntry = itemApis[name + '.' + ext];
+                const {path} = assetInstance;
+                const itemEntry = itemApis[path];
 
                 if (itemEntry) {
                   for (let i = 0; i < itemEntry.length; i++) {
@@ -847,8 +853,8 @@ class Wallet {
                 }
               };
               const _unbindAssetInstance = assetInstance => {
-                const {name, ext} = assetInstance;
-                const itemEntry = itemApis[name + '.' + ext];
+                const {path} = assetInstance;
+                const itemEntry = itemApis[path];
 
                 if (itemEntry) {
                   for (let i = 0; i < itemEntry.length; i++) {
@@ -862,9 +868,9 @@ class Wallet {
               };
               const _bindItemApi = itemApi => {
                 if (typeof itemApi.asset === 'string' && typeof itemApi.itemAddedCallback === 'function') {
-                  const {name, ext} = itemApi;
+                  const {path} = itemApi;
                   const boundAssetInstances = assetsMesh.getAssetInstances()
-                    .filter(assetInstance => assetInstance.name === name && assetInstance.ext === ext);
+                    .filter(assetInstance => assetInstance.path === path);
 
                   for (let i = 0; i < boundAssetInstances.length; i++) {
                     const assetInstance = boundAssetInstances[i];
@@ -874,9 +880,9 @@ class Wallet {
               };
               const _unbindItemApi = itemApi => {
                 if (typeof itemApi.asset === 'string' && typeof itemApi.itemRemovedCallback === 'function') {
-                  const {name, ext} = itemApi;
+                  const {path} = itemApi;
                   const boundAssetInstances = assetsMesh.getAssetInstances()
-                    .filter(assetInstance => assetInstance.name === name && assetInstance.ext === ext);
+                    .filter(assetInstance => assetInstance.path === path);
 
                   for (let i = 0; i < boundAssetInstances.length; i++) {
                     const assetInstance = boundAssetInstances[i];
@@ -945,7 +951,7 @@ class Wallet {
               };
 
               const _pullItem = (assetSpec, side) => {
-                const {id, name, ext, icon = null} = assetSpec;
+                const {id, name, ext, path, icon = null} = assetSpec;
                 const itemSpec = {
                   type: 'asset',
                   id: _makeId(),
@@ -956,6 +962,7 @@ class Wallet {
                     id: {value: id},
                     name: {value: name},
                     ext: {value: ext},
+                    path: {value: path},
                     icon: {value: icon},
                     position: {value: DEFAULT_MATRIX},
                     owner: {value: null},
@@ -973,7 +980,7 @@ class Wallet {
                     const {assets: newAssets} = walletState;
 
                     /* if (oldAssets === newAssets) { */
-                      const index = newAssets.findIndex(assetSpec => assetSpec.name === name && assetSpec.ext === ext);
+                      const index = newAssets.findIndex(assetSpec => assetSpec.path === path);
                       if (index !== -1) {
                         newAssets.splice(index, 1);
 
@@ -981,7 +988,7 @@ class Wallet {
                         let removed = false;
                         for (let i = 0; i < equipments.length; i++) {
                           const equipmentSpec = equipments[i];
-                          if (equipmentSpec && equipmentSpec.name === name && equipmentSpec.ext === ext) {
+                          if (equipmentSpec && equipmentSpec.path === path) {
                             equipments[i] = null;
                             removed = true;
                           }
@@ -1015,9 +1022,9 @@ class Wallet {
 
                 const {type} = assetInstance;
                 if (type === 'asset') {
-                  const {assetId, name, ext, icon} = assetInstance;
+                  const {assetId, name, ext, path, icon} = assetInstance;
                   const {assets: oldAssets} = walletState;
-                  _addStrgAsset(assetId, name, ext, icon)
+                  _addStrgAsset(assetId, name, ext, path, icon)
                     .then(() => {
                       const {assets: newAssets} = walletState;
 
@@ -1028,6 +1035,7 @@ class Wallet {
                             id: assetId,
                             name,
                             ext,
+                            path,
                           };
                           newAssets.push(newAsset);
                         }
@@ -1150,40 +1158,6 @@ class Wallet {
                 priority: -2,
               }); */
 
-              const _menudown = e => {
-                const grabbable = hand.getGrabbedGrabbable(e.side);
-
-                let match;
-                if (grabbable && grabbable.ext === 'itm' && (match = grabbable.name.match(/\.([^\.]+)$/))) {
-                  const modName = match[1];
-                  const tagMesh = world.getTag({
-                    type: 'entity',
-                    name: modName,
-                  });
-
-                  if (tagMesh) {
-                    const {item} = tagMesh;
-                    const {attributes} = item;
-                    const attributeSpecs = tags.getAttributeSpecsMap(modName);
-
-                    grabbable.hide();
-                    grabbable.disablePhysics();
-
-                    walletApi.emit('menuopen', {
-                      tagMesh,
-                      grabbable,
-                      attributes,
-                      attributeSpecs,
-                    });
-
-                    e.stopImmediatePropagation();
-                  }
-                }
-              };
-              input.on('menudown', _menudown, {
-                priority: 1,
-              });
-
               const _upload = ({file, dropMatrix}) => {
                 const id = String(file.n);
                 const itemSpec = {
@@ -1213,7 +1187,6 @@ class Wallet {
               cleanups.push(() => {
                 // input.removeListener('trigger', _trigger);
                 // input.removeListener('gripdown', _gripdown);
-                input.on('menudown', _menudown);
 
                 fs.removeListener('upload', _upload);
 

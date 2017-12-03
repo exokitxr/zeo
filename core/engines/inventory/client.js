@@ -416,7 +416,40 @@ class Inventory {
 
           uiTracker.addPlane(plane);
         };
-        wallet.on('menuopen', _walletMenuOpen);
+        const _menudown = e => {
+          const grabbable = hand.getGrabbedGrabbable(e.side);
+
+          let match;
+          if (grabbable && grabbable.ext === 'itm' && grabbable.path && (match = grabbable.path.match(/^(.+?)\/(.+?)$/))) {
+            const modName = match[1];
+            const fileType = match[2];
+            const tagMesh = world.getTag({
+              type: 'entity',
+              name: modName,
+            });
+
+            if (tagMesh) {
+              const {item} = tagMesh;
+              const {attributes} = item;
+              const attributeSpecs = tags.getAttributeSpecsMap(modName);
+
+              grabbable.hide();
+              grabbable.disablePhysics();
+
+              _walletMenuOpen({
+                tagMesh,
+                grabbable,
+                attributes,
+                attributeSpecs,
+              });
+
+              e.stopImmediatePropagation();
+            } 
+          }
+        };
+        input.on('menudown', _menudown, {
+          priority: 1,
+        });
 
         const localVector = new THREE.Vector3();
         const localVector2 = new THREE.Vector3();
@@ -426,7 +459,7 @@ class Inventory {
         const zeroVector = new THREE.Vector3();
         const pixelSize = 0.013;
 
-        const _requestModImageData = modSpec => resource.getModImageData(modSpec.displayName)
+        const _requestModFileImageData = modSpec => resource.getModFileImageData(modSpec.displayName, 0)
           .then(arrayBuffer => ({
             width: 16,
             height: 16,
@@ -1304,22 +1337,26 @@ class Inventory {
           const _renderAssets = _debounce(next => {
             const promises = (() => {
               if (tab === 'server' && subtab === 'installed' && localMod) {
-                return [
-                  _requestModImageData(localMod)
-                    .then(imageData => {
-                      localGeometry = imageData.data.slice().buffer;
+                if (localMod.metadata && localMod.metadata.items && Array.isArray(localMod.metadata.items) && localMod.metadata.items.length > 0) {
+                  return [
+                    _requestModFileImageData(localMod)
+                      .then(imageData => {
+                        localGeometry = imageData.data.slice().buffer;
 
-                      return spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
-                        localVector.set(
-                          WORLD_WIDTH / 2 - pixelSize * 16 - pixelSize * 16*0.75,
-                          -WORLD_HEIGHT / 2 + pixelSize * 16,
-                          pixelSize * 16/2
-                        ),
-                        zeroQuaternion,
-                        oneVector
-                      ));
-                    }),
-                ];
+                        return spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
+                          localVector.set(
+                            WORLD_WIDTH / 2 - pixelSize * 16 - pixelSize * 16*0.75,
+                            -WORLD_HEIGHT / 2 + pixelSize * 16,
+                            pixelSize * 16/2
+                          ),
+                          zeroQuaternion,
+                          oneVector
+                        ));
+                      }),
+                  ];
+                } else {
+                  return [];
+                }
               } else if (tab === 'files' && localAsset) {
                 if (!SIDES.some(side => Boolean(hand.getGrabbedGrabbable(side)))) {
                   return [
@@ -1447,7 +1484,7 @@ class Inventory {
 
           animation = anima.makeAnimation(0, 1, 500);
         };
-        const _menudown = () => {
+        const _menudown2 = () => {
           const {open} = menuState;
 
           if (open) {
@@ -1456,7 +1493,7 @@ class Inventory {
             _openMenu();
           }
         };
-        input.on('menudown', _menudown);
+        input.on('menudown', _menudown2);
 
         const _triggerdown = e => {
           const {side} = e;
@@ -1534,11 +1571,12 @@ class Inventory {
             return false;
           };
           const _handleMod = () => {
-            if (localMod && localMod.metadata && localMod.metadata.fileType && _isItemHovered(side)) {
+            if (localMod && localMod.metadata && localMod.metadata.files && Array.isArray(localMod.metadata.files) && localMod.metadata.files.length > 0 && _isItemHovered(side)) {
               const itemSpec = {
                 id: _makeId(),
-                name: 'new-item.' + localMod.metadata.fileType,
+                name: 'new-item',
                 ext: 'itm',
+                path: localMod.displayName + '/' + localMod.metadata.files[0].type,
                 icon: base64.encode(localGeometry),
               };
               wallet.pullItem(itemSpec, side);
@@ -1638,9 +1676,9 @@ class Inventory {
 
           world.removeListener('add', _worldAdd);
           wallet.removeListener('assets', _walletAssets);
-          wallet.removeListener('menuopen', _walletMenuOpen);
 
           input.removeListener('menudown', _menudown);
+          input.removeListener('menudown', _menudown2);
           input.removeListener('triggerdown', _triggerdown);
           // input.removeListener('triggerup', _triggerup);
           input.removeListener('triggerup', _trigger);
