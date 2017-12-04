@@ -1118,8 +1118,12 @@ class Wallet {
                             id: assetId,
                             name,
                             ext,
-                            path,
-                            attributes,
+                            json: {
+                              data: {
+                                path,
+                                attributes,
+                              },
+                            },
                           };
                           newAssets.push(newAsset);
                         }
