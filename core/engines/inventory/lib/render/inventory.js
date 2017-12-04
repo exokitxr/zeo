@@ -136,7 +136,7 @@ module.exports = THREE => {
     ctx.fillRect(ITEM_MENU_SIZE - 60, ITEM_MENU_SIZE*0.05, 30, ITEM_MENU_SIZE*0.9 / 2);
   };
 
-  const getAttributesAnchors = (attributes, attributeSpecs, fontSize, w, h, menuState, {colorWheelImg}, {focus}) => {
+  const getAttributesAnchors = (attributes, attributeSpecs, fontSize, w, h, menuState, {colorWheelImg}, {focusAttribute}) => {
     const result = [];
 
     const _pushAnchor = (x, y, w, h, triggerdown) => {
@@ -173,7 +173,7 @@ module.exports = THREE => {
           // nothing
         }
 
-        focus({
+        focusAttribute({
           name,
           type,
           newValue,

@@ -382,7 +382,7 @@ class Inventory {
               ])));
               const _updateAttributesAnchors = () => {
                 plane.anchors = getAttributesAnchors(attributes, attributeSpecs, fontSize, ITEM_MENU_BORDER_SIZE, ITEM_MENU_BORDER_SIZE, itemMenuState, {colorWheelImg}, {
-                  focus: ({name: attributeName, type, newValue}) => {
+                  focusAttribute: ({name: attributeName, type, newValue}) => {
                     if (type === 'number') {
                       attributes[attributeName].value = newValue; // XXX commit these to the backend
                       grabbable.assetId = _getAssetId();
