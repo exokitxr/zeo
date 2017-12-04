@@ -2,7 +2,7 @@ const events = require('events');
 const {EventEmitter} = events;
 
 class Wallet {
-constructor(archae) {
+  constructor(archae) {
     this._archae = archae;
   }
 
