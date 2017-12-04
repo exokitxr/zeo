@@ -129,47 +129,55 @@ module.exports = THREE => {
         ctx.drawImage(linkImg, w + ITEM_MENU_INNER_SIZE - fontSize*2, h + i*rowHeight, fontSize*2, fontSize*2);
       }
     }
+
+    ctx.fillStyle = '#CCC';
+    ctx.fillRect(ITEM_MENU_SIZE - 60, ITEM_MENU_SIZE*0.05, 30, ITEM_MENU_SIZE*0.9);
+    ctx.fillStyle = '#ff4b4b';
+    ctx.fillRect(ITEM_MENU_SIZE - 60, ITEM_MENU_SIZE*0.05, 30, ITEM_MENU_SIZE*0.9 / 2);
   };
 
   const getAttributesAnchors = (attributes, attributeSpecs, fontSize, w, h, menuState, {colorWheelImg}, {focus}) => {
     const result = [];
 
-    const _pushAnchor = (x, y, w, h, name, type, newValue) => {
+    const _pushAnchor = (x, y, w, h, triggerdown) => {
       result.push({
         left: x,
         right: x + w,
         top: y,
         bottom: y + h,
-        triggerdown: (e, hoverState) => {
-          if (type === 'number') {
-            const attributeSpec = attributeSpecs[name];
-            const {min, max, step} = attributeSpecs[name];
+        triggerdown,
+      });
+    };
+    const _pushAttributeAnchor = (x, y, w, h, name, type, newValue) => {
+      _pushAnchor(x, y, w, h, (e, hoverState) => {
+        if (type === 'number') {
+          const attributeSpec = attributeSpecs[name];
+          const {min, max, step} = attributeSpecs[name];
 
-            const fx = (hoverState.x - x) / w;
+          const fx = (hoverState.x - x) / w;
 
-            newValue = min + (fx * (max - min));
-            if (step > 0) {
-              newValue = _roundToDecimals(Math.round(newValue / step) * step, 8);
-            }
-          } else if (type === 'select') {
-            // nothing
-          } else if (type === 'color') {
-            if (typeof newValue === 'function') {
-              const fx = (hoverState.x - x) / w;
-              const fy = (hoverState.y - y) / h;
-
-              newValue = newValue(fx, fy);
-            }
-          } else if (type === 'checkbox') {
-            // nothing
+          newValue = min + (fx * (max - min));
+          if (step > 0) {
+            newValue = _roundToDecimals(Math.round(newValue / step) * step, 8);
           }
+        } else if (type === 'select') {
+          // nothing
+        } else if (type === 'color') {
+          if (typeof newValue === 'function') {
+            const fx = (hoverState.x - x) / w;
+            const fy = (hoverState.y - y) / h;
 
-          focus({
-            name,
-            type,
-            newValue,
-          });
-        },
+            newValue = newValue(fx, fy);
+          }
+        } else if (type === 'checkbox') {
+          // nothing
+        }
+
+        focus({
+          name,
+          type,
+          newValue,
+        });
       });
     };
 
@@ -185,37 +193,41 @@ module.exports = THREE => {
       }
 
       if (type === 'matrix') {
-        _pushAnchor(w, h + i*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2, attributeName, type);
+        _pushAttributeAnchor(w, h + i*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2, attributeName, type);
       } else if (type === 'vector') {
-        _pushAnchor(w, h + i*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2, attributeName, type);
+        _pushAttributeAnchor(w, h + i*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2, attributeName, type);
       } else if (type === 'text') {
-        _pushAnchor(w, h + i*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2, attributeName, type);
+        _pushAttributeAnchor(w, h + i*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2, attributeName, type);
       } else if (type === 'number') {
-        _pushAnchor(w, h - 25 + i*rowHeight, ITEM_MENU_INNER_SIZE, 25 + 5 + 25, attributeName, type);
+        _pushAttributeAnchor(w, h - 25 + i*rowHeight, ITEM_MENU_INNER_SIZE, 25 + 5 + 25, attributeName, type);
       } else if (type === 'select') {
         if (menuState.focus !== attributeName) {
-          _pushAnchor(w, h + i*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2, attributeName, type);
+          _pushAttributeAnchor(w, h + i*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2, attributeName, type);
         } else {
           const {options} = attributeSpec;
           for (let j = 0; j < options.length; j++) {
-            _pushAnchor(w, h + i*rowHeight + j*fontSize*2, ITEM_MENU_INNER_SIZE, fontSize*2, attributeName, type, options[j]);
+            _pushAttributeAnchor(w, h + i*rowHeight + j*fontSize*2, ITEM_MENU_INNER_SIZE, fontSize*2, attributeName, type, options[j]);
           }
         }
       } else if (type === 'color') {
         if (menuState.focus === attributeName) {
-          _pushAnchor(w, h + i*rowHeight, 256, 256, attributeName, type, (fx, fy) => '#' + localColor.setHex(colorWheelImg.getColor(fx, fy)).getHexString());
+          _pushAttributeAnchor(w, h + i*rowHeight, 256, 256, attributeName, type, (fx, fy) => '#' + localColor.setHex(colorWheelImg.getColor(fx, fy)).getHexString());
         }
 
-        _pushAnchor(w, h + i*rowHeight, fontSize*2, fontSize*2, attributeName, type);
-        _pushAnchor(w + fontSize*2, h + i*rowHeight, ITEM_MENU_INNER_SIZE - fontSize*2, fontSize*2, attributeName, type);
+        _pushAttributeAnchor(w, h + i*rowHeight, fontSize*2, fontSize*2, attributeName, type);
+        _pushAttributeAnchor(w + fontSize*2, h + i*rowHeight, ITEM_MENU_INNER_SIZE - fontSize*2, fontSize*2, attributeName, type);
       } else if (type === 'checkbox') {
-        _pushAnchor(w, h + i*rowHeight, ITEM_MENU_INNER_SIZE, 30, attributeName, type, !value);
+        _pushAttributeAnchor(w, h + i*rowHeight, ITEM_MENU_INNER_SIZE, 30, attributeName, type, !value);
       } else if (type === 'file') {
-        _pushAnchor(w, h + i*rowHeight, ITEM_MENU_INNER_SIZE - fontSize*2, fontSize*2, attributeName, type);
+        _pushAttributeAnchor(w, h + i*rowHeight, ITEM_MENU_INNER_SIZE - fontSize*2, fontSize*2, attributeName, type);
       }
 
       i++;
     }
+
+    _pushAnchor(ITEM_MENU_SIZE - 60, ITEM_MENU_SIZE*0.05, 30, ITEM_MENU_SIZE*0.9, () => {
+      console.log('trigger down'); // XXX
+    });
 
     return result;
   };
