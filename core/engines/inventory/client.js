@@ -9,12 +9,12 @@ const {
   WORLD_DEPTH,
 
   ITEM_MENU_SIZE,
+  ITEM_MENU_INNER_SIZE,
   ITEM_MENU_BORDER_SIZE,
   ITEM_MENU_WORLD_SIZE,
 
   DEFAULT_USER_HEIGHT,
 } = require('./lib/constants/menu');
-const inventoryRenderer = require('./lib/render/inventory');
 
 const NUM_POSITIONS = 500 * 1024;
 const MENU_RANGE = 3;
@@ -226,9 +226,239 @@ class Inventory {
         const {THREERenderPass, THREEShaderPass} = THREEEffectComposer;
         const THREEBlurShader = BlurShader(THREE);
 
-        const {renderAttributes, getAttributesAnchors} = inventoryRenderer(THREE);
-
         const colorWheelImg = menuUtils.getColorWheelImg();
+
+        const rowHeight = 100;
+        const localColor = new THREE.Color();
+        const renderAttributes = (ctx, attributes, attributeSpecs, fontSize, w, h, menuState) => {
+          ctx.font = `${fontSize}px Open sans`;
+
+          const attributeNames = Object.keys(attributeSpecs);
+          for (let i = Math.min(attributeNames.length - 1, (menuState.page + 1) * 7); i >= (menuState.page * 7); i--) {
+            const attributeName = attributeNames[i];
+            const attributeSpec = attributeSpecs[attributeName];
+            const {type} = attributeSpec;
+
+            const attributeObject = attributes[attributeName] || {};
+            let {value} = attributeObject;
+            if (value === undefined) {
+              value = attributeSpec.value;
+            }
+
+            const di = i - menuState.page * 7;
+
+            if (type === 'matrix') {
+              ctx.fillStyle = '#EEE';
+              ctx.fillRect(w, h + i*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2);
+              ctx.fillStyle = '#111';
+              ctx.fillText(value.join(','), w, h + fontSize*2 - fontSize*0.3 + di*rowHeight, ITEM_MENU_INNER_SIZE);
+            } else if (type === 'vector') {
+              ctx.fillStyle = '#EEE';
+              ctx.fillRect(w, h + i*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2);
+              ctx.fillStyle = '#111';
+              ctx.fillText(value.join(','), w, h + fontSize*2 - fontSize*0.3 + di*rowHeight, ITEM_MENU_INNER_SIZE);
+            } else if (type === 'text') {
+              ctx.fillStyle = '#EEE';
+              ctx.fillRect(w, h + i*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2);
+              ctx.fillStyle = '#111';
+              ctx.fillText(value, w, h + fontSize*2 - fontSize*0.3 + di*rowHeight, ITEM_MENU_INNER_SIZE);
+            } else if (type === 'number') {
+              const {min, max} = attributeSpec;
+
+              if (min === undefined) {
+                min = 0;
+              }
+              if (max === undefined) {
+                max = 10;
+              }
+
+              const factor = (value - min) / (max - min);
+
+              ctx.fillStyle = '#CCC';
+              ctx.fillRect(w, h + di*rowHeight, ITEM_MENU_INNER_SIZE, 5);
+              ctx.fillStyle = '#ff4b4b';
+              ctx.fillRect(w + (factor * ITEM_MENU_INNER_SIZE), h - 25 + di*rowHeight, 5, 25 + 5 + 25);
+            } else if (type === 'select') {
+              if (menuState.focus !== attributeName) {
+                ctx.fillStyle = '#FFF';
+                ctx.fillRect(w, h + i*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2);
+
+                ctx.fillStyle = '#111';
+                ctx.fillText(value, w, h + fontSize*2 - fontSize*0.5 + di*rowHeight, ITEM_MENU_INNER_SIZE);
+                ctx.drawImage(arrowDownImg, w + ITEM_MENU_INNER_SIZE - fontSize*2, h + di*rowHeight, fontSize*2, fontSize*2);
+
+                ctx.strokeStyle = '#111';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(w, h + di*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2);
+              } else {
+                const {options} = attributeSpec;
+
+                ctx.fillStyle = '#FFF';
+                ctx.fillRect(w, h + di*rowHeight, ITEM_MENU_INNER_SIZE, Math.max(options.length, 1) * fontSize*2);
+
+                for (let j = 0; j < options.length; j++) {
+                  const option = options[j];
+
+                  if (value === option) {
+                    ctx.fillStyle = '#EEE';
+                    ctx.fillRect(w, h + di*rowHeight + j*fontSize*2, ITEM_MENU_INNER_SIZE, fontSize*2);
+                  }
+
+                  ctx.fillStyle = '#111';
+                  ctx.fillText(option, w, h + fontSize*2 - fontSize*0.5 + di*rowHeight + j*fontSize*2, ITEM_MENU_INNER_SIZE);
+                }
+
+                ctx.strokeStyle = '#111';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(w, h + di*rowHeight, ITEM_MENU_INNER_SIZE, Math.max(options.length, 1) * fontSize*2);
+              }
+            } else if (type === 'color') {
+              ctx.strokeStyle = '#111';
+              ctx.lineWidth = 3;
+              ctx.strokeRect(w, h + di*rowHeight, fontSize*2, fontSize*2);
+              ctx.fillStyle = value;
+              ctx.fillRect(w + 5, h + 5 + di*rowHeight, fontSize*2 - 5*2, fontSize*2 - 5*2);
+              ctx.fillStyle = '#EEE';
+              ctx.fillRect(w + fontSize*2, h + di*rowHeight, ITEM_MENU_INNER_SIZE - fontSize*2, fontSize*2);
+              ctx.fillStyle = '#111';
+              ctx.fillText(value, w + fontSize*2, h + fontSize*2 - fontSize*0.3 + di*rowHeight, ITEM_MENU_INNER_SIZE);
+
+              if (menuState.focus === attributeName) {
+                ctx.drawImage(colorWheelImg, w, h + di*rowHeight, 256, 256);
+              }
+            } else if (type === 'checkbox') {
+              if (value) {
+                ctx.strokeStyle = '#111';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(w, h + di*rowHeight, 60, 30);
+
+                ctx.fillStyle = '#111';
+                ctx.fillRect(w + 30, h + 5 + di*rowHeight, (60 - 5*2)/2, 30 - 5*2);
+              } else {
+                ctx.strokeStyle = '#CCC';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(w, h + di*rowHeight, 60, 30);
+
+                ctx.fillStyle = '#CCC';
+                ctx.fillRect(w + 5, h + 5 + di*rowHeight, (60 - 5*2)/2, 30 - 5*2);
+              }
+            } else if (type === 'file') {
+              ctx.fillStyle = '#EEE';
+              ctx.fillRect(w, h + di*rowHeight, ITEM_MENU_INNER_SIZE - fontSize*2, fontSize*2);
+              ctx.fillStyle = '#111';
+              ctx.fillText(value, w, h + fontSize*2 - fontSize*0.3 + di*rowHeight, ITEM_MENU_INNER_SIZE);
+              ctx.drawImage(linkImg, w + ITEM_MENU_INNER_SIZE - fontSize*2, h + di*rowHeight, fontSize*2, fontSize*2);
+            }
+          }
+
+          const numPages = Math.ceil(attributeNames.length / 7);
+          ctx.fillStyle = '#CCC';
+          ctx.fillRect(ITEM_MENU_SIZE - 60, ITEM_MENU_SIZE*0.05, 30, ITEM_MENU_SIZE*0.9);
+          ctx.fillStyle = '#ff4b4b';
+          ctx.fillRect(
+            ITEM_MENU_SIZE - 60, ITEM_MENU_SIZE*0.05 + _snapToPixel(ITEM_MENU_SIZE*0.9, serverPages, menuState.barValue),
+            30, ITEM_MENU_SIZE*0.9 / numPages
+          );
+        };
+        const getAttributesAnchors = (attributes, attributeSpecs, fontSize, w, h, menuState, {focusAttribute, render, updateAnchors}) => {
+          const result = [];
+
+          const _pushAttributeAnchor = (x, y, w, h, name, type, newValue) => {
+            _pushAnchor(result, x, y, w, h, (e, hoverState) => {
+              if (type === 'number') {
+                const attributeSpec = attributeSpecs[name];
+                const {min, max, step} = attributeSpecs[name];
+
+                const fx = (hoverState.x - x) / w;
+
+                newValue = min + (fx * (max - min));
+                if (step > 0) {
+                  newValue = _roundToDecimals(Math.round(newValue / step) * step, 8);
+                }
+              } else if (type === 'select') {
+                // nothing
+              } else if (type === 'color') {
+                if (typeof newValue === 'function') {
+                  const fx = (hoverState.x - x) / w;
+                  const fy = (hoverState.y - y) / h;
+
+                  newValue = newValue(fx, fy);
+                }
+              } else if (type === 'checkbox') {
+                // nothing
+              }
+
+              focusAttribute({
+                name,
+                type,
+                newValue,
+              });
+            });
+          };
+
+          const attributeNames = Object.keys(attributeSpecs);
+          for (let i = menuState.page * 7; i < attributeNames.length && i < ((menuState.page + 1) * 7); i++) {
+            const attributeName = attributeNames[i];
+            const attributeSpec = attributeSpecs[attributeName];
+            const {type} = attributeSpec;
+
+            const attributeObject = attributes[attributeName] || {};
+            let {value} = attributeObject;
+            if (value === undefined) {
+              value = attributeSpec.value;
+            }
+
+            const di = i - menuState.page * 7;
+
+            if (type === 'matrix') {
+              _pushAttributeAnchor(w, h + di*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2, attributeName, type);
+            } else if (type === 'vector') {
+              _pushAttributeAnchor(w, h + di*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2, attributeName, type);
+            } else if (type === 'text') {
+              _pushAttributeAnchor(w, h + di*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2, attributeName, type);
+            } else if (type === 'number') {
+              _pushAttributeAnchor(w, h - 25 + di*rowHeight, ITEM_MENU_INNER_SIZE, 25 + 5 + 25, attributeName, type);
+            } else if (type === 'select') {
+              if (menuState.focus !== attributeName) {
+                _pushAttributeAnchor(w, h + di*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2, attributeName, type);
+              } else {
+                const {options} = attributeSpec;
+                for (let j = 0; j < options.length; j++) {
+                  _pushAttributeAnchor(w, h + di*rowHeight + j*fontSize*2, ITEM_MENU_INNER_SIZE, fontSize*2, attributeName, type, options[j]);
+                }
+              }
+            } else if (type === 'color') {
+              if (menuState.focus === attributeName) {
+                _pushAttributeAnchor(w, h + di*rowHeight, 256, 256, attributeName, type, (fx, fy) => '#' + localColor.setHex(colorWheelImg.getColor(fx, fy)).getHexString());
+              }
+
+              _pushAttributeAnchor(w, h + di*rowHeight, fontSize*2, fontSize*2, attributeName, type);
+              _pushAttributeAnchor(w + fontSize*2, h + di*rowHeight, ITEM_MENU_INNER_SIZE - fontSize*2, fontSize*2, attributeName, type);
+            } else if (type === 'checkbox') {
+              _pushAttributeAnchor(w, h + di*rowHeight, ITEM_MENU_INNER_SIZE, 30, attributeName, type, !value);
+            } else if (type === 'file') {
+              _pushAttributeAnchor(w, h + di*rowHeight, ITEM_MENU_INNER_SIZE - fontSize*2, fontSize*2, attributeName, type);
+            }
+          }
+
+          const numPages = Math.ceil(attributeNames.length / 7);
+          _pushAnchor(result, ITEM_MENU_SIZE - 60, ITEM_MENU_SIZE*0.05, 30, ITEM_MENU_SIZE*0.9, e => {
+            if (numPages > 0) {
+              const {side} = e;
+
+              onmove = () => {
+                const hoverState = uiTracker.getHoverState(side);
+                menuState.barValue = Math.min(Math.max(hoverState.y - ITEM_MENU_SIZE*0.05, 0), ITEM_MENU_SIZE*0.9) / (ITEM_MENU_SIZE*0.9);
+                menuState.page = _snapToIndex(numPages, menuState.barValue);
+
+                render();
+                updateAnchors();
+              };
+            }
+          });
+
+          return result;
+        };
 
         const _updateInstalled = () => {
           for (let i = 0; i < remoteMods.length; i++) {
@@ -345,12 +575,14 @@ class Inventory {
 
               const itemMenuState = {
                 focus: null,
+                barValue: 0,
+                page: 0,
               };
 
               const _renderItemMenu = () => {
                 ctx.fillStyle = '#FFF';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
-                renderAttributes(ctx, attributes, attributeSpecs, fontSize, ITEM_MENU_BORDER_SIZE, ITEM_MENU_BORDER_SIZE, itemMenuState, {arrowDownImg, colorWheelImg, linkImg});
+                renderAttributes(ctx, attributes, attributeSpecs, fontSize, ITEM_MENU_BORDER_SIZE, ITEM_MENU_BORDER_SIZE, itemMenuState);
 
                 texture.needsUpdate = true;
               };
@@ -381,7 +613,7 @@ class Inventory {
                 grabbable.attributes,
               ])));
               const _updateAttributesAnchors = () => {
-                plane.anchors = getAttributesAnchors(attributes, attributeSpecs, fontSize, ITEM_MENU_BORDER_SIZE, ITEM_MENU_BORDER_SIZE, itemMenuState, {colorWheelImg}, {
+                plane.anchors = getAttributesAnchors(attributes, attributeSpecs, fontSize, ITEM_MENU_BORDER_SIZE, ITEM_MENU_BORDER_SIZE, itemMenuState, {
                   focusAttribute: ({name: attributeName, type, newValue}) => {
                     if (type === 'number') {
                       attributes[attributeName].value = newValue; // XXX commit these to the backend
@@ -418,6 +650,8 @@ class Inventory {
                     _renderItemMenu();
                     _updateAttributesAnchors();
                   },
+                  render: _renderItemMenu,
+                  updateAnchors: _updateAttributesAnchors,
                 });
               };
               _updateAttributesAnchors();
@@ -1857,6 +2091,7 @@ const _makeTagName = s => {
   }
   return s;
 };
+const _roundToDecimals = (value, decimals) => Number(Math.round(value+'e'+decimals)+'e-'+decimals);
 const _debounce = fn => {
   let running = false;
   let queued = false;
