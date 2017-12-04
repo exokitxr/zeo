@@ -62,11 +62,15 @@ class Wallet {
             assetInstances.push(assetInstance);
 
             _broadcast(JSON.stringify({type: 'addAsset', args: {id, type, assetId, name, ext, path, attributes, icon, n, physics, matrix, visible, open}}));
+
+            analytics.addFile({id});
           } else if (method === 'removeAsset') {
             const {id} = args;
             assetInstances.splice(assetInstances.findIndex(assetInstance => assetInstance.id === id), 1);
 
             _broadcast(JSON.stringify({type: 'removeAsset', args: {id}}));
+
+            analytics.removeFile({id});
           } else if (method === 'setVisible') {
             const {id, visible} = args;
             const assetInstance = assetInstances.find(assetInstance => assetInstance.id === id);

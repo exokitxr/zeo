@@ -98,6 +98,24 @@ class Analytics {
             },
           }));
         };
+        const _sendAddFile = fileSpec => {
+          const {id} = fileSpec;
+          ws.send(JSON.stringify({
+            method: 'addFile',
+            args: {
+              id,
+            },
+          }));
+        };
+        const _sendRemoveFile = fileSpec => {
+          const {id} = fileSpec;
+          ws.send(JSON.stringify({
+            method: 'removeFile',
+            args: {
+              id,
+            },
+          }));
+        };
 
         const _playerEnter = ({id, username}) => {
           ws.send(JSON.stringify({
@@ -148,6 +166,19 @@ class Analytics {
             }
 
             _sendRemoveMod(modSpec);
+          },
+          addFile(fileSpec) {
+            fileSpecs.push(fileSpec);
+
+            _sendAddFile(fileSpec);
+          },
+          removeFile(fileSpec) {
+            const index = fileSpecs.findIndex(ms => ms.id === fileSpec.id);
+            if (index !== -1) {
+              fileSpecs.splice(index, 1);
+            }
+
+            _sendRemoveFile(fileSpec);
           },
         };
         return analyticsApi;

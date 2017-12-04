@@ -461,7 +461,7 @@ class World {
                 if (tagSpec.type === 'entity') {
                   plugins.push(path.isAbsolute(tagSpec.module) ? tagSpec.module : `${tagSpec.module}@${tagSpec.version}`);
 
-                  analytics.add(tagSpec);
+                  analytics.addMod(tagSpec);
                 }
               }
               return archae.requestPlugins(plugins, {
