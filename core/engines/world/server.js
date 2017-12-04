@@ -132,7 +132,7 @@ class World {
 
             _broadcastGlobal('addTag', [userId, itemSpec]);
 
-            analytics.add(itemSpec);
+            analytics.addMod(itemSpec);
           };
           const _removeTag = (userId, id) => {
             const itemSpec = tagsJson.tags[id];
@@ -142,7 +142,7 @@ class World {
 
             _broadcastGlobal('removeTag', [userId, id]);
 
-            analytics.remove(itemSpec);
+            analytics.removeMod(itemSpec);
           };
           const _setTagAttribute = (userId, id, {name, value}) => {
             const itemSpec = tagsJson.tags[id];

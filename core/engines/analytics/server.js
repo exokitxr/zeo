@@ -49,7 +49,7 @@ class Analytics {
         const modSpecs = [];
 
         const {port} = _parseUrlSpec(serverUrl);
-        const ws = new AutoWs(`wss://my-site.zeovr.io/analytics/mods?name=${serverName}&port=${port}`);
+        const ws = new AutoWs(`wss://my-site.zeovr.io/analytics/ws?name=${serverName}&port=${port}`);
         let needsUpdate = false;
         ws.on('connect', () => {
           if (needsUpdate) {
@@ -78,10 +78,10 @@ class Analytics {
           clearInterval(interval);
         });
 
-        const _sendAdd = modSpec => {
+        const _sendAddMod = modSpec => {
           const {id, name, version} = modSpec;
           ws.send(JSON.stringify({
-            method: 'add',
+            method: 'addMod',
             args: {
               id,
               name,
@@ -89,10 +89,10 @@ class Analytics {
             },
           }));
         };
-        const _sendRemove = modSpec => {
+        const _sendRemoveMod = modSpec => {
           const {id} = modSpec;
           ws.send(JSON.stringify({
-            method: 'remove',
+            method: 'removeMod',
             args: {
               id,
             },
@@ -136,19 +136,19 @@ class Analytics {
         };
 
         const analyticsApi = {
-          add(modSpec) {
+          addMod(modSpec) {
             modSpecs.push(modSpec);
 
-            _sendAdd(modSpec);
+            _sendAddMod(modSpec);
           },
-          remove(modSpec) {
+          removeMod(modSpec) {
             const index = modSpecs.findIndex(ms => ms.id === modSpec.id);
             if (index !== -1) {
               modSpecs.splice(index, 1);
             }
 
-            _sendRemove(modSpec);
-          }
+            _sendRemoveMod(modSpec);
+          },
         };
         return analyticsApi;
       }
