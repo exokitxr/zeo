@@ -108,13 +108,14 @@ class Inventory {
 
     const _requestImage = src => new Promise((accept, reject) => {
       const img = new Image();
-      img.src = src;
+      img.crossOrigin = 'Anonymous';
       img.onload = () => {
         accept(img);
       };
       img.onerror = err => {
         reject(err);
       };
+      img.src = src;
     });
     const _requestImageBitmap = src => _requestImage(src)
       .then(img => createImageBitmap(img, 0, 0, img.width, img.height));
@@ -127,8 +128,7 @@ class Inventory {
         imageDataCanvas.width = width;
         imageDataCanvas.height = height;
         imageDataCtx.drawImage(img, 0, 0);
-        const {data} = imageDataCtx.getImageData(0, 0, width, height);
-        return {width, height, data};
+        return imageDataCtx.getImageData(0, 0, width, height);
       });
     const _requestModReadme = (name, version) => {
       let live = true;
@@ -717,7 +717,25 @@ class Inventory {
           }));
         const _requestAssetImageData = assetSpec => (() => {
           if (assetSpec.ext === 'itm') {
-            return resource.getItemImageData(assetSpec.name);
+            if (assetSpec.icon) {
+              return new Promise((accept, reject) => {
+                const img = new Image();
+                img.crossOrigin = 'Anonymous';
+                img.onload = () => {
+                  imageDataCanvas.width = img.naturalWidth;
+                  imageDataCanvas.height = img.naturalHeight;
+                  imageDataCtx.drawImage(img, 0, 0);
+                  const imageData = imageDataCtx.getImageData(0, 0, img.naturalWidth, img.naturalHeight);
+                  accept(imageData.data.buffer);
+                };
+                img.onerror = err => {
+                  reject(err);
+                };
+                img.src = 'data:application/octet-stream;base64,' + assetSpec.icon;
+              });
+            } else {
+              return resource.getItemImageData(assetSpec.name);
+            }
           } else /* if (asset.ext === 'files') */ {
             return resource.getFileImageData(assetSpec.name);
           }
@@ -815,7 +833,7 @@ class Inventory {
         let serverPages = localMods.length > numModsPerPage ? Math.ceil(localMods.length / numModsPerPage) : 1;
         let serverBarValue = 0;
         // let serverIndex = -1;
-        let localGeometry = null;
+        let localImage = null;
 
         const _snapToIndex = (steps, value) => Math.min(Math.floor(steps * value), steps - 1);
         const _snapToPixel = (max, steps, value) => {
@@ -1592,19 +1610,20 @@ class Inventory {
               if (tab === 'server' && subtab === 'installed' && localMod) {
                 if (localMod.metadata && localMod.metadata.items && Array.isArray(localMod.metadata.items) && localMod.metadata.items.length > 0) {
                   return [
-                    _requestModFileImageData(localMod)
-                      .then(imageData => {
-                        localGeometry = imageData.data.slice().buffer;
+                    resource.getModFileImage(localMod.displayName, 0)
+                      .then(image => {
+                        localImage = base64.encode(image);
 
-                        return spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
-                          localVector.set(
-                            WORLD_WIDTH / 2 - pixelSize * 16 - pixelSize * 16*0.75,
-                            -WORLD_HEIGHT / 2 + pixelSize * 16,
-                            pixelSize * 16/2
-                          ),
-                          zeroQuaternion,
-                          oneVector
-                        ));
+                        return _requestImageData('data:application/octet-stream;base64,' + localImage)
+                          .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
+                            localVector.set(
+                              WORLD_WIDTH / 2 - pixelSize * 16 - pixelSize * 16*0.75,
+                              -WORLD_HEIGHT / 2 + pixelSize * 16,
+                              pixelSize * 16/2
+                            ),
+                            zeroQuaternion,
+                            oneVector
+                          )));
                       }),
                   ];
                 } else {
@@ -1615,8 +1634,6 @@ class Inventory {
                   return [
                     _requestAssetImageData(localAsset)
                       .then(imageData => {
-                        localGeometry = imageData.data.slice().buffer;
-
                         return spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
                           localVector.set(
                             WORLD_WIDTH / 2 - pixelSize * 16 - pixelSize * 16*0.75,
@@ -1835,7 +1852,7 @@ class Inventory {
                 ext: 'itm',
                 path: localMod.displayName + '/' + localMod.metadata.items[0].type,
                 attributes,
-                icon: base64.encode(localGeometry),
+                icon: localImage,
               };
               wallet.pullItem(itemSpec, side);
 

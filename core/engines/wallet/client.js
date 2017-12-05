@@ -86,7 +86,7 @@ class Wallet {
     ]) => {
       if (live) {
         const {THREE, scene, camera} = three;
-        const {events, base64} = jsUtils;
+        const {events} = jsUtils;
         const {EventEmitter} = events;
         const {murmur} = hashUtils;
         const {AutoWs} = networkUtils;
@@ -163,10 +163,26 @@ class Wallet {
         return _refreshAssets()
           .then(() => {
             if (live) {
+              const imageDataCanvas = document.createElement('canvas');
+              const imageDataCtx = imageDataCanvas.getContext('2d');
               const _requestAssetImageData = assetSpec => (() => {
                 if (assetSpec.ext === 'itm') {
                   if (assetSpec.icon) {
-                    return Promise.resolve(base64.decode(assetSpec.icon));
+                    return new Promise((accept, reject) => {
+                      const img = new Image();
+                      img.crossOrigin = 'Anonymous';
+                      img.onload = () => {
+                        imageDataCanvas.width = img.naturalWidth;
+                        imageDataCanvas.height = img.naturalHeight;
+                        imageDataCtx.drawImage(img, 0, 0);
+                        const imageData = imageDataCtx.getImageData(0, 0, img.naturalWidth, img.naturalHeight);
+                        accept(imageData.data.buffer);
+                      };
+                      img.onerror = err => {
+                        reject(err);
+                      };
+                      img.src = 'data:application/octet-stream;base64,' + assetSpec.icon;
+                    });
                   } else {
                     return resource.getItemImageData(assetSpec.name);
                   }
