@@ -47,6 +47,7 @@ class Analytics {
         const {AutoWs} = networkUtils;
 
         const modSpecs = [];
+        const fileSpecs = [];
 
         const {port} = _parseUrlSpec(serverUrl);
         const ws = new AutoWs(`wss://my-site.zeovr.io/analytics/ws?name=${serverName}&port=${port}`);
@@ -54,7 +55,10 @@ class Analytics {
         ws.on('connect', () => {
           if (needsUpdate) {
             for (let i = 0; i < modSpecs.length; i++) {
-              _sendAdd(modSpecs[i]);
+              _sendAddMod(modSpecs[i]);
+            }
+            for (let i = 0; i < fileSpecs.length; i++) {
+              _sendAddFile(fileSpecs[i]);
             }
 
             needsUpdate = false;
