@@ -1105,7 +1105,7 @@ class Wallet {
 
                 const {type} = assetInstance;
                 if (type === 'asset') {
-                  const {assetId, name, ext, path, icon} = assetInstance;
+                  const {assetId, name, ext, path, attributes, icon} = assetInstance;
                   const {assets: oldAssets} = walletState;
                   _addStrgAsset(assetId, name, ext, path, attributes, icon)
                     .then(() => {
@@ -1121,6 +1121,7 @@ class Wallet {
                             json: {
                               data: {
                                 path,
+                                icon,
                                 attributes,
                               },
                             },
