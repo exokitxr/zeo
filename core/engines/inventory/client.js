@@ -717,7 +717,7 @@ class Inventory {
           }));
         const _requestAssetImageData = assetSpec => (() => {
           if (assetSpec.ext === 'itm') {
-            if (assetSpec.icon) {
+            if (assetSpec.json && assetSpec.json.data && assetSpec.json.data.icon && typeof assetSpec.json.data.icon === 'string') {
               return new Promise((accept, reject) => {
                 const img = new Image();
                 img.crossOrigin = 'Anonymous';
@@ -731,7 +731,7 @@ class Inventory {
                 img.onerror = err => {
                   reject(err);
                 };
-                img.src = 'data:application/octet-stream;base64,' + assetSpec.icon;
+                img.src = 'data:application/octet-stream;base64,' + assetSpec.json.data.icon;
               });
             } else {
               return resource.getItemImageData(assetSpec.name);
