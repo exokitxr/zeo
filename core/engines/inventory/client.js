@@ -523,7 +523,6 @@ class Inventory {
           inventoryBarValue = 0;
 
           _renderMenu();
-          assetsMesh.visible = false;
         };
         wallet.on('assets', _walletAssets);
 
@@ -1048,7 +1047,7 @@ class Inventory {
           tab = 'status';
 
           _renderMenu();
-          assetsMesh.visible = false;
+          assetsMesh.render();
 
           plane.anchors = _getAnchors();
         });
@@ -1062,7 +1061,7 @@ class Inventory {
           serverPages = localMods.length > numModsPerPage ? Math.ceil(localMods.length / numModsPerPage) : 0;
 
           _renderMenu();
-          assetsMesh.visible = false;
+          assetsMesh.render();
 
           serverAnchors = _getServerAnchors();
           modAnchors = _getModAnchors();
@@ -1079,7 +1078,7 @@ class Inventory {
           inventoryPages = localAssets.length > numFilesPerPage ? Math.ceil(localAssets.length / numFilesPerPage) : 0;
 
           _renderMenu();
-          assetsMesh.visible = false;
+          assetsMesh.render();
 
           filesAnchors = _getFilesAnchors();
           plane.anchors = _getAnchors();
@@ -1088,7 +1087,7 @@ class Inventory {
           tab = 'settings';
 
           _renderMenu();
-          assetsMesh.visible = false;
+          assetsMesh.render();
 
           plane.anchors = _getAnchors();
         });
@@ -1109,7 +1108,6 @@ class Inventory {
                 localAsset = null;
 
                 _renderMenu();
-                assetsMesh.visible = false;
 
                 filesAnchors = _getFilesAnchors();
                 plane.anchors = _getAnchors();
@@ -1126,7 +1124,7 @@ class Inventory {
             inventoryPages = localAssets.length > numFilesPerPage ? Math.ceil(localAssets.length / numFilesPerPage) : 0;
 
             _renderMenu();
-            assetsMesh.visible = false;
+            assetsMesh.render();
 
             filesAnchors = _getFilesAnchors();
             plane.anchors = _getAnchors();
@@ -1141,7 +1139,7 @@ class Inventory {
             inventoryPages = localAssets.length > numFilesPerPage ? Math.ceil(localAssets.length / numFilesPerPage) : 0;
 
             _renderMenu();
-            assetsMesh.visible = false;
+            assetsMesh.render();
 
             filesAnchors = _getFilesAnchors();
             plane.anchors = _getAnchors();
@@ -1156,7 +1154,7 @@ class Inventory {
             inventoryPages = localAssets.length > numFilesPerPage ? Math.ceil(localAssets.length / numFilesPerPage) : 0;
 
             _renderMenu();
-            assetsMesh.visible = false;
+            assetsMesh.render();
 
             filesAnchors = _getFilesAnchors();
             plane.anchors = _getAnchors();
@@ -1171,7 +1169,7 @@ class Inventory {
             inventoryPages = localAssets.length > numFilesPerPage ? Math.ceil(localAssets.length / numFilesPerPage) : 0;
 
             _renderMenu();
-            assetsMesh.visible = false;
+            assetsMesh.render();
 
             filesAnchors = _getFilesAnchors();
             plane.anchors = _getAnchors();
@@ -1183,7 +1181,6 @@ class Inventory {
 
               _renderMenu();
               assetsMesh.render();
-              assetsMesh.visible = true;
 
               filesAnchors = _getFilesAnchors();
               plane.anchors = _getAnchors();
@@ -1300,7 +1297,6 @@ class Inventory {
             serverPages = localMods.length > numModsPerPage ? Math.ceil(localMods.length / numModsPerPage) : 0;
 
             _renderMenu();
-            assetsMesh.visible = false;
 
             serverAnchors = _getServerAnchors();
             modAnchors = _getModAnchors();
@@ -1324,7 +1320,6 @@ class Inventory {
             serverPages = localMods.length > numModsPerPage ? Math.ceil(localMods.length / numModsPerPage) : 0;
 
             _renderMenu();
-            assetsMesh.visible = false;
 
             serverAnchors = _getServerAnchors();
             modAnchors = _getModAnchors();
@@ -1348,7 +1343,6 @@ class Inventory {
             serverPages = localMods.length > numModsPerPage ? Math.ceil(localMods.length / numModsPerPage) : 0;
 
             _renderMenu();
-            assetsMesh.visible = false;
 
             serverAnchors = _getServerAnchors();
             modAnchors = _getModAnchors();
@@ -1382,7 +1376,6 @@ class Inventory {
 
               _renderMenu();
               assetsMesh.render();
-              assetsMesh.visible = true;
 
               plane.anchors = _getAnchors();
             });
@@ -1594,7 +1587,6 @@ class Inventory {
           })();
           const material = assetsMaterial;
           const mesh = new THREE.Mesh(geometry, material);
-          mesh.visible = false;
           const _renderAssets = _debounce(next => {
             const promises = (() => {
               if (tab === 'server' && subtab === 'installed' && localMod) {
@@ -1869,7 +1861,9 @@ class Inventory {
         input.on('gripdown', _gripdown);
 
         const _grab = e => {
-          assetsMesh.render();
+          if (menuState.open) {
+            assetsMesh.render();
+          }
         };
         hand.on('grab', _grab);
         const _release = e => {
@@ -1893,8 +1887,6 @@ class Inventory {
             if (addDistance < pixelSize*16/2) {
               wallet.storeItem(grabbable);
 
-              assetsMesh.render();
-
               e.stopImmediatePropagation();
             } else {
               const removePosition = localVector.copy(zeroVector)
@@ -1914,8 +1906,6 @@ class Inventory {
               if (removeDistance < pixelSize*16/2) {
                 wallet.destroyItem(grabbable);
 
-                assetsMesh.render();
-
                 const {name, ext} = grabbable;
                 const newNotification = notification.addNotification(`Discarded ${name}.${ext}.`);
                 setTimeout(() => {
@@ -1927,6 +1917,8 @@ class Inventory {
                 e.stopImmediatePropagation();
               }
             }
+
+            assetsMesh.render();
           }
         };
         hand.on('release', _release);
