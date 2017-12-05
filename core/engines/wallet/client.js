@@ -210,9 +210,13 @@ class Wallet {
                       id,
                       name,
                       ext,
-                      path,
-                      attributes,
-                      icon,
+                      json: {
+                        data: {
+                          path,
+                          attributes,
+                          icon,
+                        },
+                      },
                     };
                     assets.push(assetSpec);
                   }
