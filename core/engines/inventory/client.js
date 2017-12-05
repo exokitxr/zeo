@@ -1623,7 +1623,7 @@ class Inventory {
                   return [
                     _requestAssetImageData(localAsset)
                       .then(imageData => {
-                      localGeometry = imageData.data.slice().buffer;
+                        localGeometry = imageData.data.slice().buffer;
 
                         return spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
                           localVector.set(
