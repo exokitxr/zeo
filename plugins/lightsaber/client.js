@@ -189,11 +189,11 @@ class Lightsaber {
                   const geometry = (() => {
                     const sq = n => Math.sqrt((n * n) + (n * n));
 
-                    const handleGeometry = new THREE.BoxBufferGeometry(0.02, 0.02, 0.2);
-                    const topGeometry = new THREE.BoxBufferGeometry(0.04, 0.04, 0.02)
-                      .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -(0.2 / 2) - (0.02 / 2)));
-                    const bottomGeometry = new THREE.BoxBufferGeometry(0.04, 0.04, 0.02)
-                      .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, (0.2 / 2) + (0.02 / 2)));
+                    const handleGeometry = new THREE.BoxBufferGeometry(0.02, 0.2, 0.02);
+                    const topGeometry = new THREE.BoxBufferGeometry(0.04, 0.02, 0.04)
+                      .applyMatrix(new THREE.Matrix4().makeTranslation(0, (0.2 / 2) + (0.02 / 2), 0));
+                    const bottomGeometry = new THREE.BoxBufferGeometry(0.04, 0.02, 0.04)
+                      .applyMatrix(new THREE.Matrix4().makeTranslation(0, -(0.2 / 2) - (0.02 / 2), 0));
 
                     return geometryUtils.concatBufferGeometry([handleGeometry, topGeometry, bottomGeometry]);
                   })();
@@ -212,8 +212,8 @@ class Lightsaber {
                   object.visible = false;
 
                   const topMesh = (() => {
-                    const geometry = new THREE.BoxBufferGeometry(0.02 * 0.9, 0.02 * 0.9, 1)
-                      .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -(0.2 / 2) - 0.02 - (1 / 2)));
+                    const geometry = new THREE.BoxBufferGeometry(0.02 * 0.9, 1, 0.02 * 0.9)
+                      .applyMatrix(new THREE.Matrix4().makeTranslation(0, -(0.2 / 2) - 0.02 - (1 / 2), 0));
                     const material = bladeMaterial;
 
                     return new THREE.Mesh(geometry, material);
@@ -222,8 +222,8 @@ class Lightsaber {
                   object.topMesh = topMesh;
 
                   const bottomMesh = (() => {
-                    const geometry = new THREE.BoxBufferGeometry(0.02 * 0.9, 0.02 * 0.9, 1)
-                      .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, (0.2 / 2) + 0.02 + (1 / 2)));
+                    const geometry = new THREE.BoxBufferGeometry(0.02 * 0.9, 1, 0.02 * 0.9)
+                      .applyMatrix(new THREE.Matrix4().makeTranslation(0, -(0.2 / 2) - 0.02 - (1 / 2), 0));
                     const material = bladeMaterial;
 
                     return new THREE.Mesh(geometry, material);
@@ -241,22 +241,22 @@ class Lightsaber {
                   object.visible = false;
 
                   const topHitMesh = (() => {
-                    const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 1);
+                    const geometry = new THREE.BoxBufferGeometry(0.1, 1, 0.1);
                     const material = whiteMaterial;
 
                     const mesh = new THREE.Mesh(geometry, material);
-                    mesh.position.set(0, 0, -(0.2 / 2) - 0.02 - (1 / 2));
+                    mesh.position.set(0, (0.2 / 2) + 0.02 + (1 / 2), 0);
                     return mesh;
                   })();
                   object.add(topHitMesh);
                   object.topHitMesh = topHitMesh;
 
                   const bottomHitMesh = (() => {
-                    const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 1);
+                    const geometry = new THREE.BoxBufferGeometry(0.1, 1, 0.1);
                     const material = whiteMaterial;
 
                     const mesh = new THREE.Mesh(geometry, material);
-                    mesh.position.set(0, 0, (0.2 / 2) + 0.02 + (1 / 2));
+                    mesh.position.set(0, -(0.2 / 2) - 0.02 - (1 / 2), 0);
                     return mesh;
                   })();
                   object.add(bottomHitMesh);
