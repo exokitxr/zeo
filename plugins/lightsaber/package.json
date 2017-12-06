@@ -1,0 +1,9 @@
+{
+  "name": "lightsaber",
+  "description": "The lightsaber, sometimes referred to as a laser sword, was a weapon used by the Jedi, the Sith, and other Force-sensitives.",
+  "version": "0.0.1",
+  "keywords": [],
+  "client": "client.js",
+  "server": "server.js",
+  "dependencies": {}
+}
