@@ -1633,17 +1633,15 @@ class Inventory {
                 if (!SIDES.some(side => Boolean(hand.getGrabbedGrabbable(side)))) {
                   return [
                     _requestAssetImageData(localAsset)
-                      .then(imageData => {
-                        return spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
-                          localVector.set(
-                            WORLD_WIDTH / 2 - pixelSize * 16 - pixelSize * 16*0.75,
-                            -WORLD_HEIGHT / 2 + pixelSize * 16,
-                            pixelSize * 16/2
-                          ),
-                          zeroQuaternion,
-                          oneVector
-                        ));
-                      }),
+                      .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
+                        localVector.set(
+                          WORLD_WIDTH / 2 - pixelSize * 16 - pixelSize * 16*0.75,
+                          -WORLD_HEIGHT / 2 + pixelSize * 16,
+                          pixelSize * 16/2
+                        ),
+                        zeroQuaternion,
+                        oneVector
+                      ))),
                   ];
                 } else {
                   return [
