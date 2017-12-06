@@ -615,13 +615,13 @@ class Inventory {
                 plane.anchors = getAttributesAnchors(attributes, attributeSpecs, fontSize, ITEM_MENU_BORDER_SIZE, ITEM_MENU_BORDER_SIZE, itemMenuState, {
                   focusAttribute: ({name: attributeName, type, newValue}) => {
                     if (type === 'number') {
-                      attributes[attributeName].value = newValue; // XXX commit these to the backend
+                      grabbable.setAttribute(attributeName, newValue);
                       grabbable.assetId = _getAssetId();
 
                       itemMenuState.focus = null;
                     } else if (type === 'select') {
                       if (newValue !== undefined) {
-                        attributes[attributeName].value = newValue;
+                        grabbable.setAttribute(attributeName, newValue);
                         grabbable.assetId = _getAssetId();
 
                         itemMenuState.focus = null;
@@ -630,7 +630,7 @@ class Inventory {
                       }
                     } else if (type === 'color') {
                       if (newValue !== undefined) {
-                        attributes[attributeName].value = newValue;
+                        grabbable.setAttribute(attributeName, newValue);
                         grabbable.assetId = _getAssetId();
 
                         itemMenuState.focus = null;
@@ -638,7 +638,7 @@ class Inventory {
                         itemMenuState.focus = attributeName;
                       }
                     } else if (type === 'checkbox') {
-                      attributes[attributeName].value = newValue;
+                      grabbable.setAttribute(attributeName, newValue);
                       grabbable.assetId = _getAssetId();
 
                       itemMenuState.focus = null;
