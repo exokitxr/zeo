@@ -68,7 +68,7 @@ class Lightsaber {
           const lightsaberItem = {
             path: 'lightsaber/lightsaber',
             itemAddedCallback(itemElement) {
-              const object = new THREE.Object3D();
+              const {mesh: object} = itemElement;
 
               const liveState = {
                 live: false,
@@ -313,14 +313,14 @@ class Lightsaber {
               };
 
               const _grab = e => {
-                const {detail: {side}} = e;
+                const {side} = e;
                 const lightsaberState = lightsaberStates[side];
 
                 lightsaberState.grabbed = true;
               };
-              itemElement.addEventListener('grab', _grab);
+              itemElement.on('grab', _grab);
               const _release = e => {
-                const {detail: {side}} = e;
+                const {side} = e;
                 const lightsaberState = lightsaberStates[side];
 
                 lightsaberState.grabbed = false;
@@ -341,7 +341,7 @@ class Lightsaber {
                   }
                 }
               };
-              itemElement.addEventListener('release', _release);
+              itemElement.on('release', _release);
               const _trigger = e => {
                 const {side} = e;
                 const lightsaberState = lightsaberStates[side];
@@ -497,24 +497,20 @@ class Lightsaber {
                   bladeMaterial.color.copy(itemElement[dataSymbol].color);
                 },
                 _cleanup: () => {
-                  object.remove(lightsaberMesh);
-
-                  scene.remove(hudMesh);
-                  hudMesh.destroy();
-
                   bladeMaterial.dispose();
 
-                  itemElement.removeEventListener('grab', _grab);
-                  itemElement.removeEventListener('release', _release);
+                  itemElement.removeListener('grab', _grab);
+                  itemElement.removeListener('release', _release);
 
                   input.removeListener('trigger', _trigger);
                   input.removeListener('triggerdown', _triggerdown);
                   input.removeListener('triggerup', _triggerup);
-                  input.removeListener('menudown', _menudown);
 
                   render.removeListener('update', _update);
                 },
               };
+
+              // this.itemAttributeValueChangedCallback(itemElement, 'type', null, 'crossguard');
             },
             itemRemovedCallback(itemElement) {
               itemElement[dataSymbol]._cleanup();
