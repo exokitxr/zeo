@@ -165,10 +165,10 @@ class Lightsaber {
                 object.setValue = value => {
                   const {coreMesh, leftMesh, rightMesh} = bladeMesh;
 
-                  coreMesh.scale.set(1, 1, value);
+                  coreMesh.scale.set(1, value, 1);
                   leftMesh.scale.set(value, 1, 1);
                   rightMesh.scale.set(value, 1, 1);
-                  hitMesh.scale.set(1, 1, value);
+                  hitMesh.scale.set(1, value, 1);
 
                   coreMesh.updateMatrixWorld();
                   leftMesh.updateMatrixWorld();
@@ -271,9 +271,9 @@ class Lightsaber {
                 object.setValue = value => {
                   const {topMesh, bottomMesh} = bladeMesh;
 
-                  topMesh.scale.set(1, 1, value);
-                  bottomMesh.scale.set(1, 1, value);
-                  hitMesh.scale.set(1, 1, value);
+                  topMesh.scale.set(1, value, 1);
+                  bottomMesh.scale.set(1, value, 1);
+                  hitMesh.scale.set(1, value, 1);
 
                   topMesh.updateMatrixWorld();
                   bottomMesh.updateMatrixWorld();
