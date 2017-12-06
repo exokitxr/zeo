@@ -464,7 +464,7 @@ class Inventory {
           for (let i = 0; i < remoteMods.length; i++) {
             const remoteMod = remoteMods[i];
             const installed = tags.getTagMeshes()
-              .some(({item}) => item.type === 'entity' && item.name === remoteMod.displayName);
+              .some(({item}) => item.type === 'entity' && item.module === remoteMod.displayName);
             remoteMod.installed = installed;
           }
         };
@@ -1238,7 +1238,7 @@ class Inventory {
                   modPages = 0;
                 } else {
                   for (let i = 0; i < localAsset.playlist.length; i++) {
-                    const {name, version} = localAsset.playlist[i];
+                    const {name, displayName, version} = localAsset.playlist[i];
                     if (!world.getTag({
                       type: 'entity',
                       name,
@@ -1246,10 +1246,10 @@ class Inventory {
                       const itemSpec = {
                         type: 'entity',
                         id: _makeId(),
-                        name: name,
-                        displayName: name,
-                        version: version,
-                        module: name,
+                        name: displayName,
+                        displayName,
+                        version,
+                        module: displayName,
                         tagName: _makeTagName(name),
                         attributes: {},
                         metadata: {},
@@ -1420,7 +1420,7 @@ class Inventory {
           });
 
           _pushAnchor(result, canvas.width - 640 - 40, 150*2, 640 + 40, 100, (e, hoverState) => {
-            const {name, version} = localMod;
+            const {name, displayName, version} = localMod;
 
             if (localMod.installed) {
               const tagMesh = world.getTag({
@@ -1447,10 +1447,10 @@ class Inventory {
               const itemSpec = {
                 type: 'entity',
                 id: _makeId(),
-                name: name,
-                displayName: name,
-                version: version,
-                module: name,
+                name: displayName,
+                displayName,
+                version,
+                module: displayName,
                 tagName: _makeTagName(name),
                 attributes: {},
                 metadata: {},
