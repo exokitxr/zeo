@@ -70,10 +70,6 @@ class Lightsaber {
             itemAddedCallback(itemElement) {
               const {mesh: object} = itemElement;
 
-              const liveState = {
-                live: false,
-              };
-
               const bladeMaterial = new THREE.MeshBasicMaterial({
                 color: 0xF44336,
                 shading: THREE.FlatShading,
@@ -300,8 +296,6 @@ class Lightsaber {
                 return result;
               });
 
-              const _isLive = () => liveState.live;
-
               const _makeLightsaberState = () => ({
                 grabbed: false,
                 ignited: false,
@@ -359,7 +353,7 @@ class Lightsaber {
                 const lightsaberState = lightsaberStates[side];
                 const {grabbed} = lightsaberState;
 
-                if (grabbed && _isLive()) {
+                if (grabbed) {
                   const {ignited} = lightsaberState;
 
                   if (!ignited) {
@@ -460,11 +454,11 @@ class Lightsaber {
                   };
                 };
 
-                if (_isLive()) {
+                // if (_isLive()) {
                   _updateLightsaber();
-                } else {
+                /* } else {
                   _resetLightsaber();
-                }
+                } */
 
                 lastUpdateTime = now;
               };
