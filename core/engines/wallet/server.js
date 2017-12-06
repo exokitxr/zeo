@@ -83,6 +83,15 @@ class Wallet {
                   _broadcast(JSON.stringify({type: 'removeAsset', args: {id}}));
 
                   analytics.removeFile({id});
+                } else if (method === 'setAttribute') {
+                  const {id, name, value} = args;
+                  const assetInstance = assetInstances.find(assetInstance => assetInstance.id === id);
+
+                  if (assetInstance) {
+                    assetInstance.attributes[name].value = value;
+
+                    _broadcast(JSON.stringify({type: 'setAttribute', args: {id, name, value}}));
+                  }
                 } else if (method === 'setVisible') {
                   const {id, visible} = args;
                   const assetInstance = assetInstances.find(assetInstance => assetInstance.id === id);

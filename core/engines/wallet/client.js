@@ -318,6 +318,15 @@ class Wallet {
                   _unbindAssetInstance(assetInstance);
 
                   assetsMesh.removeAssetInstance(id);
+                } else if (type === 'setAttribute') {
+                  const {
+                    id,
+                    name,
+                    value,
+                  } = args;
+
+                  const assetInstance = assetsMesh.getAssetInstance(id);
+                  assetInstance.updateAttribute(name, value);
                 } else if (type === 'setVisible') {
                   const {
                     id,
@@ -633,6 +642,38 @@ class Wallet {
                         physics: false,
                       },
                     }));
+                  }
+
+                  setAttribute(name, value) {
+                    const {id} = this;
+
+                    this.updateAttribute(name, value);
+
+                    connection.send(JSON.stringify({
+                      method: 'setAttribute',
+                      args: {
+                        id,
+                        name,
+                        value,
+                      },
+                    }));
+                  }
+
+                  updateAttribute(name, value) {
+                    const {value: oldValue} = this.attributes[name] || {};
+                    this.attributes[name].value = value;
+
+                    const {path} = this;
+                    const itemEntry = itemApis[path];
+                    if (itemEntry) {
+                      for (let i = 0; i < itemEntry.length; i++) {
+                        const itemApi = itemEntry[i];
+
+                        if (typeof itemApi.itemAttributeValueChangedCallback === 'function') {
+                          itemApi.itemAttributeValueChangedCallback(this, name, oldValue, value);
+                        }
+                      }
+                    }
                   }
 
                   updateVisible(visible) {
