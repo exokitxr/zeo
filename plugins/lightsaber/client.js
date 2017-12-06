@@ -19,6 +19,18 @@ class Lightsaber {
       live = false;
     };
 
+    // const localTransformPositionVector = new THREE.Vector3(0.015/2 * 3, 0, 0);
+    const localTransformRotationQuaterion = new THREE.Quaternion().setFromAxisAngle(
+      new THREE.Vector3(0, 0, 1),
+      Math.PI / 4
+    )/*.premultiply(new THREE.Quaternion().setFromUnitVectors(
+      new THREE.Vector3(0, 0, -1),
+      new THREE.Vector3(1, 0, 0)
+    )); */
+    const zeroVector = new THREE.Vector3();
+    const oneVector = new THREE.Vector3(1, 1, 1);
+    const zeroQuaternion = new THREE.Quaternion();
+
     const _requestAudio = src => new Promise((accept, reject) => {
       const audio = document.createElement('audio');
 
@@ -77,14 +89,15 @@ class Lightsaber {
 
               const _makeCrossguardLightsaberMesh = () => {
                 const object = new THREE.Object3D();
+                object.quaternion.copy(localTransformRotationQuaterion).inverse();
 
                 const handleMesh = (() => {
                   const geometry = (() => {
                     const sq = n => Math.sqrt((n * n) + (n * n));
 
-                    const handleGeometry = new THREE.BoxBufferGeometry(0.02, 0.02, 0.1);
+                    const handleGeometry = new THREE.BoxBufferGeometry(0.02, 0.1, 0.02);
                     const crossguardGeometry = new THREE.BoxBufferGeometry(0.1, 0.02, 0.02)
-                      .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -(0.1 / 2) - (0.02 / 2)));
+                      .applyMatrix(new THREE.Matrix4().makeTranslation(0, (0.1 / 2) + (0.02 / 2), 0));
 
                     return geometryUtils.concatBufferGeometry([handleGeometry, crossguardGeometry]);
                   })();
@@ -103,8 +116,8 @@ class Lightsaber {
                   object.visible = false;
 
                   const coreMesh = (() => {
-                    const geometry = new THREE.BoxBufferGeometry(0.02 * 0.9, 0.02 * 0.9, 1)
-                      .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -(0.1 / 2) - 0.02 - (1 / 2)));
+                    const geometry = new THREE.BoxBufferGeometry(0.02 * 0.9, 1, 0.02 * 0.9)
+                      .applyMatrix(new THREE.Matrix4().makeTranslation(0, (0.1 / 2) + 0.02 + (1 / 2), 0));
                     const material = bladeMaterial;
 
                     return new THREE.Mesh(geometry, material);
@@ -114,7 +127,7 @@ class Lightsaber {
 
                   const leftMesh = (() => {
                     const geometry = new THREE.BoxBufferGeometry(0.1, 0.02 * 0.9, 0.02 * 0.9)
-                      .applyMatrix(new THREE.Matrix4().makeTranslation(-(0.1 / 2) - (0.1 / 2), 0, -(0.1 / 2) - (0.02 / 2)));
+                      .applyMatrix(new THREE.Matrix4().makeTranslation(-(0.1 / 2) - (0.1 / 2), (0.1 / 2) + (0.02 / 2), 0));
                     const material = bladeMaterial;
 
                     return new THREE.Mesh(geometry, material);
@@ -124,7 +137,7 @@ class Lightsaber {
 
                   const rightMesh = (() => {
                     const geometry = new THREE.BoxBufferGeometry(0.1, 0.02 * 0.9, 0.02 * 0.9)
-                      .applyMatrix(new THREE.Matrix4().makeTranslation((0.1 / 2) + (0.1 / 2), 0, -(0.1 / 2) - (0.02 / 2)));
+                      .applyMatrix(new THREE.Matrix4().makeTranslation((0.1 / 2) + (0.1 / 2), (0.1 / 2) + (0.02 / 2), 0));
                     const material = bladeMaterial;
 
                     return new THREE.Mesh(geometry, material);
@@ -138,11 +151,11 @@ class Lightsaber {
                 object.bladeMesh = bladeMesh;
 
                 const hitMesh = (() => {
-                  const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 1);
+                  const geometry = new THREE.BoxBufferGeometry(0.1, 1, 0.1);
                   const material = whiteMaterial;
 
                   const mesh = new THREE.Mesh(geometry, material);
-                  mesh.position.set(0, 0, -(0.1 / 2) - 0.02 - (1 / 2));
+                  mesh.position.set(0, (0.1 / 2) + 0.02 + (1 / 2), 0);
                   mesh.visible = false;
                   return mesh;
                 })();
@@ -275,6 +288,7 @@ class Lightsaber {
 
               const lightsaberMesh = (() => {
                 const object = new THREE.Object3D();
+                object.visible = false;
                 object.mesh = null;
                 return object;
               })();
@@ -309,15 +323,24 @@ class Lightsaber {
               const _grab = e => {
                 const {side} = e;
                 const lightsaberState = lightsaberStates[side];
-
                 lightsaberState.grabbed = true;
+
+                itemElement.hide();
+                itemElement.setLocalTransform(zeroVector, localTransformRotationQuaterion, oneVector);
+
+                lightsaberMesh.visible = true;
               };
               itemElement.on('grab', _grab);
               const _release = e => {
                 const {side} = e;
                 const lightsaberState = lightsaberStates[side];
-
                 lightsaberState.grabbed = false;
+
+                itemElement.setLocalTransform(zeroVector, zeroQuaternion, oneVector);
+
+                itemElement.show();
+
+                lightsaberMesh.visible = false;
 
                 const {ignited} = lightsaberState;
                 if (ignited) {
@@ -479,10 +502,12 @@ class Lightsaber {
                   if (bladeType === 'crossguard') {
                     const mesh = _makeCrossguardLightsaberMesh();
                     lightsaberMesh.add(mesh);
+                    mesh.updateMatrixWorld();
                     lightsaberMesh.mesh = mesh;
                   } else if (bladeType === 'dual') {
                     const mesh = _makeDualLightsaberMesh();
                     lightsaberMesh.add(mesh);
+                    mesh.updateMatrixWorld();
                     lightsaberMesh.mesh = mesh;
                   }
                 },

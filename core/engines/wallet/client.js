@@ -711,8 +711,12 @@ class Wallet {
                     })();
                     const material = assetsMaterial;
 
-                    const mesh = new THREE.Mesh(geometry, material);
-                    mesh.visible = assetInstance.visible;
+                    const submesh = new THREE.Mesh(geometry, material);
+                    submesh.visible = assetInstance.visible;
+
+                    const mesh = new THREE.Object3D();
+                    mesh.add(submesh);
+                    mesh.submesh = submesh;
                     mesh.destroy = () => {
                       geometry.destroy();
 
@@ -725,13 +729,15 @@ class Wallet {
                   assetInstance.mesh = mesh;
 
                   assetInstance.on('grab', () => {
-                    const {geometry} = mesh;
+                    const {submesh} = mesh;
+                    const {geometry} = submesh;
                     const dyAttribute = geometry.getAttribute('dy');
                     dyAttribute.array = geometry.zeroDys;
                     dyAttribute.needsUpdate = true;
                   });
                   assetInstance.on('release', () => {
-                    const {geometry} = mesh;
+                    const {submesh} = mesh;
+                    const {geometry} = submesh;
                     const dyAttribute = geometry.getAttribute('dy');
                     dyAttribute.array = geometry.dys;
                     dyAttribute.needsUpdate = true;
@@ -766,7 +772,7 @@ class Wallet {
                     mesh.updateMatrixWorld();
                   });
                   assetInstance.on('setVisible', visible => {
-                    mesh.visible = visible;
+                    mesh.submesh.visible = visible;
                   });
 
                   return assetInstance;
