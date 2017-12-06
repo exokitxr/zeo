@@ -202,9 +202,9 @@ class Assets {
 
           const _getItemImageData = name => fetch(API_PREFIX + 'imgData/items/' + name)
             .then(_resArrayBuffer);
-          const _getModFileImage = (name, index) => fetch(API_PREFIX + 'img/mods/' + name + '/' + index)
+          const _getModFileImage = (name, index) => fetch('/archae/resource/img/mods/' + name + '/' + index)
             .then(_resArrayBuffer);
-          const _getModFileImageData = (name, index) => fetch(API_PREFIX + 'imgData/mods/' + name + '/' + index)
+          const _getModFileImageData = (name, index) => fetch('/archae/resource/imgData/mods/' + name + '/' + index)
             .then(_resArrayBuffer);
           const _getFileImageData = name => fetch(API_PREFIX + 'imgData/files/' + name)
             .then(_resArrayBuffer);

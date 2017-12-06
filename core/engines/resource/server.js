@@ -1,10 +1,12 @@
 const path = require('path');
+const fs = require('fs');
 
 const threePath = require.resolve('three-zeo');
 const murmurhashPath = require.resolve('murmurhash');
 const aleaPath = require.resolve('alea-zeo');
 const indevPath = require.resolve('indev');
 const autowsPath = require.resolve('autows');
+const jimp = require('jimp');
 
 class Resource {
   constructor(archae) {
@@ -14,10 +16,12 @@ class Resource {
   mount() {
     const {_archae: archae} = this;
     const {express, app} = archae.getCore();
+    const {dirname, installDirectory} = archae;
 
     const controllerjsModelPath = path.join(path.dirname(require.resolve('controllerjs')), 'model');
     const imgPath = path.join(__dirname, 'lib', 'img');
     const sfxPath = path.join(__dirname, 'lib', 'sfx');
+    const modsDirectory = path.join(dirname, installDirectory, 'plugins');
 
     const assetsHmdStatic = express.static(path.join(__dirname, 'lib', 'models', 'hmd'));
     function serveAssetsHmd(req, res, next) {
@@ -70,6 +74,93 @@ class Resource {
     }
     app.use('/archae/assets/', serveAssetsAutows);
 
+    function serveResourceImg(req, res, next) {
+      const modName = req.params.mod.toLowerCase().replace(/[^a-z0-9\-]/g, '');
+      const itemIndex = parseInt(req.params.itemIndex, 10);
+
+      const _requestImageData = () => new Promise((accept, reject) => {
+        const modDirectory = path.join(modsDirectory, modName, 'node_modules', modName);
+
+        fs.readFile(path.join(modDirectory, 'package.json'), 'utf8', (err, s) => {
+          if (!err) {
+            const mod = JSON.parse(s);
+
+            if (mod && mod.metadata && mod.metadata.items && Array.isArray(mod.metadata.items) && mod.metadata.items.length > 0 && !isNaN(itemIndex)) {
+              const itemSpec = mod.metadata.items[itemIndex];
+              const {icon} = itemSpec;
+
+              fs.readFile(path.join(modDirectory, icon), (err, data) => {
+                if (!err) {
+                  accept(data);
+                } else {
+                  reject(err);
+                }
+              });
+            } else {
+              accept(modImgData);
+            }
+          } else {
+            reject(err);
+          }
+        });
+      });
+      _requestImageData()
+        .then(buffer => {
+          res.type('application/octet-stream');
+          res.end(buffer);
+        })
+        .catch(err => {
+          res.status(500);
+          res.end(err.stack);
+        });
+    }
+    app.get('/archae/resource/img/mods/:mod/:itemIndex', serveResourceImg);
+
+    function serveResourceImgData(req, res, next) {
+      const modName = req.params.mod.toLowerCase().replace(/[^a-z0-9\-]/g, '');
+      const itemIndex = parseInt(req.params.itemIndex, 10);
+
+      const _requestImageData = () => new Promise((accept, reject) => {
+        const modDirectory = path.join(modsDirectory, modName, 'node_modules', modName);
+
+        fs.readFile(path.join(modDirectory, modName, 'package.json'), 'utf8', (err, s) => {
+          if (!err) {
+            const mod = JSON.parse(s);
+
+            if (mod && mod.metadata && mod.metadata.items && Array.isArray(mod.metadata.items) && mod.metadata.items.length > 0 && !isNaN(itemIndex)) {
+              const itemSpec = mod.metadata.items[itemIndex];
+              const {icon} = itemSpec;
+
+              fs.readFile(path.join(modDirectory, icon), (err, data) => {
+                if (!err) {
+                  accept(data);
+                } else {
+                  reject(err);
+                }
+              });
+            } else {
+              accept(modImgData);
+            }
+          } else {
+            reject(err);
+          }
+        });
+      });
+      _requestImageData()
+        .then(buffer => {
+          res.type('application/octet-stream');
+
+          jimp.read(buffer, (err, img) => {
+            res.end(img.bitmap.data);
+          });
+        })
+        .catch(err => {
+          res.status(500);
+          res.end(err.stack);
+        });
+    }
+    app.get('/archae/resource/imgData/mods/:mod/:itemIndex', serveResourceImgData);
+
     this._cleanup = () => {
       function removeMiddlewares(route, i, routes) {
         if (
@@ -81,7 +172,9 @@ class Resource {
           route.handle.name === 'serveAssetsMurmurhash' ||
           route.handle.name === 'serveAssetsAlea' ||
           route.handle.name === 'serveAssetsIndev' ||
-          route.handle.name === 'serveAssetsAutows'
+          route.handle.name === 'serveAssetsAutows' ||
+          route.handle.name === 'serveResourceImg' ||
+          route.handle.name === 'serveResourceImgData'
         ) {
           routes.splice(i, 1);
         }
