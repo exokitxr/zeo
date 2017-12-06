@@ -1,0 +1,23 @@
+{
+  "name": "drone",
+  "description": "The Marksman-H training remote, often referred to as a remote, was a type of droid used to train its user how to properly deflect blaster bolts with a lightsaber.",
+  "version": "0.0.1",
+  "keywords": [],
+  "dependencies": {},
+  "client": "client.js",
+  "metadata": {
+    "owner": "avaer",
+    "items": [
+      {
+        "type": "drone",
+        "icon": "lib/img/drone.png",
+        "attributes": {
+          "color": {
+            "type": "color",
+            "value": "#E91E63"
+          }
+        }
+      }
+    ]
+  }
+}
