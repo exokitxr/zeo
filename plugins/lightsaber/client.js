@@ -184,6 +184,7 @@ class Lightsaber {
               };
               const _makeDualLightsaberMesh = () => {
                 const object = new THREE.Object3D();
+                object.quaternion.copy(localTransformRotationQuaterion).inverse();
 
                 const handleMesh = (() => {
                   const geometry = (() => {
@@ -213,7 +214,7 @@ class Lightsaber {
 
                   const topMesh = (() => {
                     const geometry = new THREE.BoxBufferGeometry(0.02 * 0.9, 1, 0.02 * 0.9)
-                      .applyMatrix(new THREE.Matrix4().makeTranslation(0, -(0.2 / 2) - 0.02 - (1 / 2), 0));
+                      .applyMatrix(new THREE.Matrix4().makeTranslation(0, (0.2 / 2) + 0.02 + (1 / 2), 0));
                     const material = bladeMaterial;
 
                     return new THREE.Mesh(geometry, material);
