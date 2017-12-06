@@ -958,7 +958,7 @@ class Wallet {
                 }
               };
               const _bindItemApi = itemApi => {
-                if (typeof itemApi.asset === 'string' && typeof itemApi.itemAddedCallback === 'function') {
+                if (typeof itemApi.path === 'string' && typeof itemApi.itemAddedCallback === 'function') {
                   const {path} = itemApi;
                   const boundAssetInstances = assetsMesh.getAssetInstances()
                     .filter(assetInstance => assetInstance.path === path);
@@ -970,7 +970,7 @@ class Wallet {
                 }
               };
               const _unbindItemApi = itemApi => {
-                if (typeof itemApi.asset === 'string' && typeof itemApi.itemRemovedCallback === 'function') {
+                if (typeof itemApi.path === 'string' && typeof itemApi.itemRemovedCallback === 'function') {
                   const {path} = itemApi;
                   const boundAssetInstances = assetsMesh.getAssetInstances()
                     .filter(assetInstance => assetInstance.path === path);
@@ -1423,12 +1423,12 @@ class Wallet {
                 }
 
                 registerItem(pluginInstance, itemApi) {
-                  const {asset} = itemApi;
+                  const {type: itemType} = itemApi;
 
-                  let entry = itemApis[asset];
+                  let entry = itemApis[itemType];
                   if (!entry) {
                     entry = [];
-                    itemApis[asset] = entry;
+                    itemApis[itemType] = entry;
                   }
                   entry.push(itemApi);
 
@@ -1436,12 +1436,12 @@ class Wallet {
                 }
 
                 unregisterItem(pluginInstance, itemApi) {
-                  const {asset} = itemApi;
+                  const {type: itemType} = itemApi;
 
-                  const entry = itemApis[asset];
+                  const entry = itemApis[itemType];
                   entry.splice(entry.indexOf(itemApi), 1);
                   if (entry.length === 0) {
-                    delete itemApis[asset];
+                    delete itemApis[itemType];
                   }
 
                   _unbindItemApi(itemApi);
