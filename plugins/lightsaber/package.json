@@ -10,7 +10,22 @@
     "owner": "avaer",
     "items": [
       {
-        "icon": "lib/img/lightsaber.png"
+        "type": "zeo-test",
+        "icon": "lib/img/lightsaber.png",
+        "attributes": {
+          "select": {
+            "type": "select",
+            "value": "crossguard",
+            "options": [
+              "crossguard",
+              "dual"
+            ]
+          },
+          "color": {
+            "type": "color",
+            "value": "#E91E63"
+          }
+        }
       }
     ]
   }
