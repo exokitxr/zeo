@@ -8,10 +8,11 @@ const {
 } = require('./lib/constants/constants');
 
 const SIDES = ['left', 'right'];
+const dataSymbol = Symbol();
 
 class Lightsaber {
   mount() {
-    const {three: {THREE, scene, camera}, elements, input, pose, render, sound, utils: {geometry: geometryUtils}} = zeo;
+    const {three: {THREE, scene, camera}, items, input, pose, render, sound, utils: {geometry: geometryUtils}} = zeo;
 
     let live = true;
     this.cleanup = () => {
@@ -64,29 +65,13 @@ class Lightsaber {
             color: 0xFFFFFF,
           });
 
-          const lightsaberEntity = {
-            attributes: {
-              type: {
-                type: 'select',
-                value: 'crossguard',
-                options: [
-                  'crossguard',
-                  'dual',
-                ],
-              },
-              color: {
-                type: 'color',
-                value: '#F44336',
-              },
-            },
-            entityAddedCallback(entityElement) {
+          const lightsaberItem = {
+            path: 'lightsaber/lightsaber',
+            itemAddedCallback(itemElement) {
               const object = new THREE.Object3D();
-              entityElement.object = object;
 
               const liveState = {
                 live: false,
-                health: 0,
-                paused: true,
               };
 
               const bladeMaterial = new THREE.MeshBasicMaterial({
@@ -314,38 +299,8 @@ class Lightsaber {
 
                 return result;
               });
-              entityElement.soundBodies = soundBodies;
 
-              const _isEnabled = () => liveState.health !== 0;
               const _isLive = () => liveState.live;
-              const _isPaused = () => liveState.paused;
-
-              entityElement.bladeType = 'crossguard';
-              entityElement.remesh = () => {
-                const {mesh: oldMesh} = lightsaberMesh;
-                if (oldMesh) {
-                  lightsaberMesh.remove(oldMesh);
-                  oldMesh.destroy();
-
-                  lightsaberMesh.mesh = null;
-                }
-
-                const {bladeType} = entityElement;
-                if (bladeType === 'crossguard') {
-                  const mesh = _makeCrossguardLightsaberMesh();
-                  lightsaberMesh.add(mesh);
-                  lightsaberMesh.mesh = mesh;
-                } else if (bladeType === 'dual') {
-                  const mesh = _makeDualLightsaberMesh();
-                  lightsaberMesh.add(mesh);
-                  lightsaberMesh.mesh = mesh;
-                }
-              };
-
-              entityElement.color = new THREE.Color(0x000000);
-              entityElement.recolor = () => {
-                bladeMaterial.color.copy(entityElement.color);
-              };
 
               const _makeLightsaberState = () => ({
                 grabbed: false,
@@ -362,10 +317,8 @@ class Lightsaber {
                 const lightsaberState = lightsaberStates[side];
 
                 lightsaberState.grabbed = true;
-
-                liveState.paused = false;
               };
-              entityElement.addEventListener('grab', _grab);
+              itemElement.addEventListener('grab', _grab);
               const _release = e => {
                 const {detail: {side}} = e;
                 const lightsaberState = lightsaberStates[side];
@@ -387,10 +340,8 @@ class Lightsaber {
                     soundBodies[2].audio.play();
                   }
                 }
-
-                liveState.paused = true;
               };
-              entityElement.addEventListener('release', _release);
+              itemElement.addEventListener('release', _release);
               const _trigger = e => {
                 const {side} = e;
                 const lightsaberState = lightsaberStates[side];
@@ -519,53 +470,78 @@ class Lightsaber {
               };
               render.on('update', _update);
 
-              entityElement._cleanup = () => {
-                object.remove(lightsaberMesh);
+              itemElement[dataSymbol] = {
+                bladeType: 'crossguard',
+                remesh: () => {
+                  const {mesh: oldMesh} = lightsaberMesh;
+                  if (oldMesh) {
+                    lightsaberMesh.remove(oldMesh);
+                    oldMesh.destroy();
 
-                scene.remove(hudMesh);
-                hudMesh.destroy();
+                    lightsaberMesh.mesh = null;
+                  }
 
-                bladeMaterial.dispose();
+                  const {bladeType} = itemElement[dataSymbol];
+                  if (bladeType === 'crossguard') {
+                    const mesh = _makeCrossguardLightsaberMesh();
+                    lightsaberMesh.add(mesh);
+                    lightsaberMesh.mesh = mesh;
+                  } else if (bladeType === 'dual') {
+                    const mesh = _makeDualLightsaberMesh();
+                    lightsaberMesh.add(mesh);
+                    lightsaberMesh.mesh = mesh;
+                  }
+                },
+                color: new THREE.Color(0x000000),
+                recolor: () => {
+                  bladeMaterial.color.copy(itemElement[dataSymbol].color);
+                },
+                _cleanup: () => {
+                  object.remove(lightsaberMesh);
 
-                entityElement.removeEventListener('grab', _grab);
-                entityElement.removeEventListener('release', _release);
+                  scene.remove(hudMesh);
+                  hudMesh.destroy();
 
-                input.removeListener('trigger', _trigger);
-                input.removeListener('triggerdown', _triggerdown);
-                input.removeListener('triggerup', _triggerup);
-                input.removeListener('menudown', _menudown);
+                  bladeMaterial.dispose();
 
-                render.removeListener('update', _update);
+                  itemElement.removeEventListener('grab', _grab);
+                  itemElement.removeEventListener('release', _release);
+
+                  input.removeListener('trigger', _trigger);
+                  input.removeListener('triggerdown', _triggerdown);
+                  input.removeListener('triggerup', _triggerup);
+                  input.removeListener('menudown', _menudown);
+
+                  render.removeListener('update', _update);
+                },
               };
             },
-            entityRemovedCallback(entityElement) {
-              entityElement._cleanup();
+            itemRemovedCallback(itemElement) {
+              itemElement[dataSymbol]._cleanup();
             },
-            entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
+            itemAttributeValueChangedCallback(itemElement, name, oldValue, newValue) {
               switch (name) {
                 case 'type': {
-                  entityElement.bladeType = newValue;
-
-                  entityElement.remesh();
+                  itemElement[dataSymbol].bladeType = newValue;
+                  itemElement[dataSymbol].remesh();
 
                   break;
                 }
                 case 'color': {
-                  entityElement.color = new THREE.Color(newValue);
-
-                  entityElement.recolor();
+                  itemElement[dataSymbol].color = new THREE.Color(newValue);
+                  itemElement[dataSymbol].recolor();
 
                   break;
                 }
               }
             },
           };
-          elements.registerEntity(this, lightsaberEntity);
+          items.registerItem(this, lightsaberItem);
 
           this._cleanup = () => {
             whiteMaterial.dispose();
 
-            elements.unregisterEntity(this, lightsaberEntity);
+            items.unregisterItem(this, lightsaberItem);
           };
         }
       });
