@@ -797,6 +797,15 @@ class Wallet {
                     if (typeof itemApi.itemAddedCallback === 'function') {
                       itemApi.itemAddedCallback(assetInstance);
                     }
+
+                    if (typeof itemApi.itemAttributeValueChangedCallback === 'function') {
+                      const {attributes} = assetInstance;
+
+                      for (const name in attributes) {
+                        const {value} = attributes[name];
+                        itemApi.itemAttributeValueChangedCallback(assetInstance, name, null, value);
+                      }
+                    }
                   }
                 }
               };
@@ -815,14 +824,27 @@ class Wallet {
                 }
               };
               const _bindItemApi = itemApi => {
-                if (typeof itemApi.path === 'string' && typeof itemApi.itemAddedCallback === 'function') {
+                if (typeof itemApi.path === 'string') {
                   const {path} = itemApi;
                   const boundAssetInstances = assetsMesh.getAssetInstances()
                     .filter(assetInstance => assetInstance.path === path);
 
-                  for (let i = 0; i < boundAssetInstances.length; i++) {
-                    const assetInstance = boundAssetInstances[i];
-                    itemApi.itemAddedCallback(assetInstance);
+                  if (typeof itemApi.itemAddedCallback === 'function') {
+                    for (let i = 0; i < boundAssetInstances.length; i++) {
+                      itemApi.itemAddedCallback(boundAssetInstances[i]);
+                    }
+                  }
+
+                  if (typeof itemApi.itemAttributeValueChangedCallback === 'function') {
+                    for (let i = 0; i < boundAssetInstances.length; i++) {
+                      const assetInstance = boundAssetInstances[i];
+                      const {attributes} = assetInstance;
+
+                      for (const name in attributes) {
+                        const {value} = attributes[name];
+                        itemApi.itemAttributeValueChangedCallback(assetInstance, name, null, value);
+                      }
+                    }
                   }
                 }
               };
