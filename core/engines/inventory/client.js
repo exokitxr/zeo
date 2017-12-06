@@ -550,7 +550,7 @@ class Inventory {
             const modName = match[1];
             const fileType = match[2];
 
-            const modSpec = remoteMods.find(modSpec => modSpec.name === modName);
+            const modSpec = remoteMods.find(modSpec => modSpec.displayName === modName);
             if (modSpec && modSpec.metadata && modSpec.metadata.items && Array.isArray(modSpec.metadata.items) && modSpec.metadata.items.length > 0) {
               const itemSpec = modSpec.metadata.items[0];
               const {attributes: attributeSpecs} = itemSpec;
