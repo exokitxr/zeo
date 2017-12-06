@@ -509,8 +509,6 @@ class Lightsaber {
                   render.removeListener('update', _update);
                 },
               };
-
-              // this.itemAttributeValueChangedCallback(itemElement, 'type', null, 'crossguard');
             },
             itemRemovedCallback(itemElement) {
               itemElement[dataSymbol]._cleanup();

@@ -13,7 +13,7 @@
         "type": "lightsaber",
         "icon": "lib/img/lightsaber.png",
         "attributes": {
-          "select": {
+          "type": {
             "type": "select",
             "value": "crossguard",
             "options": [
