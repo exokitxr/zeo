@@ -11,16 +11,12 @@ const SIDES = ['left', 'right'];
 
 class Lightsaber {
   mount() {
-    const {three: {THREE, scene, camera}, elements, input, pose, render, sound, ui, payment, utils: {geometry: geometryUtils}} = zeo;
+    const {three: {THREE, scene, camera}, elements, input, pose, render, sound, utils: {geometry: geometryUtils}} = zeo;
 
     let live = true;
     this.cleanup = () => {
       live = false;
     };
-
-    const zeroVector = new THREE.Vector3();
-    const forwardVector = new THREE.Vector3(0, 0, -1);
-    const zeroQuaternion = new THREE.Quaternion();
 
     const _requestAudio = src => new Promise((accept, reject) => {
       const audio = document.createElement('audio');
@@ -50,13 +46,13 @@ class Lightsaber {
     });
 
     return Promise.all([
-      _requestAudio('archae/z-lightsaber/audio/kylo1.ogg'),
-      _requestAudio('archae/z-lightsaber/audio/kylo2.ogg')
+      _requestAudio('archae/lightsaber/audio/kylo1.ogg'),
+      _requestAudio('archae/lightsaber/audio/kylo2.ogg')
         .then(audio => {
           audio.loop = true;
           return audio;
         }),
-      _requestAudio('archae/z-lightsaber/audio/kylo3.ogg'),
+      _requestAudio('archae/lightsaber/audio/kylo3.ogg'),
     ])
       .then(([
         kylo1Audio,
@@ -70,14 +66,6 @@ class Lightsaber {
 
           const lightsaberEntity = {
             attributes: {
-              position: {
-                type: 'matrix',
-                value: [
-                  0, 1.2, 0,
-                  0, 0, 0, 1,
-                  1, 1, 1,
-                ],
-              },
               type: {
                 type: 'select',
                 value: 'crossguard',
@@ -90,26 +78,10 @@ class Lightsaber {
                 type: 'color',
                 value: '#F44336',
               },
-              grabbable: {
-                type: 'checkbox',
-                value: true,
-              },
-              holdable: {
-                type: 'checkbox',
-                value: true,
-              },
-              live: {
-                type: 'checkbox',
-                value: true,
-              },
-              size: {
-                type: 'vector',
-                value: [0.2, 0.2, 0.2],
-              },
             },
             entityAddedCallback(entityElement) {
-              const entityApi = entityElement.getEntityApi();
-              const entityObject = entityElement.getObject();
+              const object = new THREE.Object3D();
+              entityElement.object = object;
 
               const liveState = {
                 live: false,
@@ -325,7 +297,7 @@ class Lightsaber {
                 object.mesh = null;
                 return object;
               })();
-              entityObject.add(lightsaberMesh);
+              object.add(lightsaberMesh);
 
               const soundBodies = [
                 kylo1Audio,
@@ -342,14 +314,14 @@ class Lightsaber {
 
                 return result;
               });
-              entityApi.soundBodies = soundBodies;
+              entityElement.soundBodies = soundBodies;
 
               const _isEnabled = () => liveState.health !== 0;
               const _isLive = () => liveState.live;
               const _isPaused = () => liveState.paused;
 
-              entityApi.bladeType = 'crossguard';
-              entityApi.remesh = () => {
+              entityElement.bladeType = 'crossguard';
+              entityElement.remesh = () => {
                 const {mesh: oldMesh} = lightsaberMesh;
                 if (oldMesh) {
                   lightsaberMesh.remove(oldMesh);
@@ -358,7 +330,7 @@ class Lightsaber {
                   lightsaberMesh.mesh = null;
                 }
 
-                const {bladeType} = entityApi;
+                const {bladeType} = entityElement;
                 if (bladeType === 'crossguard') {
                   const mesh = _makeCrossguardLightsaberMesh();
                   lightsaberMesh.add(mesh);
@@ -370,11 +342,9 @@ class Lightsaber {
                 }
               };
 
-              entityApi.color = new THREE.Color(0x000000);
-              entityApi.recolor = () => {
-                const {color} = entityApi;
-
-                bladeMaterial.color.copy(color);
+              entityElement.color = new THREE.Color(0x000000);
+              entityElement.recolor = () => {
+                bladeMaterial.color.copy(entityElement.color);
               };
 
               const _makeLightsaberState = () => ({
@@ -488,44 +458,7 @@ class Lightsaber {
               input.on('triggerup', _triggerup, {
                 priority: 1,
               });
-              const _menudown = e => {
-                const {side} = e;
-                const lightsaberState = lightsaberStates[side];
-                const {grabbed} = lightsaberState;
 
-                if (grabbed) {
-                  if (!_isLive()) {
-                    payment.requestCharge({
-                      dstAddress: 'n3W1ExUh7Somt28Qe7DT5FUfY127MY4r1X',
-                      srcAsset: 'CRAPCOIN',
-                      srcQuantity: 1,
-                    })
-                      .then(() => {
-                        liveState.live = true;
-                        liveState.health = 100;
-
-                        const {page} = hudMesh;
-                        page.update();
-                      })
-                      .catch(err => {
-                        console.warn(err);
-                      });
-                  } else {
-                    liveState.live = false;
-                    liveState.health = 0;
-
-                    const {page} = hudMesh;
-                    page.update();
-                  }
-
-                  e.stopImmediatePropagation();
-                }
-              };
-              input.on('menudown', _menudown, {
-                priority: 2,
-              });
-
-              const bullets = [];
               let now = Date.now();
               let lastUpdateTime = now;
               let lastBulletUpdateTime = now;
@@ -575,15 +508,6 @@ class Lightsaber {
                     }
                   };
                 };
-                const _resetBullets = () => {
-                  if (bullets.length > 0) {
-                    for (let i = 0; i < bullets.length; i++) {
-                      const bullet = bullets[i];
-                      scene.remove(bullet);
-                    }
-                    bullets.length = 0;
-                  }
-                };
 
                 if (_isLive()) {
                   _updateLightsaber();
@@ -595,18 +519,11 @@ class Lightsaber {
               };
               render.on('update', _update);
 
-              entityApi._cleanup = () => {
-                entityObject.remove(lightsaberMesh);
-                scene.remove(droneMesh);
-                for (let i = 0; i < bullets.length; i++) {
-                  const bullet = bullets[i];
-                  scene.remove(bullet);
-                }
+              entityElement._cleanup = () => {
+                object.remove(lightsaberMesh);
 
                 scene.remove(hudMesh);
                 hudMesh.destroy();
-                const {page} = hudMesh;
-                ui.removePage(page);
 
                 bladeMaterial.dispose();
 
@@ -622,42 +539,21 @@ class Lightsaber {
               };
             },
             entityRemovedCallback(entityElement) {
-              const entityApi = entityElement.getEntityApi();
-
-              entityApi._cleanup();
+              entityElement._cleanup();
             },
             entityAttributeValueChangedCallback(entityElement, name, oldValue, newValue) {
-              const entityApi = entityElement.getEntityApi();
-              const entityObject = entityElement.getObject();
-
               switch (name) {
-                case 'position': {
-                  const position = newValue;
-
-                  if (position) {
-                    entityObject.position.set(position[0], position[1], position[2]);
-                    entityObject.quaternion.set(position[3], position[4], position[5], position[6]);
-                    entityObject.scale.set(position[7], position[8], position[9]);
-                  }
-
-                  break;
-                }
                 case 'type': {
-                  entityApi.bladeType = newValue;
+                  entityElement.bladeType = newValue;
 
-                  entityApi.remesh();
+                  entityElement.remesh();
 
                   break;
                 }
                 case 'color': {
-                  entityApi.color = new THREE.Color(newValue);
+                  entityElement.color = new THREE.Color(newValue);
 
-                  entityApi.recolor();
-
-                  break;
-                }
-                case 'live': {
-                  // XXX handle this
+                  entityElement.recolor();
 
                   break;
                 }
