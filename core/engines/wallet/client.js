@@ -1423,12 +1423,12 @@ class Wallet {
                 }
 
                 registerItem(pluginInstance, itemApi) {
-                  const {type: itemType} = itemApi;
+                  const {path} = itemApi;
 
-                  let entry = itemApis[itemType];
+                  let entry = itemApis[path];
                   if (!entry) {
                     entry = [];
-                    itemApis[itemType] = entry;
+                    itemApis[path] = entry;
                   }
                   entry.push(itemApi);
 
@@ -1436,12 +1436,12 @@ class Wallet {
                 }
 
                 unregisterItem(pluginInstance, itemApi) {
-                  const {type: itemType} = itemApi;
+                  const {path} = itemApi;
 
-                  const entry = itemApis[itemType];
+                  const entry = itemApis[path];
                   entry.splice(entry.indexOf(itemApi), 1);
                   if (entry.length === 0) {
-                    delete itemApis[itemType];
+                    delete itemApis[path];
                   }
 
                   _unbindItemApi(itemApi);
