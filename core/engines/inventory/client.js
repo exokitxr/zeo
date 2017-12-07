@@ -157,6 +157,14 @@ class Inventory {
         });
       }
     };
+    const _requestProfilePicture = () => vrid.getUser()
+      .then(user => {
+        if (user) {
+          return _requestImageBitmap(`https://my-site.zeovr.io/profile/picture/${user.uid}`);
+        } else {
+          return Promise.resolve(null);
+        }
+      });
     const _requestRemoteMods = () => fetch('archae/rend/search')
       .then(_resJson)
       .catch(err => {
@@ -188,6 +196,7 @@ class Inventory {
       _requestImageBitmap('/archae/inventory/img/arrow-down.png'),
       _requestImageBitmap('/archae/inventory/img/link.png'),
       // _requestImageBitmap('/archae/inventory/img/color.png'),
+      _requestProfilePicture(),
       _requestRemoteMods(),
     ]).then(([
       [
@@ -214,6 +223,7 @@ class Inventory {
       arrowDownImg,
       linkImg,
       // colorImg,
+      profileImg,
       remoteMods,
     ]) => {
       if (live) {
@@ -863,6 +873,10 @@ class Inventory {
           ctx.fillStyle = '#4CAF50';
           if (tab === 'status') {
             ctx.fillRect(canvas.width * 0/8, 150 - 10, canvas.width / 8, 10);
+
+            ctx.drawImage(profileImg, 40, 150 + 40, 150, 150);
+            ctx.fillStyle = '#111';
+            ctx.fillText(bootstrap.getUsername(), 150 + 40 + 30, 150 + 40 + 150 - 60);
           } else if (tab === 'server') {
             ctx.fillRect(canvas.width * 1/8, 150 - 10, canvas.width / 8, 10);
 
