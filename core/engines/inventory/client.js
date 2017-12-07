@@ -1425,7 +1425,7 @@ class Inventory {
             if (localMod.installed) {
               const tagMesh = world.getTag({
                 type: 'entity',
-                name,
+                name: displayName,
               });
               const {item} = tagMesh;
               const {id} = item;
