@@ -859,8 +859,6 @@ class Inventory {
           ctx.fillText('Server', canvas.width * 1/8 + (canvas.width/8 - ctx.measureText('Server').width)/2, 150 - 60, canvas.width / 8);
           ctx.fillStyle = tab === 'files' ? '#4CAF50' : '#FFF';
           ctx.fillText('Files', canvas.width * 2/8 + (canvas.width/8 - ctx.measureText('Files').width)/2, 150 - 60, canvas.width / 8);
-          ctx.fillStyle = tab === 'settings' ? '#4CAF50' : '#FFF';
-          ctx.fillText('Settings', canvas.width * 3/8 + (canvas.width/8 - ctx.measureText('Settings').width)/2, 150 - 60, canvas.width / 8);
 
           ctx.fillStyle = '#4CAF50';
           if (tab === 'status') {
@@ -1033,8 +1031,6 @@ class Inventory {
                 ctx.fillText(assetSpec.name, canvas.width * 0.05, 150*2 + ((canvas.height - 150*2) * (i + 1)/numFilesPerPage) - 30, canvas.width * 0.9);
               }
             }
-          } else if (tab === 'settings') {
-            ctx.fillRect(canvas.width * 3/8, 150 - 10, canvas.width / 8, 10);
           }
           texture.needsUpdate = true;
         };
@@ -1099,14 +1095,6 @@ class Inventory {
           assetsMesh.render();
 
           filesAnchors = _getFilesAnchors();
-          plane.anchors = _getAnchors();
-        });
-        _pushAnchor(tabsAnchors, canvas.width * 3/8, 0, canvas.width / 8, 150, (e, hoverState) => {
-          tab = 'settings';
-
-          _renderMenu();
-          assetsMesh.render();
-
           plane.anchors = _getAnchors();
         });
 
