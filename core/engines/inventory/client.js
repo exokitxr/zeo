@@ -874,15 +874,18 @@ class Inventory {
           if (tab === 'status') {
             ctx.fillRect(canvas.width * 0/8, 150 - 10, canvas.width / 8, 10);
 
-            ctx.drawImage(profileImg, canvas.width * 0.8, 150 + 40, 100, 100);
-            ctx.fillStyle = '#111';
-            ctx.fillText(bootstrap.getUsername(), canvas.width * 0.8 + 100 + 30, 150 + 100);
+            ctx.fillStyle = '#EEE';
+            ctx.fillRect(0, 150, canvas.width, 150);
 
-            ctx.font = `${fontSize*2}px Open sans`;
-            ctx.fillText('Server', 50, 150 + fontSize*2 + 50);
+            ctx.drawImage(profileImg, canvas.width * 0.8, 150 + 20, 100, 100);
+            ctx.fillStyle = '#111';
+            ctx.fillText(bootstrap.getUsername(), canvas.width * 0.8 + 100 + 30, 150 + 90);
+
+            ctx.font = `${fontSize*1.6}px Open sans`;
+            ctx.fillText('Server', 60, 150 + fontSize*2 + 35);
 
             // ctx.fillStyle = '#111';
-            ctx.fillRect(0, 150 + fontSize*2 + 50 + 50, canvas.width, 2);
+            // ctx.fillRect(0, 150 + fontSize*1.6 + 50, canvas.width, 2);
           } else if (tab === 'server') {
             ctx.fillRect(canvas.width * 1/8, 150 - 10, canvas.width / 8, 10);
 
