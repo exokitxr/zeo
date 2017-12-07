@@ -1,7 +1,9 @@
+const vrid = require('vrid');
+
 module.exports = {
   mount() {
     return {
-      vridApi: window.vrid,
+      vridApi: vrid,
     };
   },
   unmount() {},

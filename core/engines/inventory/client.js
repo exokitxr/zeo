@@ -157,14 +157,6 @@ class Inventory {
         });
       }
     };
-    const _requestProfilePicture = () => vrid.getUser()
-      .then(user => {
-        if (user) {
-          return _requestImageBitmap(`https://my-site.zeovr.io/profile/picture/${user.uid}`);
-        } else {
-          return Promise.resolve(null);
-        }
-      });
     const _requestRemoteMods = () => fetch('archae/rend/search')
       .then(_resJson)
       .catch(err => {
@@ -188,6 +180,7 @@ class Inventory {
         '/core/engines/anima',
         '/core/utils/js-utils',
         '/core/utils/hash-utils',
+        '/core/utils/vrid-utils',
         '/core/utils/sprite-utils',
         '/core/utils/menu-utils',
       ]),
@@ -196,7 +189,6 @@ class Inventory {
       _requestImageBitmap('/archae/inventory/img/arrow-down.png'),
       _requestImageBitmap('/archae/inventory/img/link.png'),
       // _requestImageBitmap('/archae/inventory/img/color.png'),
-      _requestProfilePicture(),
       _requestRemoteMods(),
     ]).then(([
       [
@@ -215,6 +207,7 @@ class Inventory {
         anima,
         jsUtils,
         hashUtils,
+        vridUtils,
         spriteUtils,
         menuUtils,
       ],
@@ -223,7 +216,6 @@ class Inventory {
       arrowDownImg,
       linkImg,
       // colorImg,
-      profileImg,
       remoteMods,
     ]) => {
       if (live) {
@@ -231,6 +223,7 @@ class Inventory {
         const {materials: {assets: assetsMaterial}, sfx} = resource;
         const {base64} = jsUtils;
         const {murmur} = hashUtils;
+        const {vridApi} = vridUtils;
 
         const THREEEffectComposer = EffectComposer(THREE);
         const {THREERenderPass, THREEShaderPass} = THREEEffectComposer;
@@ -852,6 +845,25 @@ class Inventory {
           return stepIndex * stepSize;
         };
 
+        let profileImg = null;
+        const _requestProfilePicture = () => vridApi.getUser()
+          .then(user => {
+            if (user) {
+              return _requestImageBitmap(`https://my-site.zeovr.io/profile/picture/${user.uid}`);
+            } else {
+              return Promise.resolve(null);
+            }
+          });
+        _requestProfilePicture()
+          .then(newProfileImg => {
+            profileImg = newProfileImg;
+
+            _renderMenu();
+          })
+          .catch(err => {
+            console.warn(err);
+          });
+
         const _renderMenu = () => {
           // ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -877,7 +889,12 @@ class Inventory {
             ctx.fillStyle = '#EEE';
             ctx.fillRect(0, 150, canvas.width, 150);
 
-            ctx.drawImage(profileImg, canvas.width * 0.8, 150 + 20, 100, 100);
+            if (profileImg) {
+              ctx.drawImage(profileImg, canvas.width * 0.8, 150 + 20, 100, 100);
+            } else {
+              ctx.fillStyle = '#EEE';
+              ctx.fillRect(canvas.width * 0.8, 150 + 20, 100, 100);
+            }
             ctx.fillStyle = '#111';
             ctx.fillText(bootstrap.getUsername(), canvas.width * 0.8 + 100 + 30, 150 + 90);
 
@@ -1057,7 +1074,7 @@ class Inventory {
           }
           texture.needsUpdate = true;
         };
-        _renderMenu();
+        // _renderMenu();
 
         const menuMesh = new THREE.Object3D();
         menuMesh.visible = false;

@@ -1,21 +1,11 @@
-import vrid from 'vrid';
-window.vrid = vrid;
+window.webgl = (typeof global !== 'undefined' && global.process && global.process.versions['electron']) ? global.require('node-webgl2') : null;
 
-window.webgl = (window.process && process.versions['electron']) ? require('node-webgl2') : null;
-
-vrid.getUser()
-  .then(user => {
-    if (user) {
-      archae.requestPlugin('/core/engines/zeo')
-        .then(() => {
-          console.log('app started');
-        })
-        .catch(err => {
-          console.warn(err);
-        });
-    } else {
-      document.location.href = `https://my.zeovr.io/sign-in.html?redirectUrl=${encodeURIComponent(document.location.href)}`;
-    }
+archae.requestPlugin('/core/engines/zeo')
+  .then(() => {
+    console.log('app started');
+  })
+  .catch(err => {
+    console.warn(err);
   });
 
 window.onvrdisplayactivate = e => {

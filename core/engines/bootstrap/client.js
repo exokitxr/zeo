@@ -16,13 +16,16 @@ class Bootstrap {
 
     return archae.requestPlugins([
       '/core/utils/js-utils',
+      '/core/utils/vrid-utils',
     ])
       .then(([
         jsUtils,
+        vridUtils,
       ]) => {
         if (live) {
           const {events} = jsUtils;
           const {EventEmitter} = events;
+          const {vridApi} = vridUtils;
 
           const _resJson = res => {
             if (res.status >= 200 && res.status < 300) {
@@ -38,7 +41,7 @@ class Bootstrap {
           };
 
           return Promise.all([
-            vrid.get('name'),
+            vridApi.get('name'),
             fetch('archae/bootstrap')
               .then(_resJson),
           ])
