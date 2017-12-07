@@ -185,8 +185,12 @@ export default class VoiceChat {
                   audio: true,
                 });
 
+                let enabled = false;
                 return {
+                  isEnabled: () => enabled,
                   enable: () => {
+                    enabled = true;
+
                     return _requestMicrophoneMediaStream()
                       .then(mediaStream => {
                         const cleanups = [];
@@ -256,6 +260,8 @@ export default class VoiceChat {
                   disable: () => {
                     this._cleanup();
                     this._cleanup = _defaultCleanup;
+
+                    enabled = false;
 
                     return Promise.resolve();
                   },
