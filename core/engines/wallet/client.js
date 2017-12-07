@@ -1072,6 +1072,7 @@ class Wallet {
                                 attributes,
                               },
                             },
+                            owner: bootstrap.getUsername(),
                             timestamp: Date.now(),
                           };
                           newAssets.push(newAsset);

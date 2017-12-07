@@ -37,9 +37,15 @@ class Bootstrap {
             }
           };
 
-          return fetch('archae/bootstrap')
-            .then(_resJson)
-            .then(bootstrapSpec => {
+          return Promise.all([
+            vrid.get('name'),
+            fetch('archae/bootstrap')
+              .then(_resJson),
+          ])
+            .then(([
+              username,
+              bootstrapSpec,
+            ]) => {
               const {startTime} = bootstrapSpec;
 
               let vrMode = null;
@@ -70,6 +76,10 @@ class Bootstrap {
 
                 getInitialPath() {
                   return initialPath;
+                }
+
+                getUsername() {
+                  return username;
                 }
 
                 getVrMode() {
