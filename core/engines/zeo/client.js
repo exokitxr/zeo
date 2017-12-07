@@ -212,9 +212,45 @@ class Zeo {
                   };
                 });
                 const _requestImageBitmap = src => _requestImage(src)
-                  .then(img => createImageBitmap(img, 0, 0, img.width, img.height, {
-                    imageOrientation: 'flipY',
-                  }));
+                  .then(img => createImageBitmap(img, 0, 0, img.width, img.height));
+
+                const blockerTexture = new THREE.Texture(
+                  null,
+                  THREE.UVMapping,
+                  THREE.ClampToEdgeWrapping,
+                  THREE.ClampToEdgeWrapping,
+                  THREE.LinearFilter,
+                  THREE.LinearFilter,
+                  THREE.RGBAFormat,
+                  THREE.UnsignedByteType,
+                  1
+                );
+                const _renderBlocker = () => {
+                  Promise.all([
+                    _requestImageBitmap(voicechat.isEnabled() ? '/archae/zeo/img/mic-on.png' : '/archae/zeo/img/mic-off.png'),
+                    _requestImageBitmap(webvr.supportsWebVR() ? '/archae/zeo/img/google-cardboard.png' : '/archae/zeo/img/google-cardboard-x.png'),
+                  ])
+                    .then(([
+                      micImg,
+                      vrImg,
+                    ]) => {
+                      const canvas = document.createElement('canvas');
+                      canvas.width = micImg.width + vrImg.width;
+                      canvas.height = Math.max(micImg.height, vrImg.height);
+                      const ctx = canvas.getContext('2d');
+
+                      ctx.drawImage(micImg, 0, 0);
+                      ctx.drawImage(vrImg, micImg.width, 0);
+
+                      blockerTexture.image = canvas;
+                      blockerTexture.needsUpdate = true;
+                    })
+                    .catch(err => {
+                      console.warn(err);
+                    });
+                };
+                _renderBlocker();
+
                 const localMatrix = new THREE.Matrix4();
                 const blockerMesh = (() => {
                   const geometry = new THREE.PlaneBufferGeometry(1, 1);
@@ -238,45 +274,14 @@ class Zeo {
                       gl_FragColor = vec4(texture2D(u_texture, v_texcoord).rgb, 1.0);
                     }
                   `;
-                  const texture1 = new THREE.Texture(
-                    null,
-                    THREE.UVMapping,
-                    THREE.ClampToEdgeWrapping,
-                    THREE.ClampToEdgeWrapping,
-                    THREE.LinearFilter,
-                    THREE.LinearFilter,
-                    THREE.RGBAFormat,
-                    THREE.UnsignedByteType,
-                    1
-                  );
-                  _requestImageBitmap('/archae/zeo/img/google-cardboard.png')
-                    .then(imageBitmap => {
-                      texture1.image = imageBitmap;
-                      texture1.needsUpdate = true;
-                    });
-                  const texture2 = new THREE.Texture(
-                    null,
-                    THREE.UVMapping,
-                    THREE.ClampToEdgeWrapping,
-                    THREE.ClampToEdgeWrapping,
-                    THREE.LinearFilter,
-                    THREE.LinearFilter,
-                    THREE.RGBAFormat,
-                    THREE.UnsignedByteType,
-                    1
-                  );
-                  _requestImageBitmap('/archae/zeo/img/google-cardboard-x.png')
-                    .then(imageBitmap => {
-                      texture2.image = imageBitmap;
-                      texture2.needsUpdate = true;
-                    });
+
                   const texWidth = renderer.domElement.width * 0.1;
                   const texHeight = renderer.domElement.width * 0.1;
-                  const dstX = 0.9 * renderer.domElement.width;
+                  const dstX = 0.85 * renderer.domElement.width;
                   const dstY = 0.1 * renderer.domElement.width;
                   const matrix = new THREE.Matrix4().makeOrthographic(0, renderer.domElement.width, renderer.domElement.height, 0, -1, 1);
                   matrix.multiply(localMatrix.makeTranslation(dstX, dstY, 1));
-                  matrix.multiply(localMatrix.makeScale(texWidth, texHeight, 1));
+                  matrix.multiply(localMatrix.makeScale(texWidth * 2, texHeight, 1));
                   const material = new THREE.ShaderMaterial({
                     uniforms: {
                       u_matrix: {
@@ -285,7 +290,7 @@ class Zeo {
                       },
                       u_texture: {
                         type: 't',
-                        value: webvr.supportsWebVR() ? texture1 : texture2,
+                        value: blockerTexture,
                       },
                     },
                     vertexShader,
@@ -424,6 +429,14 @@ class Zeo {
                             if (webvr.supportsWebVR()) {
                               _enterHeadsetVR();
                             }
+                          } else if (fx >= iconSize*1.5 && fx <= iconSize*2.5 && fy >= iconSize*0.5 && fy <= iconSize*1.5) {
+                            if (voicechat.isEnabled()) {
+                              voicechat.disable();
+                            } else {
+                              voicechat.enable();
+                            }
+
+                            _renderBlocker();
                           } else {
                             _enterKeyboardVR();
                           }
