@@ -217,6 +217,7 @@ class Wallet {
                           icon,
                         },
                       },
+                      timestamp: Date.now(),
                     };
                     assets.push(assetSpec);
                   }
@@ -1071,6 +1072,7 @@ class Wallet {
                                 attributes,
                               },
                             },
+                            timestamp: Date.now(),
                           };
                           newAssets.push(newAsset);
                         }
