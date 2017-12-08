@@ -24,6 +24,7 @@ class Multiplayer {
     });
 
     return archae.requestPlugins([
+      '/core/engines/bootstrap',
       '/core/engines/three',
       '/core/engines/webvr',
       '/core/engines/resource',
@@ -33,6 +34,7 @@ class Multiplayer {
       '/core/utils/network-utils',
       '/core/utils/skin-utils',
     ]).then(([
+      bootstrap,
       three,
       webvr,
       resource,
@@ -73,14 +75,12 @@ class Multiplayer {
 
           getPlayerStatuses() {
             const result = [];
-
             this.playerStatuses.forEach((status, playerId) => {
               result.push({
                 playerId,
                 status,
               });
             });
-
             return result;
           }
 
@@ -297,8 +297,7 @@ class Multiplayer {
           let connection = null;
           let pendingMessage = null;
 
-          const username = 'lol';
-          connection = new AutoWs(_relativeWsUrl(`archae/multiplayerWs?id=${encodeURIComponent(String(multiplayerApi.getId()))}&username=${username}`));
+          connection = new AutoWs(_relativeWsUrl(`archae/multiplayerWs?id=${encodeURIComponent(String(multiplayerApi.getId()))}&username=${bootstrap.getUsername()}`));
           connection.on('message', msg => {
             const {data} = msg;
 
