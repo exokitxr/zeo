@@ -144,6 +144,7 @@ const config = {
     password,
     maxUsers,
     noTty: flags.noTty,
+    offline: flags.offline,
     transient: {},
   },
 };
