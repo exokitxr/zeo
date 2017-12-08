@@ -54,7 +54,6 @@ const flags = {
   siteUrl: _findArg('siteUrl'),
   vridUrl: _findArg('vridUrl'),
   crdsUrl: _findArg('crdsUrl'),
-  offlinePlugins: _findArg('offlinePlugins'),
   noTty: args.includes('noTty'),
   offline: args.includes('offline'),
   bundle: args.includes('bundle'),
@@ -103,8 +102,20 @@ const siteUrl = flags.siteUrl || (protocolString + '://' + hostname + ':' + port
 const vridUrl = flags.vridUrl || (protocolString + '://' + hostname + ':' + port);
 const crdsUrl = flags.crdsUrl || (protocolString + '://' + hostname + ':' + port);
 const fullUrl = protocolString + '://127.0.0.1:' + port;
+const indexJsPrefix = `window.startTime = ${Date.now()};\n` + (flags.offline ? `\
+(() => {
+  const query = {};
+  window.location.search.replace(
+    /([^?=&]+)(=([^&]*))?/g,
+    ($0, $1, $2, $3) => {
+      query[$1] = $3;
+    }
+  );
+  const {t} = query;
+  window.metadata.offlinePlugins = t ? t.split(',').map(p => decodeURIComponent(p)) : [];
+})();
+` : '');
 const serverName = flags.name || 'Server';
-const offlinePlugins = flags.offlinePlugins ? flags.offlinePlugins.split(',') : [];
 const maxUsers = (flags.maxUsers && parseInt(flags.maxUsers, 10)) || 4;
 const config = {
   dirname: __dirname,
@@ -116,7 +127,7 @@ const config = {
   dataDirectory,
   cryptoDirectory,
   installDirectory,
-  indexJsPrefix: `window.startTime = ${Date.now()};\n`,
+  indexJsPrefix,
   indexJsFiles: [
     path.join(__dirname, 'public', 'js', 'index.js'),
   ],
@@ -148,7 +159,7 @@ const config = {
     maxUsers,
     noTty: flags.noTty,
     offline: flags.offline,
-    offlinePlugins,
+    offlinePlugins: [],
     transient: {},
   },
 };
@@ -302,7 +313,7 @@ const _boot = () => {
       bootPromises.push(
         _getPlugins({core: true})
           .then(plugins => {
-            a.offlinePlugins = plugins.concat(offlinePlugins);
+            a.offlinePlugins = plugins;
           })
       );
     }
