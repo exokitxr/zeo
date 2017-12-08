@@ -84,9 +84,6 @@ class Inventory {
     const {
       offline,
       metadata: {
-        site: {
-          url: siteUrl,
-        },
         server: {
           enabled: serverEnabled,
         },
