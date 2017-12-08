@@ -4,5 +4,11 @@
   "version": "0.0.1",
   "client": "client.js",
   "server": "server.js",
+  "serves": {
+    "img/mic-on.png": "img/mic-on.png",
+    "img/mic-off.png": "img/mic-off.png",
+    "img/google-cardboard.png": "img/google-cardboard.png",
+    "img/google-cardboard-x.png": "img/google-cardboard-x.png"
+  },
   "dependencies": {}
 }

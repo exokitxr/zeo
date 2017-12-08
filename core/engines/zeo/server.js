@@ -38,13 +38,7 @@ class Zeo {
         imageUtils,
       ]) => {
         if (live) {
-          const {express, app} = archae.getCore();
-
-          const zeoImgStatic = express.static(path.join(__dirname, 'img'));
-          function serveZeoImg(req, res, next) {
-            zeoImgStatic(req, res, next);
-          }
-          app.use('/archae/zeo/img', serveZeoImg);
+          const {app} = archae.getCore();
 
           class ZeoThreeApi {
             constructor() {

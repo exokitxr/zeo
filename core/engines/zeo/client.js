@@ -227,8 +227,8 @@ class Zeo {
                 );
                 const _renderBlocker = () => {
                   Promise.all([
-                    _requestImageBitmap(voicechat.isEnabled() ? '/archae/zeo/img/mic-on.png' : '/archae/zeo/img/mic-off.png'),
-                    _requestImageBitmap(webvr.supportsWebVR() ? '/archae/zeo/img/google-cardboard.png' : '/archae/zeo/img/google-cardboard-x.png'),
+                    _requestImageBitmap(voicechat.isEnabled() ? '/archae/plugins/_core_engines_zeo/serve/img/mic-on.png' : '/archae/plugins/_core_engines_zeo/serve/img/mic-off.png'),
+                    _requestImageBitmap(webvr.supportsWebVR() ? '/archae/plugins/_core_engines_zeo/serve/img/google-cardboard.png' : '/archae/plugins/_core_engines_zeo/serve/img/google-cardboard-x.png'),
                   ])
                     .then(([
                       micImg,
