@@ -40,15 +40,8 @@ class Bootstrap {
             }
           };
 
-          return Promise.all([
-            vridApi.get('name'),
-            fetch('archae/bootstrap')
-              .then(_resJson),
-          ])
-            .then(([
-              username,
-              bootstrapSpec,
-            ]) => {
+          return vridApi.get('name')
+            .then(username => {
               let vrMode = null;
               let roamMode = 'physical';
               class WorldTimer {
