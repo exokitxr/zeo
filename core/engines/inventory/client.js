@@ -176,6 +176,7 @@ class Inventory {
         '/core/engines/wallet',
         '/core/engines/resource',
         '/core/engines/hand',
+        '/core/engines/multiplayer',
         '/core/engines/notification',
         '/core/engines/anima',
         '/core/utils/js-utils',
@@ -203,6 +204,7 @@ class Inventory {
         wallet,
         resource,
         hand,
+        multiplayer,
         notification,
         anima,
         jsUtils,
@@ -845,24 +847,70 @@ class Inventory {
           return stepIndex * stepSize;
         };
 
-        let profileImg = null;
-        const _requestProfilePicture = () => vridApi.getUser()
-          .then(user => {
-            if (user) {
-              return _requestImageBitmap(`https://my-site.zeovr.io/profile/picture/${user.uid}`);
+        let localProfileImg = null;
+        let remoteProfiles = [];
+        const _requestLocalProfilePicture = () => vridApi.get('name')
+          .then(username => {
+            if (username) {
+              return _requestImageBitmap(`https://my-site.zeovr.io/profile/picture/${username}`)
+                .catch(err => {
+                  console.warn(err);
+
+                  return Promise.resolve(null);
+                });
             } else {
               return Promise.resolve(null);
             }
           });
-        _requestProfilePicture()
-          .then(newProfileImg => {
-            profileImg = newProfileImg;
-
-            _renderMenu();
-          })
+        const _requestRemoteProfilePicture = username => _requestImageBitmap(`https://my-site.zeovr.io/profile/picture/${username}`)
           .catch(err => {
             console.warn(err);
+
+            return Promise.resolve(null);
           });
+        (() => {
+          _requestLocalProfilePicture()
+            .then(newProfileImg => {
+              localProfileImg = newProfileImg;
+
+              _renderMenu();
+            })
+            .catch(err => {
+              console.warn(err);
+            });
+          const usernames = multiplayer.getUsers();
+          Promise.all(usernames.map(username => _requestRemoteProfilePicture(username)))
+            .then(profileImgs => {
+              for (let i = 0; i < usernames.length; i++) {
+                const username = usernames[i];
+                const profileImg = profileImgs[i];
+                remoteProfiles.push({
+                  username,
+                  profileImg,
+                });
+              }
+
+              _renderMenu();
+            })
+            .catch(err => {
+              console.warn(err);
+            });
+          multiplayer.on('playerEnter', ({id, username}) => {
+            _requestRemoteProfilePicture(username)
+              .then(profileImg => {
+                remoteProfiles.push({
+                  username,
+                  profileImg,
+                });
+
+                _renderMenu();
+              })
+              .catch(err => {
+                console.warn(err);
+              });
+          });
+        })();
+
 
         const _renderMenu = () => {
           // ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -889,8 +937,8 @@ class Inventory {
             ctx.fillStyle = '#EEE';
             ctx.fillRect(0, 150, canvas.width, 150);
 
-            if (profileImg) {
-              ctx.drawImage(profileImg, canvas.width * 0.8, 150 + 20, 100, 100);
+            if (localProfileImg) {
+              ctx.drawImage(localProfileImg, canvas.width * 0.8, 150 + 20, 100, 100);
             } else {
               ctx.fillStyle = '#EEE';
               ctx.fillRect(canvas.width * 0.8, 150 + 20, 100, 100);
