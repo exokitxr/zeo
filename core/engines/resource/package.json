@@ -5,7 +5,25 @@
   "client": "client.js",
   "server": "server.js",
   "serves": {
-    "three.js": "../three-zeo/three.js"
+    "three.js": "../three-zeo/three.js",
+    "models/hmd.json": "lib/models/hmd/hmd.json",
+    "models/controller.json": "../controllerjs/model/controller.json",
+    "models/textures/onepointfive_texture.png": "../controllerjs/model/textures/onepointfive_texture.png",
+    "models/textures/onepointfive_spec.png": "../controllerjs/model/textures/onepointfive_spec.png",
+    "click_tock_drop.ogg": "lib/sfx/click_tock_drop.ogg",
+    "digi_click.ogg": "lib/sfx/digi_click.ogg",
+    "digi_cluck.ogg": "lib/sfx/digi_cluck.ogg",
+    "digi_drop.ogg": "lib/sfx/digi_drop.ogg",
+    "digi_error_short.ogg": "lib/sfx/digi_error_short.ogg",
+    "digi_ping_down.ogg": "lib/sfx/digi_ping_down.ogg",
+    "digi_pip.ogg": "lib/sfx/digi_pip.ogg",
+    "digi_plink_glass.ogg": "lib/sfx/digi_plink_glass.ogg",
+    "digi_plink_off.ogg": "lib/sfx/digi_plink_off.ogg",
+    "digi_plink.ogg": "lib/sfx/digi_plink.ogg",
+    "digi_powerdown.ogg": "lib/sfx/digi_powerdown.ogg",
+    "digi_select.ogg": "lib/sfx/digi_select.ogg",
+    "digi_slide.ogg": "lib/sfx/digi_slide.ogg",
+    "drop.ogg": "lib/sfx/drop.ogg"
   },
   "dependencies": {
     "alea-zeo": "0.0.1",

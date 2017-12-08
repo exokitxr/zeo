@@ -13,10 +13,9 @@ import menuRender from './lib/render/menu';
 import WebFont from 'webfontloader';
 import sfxr from 'sfxr';
 
-const hmdModelPath = 'archae/assets/models/hmd/hmd.json';
-const controllerModelPath = 'archae/assets/models/controller/controller.json';
-const imgPath = 'archae/assets/img';
-const sfxPath = 'archae/assets/sfx';
+const hmdModelPath = '/archae/plugins/_core_engines_resource/serve/models/hmd.json';
+const controllerModelPath = '/archae/plugins/_core_engines_resource/serve/models/controller.json';
+const sfxPath = '/archae/plugins/_core_engines_resource/serve';
 const API_PREFIX = 'https://my-site.zeovr.io/';
 const ASSET_SHADER = {
   uniforms: {

@@ -17,31 +17,7 @@ class Resource {
     const {express, app} = archae.getCore();
     const {dirname, installDirectory} = archae;
 
-    const controllerjsModelPath = path.join(path.dirname(require.resolve('controllerjs')), 'model');
-    const imgPath = path.join(__dirname, 'lib', 'img');
-    const sfxPath = path.join(__dirname, 'lib', 'sfx');
     const modsDirectory = path.join(dirname, installDirectory, 'plugins');
-
-    const assetsHmdStatic = express.static(path.join(__dirname, 'lib', 'models', 'hmd'));
-    function serveAssetsHmd(req, res, next) {
-      assetsHmdStatic(req, res, next);
-    }
-    app.use('/archae/assets/models/hmd', serveAssetsHmd);
-    const assetsControllerStatic = express.static(controllerjsModelPath);
-    function serveAssetsController(req, res, next) {
-      assetsControllerStatic(req, res, next);
-    }
-    app.use('/archae/assets/models/controller', serveAssetsController);
-    const assetsImgStatic = express.static(imgPath);
-    function serveAssetsImg(req, res, next) {
-      assetsImgStatic(req, res, next);
-    }
-    app.use('/archae/assets/img', serveAssetsImg);
-    const assetsSfxStatic = express.static(sfxPath);
-    function serveAssetsSfx(req, res, next) {
-      assetsSfxStatic(req, res, next);
-    }
-    app.use('/archae/assets/sfx', serveAssetsSfx);
 
     const assetsMurmurhashStatic = express.static(path.dirname(murmurhashPath));
     function serveAssetsMurmurhash(req, res, next) {
