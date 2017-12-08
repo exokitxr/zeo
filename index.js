@@ -57,9 +57,10 @@ const flags = {
   offlinePlugins: _findArg('offlinePlugins'),
   noTty: args.includes('noTty'),
   offline: args.includes('offline'),
+  bundle: args.includes('bundle'),
   maxUsers: _findArg('maxUsers'),
 };
-if (!flags.server && !flags.connect && !flags.install && !flags.reset) {
+if (!flags.server && !flags.connect && !flags.install && !flags.reset && !flags.bundle) {
   flags.server = true;
 }
 
@@ -262,7 +263,7 @@ const _listenLibs = () => {
 };
 
 const _listenArchae = () => {
-  if (flags.site || flags.server) {
+  if (flags.server) {
     return new Promise((accept, reject) => {
       a.listen(err => {
         if (!err) {
@@ -318,6 +319,13 @@ const _boot = () => {
       }
       process.exit(code);
     });
+  }
+  if (flags.bundle) {
+    a.ensurePublicBundlePromise();
+    a.publicBundlePromise
+      .then(bundle => {
+        process.stdout.write(bundle.toString());
+      });
   }
 
   return Promise.all(bootPromises);
