@@ -12,5 +12,4 @@ node "$DIR"/..//index.js bundle \
   dataDirectory='data' dataDirectorySrc='defaults/data' \
   cryptoDirectory='data/crypto' cryptoDirectorySrc='crypto' \
   installDirectory='data/installed' \
-  offlinePlugins='ambient-light,directional-light,floor' \
   noTty
