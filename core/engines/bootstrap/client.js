@@ -49,12 +49,10 @@ class Bootstrap {
               username,
               bootstrapSpec,
             ]) => {
-              const {startTime} = bootstrapSpec;
-
               let vrMode = null;
               let roamMode = 'physical';
               class WorldTimer {
-                constructor(startTime = Date.now()) {
+                constructor(startTime) {
                   this.startTime = startTime;
                 }
 
@@ -64,11 +62,11 @@ class Bootstrap {
                   return worldTime;
                 }
 
-                setStartTime(startTime) {
+                /* setStartTime(startTime) {
                   this.startTime = startTime;
-                }
+                } */
               }
-              const worldTimer = new WorldTimer();
+              const worldTimer = new WorldTimer(window.startTime);
 
               let address = null;
 

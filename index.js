@@ -113,6 +113,7 @@ const config = {
   dataDirectory,
   cryptoDirectory,
   installDirectory,
+  indexJsPrefix: `window.startTime = ${Date.now()};\n`,
   indexJsFiles: [
     path.join(__dirname, 'public', 'js', 'index.js'),
   ],
