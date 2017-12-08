@@ -3,7 +3,11 @@
   "description": "Provides inventory management interface for the zeo core.",
   "version": "0.0.1",
   "client": "client.js",
-  "server": "server.js",
+  "serves": {
+    "arrow-left.png": "lib/img/arrow-left.png",
+    "arrow-down.png": "lib/img/arrow-down.png",
+    "link.png": "lib/img/link.png"
+  },
   "dependencies": {
     "html-tag-names": "^1.1.2"
   }

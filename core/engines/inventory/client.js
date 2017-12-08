@@ -186,9 +186,9 @@ class Inventory {
         '/core/utils/menu-utils',
       ]),
       // _requestImageBitmap('/archae/inventory/img/menu.png'),
-      _requestImageBitmap('/archae/inventory/img/arrow-left.png'),
-      _requestImageBitmap('/archae/inventory/img/arrow-down.png'),
-      _requestImageBitmap('/archae/inventory/img/link.png'),
+      _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/arrow-left.png'),
+      _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/arrow-down.png'),
+      _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/link.png'),
       // _requestImageBitmap('/archae/inventory/img/color.png'),
       _requestRemoteMods(),
     ]).then(([
