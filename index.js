@@ -191,7 +191,7 @@ const _preload = () => {
 const _install = () => {
   if (flags.install) {
     return _getPlugins({core: true, def: true})
-      .then(plugins => a.installPlugins(plugins, {force: true}));
+      .then(plugins => a.installPlugins(plugins));
   } else {
     return Promise.resolve();
   }
