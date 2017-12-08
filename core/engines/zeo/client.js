@@ -42,7 +42,6 @@ class Zeo {
 
         loadTimeout = setTimeout(() => {
           loaderError.innerHTML = `\
-            <h2>:/</h2>
             <div>This is taking way too long. These plugins are hung:</div>
             <ul>${Object.keys(pendingPlugins).map(plugin => `<li>${plugin}</li>`).join('\n')}</ul>
           `;

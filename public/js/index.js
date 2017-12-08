@@ -38,7 +38,7 @@ body {
   align-items: center;
   flex-direction: column;
 }
-.loader-wrap h1, .loader-wrap h2, .loader-wrap p {
+.loader-wrap h1, .loader-wrap p {
   margin: 0;
   font-weight: 400;
 }
