@@ -895,22 +895,41 @@ class Inventory {
             .catch(err => {
               console.warn(err);
             });
-          multiplayer.on('playerEnter', ({id, username}) => {
-            _requestRemoteProfilePicture(username)
-              .then(profileImg => {
-                remoteProfiles.push({
-                  username,
-                  profileImg,
-                });
-
-                _renderMenu();
-              })
-              .catch(err => {
-                console.warn(err);
-              });
-          });
         })();
+        const _playerEnter = ({id, username}) => {
+          _requestRemoteProfilePicture(username)
+            .then(profileImg => {
+              remoteProfiles.push({
+                username,
+                profileImg,
+              });
 
+              _renderMenu();
+            })
+            .catch(err => {
+              console.warn(err);
+            });
+        };
+        multiplayer.on('playerEnter', _playerEnter);
+        const _playerLeave = ({id, username}) => {
+          _requestRemoteProfilePicture(username)
+            .then(profileImg => {
+              remoteProfiles.push({
+                username,
+                profileImg,
+              });
+
+              _renderMenu();
+            })
+            .catch(err => {
+              console.warn(err);
+            });
+        };
+        multiplayer.on('playerLeave', _playerLeave);
+        cleanups.push(() => {
+          multiplayer.removeListener('playerEnter', _playerEnter);
+          multiplayer.removeListener('_playerLeave', _playerLeave);
+        });
 
         const _renderMenu = () => {
           // ctx.clearRect(0, 0, canvas.width, canvas.height);
