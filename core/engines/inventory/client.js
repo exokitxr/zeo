@@ -82,11 +82,11 @@ class Inventory {
   mount() {
     const {_archae: archae} = this;
     const {
-      offline,
       metadata: {
         server: {
           enabled: serverEnabled,
         },
+        offline,
       },
     } = archae;
 
