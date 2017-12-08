@@ -94,7 +94,7 @@ class Config {
         '/core/utils/vrid-utils',
       ]),
       _requestGetBrowserConfig(),
-      _requestGetServerConfig(),
+      // _requestGetServerConfig(),
     ]).then(([
       [
         input,
@@ -108,7 +108,7 @@ class Config {
         vridUtils,
       ],
       browserConfigSpec,
-      serverConfigSpec,
+      // serverConfigSpec,
     ]) => {
       if (live) {
         const {THREE, scene} = three;
@@ -132,10 +132,10 @@ class Config {
           resolutionValue: browserConfigSpec.resolution,
           voiceChatCheckboxValue: browserConfigSpec.voiceChat,
           statsCheckboxValue: browserConfigSpec.stats,
-          visibilityValue: serverConfigSpec.visibility,
+          /* visibilityValue: serverConfigSpec.visibility,
           nameValue: serverConfigSpec.name,
           passwordValue: serverConfigSpec.password,
-          maxPlayersValue: serverConfigSpec.maxPlayers,
+          maxPlayersValue: serverConfigSpec.maxPlayers, */
           keyboardFocusState: null,
         };
         const statsState = {
@@ -194,7 +194,7 @@ class Config {
               console.warn(err);
             }); */
         };
-        _applyName(serverConfigSpec.name);
+        // _applyName(serverConfigSpec.name);
 
         const _saveBrowserConfig = () => {
           const config = configApi.getBrowserConfig();
