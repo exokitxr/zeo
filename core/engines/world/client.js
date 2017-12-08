@@ -734,22 +734,24 @@ class World {
             });
             return connection;
           } else {
-            setTimeout(() => {
-              let id = 0;
-              const itemSpecs = offlinePlugins.map(module =>
-                ({
-                  type: 'entity',
-                  id: String(id++),
-                  name: module,
-                  displayName: module,
-                  version: '',
-                  tagName: _makeTagName(module),
-                  attributes: {},
-                  metadata: {},
-                })
-              );
-              _loadTags(itemSpecs);
-            });
+            initPromise
+              .then(() => {
+                let id = 0;
+                const itemSpecs = offlinePlugins.map(module =>
+                  ({
+                    type: 'entity',
+                    id: String(id++),
+                    name: module,
+                    displayName: module,
+                    module,
+                    version: '',
+                    tagName: _makeTagName(module),
+                    attributes: {},
+                    metadata: {},
+                  })
+                );
+                _loadTags(itemSpecs);
+              });
 
             return null;
           }
