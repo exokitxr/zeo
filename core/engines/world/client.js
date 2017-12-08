@@ -24,6 +24,7 @@ class World {
 
   mount() {
     const {_archae: archae} = this;
+    const {metadata: {offline, offlinePlugins}} = archae;
 
     const cleanups = [];
     this._cleanup = () => {
@@ -619,116 +620,140 @@ class World {
           }
         };
 
-        const connection = new AutoWs(_relativeWsUrl('archae/worldWs?id=' + localUserId));
-        let connectionInitialized = false;
-        connection.on('message', msg => {
-          const m = JSON.parse(msg.data);
-          const {type} = m;
+        const connection = (() => {
+          if (!offline) {
+            const connection = new AutoWs(_relativeWsUrl('archae/worldWs?id=' + localUserId));
+            let connectionInitialized = false;
+            connection.on('message', msg => {
+              const m = JSON.parse(msg.data);
+              const {type} = m;
 
-          if (type === 'init') {
-            if (!connectionInitialized) { // XXX temporary hack until we correctly unload tags on disconnect
-              initPromise // wait for core to be loaded before initializing user plugins
-                .then(() => {
-                  const {args: [itemSpecs]} = m;
+              if (type === 'init') {
+                if (!connectionInitialized) { // XXX temporary hack until we correctly unload tags on disconnect
+                  initPromise // wait for core to be loaded before initializing user plugins
+                    .then(() => {
+                      const {args: [itemSpecs]} = m;
 
-                  _loadTags(itemSpecs);
+                      _loadTags(itemSpecs);
 
-                  connectionInitialized = true;
+                      connectionInitialized = true;
+                    });
+                }
+              } else if (type === 'addTag') {
+                const {args: [userId, itemSpec]} = m;
+
+                _handleAddTag(userId, itemSpec);
+              } else if (type === 'addTags') {
+                const {args: [userId, itemSpecs]} = m;
+
+                _handleAddTags(userId, itemSpecs);
+              } else if (type === 'removeTag') {
+                const {args: [userId, id]} = m;
+
+                _handleRemoveTag(userId, id);
+              } else if (type === 'removeTags') {
+                const {args: [userId, ids]} = m;
+
+                _handleRemoveTags(userId, ids);
+              } else if (type === 'setTagAttribute') {
+                const {args: [userId, id, {name, value}]} = m;
+
+                const tagMesh = _handleSetTagAttribute(userId, id, {name, value});
+                // this prevents this mutation from triggering an infinite recursion multiplayer update
+                // we simply ignore this mutation during the next entity mutation tick
+                tags.ignoreEntityMutation({
+                  type: 'setAttribute',
+                  args: [id, name, value],
                 });
-            }
-          } else if (type === 'addTag') {
-            const {args: [userId, itemSpec]} = m;
+              } else if (type === 'setTagAttributes') {
+                const {args: [userId, id, newAttributes]} = m;
 
-            _handleAddTag(userId, itemSpec);
-          } else if (type === 'addTags') {
-            const {args: [userId, itemSpecs]} = m;
+                const tagMeshes = _handleSetTagAttributes(userId, id, newAttributes);
+                for (let i = 0; i < tagMeshes.length; i++) {
+                  const tagMesh = tagMeshes[i];
+                  // this prevents this mutation from triggering an infinite recursion multiplayer update
+                  // we simply ignore this mutation during the next entity mutation tick
+                  tags.ignoreEntityMutation({
+                    type: 'setAttribute',
+                    args: [id, name, value],
+                  });
+                }
+              } else if (type === 'tagOpen') {
+                const {args: [userId, id]} = m;
 
-            _handleAddTags(userId, itemSpecs);
-          } else if (type === 'removeTag') {
-            const {args: [userId, id]} = m;
+                _handleTagOpen(userId, id);
+              } else if (type === 'tagClose') {
+                const {args: [userId, id]} = m;
 
-            _handleRemoveTag(userId, id);
-          } else if (type === 'removeTags') {
-            const {args: [userId, ids]} = m;
+                _handleTagClose(userId, id);
+              } else if (type === 'tagOpenDetails') {
+                const {args: [userId, id]} = m;
 
-            _handleRemoveTags(userId, ids);
-          } else if (type === 'setTagAttribute') {
-            const {args: [userId, id, {name, value}]} = m;
+                _handleTagOpenDetails(userId, id);
+              } else if (type === 'tagCloseDetails') {
+                const {args: [userId, id]} = m;
 
-            const tagMesh = _handleSetTagAttribute(userId, id, {name, value});
-            // this prevents this mutation from triggering an infinite recursion multiplayer update
-            // we simply ignore this mutation during the next entity mutation tick
-            tags.ignoreEntityMutation({
-              type: 'setAttribute',
-              args: [id, name, value],
+                _handleTagCloseDetails(userId, id);
+              } else if (type === 'tagPlay') {
+                const {args: [userId, id]} = m;
+
+                _handleTagPlay(userId, id);
+              } else if (type === 'tagPause') {
+                const {args: [userId, id]} = m;
+
+                _handleTagPause(userId, id);
+              } else if (type === 'tagSeek') {
+                const {args: [userId, id, value]} = m;
+
+                _handleTagSeek(userId, id, value);
+              } else if (type === 'loadModule') {
+                const {args: [userId, plugin]} = m;
+
+                _handleLoadModule(userId, plugin);
+              } else if (type === 'unloadModule') {
+                const {args: [userId, pluginName]} = m;
+
+                _handleUnloadModule(userId, pluginName);
+              } else if (type === 'message') {
+                const {args: [detail]} = m;
+
+                _handleMessage(detail);
+              } else if (type === 'response') {
+                const {id} = m;
+
+                const requestHandler = requestHandlers.get(id);
+                if (requestHandler) {
+                  const {error, result} = m;
+                  requestHandler(error, result);
+                } else {
+                  console.warn('unregistered handler:', JSON.stringify(id));
+                }
+              } else {
+                console.log('unknown message', m);
+              }
             });
-          } else if (type === 'setTagAttributes') {
-            const {args: [userId, id, newAttributes]} = m;
-
-            const tagMeshes = _handleSetTagAttributes(userId, id, newAttributes);
-            for (let i = 0; i < tagMeshes.length; i++) {
-              const tagMesh = tagMeshes[i];
-              // this prevents this mutation from triggering an infinite recursion multiplayer update
-              // we simply ignore this mutation during the next entity mutation tick
-              tags.ignoreEntityMutation({
-                type: 'setAttribute',
-                args: [id, name, value],
-              });
-            }
-          } else if (type === 'tagOpen') {
-            const {args: [userId, id]} = m;
-
-            _handleTagOpen(userId, id);
-          } else if (type === 'tagClose') {
-            const {args: [userId, id]} = m;
-
-            _handleTagClose(userId, id);
-          } else if (type === 'tagOpenDetails') {
-            const {args: [userId, id]} = m;
-
-            _handleTagOpenDetails(userId, id);
-          } else if (type === 'tagCloseDetails') {
-            const {args: [userId, id]} = m;
-
-            _handleTagCloseDetails(userId, id);
-          } else if (type === 'tagPlay') {
-            const {args: [userId, id]} = m;
-
-            _handleTagPlay(userId, id);
-          } else if (type === 'tagPause') {
-            const {args: [userId, id]} = m;
-
-            _handleTagPause(userId, id);
-          } else if (type === 'tagSeek') {
-            const {args: [userId, id, value]} = m;
-
-            _handleTagSeek(userId, id, value);
-          } else if (type === 'loadModule') {
-            const {args: [userId, plugin]} = m;
-
-            _handleLoadModule(userId, plugin);
-          } else if (type === 'unloadModule') {
-            const {args: [userId, pluginName]} = m;
-
-            _handleUnloadModule(userId, pluginName);
-          } else if (type === 'message') {
-            const {args: [detail]} = m;
-
-            _handleMessage(detail);
-          } else if (type === 'response') {
-            const {id} = m;
-
-            const requestHandler = requestHandlers.get(id);
-            if (requestHandler) {
-              const {error, result} = m;
-              requestHandler(error, result);
-            } else {
-              console.warn('unregistered handler:', JSON.stringify(id));
-            }
+            return connection;
           } else {
-            console.log('unknown message', m);
+            setTimeout(() => {
+              let id = 0;
+              const itemSpecs = offlinePlugins.map(module =>
+                ({
+                  type: 'entity',
+                  id: String(id++),
+                  name: module,
+                  displayName: module,
+                  version: '',
+                  tagName: _makeTagName(module),
+                  attributes: {},
+                  metadata: {},
+                })
+              );
+              _loadTags(itemSpecs);
+            });
+
+            return null;
           }
-        });
+        })();
 
         cleanups.push(() => {
           rend.removeListener('update', _update);
@@ -752,7 +777,7 @@ class World {
 
           // fs.removeListener('upload', _upload);
 
-          connection.destroy();
+          connection && connection.destroy();
         });
 
         class WorldApi extends EventEmitter {

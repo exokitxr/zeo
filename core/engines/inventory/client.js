@@ -87,6 +87,7 @@ class Inventory {
           enabled: serverEnabled,
         },
         offline,
+        offlinePlugins,
       },
     } = archae;
 
@@ -165,7 +166,12 @@ class Inventory {
             return Promise.resolve([]);
           });
       } else {
-        return Promise.resolve([]);
+        return Promise.resolve(offlinePlugins.map(name =>
+          ({
+            name,
+            version: '',
+          })
+        ));
       }
     };
 

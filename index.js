@@ -54,6 +54,7 @@ const flags = {
   siteUrl: _findArg('siteUrl'),
   vridUrl: _findArg('vridUrl'),
   crdsUrl: _findArg('crdsUrl'),
+  offlinePlugins: _findArg('offlinePlugins'),
   noTty: args.includes('noTty'),
   offline: args.includes('offline'),
   maxUsers: _findArg('maxUsers'),
@@ -102,6 +103,7 @@ const vridUrl = flags.vridUrl || (protocolString + '://' + hostname + ':' + port
 const crdsUrl = flags.crdsUrl || (protocolString + '://' + hostname + ':' + port);
 const fullUrl = protocolString + '://127.0.0.1:' + port;
 const serverName = flags.name || 'Server';
+const offlinePlugins = flags.offlinePlugins ? flags.offlinePlugins.split(',') : [];
 const maxUsers = (flags.maxUsers && parseInt(flags.maxUsers, 10)) || 4;
 const config = {
   dirname: __dirname,
@@ -145,6 +147,7 @@ const config = {
     maxUsers,
     noTty: flags.noTty,
     offline: flags.offline,
+    offlinePlugins,
     transient: {},
   },
 };
@@ -298,7 +301,7 @@ const _boot = () => {
       bootPromises.push(
         _getPlugins({core: true})
           .then(plugins => {
-            a.offlinePlugins = plugins;
+            a.offlinePlugins = plugins.concat(offlinePlugins);
           })
       );
     }
