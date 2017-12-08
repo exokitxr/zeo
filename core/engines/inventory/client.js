@@ -82,6 +82,7 @@ class Inventory {
   mount() {
     const {_archae: archae} = this;
     const {
+      offline,
       metadata: {
         site: {
           url: siteUrl,
@@ -157,11 +158,19 @@ class Inventory {
         });
       }
     };
-    const _requestRemoteMods = () => fetch('archae/rend/search')
-      .then(_resJson)
-      .catch(err => {
-        console.warn(err);
-      });
+    const _requestRemoteMods = () => {
+      if (!offline) {
+        return fetch('archae/rend/search')
+          .then(_resJson)
+          .catch(err => {
+            console.warn(err);
+
+            return Promise.resolve([]);
+          });
+      } else {
+        return Promise.resolve([]);
+      }
+    };
 
     return Promise.all([
       archae.requestPlugins([
