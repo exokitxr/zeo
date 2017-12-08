@@ -12,7 +12,7 @@ class Loader {
         const _preload = () => {
           if (offline) {
             window.module = {};
-            return _loadScript(`https://my-site.zeovr.io/bundle/${plugin}`)
+            return _loadScript(`https://my-site.zeovr.io/build/${plugin}/${plugin}.js`)
               .then(() => {
                 window.plugins[plugin] = window.module.exports;
                 window.module = {};
