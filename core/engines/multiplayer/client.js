@@ -294,81 +294,83 @@ class Multiplayer {
         multiplayerApi.on('playerLeave', playerLeave);
 
         const connection = (() => {
-          let connection = null;
-          let pendingMessage = null;
+          if (!offline) {
+            const connection = new AutoWs(_relativeWsUrl(`archae/multiplayerWs?id=${encodeURIComponent(String(multiplayerApi.getId()))}&username=${bootstrap.getUsername()}`));
+            let pendingMessage = null;
+            connection.on('message', msg => {
+              const {data} = msg;
 
-          connection = new AutoWs(_relativeWsUrl(`archae/multiplayerWs?id=${encodeURIComponent(String(multiplayerApi.getId()))}&username=${bootstrap.getUsername()}`));
-          connection.on('message', msg => {
-            const {data} = msg;
+              if (typeof data === 'string') {
+                const m = JSON.parse(data);
+                const {type} = m;
 
-            if (typeof data === 'string') {
-              const m = JSON.parse(data);
-              const {type} = m;
-
-              if (type === 'playerEnter') {
-                const {n, username} = m;
-                multiplayerApi.emit('playerEnter', {
-                  id: n,
-                  username,
-                });
-              } else if (type === 'playerLeave') {
-                const {n} = m;
-                multiplayerApi.emit('playerLeave', n);
-              } else if (type === 'setSkin') {
-                pendingMessage = m;
-              } else if (type === 'clearSkin') {
-                _handleClearSkinEntry(m);
+                if (type === 'playerEnter') {
+                  const {n, username} = m;
+                  multiplayerApi.emit('playerEnter', {
+                    id: n,
+                    username,
+                  });
+                } else if (type === 'playerLeave') {
+                  const {n} = m;
+                  multiplayerApi.emit('playerLeave', n);
+                } else if (type === 'setSkin') {
+                  pendingMessage = m;
+                } else if (type === 'clearSkin') {
+                  _handleClearSkinEntry(m);
+                } else {
+                  console.log('unknown message type', JSON.stringify(type));
+                }
               } else {
-                console.log('unknown message type', JSON.stringify(type));
+                if (!pendingMessage) { // update
+                  _handleStatusMessage(data);
+                } else { // pending message
+                  _handleSetSkinEntry(pendingMessage, new Uint8Array(data));
+                  pendingMessage = null;
+                }
               }
-            } else {
-              if (!pendingMessage) { // update
-                _handleStatusMessage(data);
-              } else { // pending message
-                _handleSetSkinEntry(pendingMessage, new Uint8Array(data));
-                pendingMessage = null;
-              }
-            }
-          });
+            });
 
-          const _handleStatusMessage = buffer => {
-            const n = protocolUtils.parseUpdateN(buffer);
+            const _handleStatusMessage = buffer => {
+              const n = protocolUtils.parseUpdateN(buffer);
 
-            const playerStatus = multiplayerApi.getPlayerStatus(n);
-            protocolUtils.parseUpdate(
-              playerStatus.hmd.position,
-              playerStatus.hmd.rotation,
-              playerStatus.hmd.scale,
-              playerStatus.gamepads.left.position,
-              playerStatus.gamepads.left.rotation,
-              playerStatus.gamepads.left.scale,
-              playerStatus.gamepads.right.position,
-              playerStatus.gamepads.right.rotation,
-              playerStatus.gamepads.right.scale,
-              playerStatus.metadata.menu,
-              playerStatus.metadata.menu.position,
-              playerStatus.metadata.menu.rotation,
-              playerStatus.metadata.menu.scale,
-              buffer,
-              0
-            );
+              const playerStatus = multiplayerApi.getPlayerStatus(n);
+              protocolUtils.parseUpdate(
+                playerStatus.hmd.position,
+                playerStatus.hmd.rotation,
+                playerStatus.hmd.scale,
+                playerStatus.gamepads.left.position,
+                playerStatus.gamepads.left.rotation,
+                playerStatus.gamepads.left.scale,
+                playerStatus.gamepads.right.position,
+                playerStatus.gamepads.right.rotation,
+                playerStatus.gamepads.right.scale,
+                playerStatus.metadata.menu,
+                playerStatus.metadata.menu.position,
+                playerStatus.metadata.menu.rotation,
+                playerStatus.metadata.menu.scale,
+                buffer,
+                0
+              );
 
-            multiplayerApi.emit('playerStatusUpdate', n);
-          };
-          const _handleSetSkinEntry = ({n}, skinImgBuffer) => {
-            multiplayerApi.setPlayerSkin(n, skinImgBuffer);
-          };
-          const _handleClearSkinEntry = ({n}) => {
-            multiplayerApi.setPlayerSkin(n, null);
-          };
+              multiplayerApi.emit('playerStatusUpdate', n);
+            };
+            const _handleSetSkinEntry = ({n}, skinImgBuffer) => {
+              multiplayerApi.setPlayerSkin(n, skinImgBuffer);
+            };
+            const _handleClearSkinEntry = ({n}) => {
+              multiplayerApi.setPlayerSkin(n, null);
+            };
 
-          cleanups.push(() => {
-            multiplayerApi.reset();
+            cleanups.push(() => {
+              multiplayerApi.reset();
 
-            connection.destroy();
-          });
+              connection.destroy();
+            });
 
-          return connection;
+            return connection;
+          } else {
+            return null;
+          }
         })();
 
         const _makePlayerStatus = () => ({

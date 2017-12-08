@@ -22,7 +22,7 @@ class Wallet {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {site: {url: siteUrl}}} = archae;
+    const {metadata: {offline}} = archae;
 
     const cleanups = [];
     this._cleanup = () => {
@@ -264,98 +264,105 @@ class Wallet {
                 _bindAssetInstanceMenu(assetInstance);
               };
 
-              const connection = new AutoWs(_relativeWsUrl('archae/walletWs'));
-              connection.on('message', e => {
-                const {data} = e;
-                const m = JSON.parse(data);
-                const {type, args} = m;
+              const connection = (() => {
+                if (!offline) {
+                  const connection = new AutoWs(_relativeWsUrl('archae/walletWs'));
+                  connection.on('message', e => {
+                    const {data} = e;
+                    const m = JSON.parse(data);
+                    const {type, args} = m;
 
-                if (type === 'init') {
-                  const {assets} = args;
-                  for (let i = 0; i < assets.length; i++) {
-                    const assetSpec = assets[i];
-                    const {
-                      id,
-                      type,
-                      assetId,
-                      name,
-                      ext,
-                      path,
-                      attributes,
-                      icon,
-                      n,
-                      physics,
-                      matrix,
-                      visible,
-                      open,
-                    } = assetSpec;
+                    if (type === 'init') {
+                      const {assets} = args;
+                      for (let i = 0; i < assets.length; i++) {
+                        const assetSpec = assets[i];
+                        const {
+                          id,
+                          type,
+                          assetId,
+                          name,
+                          ext,
+                          path,
+                          attributes,
+                          icon,
+                          n,
+                          physics,
+                          matrix,
+                          visible,
+                          open,
+                        } = assetSpec;
 
-                    _addAsset(id, type, assetId, name, ext, path, attributes, icon, n, physics, matrix, visible, open);
-                  }
-                } else if (type === 'addAsset') {
-                  const {
-                    id,
-                    type,
-                    assetId,
-                    name,
-                    ext,
-                    path,
-                    attributes,
-                    icon,
-                    n,
-                    physics,
-                    matrix,
-                    visible,
-                    open,
-                  } = args;
+                        _addAsset(id, type, assetId, name, ext, path, attributes, icon, n, physics, matrix, visible, open);
+                      }
+                    } else if (type === 'addAsset') {
+                      const {
+                        id,
+                        type,
+                        assetId,
+                        name,
+                        ext,
+                        path,
+                        attributes,
+                        icon,
+                        n,
+                        physics,
+                        matrix,
+                        visible,
+                        open,
+                      } = args;
 
-                  _addAsset(id, type, assetId, name, ext, path, attributes, icon, n, physics, matrix, visible, open);
-                } else if (type === 'removeAsset') {
-                  const {
-                    id,
-                  } = args;
+                      _addAsset(id, type, assetId, name, ext, path, attributes, icon, n, physics, matrix, visible, open);
+                    } else if (type === 'removeAsset') {
+                      const {
+                        id,
+                      } = args;
 
-                  const assetInstance = assetsMesh.getAssetInstance(id);
-                  _unbindAssetInstance(assetInstance);
+                      const assetInstance = assetsMesh.getAssetInstance(id);
+                      _unbindAssetInstance(assetInstance);
 
-                  assetsMesh.removeAssetInstance(id);
-                } else if (type === 'setAttribute') {
-                  const {
-                    id,
-                    name,
-                    value,
-                  } = args;
+                      assetsMesh.removeAssetInstance(id);
+                    } else if (type === 'setAttribute') {
+                      const {
+                        id,
+                        name,
+                        value,
+                      } = args;
 
-                  const assetInstance = assetsMesh.getAssetInstance(id);
-                  assetInstance.updateAttribute(name, value);
-                } else if (type === 'setVisible') {
-                  const {
-                    id,
-                    visible,
-                  } = args;
+                      const assetInstance = assetsMesh.getAssetInstance(id);
+                      assetInstance.updateAttribute(name, value);
+                    } else if (type === 'setVisible') {
+                      const {
+                        id,
+                        visible,
+                      } = args;
 
-                  const assetInstance = assetsMesh.getAssetInstance(id);
-                  assetInstance.updateVisible(visible);
-                } else if (type === 'setPhysics') {
-                  const {
-                    id,
-                    physics,
-                  } = args;
+                      const assetInstance = assetsMesh.getAssetInstance(id);
+                      assetInstance.updateVisible(visible);
+                    } else if (type === 'setPhysics') {
+                      const {
+                        id,
+                        physics,
+                      } = args;
 
-                  const assetInstance = assetsMesh.getAssetInstance(id);
-                  assetInstance.updatePhysics(physics);
-                } else if (type === 'setOpen') {
-                  const {
-                    id,
-                    open,
-                  } = args;
+                      const assetInstance = assetsMesh.getAssetInstance(id);
+                      assetInstance.updatePhysics(physics);
+                    } else if (type === 'setOpen') {
+                      const {
+                        id,
+                        open,
+                      } = args;
 
-                  const assetInstance = assetsMesh.getAssetInstance(id);
-                  assetInstance.updateOpen(open);
+                      const assetInstance = assetsMesh.getAssetInstance(id);
+                      assetInstance.updateOpen(open);
+                    } else {
+                      console.warn('wallet got unknown message type:', JSON.stringify(type));
+                    }
+                  });
+                  return connection;
                 } else {
-                  console.warn('wallet got unknown message type:', JSON.stringify(type));
+                  return null;
                 }
-              });
+              })();
 
               /* const _isInBody = p => {
                 const vrMode = bootstrap.getVrMode();

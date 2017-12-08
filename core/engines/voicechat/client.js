@@ -5,6 +5,7 @@ export default class VoiceChat {
 
   mount() {
     const {_archae: archae} = this;
+    const {metadata: {offline}} = archae;
 
     let live = true;
     this._cleanup = () => {
@@ -123,52 +124,56 @@ export default class VoiceChat {
           const connections = {};
 
           const _requestSignalConnection = () => new Promise((accept, reject) => {
-            const signalConnection = new AutoWs(_relativeWsUrl('archae/voicechatWs?id=' + multiplayer.getId()));
-            signalConnection.once('connect', () => {
-              accept(signalConnection);
-            });
-            signalConnection.on('message', e => {
-              const m = JSON.parse(e.data) ;
-              const {type} = m;
+            if (!offline) {
+              const signalConnection = new AutoWs(_relativeWsUrl('archae/voicechatWs?id=' + multiplayer.getId()));
+              signalConnection.once('connect', () => {
+                accept(signalConnection);
+              });
+              signalConnection.on('message', e => {
+                const m = JSON.parse(e.data) ;
+                const {type} = m;
 
-              if (type === 'offer') {
-                const {source: id, offer} = m;
+                if (type === 'offer') {
+                  const {source: id, offer} = m;
 
-                const connection = new VoicechatConnection(id);
-                connection.on('description', description => {
-                  signalConnection.send(JSON.stringify({
-                    type: 'answer',
-                    target: id,
-                    source: multiplayer.getId(),
-                    answer: description,
-                  }));
-                });
-                connection.on('icecandidate', candidate => {
-                  signalConnection.send(JSON.stringify({
-                    type: 'icecandidate',
-                    target: id,
-                    source: multiplayer.getId(),
-                    candidate,
-                  }));
-                });
-                connection.on('close', () => {
-                  connections[id] = null;
-                });
-                connections[id] = connection;
+                  const connection = new VoicechatConnection(id);
+                  connection.on('description', description => {
+                    signalConnection.send(JSON.stringify({
+                      type: 'answer',
+                      target: id,
+                      source: multiplayer.getId(),
+                      answer: description,
+                    }));
+                  });
+                  connection.on('icecandidate', candidate => {
+                    signalConnection.send(JSON.stringify({
+                      type: 'icecandidate',
+                      target: id,
+                      source: multiplayer.getId(),
+                      candidate,
+                    }));
+                  });
+                  connection.on('close', () => {
+                    connections[id] = null;
+                  });
+                  connections[id] = connection;
 
-                connection.createAnswer(offer);
-              } else if (type === 'answer') {
-                const {source: id, answer} = m;
+                  connection.createAnswer(offer);
+                } else if (type === 'answer') {
+                  const {source: id, answer} = m;
 
-                connections[id].createAcc(answer);
-              } else if (type === 'icecandidate') {
-                const {source: id, candidate} = m;
+                  connections[id].createAcc(answer);
+                } else if (type === 'icecandidate') {
+                  const {source: id, candidate} = m;
 
-                connections[id].addIceCandidate(candidate);
-              } else {
-                console.warn('signal connection got unknown message type', JSON.stringify(type));
-              }
-            });
+                  connections[id].addIceCandidate(candidate);
+                } else {
+                  console.warn('signal connection got unknown message type', JSON.stringify(type));
+                }
+              });
+            } else {
+              accept(null);
+            }
           });
 
           return _requestSignalConnection()

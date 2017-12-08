@@ -10,7 +10,7 @@ class Hand {
 
   mount() {
     const {_archae: archae} = this;
-    const {metadata: {site: {url: siteUrl}, server: {enabled: serverEnabled}}} = archae;
+    const {metadata: {offline}} = archae;
 
     const cleanups = [];
     this._cleanup = () => {
@@ -55,81 +55,85 @@ class Hand {
         const grabbables = {};
 
         const connection = (() => {
-          const connection = new AutoWs(_relativeWsUrl('archae/handWs?id=' + localUserId));
-          connection.on('message', msg => {
-            const {data} = msg;
+          if (!offline) {
+            const connection = new AutoWs(_relativeWsUrl('archae/handWs?id=' + localUserId));
+            connection.on('message', msg => {
+              const {data} = msg;
 
-            if (typeof data === 'string') {
-              const m = JSON.parse(data);
-              const {type} = m;
+              if (typeof data === 'string') {
+                const m = JSON.parse(data);
+                const {type} = m;
 
-              if (type === 'grab') {
-                const {args} = m;
-                const [n, userId, side] = args;
+                if (type === 'grab') {
+                  const {args} = m;
+                  const [n, userId, side] = args;
 
-                const grabbable = grabbables[n];
-                grabbable.userId = userId;
-                grabbable.side = side;
+                  const grabbable = grabbables[n];
+                  grabbable.userId = userId;
+                  grabbable.side = side;
 
-                const e = {
-                  userId,
-                  side,
-                  grabbable,
-                };
-                grabbable.emit('grab', e);
-                handApi.emit('grab', e);
-              } else if (type === 'release') {
-                const {args} = m;
-                const [n] = args;
+                  const e = {
+                    userId,
+                    side,
+                    grabbable,
+                  };
+                  grabbable.emit('grab', e);
+                  handApi.emit('grab', e);
+                } else if (type === 'release') {
+                  const {args} = m;
+                  const [n] = args;
 
-                const grabbable = grabbables[n];
-                const {userId, side} = grabbable;
-                grabbable.userId = null;
-                grabbable.side = null;
+                  const grabbable = grabbables[n];
+                  const {userId, side} = grabbable;
+                  grabbable.userId = null;
+                  grabbable.side = null;
 
-                const e = {
-                  userId,
-                  side,
-                  grabbable,
-                  live: true,
-                  stopImmediatePropagation() {
-                    e.live = false;
-                  },
-                };
-                grabbable.emit('release', e);
-                handApi.emit('release', e);
-              } else if (type === 'data') {
-                const {args} = m;
-                const [n, key, value] = args;
+                  const e = {
+                    userId,
+                    side,
+                    grabbable,
+                    live: true,
+                    stopImmediatePropagation() {
+                      e.live = false;
+                    },
+                  };
+                  grabbable.emit('release', e);
+                  handApi.emit('release', e);
+                } else if (type === 'data') {
+                  const {args} = m;
+                  const [n, key, value] = args;
 
-                const grabbable = grabbables[n];
-                if (grabbable) {
-                  grabbable.setData(key, value);
+                  const grabbable = grabbables[n];
+                  if (grabbable) {
+                    grabbable.setData(key, value);
+                  }
+
+                  const e = {
+                    key,
+                    value,
+                    grabbable,
+                  };
+                  grabbable.emit('data', e);
+                  handApi.emit('data', e);
+                } else {
+                  console.warn('unknown hand message type:', type);
                 }
-
-                const e = {
-                  key,
-                  value,
-                  grabbable,
-                };
-                grabbable.emit('data', e);
-                handApi.emit('data', e);
               } else {
-                console.warn('unknown hand message type:', type);
-              }
-            } else {
-              const n = protocolUtils.parseUpdateN(data);
-              const grabbable = grabbables[n];
-              protocolUtils.parseUpdate(
-                grabbable.position, grabbable.rotation, grabbable.scale,
-                grabbable.localPosition, grabbable.localRotation, grabbable.localScale,
-                data
-              );
+                const n = protocolUtils.parseUpdateN(data);
+                const grabbable = grabbables[n];
+                protocolUtils.parseUpdate(
+                  grabbable.position, grabbable.rotation, grabbable.scale,
+                  grabbable.localPosition, grabbable.localRotation, grabbable.localScale,
+                  data
+                );
 
-              grabbable.emitUpdate();
-            }
-          });
-          return connection;
+                grabbable.emitUpdate();
+              }
+            });
+            return connection;
+          } else {
+            return null;
+          }
         })();
 
         const _broadcastObject = (method, args) => {
