@@ -55,6 +55,7 @@ const flags = {
   vridUrl: _findArg('vridUrl'),
   crdsUrl: _findArg('crdsUrl'),
   noTty: args.includes('noTty'),
+  offline: args.includes('offline'),
   maxUsers: _findArg('maxUsers'),
 };
 if (!flags.server && !flags.connect && !flags.install && !flags.reset) {
@@ -117,6 +118,7 @@ const config = {
   ],
   password,
   cors: true,
+  offline: flags.offline,
   staticSite: false,
   metadata: {
     config: {
@@ -285,10 +287,19 @@ const _boot = () => {
   const bootPromises = [];
 
   if (flags.server) {
-    bootPromises.push(
-      _getPlugins({core: true})
-        .then(plugins => a.requestPlugins(plugins))
-    );
+    if (!flags.offline) {
+      bootPromises.push(
+        _getPlugins({core: true})
+          .then(plugins => a.requestPlugins(plugins))
+      );
+    } else {
+      bootPromises.push(
+        _getPlugins({core: true})
+          .then(plugins => {
+            a.offlinePlugins = plugins;
+          })
+      );
+    }
   }
   if (flags.connect) {
     const nodeWebvrPath = path.join(requireRelative.resolve('node-webvr', path.join(__dirname, 'scripts', 'lib', 'windows', 'node-webvr')), '..');
