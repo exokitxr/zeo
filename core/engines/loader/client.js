@@ -5,12 +5,26 @@ class Loader {
 
   mount() {
     const {_archae: archae} = this;
+    const {metadata: {offline}} = archae;
 
     class LoaderApi {
       requestPlugin(plugin) {
-        return archae.requestPlugin(plugin, {
-          hotload: true,
-        });
+        const _preload = () => {
+          if (offline) {
+            window.module = {};
+            return _loadScript(`https://my-site.zeovr.io/bundle/${plugin}`)
+              .then(() => {
+                window.plugins[plugin] = window.module.exports;
+                window.module = {};
+              });
+          } else {
+            return Promise.resolve();
+          }
+        };
+        return _preload()
+          .then(() => archae.requestPlugin(plugin, {
+            hotload: true,
+          }));
       }
 
       removePlugin(plugin) {
@@ -44,5 +58,23 @@ class Loader {
     this._cleanup();
   }
 };
+const _loadScript = src => new Promise((accept, reject) => {
+  const script = document.createElement('script');
+  script.src = src;
+  script.async = true;
+  script.onload = () => {
+    accept();
+    _cleanup();
+  };
+  script.onerror = err => {
+    reject(err);
+    _cleanup();
+  };
+  document.body.appendChild(script);
+
+  const _cleanup = () => {
+    document.body.removeChild(script);
+  };
+});
 
 module.exports = Loader;
