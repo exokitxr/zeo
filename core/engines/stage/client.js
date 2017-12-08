@@ -28,7 +28,7 @@ class Stage {
         '/core/engines/webvr',
         '/core/utils/js-utils',
       ]),
-      _requestImage('/archae/stage/img/grid.png'),
+      _requestImage('/archae/plugins/_core_engines_stage/serve/grid.png'),
     ]).then(([
       [
         three,
