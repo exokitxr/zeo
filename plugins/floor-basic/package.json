@@ -1,0 +1,15 @@
+{
+  "name": "floor-basic",
+  "version": "0.0.1",
+  "description": "Provides a basic floor.",
+  "main": "client.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Avaer Kazmer <a@modules.io>",
+  "keywords": [
+    "zeo-mod"
+  ],
+  "client": "client.js",
+  "dependencies": {}
+}

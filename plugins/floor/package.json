@@ -1,7 +1,0 @@
-{
-  "name": "floor",
-  "description": "Provides a basic floor.",
-  "version": "0.0.1",
-  "client": "client.js",
-  "dependencies": {}
-}
