@@ -7,7 +7,7 @@ class Three {
       window.module = {};
 
       const script = document.createElement('script');
-      script.src = 'archae/assets/three.js';
+      script.src = '/archae/plugins/_core_engines_resource/serve/three.js';
       script.async = true;
       script.onload = () => {
         const {exports: THREE} = window.module;

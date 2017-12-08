@@ -4,6 +4,9 @@
   "version": "0.0.1",
   "client": "client.js",
   "server": "server.js",
+  "serves": {
+    "three.js": "../three-zeo/three.js"
+  },
   "dependencies": {
     "alea-zeo": "0.0.1",
     "autows": "0.0.9",
