@@ -1632,7 +1632,7 @@ const _shallowClone = o => {
 };
 const _makeId = () => Math.random().toString(36).substring(7);
 const _clone = o => JSON.parse(JSON.stringify(o));
-const _getPlugin = (module, version) => /^\//.test(module) ? module : `${module}@${version}`;
+const _getPlugin = (module, version) => /^\//.test(module) ? module : (module + (version ? ('@' + version) : ''));
 const _getModuleName = module => /^\//.test(module) ? module : module.replace(/@.*$/, '');
 
 module.exports = Tags;
