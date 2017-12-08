@@ -2,9 +2,7 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-pushd "$DIR"/../
-
-node --inspect=0.0.0.0:9229 ./index.js server \
+node --inspect=0.0.0.0:9229 "$DIR"/../index.js server \
   port=8000 \
   name='Test server' \
   siteUrl='https://test.zeovr.io:8080' \
@@ -17,5 +15,3 @@ node --inspect=0.0.0.0:9229 ./index.js server \
   noTty &
 
 sleep infinity;
-
-popd;
