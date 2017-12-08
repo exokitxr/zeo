@@ -912,18 +912,12 @@ class Inventory {
         };
         multiplayer.on('playerEnter', _playerEnter);
         const _playerLeave = ({id, username}) => {
-          _requestRemoteProfilePicture(username)
-            .then(profileImg => {
-              remoteProfiles.push({
-                username,
-                profileImg,
-              });
+          const index = remoteProfiles.findIndex(remoteProfile => remoteProfile.username === username);
+          if (index !== -1) {
+            remoteProfiles.splice(index, 1);
+          }
 
-              _renderMenu();
-            })
-            .catch(err => {
-              console.warn(err);
-            });
+          _renderMenu();
         };
         multiplayer.on('playerLeave', _playerLeave);
         cleanups.push(() => {
@@ -970,6 +964,21 @@ class Inventory {
 
             // ctx.fillStyle = '#111';
             // ctx.fillRect(0, 150 + fontSize*1.6 + 50, canvas.width, 2);
+
+            ctx.font = `${fontSize}px Open sans`;
+            for (let i = 0; i < remoteProfiles.length; i++) {
+              const {username: remoteUsername, profileImg: remoteProfileImg} = remoteProfiles[i];
+
+              if (remoteProfileImg) {
+                ctx.drawImage(remoteProfileImg, 40, 150*2 + 40 + i*(100 + 40), 100, 100);
+
+                ctx.fillStyle = '#111';
+                ctx.fillText(remoteUsername, 40 + 100 + 30, 150*2 + 100 + i*(100 + 40));
+              } else {
+                ctx.fillStyle = '#EEE';
+                ctx.fillRect(40, 150*2 + 40 + i*(100 + 40), 100, 100);
+              }
+            }
           } else if (tab === 'server') {
             ctx.fillRect(canvas.width * 1/8, 150 - 10, canvas.width / 8, 10);
 
