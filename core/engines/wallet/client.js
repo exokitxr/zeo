@@ -591,7 +591,7 @@ class Wallet {
                     this.visible = true;
                     this.emit('setVisible', true);
 
-                    connection.send(JSON.stringify({
+                    connection && connection.send(JSON.stringify({
                       method: 'setVisible',
                       args: {
                         id: this.id,
@@ -604,7 +604,7 @@ class Wallet {
                     this.visible = false;
                     this.emit('setVisible', false);
 
-                    connection.send(JSON.stringify({
+                    connection && connection.send(JSON.stringify({
                       method: 'setVisible',
                       args: {
                         id: this.id,
@@ -617,7 +617,7 @@ class Wallet {
                     this.open = open;
                     this.emit('setOpen', open);
 
-                    connection.send(JSON.stringify({
+                    connection && connection.send(JSON.stringify({
                       method: 'setOpen',
                       args: {
                         id: this.id,
@@ -630,7 +630,7 @@ class Wallet {
                     this.physics = true;
                     this.emit('physics', true);
 
-                    connection.send(JSON.stringify({
+                    connection && connection.send(JSON.stringify({
                       method: 'setPhysics',
                       args: {
                         id: this.id,
@@ -643,7 +643,7 @@ class Wallet {
                     this.physics = false;
                     this.emit('physics', false);
 
-                    connection.send(JSON.stringify({
+                    connection && connection.send(JSON.stringify({
                       method: 'setPhysics',
                       args: {
                         id: this.id,
@@ -657,7 +657,7 @@ class Wallet {
 
                     this.updateAttribute(name, value);
 
-                    connection.send(JSON.stringify({
+                    connection && connection.send(JSON.stringify({
                       method: 'setAttribute',
                       args: {
                         id,
@@ -1251,7 +1251,7 @@ class Wallet {
                   _bindAssetInstancePhysics(assetInstance);
                   _bindAssetInstanceMenu(assetInstance);
 
-                  connection.send(JSON.stringify({
+                  connection && connection.send(JSON.stringify({
                     method: 'addAsset',
                     args: {
                       id,
@@ -1280,7 +1280,7 @@ class Wallet {
 
                   assetsMesh.removeAssetInstance(id);
 
-                  connection.send(JSON.stringify({
+                  connection && connection.send(JSON.stringify({
                     method: 'removeAsset',
                     args: {
                       id,
