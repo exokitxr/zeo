@@ -112,7 +112,17 @@ const indexJsPrefix = `window.startTime = ${Date.now()};\n` + (flags.offline ? `
     }
   );
   const {t} = query;
-  window.metadata.offlinePlugins = t ? t.split(',').map(p => decodeURIComponent(p)) : [];
+  window.metadata.offlinePlugins = t ?
+    t
+      .split(',').map(p => {
+        const match = decodeURIComponent(p).match(/^(.+?)(?:@(.+?))?$/);
+        return match && {
+          name: match[1],
+          version: match[2],
+        };
+      })
+      .filter(p => p !== null)
+  : [];
 })();
 ` : '');
 const serverName = flags.name || 'Server';

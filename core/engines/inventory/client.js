@@ -166,10 +166,10 @@ class Inventory {
             return Promise.resolve([]);
           });
       } else {
-        return Promise.resolve(offlinePlugins.map(name =>
+        return Promise.resolve(offlinePlugins.map(({name, version}) =>
           ({
             name,
-            version: '',
+            version,
           })
         ));
       }

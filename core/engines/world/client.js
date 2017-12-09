@@ -737,15 +737,15 @@ class World {
             initPromise
               .then(() => {
                 let id = 0;
-                const itemSpecs = offlinePlugins.map(module =>
+                const itemSpecs = offlinePlugins.map(({name, version}) =>
                   ({
                     type: 'entity',
                     id: String(id++),
-                    name: module,
-                    displayName: module,
-                    module,
-                    version: '',
-                    tagName: _makeTagName(module),
+                    name,
+                    displayName: name,
+                    module: name,
+                    version,
+                    tagName: _makeTagName(name),
                     attributes: {},
                     metadata: {},
                   })
