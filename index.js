@@ -296,27 +296,31 @@ const _getOfflineFiles = plugins => {
   return Promise.all(plugins.map(plugin =>
     a.requestPluginPackageJson(plugin)
       .then(s => {
-        const packageJson = JSON.parse(s);
-        const {serves = {}} = packageJson;
+        if (s) {
+          const packageJson = JSON.parse(s);
+          const {serves = {}} = packageJson;
 
-        return Promise.all(Object.keys(serves).map(dst =>
-          a.requestPluginServe(plugin, dst)
-            .then(data => {
-              result.push({
-                path: path.join('/', 'archae', 'plugins', a.pather.getCleanModuleName(plugin), 'serve', dst),
-                type: (() => {
-                  if (/\.js$/.test(dst)) {
-                    return 'application/javascript';
-                  } else if (/\.js$/.test(dst)) {
-                    return 'application/json';
-                  } else {
-                    return 'application/octet-stream';
-                  }
-                })(),
-                data: data.toString('base64'),
-              });
-            })
-        ));
+          return Promise.all(Object.keys(serves).map(dst =>
+            a.requestPluginServe(plugin, dst)
+              .then(data => {
+                result.push({
+                  path: path.join('/', 'archae', 'plugins', a.pather.getCleanModuleName(plugin), 'serve', dst),
+                  type: (() => {
+                    if (/\.js$/.test(dst)) {
+                      return 'application/javascript';
+                    } else if (/\.js$/.test(dst)) {
+                      return 'application/json';
+                    } else {
+                      return 'application/octet-stream';
+                    }
+                  })(),
+                  data: data.toString('base64'),
+                });
+              })
+          ));
+        } else {
+          return Promise.resolve();
+        }
       })
   ))
     .then(() => result);
