@@ -1,4 +1,4 @@
-importScripts('/archae/assets/three.js');
+importScripts('/archae/plugins/_core_engines_resource/serve/three.js');
 const {exports: THREE} = self.module;
 importScripts('/archae/assets/murmurhash.js');
 const {exports: murmur} = self.module;
