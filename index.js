@@ -291,7 +291,7 @@ const _getPlugins = ({core = false, def = false} = {}) => {
     .then(directories => directories.map(directory => directory.replace(config.dirname, '')));
 };
 const _getOfflineFiles = plugins => {
-  const result = {};
+  const result = [];
   return Promise.all(plugins.map(plugin =>
     a.requestPluginPackageJson(plugin)
       .then(s => {
@@ -301,17 +301,19 @@ const _getOfflineFiles = plugins => {
         return Promise.all(Object.keys(serves).map(dst =>
           a.requestPluginServe(plugin, dst)
             .then(data => {
-              const dataString = (() => {
-                if (/\.js$/.test(dst)) {
-                  return 'data:application/javascript,' + data.toString('utf8');
-                } else if (/\.js$/.test(dst)) {
-                  return 'data:application/json,' + data.toString('utf8');
-                } else {
-                  return 'data:application/octet-stream;base64,' + data.toString('base64');
-                }
-              })();
-
-              result[path.join('/', 'archae', 'plugins', a.pather.getCleanModuleName(plugin), 'serve', dst)] = dataString;
+              result.push({
+                path: path.join('/', 'archae', 'plugins', a.pather.getCleanModuleName(plugin), 'serve', dst),
+                type: (() => {
+                  if (/\.js$/.test(dst)) {
+                    return 'application/javascript';
+                  } else if (/\.js$/.test(dst)) {
+                    return 'application/json';
+                  } else {
+                    return 'application/octet-stream';
+                  }
+                })(),
+                data: data.toString('base64'),
+              });
             })
         ));
       })
@@ -347,23 +349,38 @@ const _listenArchae = () => {
     } else {
       a.staticSite = true;
       a.ensurePublicBundlePromise();
-      return a.publicBundlePromise
-        .then(bundleSrc => {
-          a.app.get('/index.html', (req, res, next) => {
-            res.type('text/html');
-            fs.createReadStream(path.join(__dirname, 'public', 'test.html')).pipe(res);
-          });
-          a.app.get('/bundle.js', (req, res, next) => {
-            if (req.get('If-None-Match') === bundleSrc.etag) {
-              res.status(304);
-              res.send();
-            } else {
-              res.type('application/javascript');
-              res.setHeader('Etag', bundleSrc.etag);
-              res.end(String(bundleSrc));
-            }
-          });
-        })
+      return Promise.all([
+        a.publicBundlePromise
+          .then(bundleSrc => {
+            a.app.get('/index.html', (req, res, next) => {
+              res.type('text/html');
+              fs.createReadStream(path.join(__dirname, 'public', 'test.html')).pipe(res);
+            });
+            a.app.get('/bundle.js', (req, res, next) => {
+              if (req.get('If-None-Match') === bundleSrc.etag) {
+                res.status(304);
+                res.send();
+              } else {
+                res.type('application/javascript');
+                res.setHeader('Etag', bundleSrc.etag);
+                res.end(String(bundleSrc));
+              }
+            });
+          }),
+        a.publicSwPromise
+          .then(swSrc => {
+            a.app.get('/sw.js', (req, res, next) => {
+              if (req.get('If-None-Match') === swSrc.etag) {
+                res.status(304);
+                res.send();
+              } else {
+                res.type('application/javascript');
+                res.setHeader('Etag', swSrc.etag);
+                res.end(String(swSrc));
+              }
+            });
+          }),
+      ])
         .then(() => _listen());
     }
   } else {
