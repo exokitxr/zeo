@@ -3,6 +3,7 @@ const fs = require('fs');
 const {
   DEFAULT_SEED,
 } = require('./lib/constants/constants');
+const vxl = require('vxl');
 const protocolUtils = require('./lib/utils/protocol-utils');
 const terrainTesselatorLib = require('./terrain-tesselator');
 const objectsTesselatorLib = require('./objects-tesselator');
@@ -47,7 +48,6 @@ const _init = () => _requestPlugins([
   '/core/engines/three',
   '/core/utils/js-utils',
   '/core/utils/hash-utils',
-  '/core/utils/random-utils',
 ])
   .then(([
     three,
@@ -58,7 +58,6 @@ const _init = () => _requestPlugins([
     const {THREE} = three;
     const {mod} = jsUtils;
     const {murmur} = hashUtils;
-    const {vxl} = randomUtils;
 
     const noiser = vxl.noiser({
       seed: murmur(DEFAULT_SEED),
