@@ -156,6 +156,18 @@ class Inventory {
         });
       }
     };
+    const _resArrayBuffer = res => {
+      if (res.status >= 200 && res.status < 300) {
+        return res.arrayBuffer();
+      } else if (res.status === 404) {
+        return Promise.resolve(null);
+      } else {
+        return Promise.reject({
+          status: res.status,
+          stack: 'API returned invalid status code: ' + res.status,
+        });
+      }
+    };
     const _requestRemoteMods = () => {
       if (!offline) {
         return fetch('archae/rend/search')
@@ -166,12 +178,12 @@ class Inventory {
             return Promise.resolve([]);
           });
       } else {
-        return Promise.resolve(offlinePlugins.map(({name, version}) =>
-          ({
-            name,
-            version,
-          })
-        ));
+        return Promise.all(
+          offlinePlugins.map(({name, version}) =>
+            fetch(`https://my-site.zeovr.io/mods/${name}`)
+              .then(_resJson)
+          )
+        );
       }
     };
 
@@ -244,6 +256,62 @@ class Inventory {
         const THREEBlurShader = BlurShader(THREE);
 
         const colorWheelImg = menuUtils.getColorWheelImg();
+
+        if (offline) {
+          for (let i = 0; i < offlinePlugins.length; i++) {
+            const offlinePlugin = offlinePlugins[i];
+            const {name: modName, version} = offlinePlugin;
+            const remoteMod = remoteMods.find(modSpec => modSpec.name === modName);
+
+            if (remoteMod && remoteMod.metadata && remoteMod.metadata.items && Array.isArray(remoteMod.metadata.items)) {
+              const {items} = remoteMod.metadata;
+
+              for (let i = 0; i < items.length; i++) {
+                const item = items[i];
+                const {name: itemName, ext, type = null, attributes = {}} = item;
+
+                fetch(`https://my-site.zeovr.io/img/mods/${modName}/${i}`)
+                  .then(_resArrayBuffer)
+                  .then(arrayBuffer => base64.encode(arrayBuffer))
+                  .then(icon => {
+                    const id = _makeId();
+                    const ext = 'itm';
+                    const path = modName + (type ? ('/' + type) : '');
+                    const fullWidth = items.length * 0.5;
+                    const position = localMatrix.compose(
+                      localVector.set(-(items.length-1)*fullWidth/2 + i*fullWidth/items.length, 1, -1),
+                      zeroQuaternion,
+                      oneVector,
+                    ).toArray();
+                    const itemSpec = {
+                      type: 'asset',
+                      id: _makeId(),
+                      name: itemName,
+                      displayName: itemName,
+                      attributes: {
+                        type: {value: 'asset'},
+                        id: {value: id},
+                        name: {value: itemName},
+                        ext: {value: ext},
+                        path: {value: path},
+                        attributes: {value: attributes},
+                        icon: {value: icon},
+                        position: {value: position},
+                        physics: {value: true},
+                        visible: {value: true},
+                        open: {value: false},
+                      },
+                      metadata: {},
+                    };
+                    wallet.makeItem(itemSpec);
+                  })
+                  .catch(err => {
+                    console.warn(err);
+                  });
+              }
+            }
+          }
+        }
 
         const rowHeight = 100;
         const localColor = new THREE.Color();

@@ -37,31 +37,6 @@ class Wallet {
       live = false;
     });
 
-    const _resJson = res => {
-      if (res.status >= 200 && res.status < 300) {
-        return res.json();
-      } else if (res.status === 404) {
-        return Promise.resolve(null);
-      } else {
-        return Promise.reject({
-          status: res.status,
-          stack: 'API returned invalid status code: ' + res.status,
-        });
-      }
-    };
-    const _resArrayBuffer = res => {
-      if (res.status >= 200 && res.status < 300) {
-        return res.arrayBuffer();
-      } else if (res.status === 404) {
-        return Promise.resolve(null);
-      } else {
-        return Promise.reject({
-          status: res.status,
-          stack: 'API returned invalid status code: ' + res.status,
-        });
-      }
-    };
-
     return archae.requestPlugins([
       '/core/engines/bootstrap',
       '/core/engines/three',
@@ -111,7 +86,7 @@ class Wallet {
     ]) => {
       if (live) {
         const {THREE, scene, camera} = three;
-        const {events, base64} = jsUtils;
+        const {events} = jsUtils;
         const {EventEmitter} = events;
         const {murmur} = hashUtils;
         const {AutoWs} = networkUtils;
@@ -388,69 +363,6 @@ class Wallet {
                   });
                   return connection;
                 } else {
-                  Promise.all(offlinePlugins.map(({name, version}) =>
-                    fetch(`https://my-site.zeovr.io/build/${name}/package.json`)
-                      .then(_resJson)
-                      .then(packageJson => {
-                        console.log('got package json', packageJson);
-
-                        if (packageJson && packageJson.metadata && packageJson.metadata.items && Array.isArray(packageJson.metadata.items)) {
-                          const {items} = packageJson.metadata;
-
-                          return Promise.all(items.map((item, i) => {
-                            const {type = null, icon = null, attributes = {}} = item;
-
-                            const _requestModuleFileData = (module, path) => fetch(`https://my-site.zeovr.io/build/${name}/files/${path}`)
-                              .then(_resArrayBuffer);
-                            const _requestIconData = () => {
-                              if (icon && typeof icon === 'string') {
-                                return _requestModuleFileData(module, icon)
-                                  .then(arrayBuffer => base64.encode(arrayBuffer));
-                              } else {
-                                return Promise.resolve(null);
-                              }
-                            };
-
-                            return _requestIconData()
-                              .then(icon => {
-                                const id = _makeId();
-                                const ext = 'itm';
-                                const path = name + (type ? ('/' + type) : '');
-                                const fullWidth = items.length * 0.5;
-                                const position = localMatrix.compose(
-                                  localVector.set(-(items.length-1)*fullWidth/2 + i*fullWidth/items.length, 1, -1),
-                                  zeroQuaternion,
-                                  oneVector,
-                                ).toArray();
-                                const itemSpec = {
-                                  type: 'asset',
-                                  id: _makeId(),
-                                  name,
-                                  displayName: name,
-                                  attributes: {
-                                    type: {value: 'asset'},
-                                    id: {value: id},
-                                    name: {value: name},
-                                    ext: {value: ext},
-                                    path: {value: path},
-                                    attributes: {value: attributes},
-                                    icon: {value: icon},
-                                    position: {value: position},
-                                    physics: {value: true},
-                                    visible: {value: true},
-                                    open: {value: false},
-                                  },
-                                  metadata: {},
-                                };
-                                const assetInstance = walletApi.makeItem(itemSpec);
-                              });
-                          }));
-                        } else {
-                          return Promise.resolve();
-                        }
-                      })
-                  ));
-
                   return null;
                 }
               })();
