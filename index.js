@@ -319,14 +319,15 @@ const _boot = () => {
         _getPlugins({core: true})
           .then(plugins => a.requestPlugins(plugins))
       );
-    } else {
-      bootPromises.push(
-        _getPlugins({core: true})
-          .then(plugins => {
-            a.offlinePlugins = plugins;
-          })
-      );
     }
+  }
+  if (flags.offline) {
+    bootPromises.push(
+      _getPlugins({core: true})
+        .then(plugins => {
+          a.offlinePlugins = plugins;
+        })
+    );
   }
   if (flags.connect) {
     const nodeWebvrPath = path.join(requireRelative.resolve('node-webvr', path.join(__dirname, 'scripts', 'lib', 'windows', 'node-webvr')), '..');
