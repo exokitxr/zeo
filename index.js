@@ -349,7 +349,11 @@ const _listenArchae = () => {
       a.ensurePublicBundlePromise();
       return a.publicBundlePromise
         .then(bundleSrc => {
-          a.app.get('/archae/index.js', (req, res) => {
+          a.app.get('/index.html', (req, res, next) => {
+            res.type('text/html');
+            fs.createReadStream(path.join(__dirname, 'public', 'test.html')).pipe(res);
+          });
+          a.app.get('/bundle.js', (req, res, next) => {
             if (req.get('If-None-Match') === bundleSrc.etag) {
               res.status(304);
               res.send();
