@@ -5,6 +5,8 @@ const zlib = require('zlib');
 
 const touch = require('touch');
 const accepts = require('accept-encoding');
+const vxl = require('vxl');
+const vxlPath = path.resolve(require.resolve('vxl'), '..');
 const zeode = require('zeode');
 const {
   BLOCK_BUFFER_SIZE,
@@ -45,11 +47,10 @@ class Generator {
     const {_archae: archae} = this;
     const {dirname, dataDirectory, installDirectory} = archae;
     const {express, ws, app, wss} = archae.getCore();
-    const {three, elements, utils: {js: jsUtils, hash: hashUtils, random: randomUtils, image: imageUtils}} = zeo;
+    const {three, elements, utils: {js: jsUtils, hash: hashUtils, image: imageUtils}} = zeo;
     const {THREE} = three;
     const {mod} = jsUtils;
     const {murmur} = hashUtils;
-    const {vxlPath, vxl} = randomUtils;
     const {jimp} = imageUtils;
 
     const zeroVector = new THREE.Vector3();

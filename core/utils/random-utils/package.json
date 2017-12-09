@@ -6,7 +6,6 @@
   "server": "server.js",
   "dependencies": {
     "alea-zeo": "0.0.1",
-    "chnkr": "0.0.18",
-    "vxl": "0.0.61"
+    "chnkr": "0.0.18"
   }
 }
