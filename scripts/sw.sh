@@ -2,7 +2,7 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-node "$DIR"/../index.js bundle \
+node "$DIR"/../index.js sw \
   port=8000 \
   name='Test server' \
   siteUrl='https://test.zeovr.io:8080' \

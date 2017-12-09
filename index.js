@@ -57,9 +57,10 @@ const flags = {
   noTty: args.includes('noTty'),
   offline: args.includes('offline'),
   bundle: args.includes('bundle'),
+  sw: args.includes('sw'),
   maxUsers: _findArg('maxUsers'),
 };
-if (!flags.server && !flags.connect && !flags.install && !flags.reset && !flags.bundle) {
+if (!flags.server && !flags.connect && !flags.install && !flags.reset && !flags.bundle && !flags.sw) {
   flags.server = true;
 }
 
@@ -428,6 +429,13 @@ const _boot = () => {
     a.publicBundlePromise
       .then(bundle => {
         process.stdout.write(bundle.toString());
+      });
+  }
+  if (flags.sw) {
+    a.ensurePublicBundlePromise();
+    a.publicSwPromise
+      .then(sw => {
+        process.stdout.write(sw.toString());
       });
   }
 
