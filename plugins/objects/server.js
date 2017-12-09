@@ -31,7 +31,7 @@ class Objects {
     const {THREE} = three;
     const {mod} = jsUtils;
     const {murmur} = hashUtils;
-    const {alea, vxl} = randomUtils;
+    const {alea} = randomUtils;
 
     const rng = new alea(DEFAULT_SEED);
     const noises = {};
@@ -49,7 +49,7 @@ class Objects {
               return murmur(s);
             },
             registerNoise(name, spec) {
-              noises[name] = new vxl.fastNoise({
+              noises[name] = new generatorElement.vxl.fastNoise({
                 seed: murmur(spec.seed),
                 frequency: spec.frequency,
                 octaves: spec.octaves,
