@@ -349,6 +349,9 @@ class Generator {
         });
 
         class Generator {
+          constructor() {
+            this.vxl = vxl;
+          }
           getElevation(x, z) {
             return noiser.getElevation(x, z);
           }
