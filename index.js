@@ -6,6 +6,7 @@ const child_process = require('child_process');
 
 const archae = require('archae');
 const rimraf = require('rimraf');
+const PromiseSerial = require('promise-serial');
 const requireRelative = require('require-relative');
 
 const args = process.argv.slice(2);
@@ -217,18 +218,18 @@ const _configure = () => {
   if (flags.offline) {
     return _getPlugins({core: true})
       .then(plugins =>
-        _getOfflineFiles(plugins)
-          .then(files => ({
+        _getOfflineFilesString(plugins)
+          .then(offlineFilesString => ({
             plugins,
-            files,
+            offlineFilesString,
           }))
       )
       .then(({
         plugins,
-        files,
+        offlineFilesString,
       }) => {
         a.offlinePlugins = plugins;
-        a.offlineFiles = files;
+        a.offlineFilesString = offlineFilesString;
       });
   } else {
     return Promise.resolve();
@@ -291,31 +292,36 @@ const _getPlugins = ({core = false, def = false} = {}) => {
     .then(files => _flatten(files))
     .then(directories => directories.map(directory => directory.replace(config.dirname, '')));
 };
-const _getOfflineFiles = plugins => {
-  const result = [];
-  return Promise.all(plugins.map(plugin =>
-    a.requestPluginPackageJson(plugin)
+const _getOfflineFilesString = plugins => {
+  let result = `[\n`;
+  return PromiseSerial(plugins.map((plugin, i) =>
+    () => a.requestPluginPackageJson(plugin)
       .then(s => {
         if (s) {
           const packageJson = JSON.parse(s);
           const {serves = {}} = packageJson;
+          const servesKeys = Object.keys(serves);
 
-          return Promise.all(Object.keys(serves).map(dst =>
-            a.requestPluginServe(plugin, dst)
+          return PromiseSerial(servesKeys.map((dst, j) =>
+            () => a.requestPluginServe(plugin, dst)
               .then(data => {
-                result.push({
-                  path: path.join('/', 'archae', 'plugins', a.pather.getCleanModuleName(plugin), 'serve', dst),
-                  type: (() => {
-                    if (/\.js$/.test(dst)) {
-                      return 'application/javascript';
-                    } else if (/\.js$/.test(dst)) {
-                      return 'application/json';
-                    } else {
-                      return 'application/octet-stream';
-                    }
-                  })(),
-                  data: data.toString('base64'),
-                });
+                result += `{
+  "path": ${JSON.stringify(path.join('/', 'archae', 'plugins', a.pather.getCleanModuleName(plugin), 'serve', dst))},
+  "type": ${JSON.stringify((() => {
+    if (/\.js$/.test(dst)) {
+      return 'application/javascript';
+    } else if (/\.js$/.test(dst)) {
+      return 'application/json';
+    } else {
+      return 'application/octet-stream';
+    }
+  })())},
+  "data": "${data.toString('base64')}"
+}`;
+                if (!(i === plugins.length - 1 && j === servesKeys.length - 1)) {
+                  result += ',';
+                }
+                result += '\n';
               })
           ));
         } else {
@@ -323,7 +329,10 @@ const _getOfflineFiles = plugins => {
         }
       })
   ))
-    .then(() => result);
+    .then(() => {
+      result += `]\n`;
+      return result;
+    });
 };
 
 const _listenLibs = () => {

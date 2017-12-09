@@ -38,13 +38,14 @@
     "node": "8.x"
   },
   "dependencies": {
-    "archae": "0.0.151",
+    "archae": "0.0.152",
     "cookie": "^0.3.1",
     "fs-extra": "^2.1.2",
     "http-proxy": "^1.16.2",
     "marked": "^0.3.6",
     "mkdirp": "^0.5.1",
     "nat-upnp": "^1.1.0",
+    "promise-serial": "^0.1.5",
     "require-relative": "^0.8.7",
     "rimraf": "^2.6.2",
     "rnd": "^1.0.10"
