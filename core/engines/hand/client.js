@@ -137,13 +137,13 @@ class Hand {
         })();
 
         const _broadcastObject = (method, args) => {
-          connection.send(JSON.stringify({
+          connection && connection.send(JSON.stringify({
             method,
             args,
           }));
         };
         const _broadcastBuffer = buffer => {
-          connection.send(buffer);
+          connection && connection.send(buffer);
         };
 
         const _makeGrabState = () => ({
