@@ -201,10 +201,7 @@ const _preload = () => {
 const _install = () => {
   if (flags.install) {
     return _getPlugins({core: true, def: true})
-      .then(plugins => {
-console.log('install plugins', plugins);
-        return a.installPlugins(plugins);
-      });
+      .then(plugins => a.installPlugins(plugins));
   } else {
     return Promise.resolve();
   }
@@ -215,7 +212,14 @@ const _configure = () => {
     stream.setMaxListeners(100);
   });
 
-  return Promise.resolve();
+  if (flags.offline) {
+    return _getPlugins({core: true})
+      .then(plugins => {
+        a.offlinePlugins = plugins;
+      });
+  } else {
+    return Promise.resolve();
+  }
 };
 
 const _getPlugins = ({core = false, def = false} = {}) => {
@@ -288,7 +292,7 @@ const _listenLibs = () => {
 
 const _listenArchae = () => {
   if (flags.server) {
-    return new Promise((accept, reject) => {
+    const _listen = () => new Promise((accept, reject) => {
       a.listen(err => {
         if (!err) {
           accept();
@@ -297,6 +301,27 @@ const _listenArchae = () => {
         }
       });
     });
+
+    if (!flags.offline) {
+      return _listen();
+    } else {
+      a.staticSite = true;
+      a.ensurePublicBundlePromise();
+      return a.publicBundlePromise
+        .then(bundleSrc => {
+          a.app.get('/archae/index.js', (req, res) => {
+            if (req.get('If-None-Match') === bundleSrc.etag) {
+              res.status(304);
+              res.send();
+            } else {
+              res.type('application/javascript');
+              res.setHeader('Etag', bundleSrc.etag);
+              res.end(String(bundleSrc));
+            }
+          });
+        })
+        .then(() => _listen());
+    }
   } else {
     return Promise.resolve();
   }
@@ -305,7 +330,7 @@ const _listenArchae = () => {
 const _listenNetwork = () => {
   const listenPromises = [];
 
-  if (flags.server) {
+  if (flags.server && !flags.offline) {
     const server = require('./lib/network');
     listenPromises.push(server.listen(a, config));
   }
@@ -323,14 +348,6 @@ const _boot = () => {
           .then(plugins => a.requestPlugins(plugins))
       );
     }
-  }
-  if (flags.offline) {
-    bootPromises.push(
-      _getPlugins({core: true})
-        .then(plugins => {
-          a.offlinePlugins = plugins;
-        })
-    );
   }
   if (flags.connect) {
     const nodeWebvrPath = path.join(requireRelative.resolve('node-webvr', path.join(__dirname, 'scripts', 'lib', 'windows', 'node-webvr')), '..');
