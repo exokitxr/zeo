@@ -118,7 +118,7 @@ const indexJsPrefix = `window.startTime = ${Date.now()};\n` + (flags.offline ? `
         const match = decodeURIComponent(p).match(/^(.+?)(?:@(.+?))?$/);
         return match && {
           name: match[1],
-          version: match[2],
+          version: match[2] || '',
         };
       })
       .filter(p => p !== null)
