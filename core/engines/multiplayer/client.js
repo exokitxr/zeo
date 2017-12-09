@@ -9,6 +9,7 @@ class Multiplayer {
 
   mount() {
     const {_archae: archae} = this;
+    const {metadata: {offline}} = archae;
 
     const cleanups = [];
     this._cleanup = () => {
