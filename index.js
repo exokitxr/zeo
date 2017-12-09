@@ -114,7 +114,8 @@ const indexJsPrefix = `window.startTime = ${Date.now()};\n` + (flags.offline ? `
   const {t} = query;
   window.metadata.offlinePlugins = t ?
     t
-      .split(',').map(p => {
+      .split(',')
+      .map(p => {
         const match = decodeURIComponent(p).match(/^(.+?)(?:@(.+?))?$/);
         return match && {
           name: match[1],
@@ -214,8 +215,19 @@ const _configure = () => {
 
   if (flags.offline) {
     return _getPlugins({core: true})
-      .then(plugins => {
+      .then(plugins =>
+        _getOfflineFiles(plugins)
+          .then(files => ({
+            plugins,
+            files,
+          }))
+      )
+      .then(({
+        plugins,
+        files,
+      }) => {
         a.offlinePlugins = plugins;
+        a.offlineFiles = files;
       });
   } else {
     return Promise.resolve();
@@ -277,6 +289,34 @@ const _getPlugins = ({core = false, def = false} = {}) => {
   )
     .then(files => _flatten(files))
     .then(directories => directories.map(directory => directory.replace(config.dirname, '')));
+};
+const _getOfflineFiles = plugins => {
+  const result = {};
+  return Promise.all(plugins.map(plugin =>
+    a.requestPluginPackageJson(plugin)
+      .then(s => {
+        const packageJson = JSON.parse(s);
+        const {serves = {}} = packageJson;
+
+        return Promise.all(Object.keys(serves).map(dst =>
+          a.requestPluginServe(plugin, dst)
+            .then(data => {
+              const dataString = (() => {
+                if (/\.js$/.test(dst)) {
+                  return 'data:application/javascript,' + data.toString('utf8');
+                } else if (/\.js$/.test(dst)) {
+                  return 'data:application/json,' + data.toString('utf8');
+                } else {
+                  return 'data:application/octet-stream;base64,' + data.toString('base64');
+                }
+              })();
+
+              result[path.join('/', 'archae', 'plugins', a.pather.getCleanModuleName(plugin), 'serve', dst)] = dataString;
+            })
+        ));
+      })
+  ))
+    .then(() => result);
 };
 
 const _listenLibs = () => {
