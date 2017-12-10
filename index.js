@@ -147,7 +147,7 @@ const config = {
   password,
   cors: true,
   offline: flags.offline,
-  staticSite: false,
+  staticSite: flags.offline,
   metadata: {
     config: {
       defaultsDirectory,
@@ -217,19 +217,8 @@ const _configure = () => {
 
   if (flags.offline) {
     return _getPlugins({core: true})
-      .then(plugins =>
-        _getOfflineFilesString(plugins)
-          .then(offlineFilesString => ({
-            plugins,
-            offlineFilesString,
-          }))
-      )
-      .then(({
-        plugins,
-        offlineFilesString,
-      }) => {
+      .then(plugins => {
         a.offlinePlugins = plugins;
-        a.offlineFilesString = offlineFilesString;
       });
   } else {
     return Promise.resolve();
@@ -292,48 +281,6 @@ const _getPlugins = ({core = false, def = false} = {}) => {
     .then(files => _flatten(files))
     .then(directories => directories.map(directory => directory.replace(config.dirname, '')));
 };
-const _getOfflineFilesString = plugins => {
-  let result = `[\n`;
-  return PromiseSerial(plugins.map((plugin, i) =>
-    () => a.requestPluginPackageJson(plugin)
-      .then(s => {
-        if (s) {
-          const packageJson = JSON.parse(s);
-          const {serves = {}} = packageJson;
-          const servesKeys = Object.keys(serves);
-
-          return PromiseSerial(servesKeys.map((dst, j) =>
-            () => a.requestPluginServe(plugin, dst)
-              .then(data => {
-                result += `{
-  "path": ${JSON.stringify(path.join('/', 'archae', 'plugins', a.pather.getCleanModuleName(plugin), 'serve', dst))},
-  "type": ${JSON.stringify((() => {
-    if (/\.js$/.test(dst)) {
-      return 'application/javascript';
-    } else if (/\.js$/.test(dst)) {
-      return 'application/json';
-    } else {
-      return 'application/octet-stream';
-    }
-  })())},
-  "data": "${data.toString('base64')}"
-}`;
-                if (!(i === plugins.length - 1 && j === servesKeys.length - 1)) {
-                  result += ',';
-                }
-                result += '\n';
-              })
-          ));
-        } else {
-          return Promise.resolve();
-        }
-      })
-  ))
-    .then(() => {
-      result += `]\n`;
-      return result;
-    });
-};
 
 const _listenLibs = () => {
   const listenPromises = [];
@@ -348,7 +295,7 @@ const _listenLibs = () => {
 
 const _listenArchae = () => {
   if (flags.server) {
-    const _listen = () => new Promise((accept, reject) => {
+    return new Promise((accept, reject) => {
       a.listen(err => {
         if (!err) {
           accept();
@@ -357,46 +304,6 @@ const _listenArchae = () => {
         }
       });
     });
-
-    if (!flags.offline) {
-      return _listen();
-    } else {
-      a.staticSite = true;
-      a.ensurePublicBundlePromise();
-      return Promise.all([
-        a.publicBundlePromise
-          .then(bundleSrc => {
-            a.app.get('/index.html', (req, res, next) => {
-              res.type('text/html');
-              fs.createReadStream(path.join(__dirname, 'public', 'test.html')).pipe(res);
-            });
-            a.app.get('/bundle.js', (req, res, next) => {
-              if (req.get('If-None-Match') === bundleSrc.etag) {
-                res.status(304);
-                res.send();
-              } else {
-                res.type('application/javascript');
-                res.setHeader('Etag', bundleSrc.etag);
-                res.end(String(bundleSrc));
-              }
-            });
-          }),
-        a.publicSwPromise
-          .then(swSrc => {
-            a.app.get('/sw.js', (req, res, next) => {
-              if (req.get('If-None-Match') === swSrc.etag) {
-                res.status(304);
-                res.send();
-              } else {
-                res.type('application/javascript');
-                res.setHeader('Etag', swSrc.etag);
-                res.end(String(swSrc));
-              }
-            });
-          }),
-      ])
-        .then(() => _listen());
-    }
   } else {
     return Promise.resolve();
   }
