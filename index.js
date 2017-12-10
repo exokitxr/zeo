@@ -6,7 +6,6 @@ const child_process = require('child_process');
 
 const archae = require('archae');
 const rimraf = require('rimraf');
-const PromiseSerial = require('promise-serial');
 const requireRelative = require('require-relative');
 
 const args = process.argv.slice(2);
