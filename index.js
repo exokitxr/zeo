@@ -295,15 +295,26 @@ const _listenLibs = () => {
 
 const _listenArchae = () => {
   if (flags.server) {
-    return new Promise((accept, reject) => {
-      a.listen(err => {
-        if (!err) {
-          accept();
-        } else {
-          reject(err);
-        }
-      });
-    });
+    const _listenOffline = () => {
+      if (flags.offline) {
+        a.ensurePublicBundlePromise();
+        return a.publicBundlePromise
+          .then(() => {});
+      } else {
+        return Promise.resolve();
+      }
+    };
+
+    return _listenOffline()
+      .then(() => new Promise((accept, reject) => {
+        a.listen(err => {
+          if (!err) {
+            accept();
+          } else {
+            reject(err);
+          }
+        });
+      }));
   } else {
     return Promise.resolve();
   }
