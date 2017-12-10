@@ -329,6 +329,8 @@ const _boot = () => {
         _getPlugins({core: true})
           .then(plugins => a.requestPlugins(plugins))
       );
+    } else {
+      console.log('Local URL: ' + fullUrl);
     }
   }
   if (flags.connect) {
