@@ -884,7 +884,7 @@ class Inventory {
           if (subtab === 'installed') {
             return remoteMods
               .filter(modSpec => modSpec.installed);
-          } else if (subtab === 'remote') {
+          } else if (subtab === 'store') {
             return remoteMods
               .filter(modSpec => !modSpec.local);
           } else if (subtab === 'local') {
@@ -1018,8 +1018,8 @@ class Inventory {
           // ctx.textBaseline = 'bottom';
           ctx.fillStyle = tab === 'status' ? '#4CAF50' : '#FFF';
           ctx.fillText('Status', canvas.width * 0/8 + (canvas.width/8 - ctx.measureText('Status').width)/2, 150 - 60, canvas.width / 8);
-          ctx.fillStyle = tab === 'server' ? '#4CAF50' : '#FFF';
-          ctx.fillText('Server', canvas.width * 1/8 + (canvas.width/8 - ctx.measureText('Server').width)/2, 150 - 60, canvas.width / 8);
+          ctx.fillStyle = tab === 'mods' ? '#4CAF50' : '#FFF';
+          ctx.fillText('Mods', canvas.width * 1/8 + (canvas.width/8 - ctx.measureText('Mods').width)/2, 150 - 60, canvas.width / 8);
           ctx.fillStyle = tab === 'files' ? '#4CAF50' : '#FFF';
           ctx.fillText('Files', canvas.width * 2/8 + (canvas.width/8 - ctx.measureText('Files').width)/2, 150 - 60, canvas.width / 8);
 
@@ -1059,7 +1059,7 @@ class Inventory {
                 ctx.fillRect(40, 150*2 + 40 + i*(100 + 40), 100, 100);
               }
             }
-          } else if (tab === 'server') {
+          } else if (tab === 'mods') {
             ctx.fillRect(canvas.width * 1/8, 150 - 10, canvas.width / 8, 10);
 
             // subheader
@@ -1068,7 +1068,7 @@ class Inventory {
             ctx.fillStyle = '#4CAF50';
             if (subtab === 'installed') {
               ctx.fillRect(canvas.width * 0/8, 150*2 - 10, canvas.width / 8, 10);
-            } else if (subtab === 'remote') {
+            } else if (subtab === 'store') {
               ctx.fillRect(canvas.width * 1/8, 150*2 - 10, canvas.width / 8, 10);
             } else if (subtab === 'local') {
               ctx.fillRect(canvas.width * 2/8, 150*2 - 10, canvas.width / 8, 10);
@@ -1076,8 +1076,8 @@ class Inventory {
 
             ctx.fillStyle = subtab === 'installed' ? '#4CAF50' : '#111';
             ctx.fillText('Installed', canvas.width * 0/8 + (canvas.width/8 - ctx.measureText('Installed').width)/2, 150*2 - 60, canvas.width / 8);
-            ctx.fillStyle = subtab === 'remote' ? '#4CAF50' : '#111';
-            ctx.fillText('Remote', canvas.width * 1/8 + (canvas.width/8 - ctx.measureText('Remote').width)/2, 150*2 - 60, canvas.width / 8);
+            ctx.fillStyle = subtab === 'store' ? '#4CAF50' : '#111';
+            ctx.fillText('Store', canvas.width * 1/8 + (canvas.width/8 - ctx.measureText('Store').width)/2, 150*2 - 60, canvas.width / 8);
             ctx.fillStyle = subtab === 'local' ? '#4CAF50' : '#111';
             ctx.fillText('Local', canvas.width * 2/8 + (canvas.width/8 - ctx.measureText('Local').width)/2, 150*2 - 60, canvas.width / 8);
 
@@ -1262,7 +1262,7 @@ class Inventory {
           plane.anchors = _getAnchors();
         });
         _pushAnchor(tabsAnchors, canvas.width * 1/8, 0, canvas.width / 8, 150, (e, hoverState) => {
-          tab = 'server';
+          tab = 'mods';
           subtab = 'installed';
 
           localMods = _getLocalMods();
@@ -1505,7 +1505,7 @@ class Inventory {
             plane.anchors = _getAnchors();
           });
           _pushAnchor(result, canvas.width * 1/8, 150, canvas.width / 8, 150, (e, hoverState) => {
-            subtab = 'remote';
+            subtab = 'store';
 
             localMods = _getLocalMods();
             localMod = null;
@@ -1664,7 +1664,7 @@ class Inventory {
           const result = tabsAnchors.slice();
           if (tab === 'status') {
             result.push.apply(result, statusAnchors);
-          } else if (tab === 'server') {
+          } else if (tab === 'mods') {
             if (!modReadmeImg) {
               result.push.apply(result, serverAnchors);
             } else {
@@ -1791,7 +1791,7 @@ class Inventory {
           const mesh = new THREE.Mesh(geometry, material);
           const _renderAssets = _debounce(next => {
             const promises = (() => {
-              if (tab === 'server' && subtab === 'installed' && localMod) {
+              if (tab === 'mods' && subtab === 'installed' && localMod) {
                 if (localMod.metadata && localMod.metadata.items && Array.isArray(localMod.metadata.items) && localMod.metadata.items.length > 0) {
                   return [
                     resource.getModFileImage(localMod.displayName, 0)
