@@ -15,6 +15,12 @@ class Analytics {
       },
     } = archae;
 
+    const _cors = res => {
+      res.set('Access-Control-Allow-Origin', '*');
+      res.set('Access-Control-Allow-Methods', 'GET, PUT, POST, DELETE');
+      res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    };
+
     const cleanups = [];
     this._cleanup = () => {
       for (let i = 0; i < cleanups.length; i++) {
@@ -123,6 +129,8 @@ class Analytics {
         };
 
         function analyticsPing(req, res, next) {
+          _cors(res);
+
           res.end('pong');
         }
         app.get('/ping', analyticsPing);
