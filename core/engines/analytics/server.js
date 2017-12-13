@@ -15,12 +15,6 @@ class Analytics {
       },
     } = archae;
 
-    const _cors = res => {
-      res.set('Access-Control-Allow-Origin', '*');
-      res.set('Access-Control-Allow-Methods', 'GET, PUT, POST, DELETE');
-      res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    };
-
     const cleanups = [];
     this._cleanup = () => {
       for (let i = 0; i < cleanups.length; i++) {
@@ -128,13 +122,6 @@ class Analytics {
           }));
         };
 
-        function analyticsPing(req, res, next) {
-          _cors(res);
-
-          res.end('pong');
-        }
-        app.get('/ping', analyticsPing);
-
         const _playerEnter = ({id, username}) => {
           ws.send(JSON.stringify({
             method: 'playerEnter',
@@ -167,16 +154,6 @@ class Analytics {
         });
 
         this._cleanup = () => {
-          function removeMiddlewares(route, i, routes) {
-            if (route.handle.name === 'analyticsPing') {
-              routes.splice(i, 1);
-            }
-            if (route.route) {
-              route.route.stack.forEach(removeMiddlewares);
-            }
-          }
-          app._router.stack.forEach(removeMiddlewares);
-
           multiplayer.removeListener('playerEnter', _playerEnter);
           multiplayer.removeListener('playerLeave', _playerLeave);
         };
