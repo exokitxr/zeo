@@ -4,8 +4,9 @@ class Analytics {
   }
 
   mount() {
-    const {_archae: archae} = this;
-     const {
+    const {app, dirname, dataDirectory} = archae.getCore();
+    const {
+      app,
       metadata: {
         server: {
           name: serverName,
