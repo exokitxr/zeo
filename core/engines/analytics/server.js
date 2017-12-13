@@ -121,6 +121,11 @@ class Analytics {
           }));
         };
 
+        function analyticsPing(req, res, next) {
+          res.end('pong');
+        }
+        app.post('/ping', analyticsPing);
+
         const _playerEnter = ({id, username}) => {
           ws.send(JSON.stringify({
             method: 'playerEnter',
@@ -153,6 +158,16 @@ class Analytics {
         });
 
         this._cleanup = () => {
+          function removeMiddlewares(route, i, routes) {
+            if (route.handle.name === 'analyticsPing') {
+              routes.splice(i, 1);
+            }
+            if (route.route) {
+              route.route.stack.forEach(removeMiddlewares);
+            }
+          }
+          app._router.stack.forEach(removeMiddlewares);
+
           multiplayer.removeListener('playerEnter', _playerEnter);
           multiplayer.removeListener('playerLeave', _playerLeave);
         };
