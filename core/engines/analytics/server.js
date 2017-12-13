@@ -125,7 +125,7 @@ class Analytics {
         function analyticsPing(req, res, next) {
           res.end('pong');
         }
-        app.post('/ping', analyticsPing);
+        app.get('/ping', analyticsPing);
 
         const _playerEnter = ({id, username}) => {
           ws.send(JSON.stringify({
