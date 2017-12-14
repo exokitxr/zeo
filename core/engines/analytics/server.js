@@ -43,16 +43,29 @@ class Analytics {
         const fileSpecs = [];
 
         const {port} = _parseUrlSpec(serverUrl);
-        const ws = new AutoWs(`wss://my-site.zeovr.io/analytics/ws?name=${serverName}&port=${port}`);
-        let needsUpdate = false;
+        const ws = new AutoWs(`wss://my-site.zeovr.io/analytics/ws?port=${port}`);
+        let needsUpdate = true;
         ws.on('connect', () => {
           if (needsUpdate) {
+            _sendConfig();
+
             for (let i = 0; i < modSpecs.length; i++) {
               _sendAddMod(modSpecs[i]);
             }
             for (let i = 0; i < fileSpecs.length; i++) {
               _sendAddFile(fileSpecs[i]);
             }
+
+            const playerStatuses = multiplayer.getPlayerStatuses();
+            const playerUsernames = multiplayer.getPlayerUsernames();
+            playerStatuses.forEach((playerStatus, n) => {
+              const playerUsername = playerUsernames.get(n);
+
+              _playerEnter({
+                id: String(n),
+                username: playerUsername,
+              });
+            });
 
             needsUpdate = false;
           }
@@ -74,6 +87,17 @@ class Analytics {
         cleanups.push(() => {
           clearInterval(interval);
         });
+
+        const _sendConfig = () => {
+          const {metadata: {server: {name}, maxUsers}} = archae;
+          ws.send(JSON.stringify({
+            method: 'config',
+            args: {
+              name,
+              maxUsers,
+            },
+          }));
+        };
 
         const _sendAddMod = modSpec => {
           const {id, name, version} = modSpec;
@@ -134,17 +158,6 @@ class Analytics {
         };
         multiplayer.on('playerLeave', _playerLeave);
 
-        const playerStatuses = multiplayer.getPlayerStatuses();
-        const playerUsernames = multiplayer.getPlayerUsernames();
-        playerStatuses.forEach((playerStatus, n) => {
-          const playerUsername = playerUsernames.get(n);
-
-          _playerEnter({
-            id: String(n),
-            username: playerUsername,
-          });
-        });
-
         this._cleanup = () => {
           multiplayer.removeListener('playerEnter', _playerEnter);
           multiplayer.removeListener('playerLeave', _playerLeave);
@@ -154,7 +167,9 @@ class Analytics {
           addMod(modSpec) {
             modSpecs.push(modSpec);
 
-            _sendAddMod(modSpec);
+            if (!needsUpdate) {
+              _sendAddMod(modSpec);
+            }
           },
           removeMod(modSpec) {
             const index = modSpecs.findIndex(ms => ms.id === modSpec.id);
@@ -162,12 +177,16 @@ class Analytics {
               modSpecs.splice(index, 1);
             }
 
-            _sendRemoveMod(modSpec);
+            if (!needsUpdate) {
+              _sendRemoveMod(modSpec);
+            }
           },
           addFile(fileSpec) {
             fileSpecs.push(fileSpec);
 
-            _sendAddFile(fileSpec);
+            if (!needsUpdate) {
+              _sendAddFile(fileSpec);
+            }
           },
           removeFile(fileSpec) {
             const index = fileSpecs.findIndex(ms => ms.id === fileSpec.id);
@@ -175,7 +194,9 @@ class Analytics {
               fileSpecs.splice(index, 1);
             }
 
-            _sendRemoveFile(fileSpec);
+            if (!needsUpdate) {
+              _sendRemoveFile(fileSpec);
+            }
           },
         };
         return analyticsApi;
