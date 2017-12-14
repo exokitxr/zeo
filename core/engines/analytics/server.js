@@ -4,16 +4,8 @@ class Analytics {
   }
 
   mount() {
-    const {app, dirname, dataDirectory} = archae.getCore();
-    const {
-      app,
-      metadata: {
-        server: {
-          name: serverName,
-          url: serverUrl,
-        },
-      },
-    } = archae;
+    const {_archae: archae} = this;
+    const {metadata: {server: {url: serverUrl}}} = archae;
 
     const cleanups = [];
     this._cleanup = () => {
