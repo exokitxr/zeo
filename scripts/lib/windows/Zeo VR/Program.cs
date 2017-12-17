@@ -23,10 +23,19 @@ namespace Zeo_VR
             cmd.OutputDataReceived += (sender, args2) => Console.WriteLine(args2.Data);
             cmd.ErrorDataReceived += (sender, args2) => Console.WriteLine(args2.Data);
 
+            StreamWriter writer = new StreamWriter("log.txt", true);
+            cmd.OutputDataReceived += (sender, args2) => writer.WriteLine(args2.Data);
+            cmd.ErrorDataReceived += (sender, args2) => writer.WriteLine(args2.Data);
+
             cmd.Start();
             cmd.BeginOutputReadLine();
             cmd.BeginErrorReadLine();
             cmd.WaitForExit();
+
+            if (cmd.ExitCode != 0) {
+                Console.WriteLine("Error starting app. Press any key to continue.");
+                Console.ReadKey();
+            }
         }
     }
 }
