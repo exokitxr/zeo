@@ -60,7 +60,7 @@ const flags = {
   sw: args.includes('sw'),
   maxUsers: _findArg('maxUsers'),
 };
-if (!flags.server && !flags.connect && !flags.install && !flags.reset && !flags.bundle && !flags.sw) {
+if (!flags.server && !flags.connect && !flags.install && !flags.reset && !flags.bundle) {
   flags.server = true;
 }
 
@@ -361,13 +361,6 @@ const _boot = () => {
     a.publicBundlePromise
       .then(bundle => {
         process.stdout.write(bundle.toString());
-      });
-  }
-  if (flags.sw) {
-    a.ensurePublicBundlePromise();
-    a.publicSwPromise
-      .then(sw => {
-        process.stdout.write(sw.toString());
       });
   }
 
