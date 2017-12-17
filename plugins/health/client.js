@@ -162,6 +162,11 @@ class Health {
 
               mesh.updateMatrixWorld();
             };
+            mesh.destroy = () => {
+              geometry.dispose();
+              texture.dispose();
+              material.dispose();
+            };
 
             mesh.update();
 
