@@ -195,6 +195,22 @@ class World {
           }
           app.post('/archae/world/addTag', worldAddTag);
 
+          function getWorldTagsJson(req, res, next) {
+            res.type('application/json');
+            res.end(JSON.stringify(tagsJson, null, 2));
+          }
+          app.get('/archae/world/tags.json', getWorldTagsJson);
+          function putWorldTagsJson(req, res, next) {
+            bodyParserJson(req, res, () => {
+              const newTagsJson = req.body;
+
+              console.warn('new tags json', newTagsJson); // XXX
+
+              res.end();
+            });
+          }
+          app.put('/archae/world/tags.json', putWorldTagsJson);
+
           const connections = [];
           const usersJson = {};
           wss.on('connection', (c, {url}) => {
@@ -403,7 +419,11 @@ class World {
             }
 
             function removeMiddlewares(route, i, routes) {
-              if (route.handle.name === 'worldAddTag') {
+              if (
+                route.handle.name === 'worldAddTag' ||
+                route.handle.name === 'getWorldTagsJson' ||
+                route.handle.name === 'putWorldTagsJson'
+              ) {
                 routes.splice(i, 1);
               }
               if (route.route) {
