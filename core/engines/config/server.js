@@ -75,7 +75,8 @@ class Config {
           });
 
           function serveConfigGet(req, res, next) {
-            res.json(configJson);
+            res.type('application/json');
+            res.end(JSON.stringify(configJson, null, 2));
           }
           app.get('/archae/config/config.json', serveConfigGet);
           function serveConfigSet(req, res, next) {
