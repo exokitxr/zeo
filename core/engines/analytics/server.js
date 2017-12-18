@@ -70,6 +70,24 @@ class Analytics {
             needsUpdate = false;
           }
         });
+        ws.on('message', e => {
+          const m = JSON.parse(e.data);
+          const {method} = m;
+
+          switch (method) {
+            case 'ping': {
+              ws.send(JSON.stringify({
+                method: 'pong',
+                args: {},
+              }));
+              break;
+            }
+            default: {
+              console.warn('analytics server got unknown message method', JSON.stringify(method));
+              break;
+            }
+          }
+        });
         ws.on('disconnect', () => {
           needsUpdate = true;
         });
@@ -77,12 +95,11 @@ class Analytics {
           console.warn(err);
         });
 
-        const heartbeatMessage = JSON.stringify({
-          method: 'heartbeat',
-          args: {},
-        });
         const interval = setInterval(() => {
-          ws.send(heartbeatMessage);
+          ws.send(JSON.stringify({
+            method: 'heartbeat',
+            args: {},
+          }));
         }, 10 * 1000);
         cleanups.push(() => {
           clearInterval(interval);
