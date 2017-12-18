@@ -40,7 +40,6 @@ after_test:
       cp 'scripts/lib/windows/Zeo VR Server/bin/Zeo VR Server.exe' server.exe
       cp 'scripts/lib/windows/Zeo VR Connect/bin/Zeo VR Connect.exe' connect.exe
       cp 'scripts/lib/windows/Zeo VR Server Reset/bin/Zeo VR Server Reset.exe' reset.exe
-      touch data/trust-mod-hashes.json
       touch data/no-hotload.json
       ./scripts/lib/windows/node-webvr/build.cmd
       7z a windows-release.zip * -xr'!.git'
