@@ -321,7 +321,7 @@ class DroneVr {
         itemElement[dataSymbol] = {
           color: new THREE.Color(0x000000),
           recolor: () => {
-            console.log('set color', itemElement[dataSymbol].color);
+            // console.log('set color', itemElement[dataSymbol].color); // XXX
           },
           _cleanup: () => {
             input.removeListener('trigger', _trigger);
