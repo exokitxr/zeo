@@ -1,0 +1,16 @@
+{
+  "name": "bag-vr",
+  "description": "Provides a waist bag for carrying items.",
+  "version": "0.0.1",
+  "client": "client.js",
+  "keywords": [
+    "zeo-mod"
+  ],
+  "dependencies": {},
+  "main": "client.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Avaer Kazmer <a@modules.io>",
+  "license": "ISC"
+}

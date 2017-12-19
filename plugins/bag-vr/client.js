@@ -3,7 +3,7 @@ const BAG_Z_OFFSET = -0.05;
 
 const SIDES = ['left', 'right'];
 
-class ZBag {
+class BagVr {
   mount() {
     const {three: {THREE, scene, camera}, pose, render} = zeo;
 
@@ -187,4 +187,4 @@ class ZBag {
   }
 }
 
-module.exports = ZBag;
+module.exports = BagVr;
