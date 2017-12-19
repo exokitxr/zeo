@@ -5,7 +5,7 @@ const SIDES = ['left', 'right'];
 
 class BagVr {
   mount() {
-    const {three: {THREE, scene, camera}, pose, render} = zeo;
+    const {three: {THREE, scene, camera}, input, hands, pose, render} = zeo;
 
     const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
     const _decomposeMatrix = matrix => {
@@ -23,12 +23,13 @@ class BagVr {
     const localQuaternion = new THREE.Quaternion();
     const localMatrix = new THREE.Matrix4();
 
-    const _makeEquipmentHoverState = () => ({
+    const _makeEquipmentState = () => ({
+      asset: null,
       equipmentIndex: -1,
     });
-    const equipmentHoverStates = {
-      left: _makeEquipmentHoverState(),
-      right: _makeEquipmentHoverState(),
+    const equipmentStates = {
+      left: _makeEquipmentState(),
+      right: _makeEquipmentState(),
     };
 
     const _makeBagMesh = () => {
@@ -250,7 +251,7 @@ class BagVr {
 
           if (gamepad) {
             const {worldPosition: controllerPosition} = gamepad;
-            const equipmentHoverState = equipmentHoverStates[side];
+            const equipmentState = equipmentStates[side];
 
             const equipmentBoxMeshSpecs = equipmentBoxMeshes.map((equipmentBoxMesh, i) => {
               const {position: equipmentBoxMeshPosition} = _decomposeObjectMatrixWorld(equipmentBoxMesh);
@@ -267,18 +268,15 @@ class BagVr {
               const closestEquipmentBoxMeshSpec = sortedEquipmentBoxMeshSpecs[0];
               const {index: closestEquipmentBoxMeshIndex} = closestEquipmentBoxMeshSpec;
 
-              equipmentHoverState.equipmentIndex = closestEquipmentBoxMeshIndex;
+              equipmentState.equipmentIndex = closestEquipmentBoxMeshIndex;
             } else {
-              equipmentHoverState.equipmentIndex = -1;
+              equipmentState.equipmentIndex = -1;
             }
           }
         }
         for (let i = 0; i < equipmentBoxMeshes.length; i++) {
           const equipmentBoxMesh = equipmentBoxMeshes[i];
-          const hovered = SIDES.some(side => {
-            const equipmentHoverState = equipmentHoverStates[side];
-            return equipmentHoverState.equipmentIndex === i;
-          });
+          const hovered = SIDES.some(side => equipmentStates[side].equipmentIndex === i);
           equipmentBoxMesh.material.color.setHex(hovered ? 0x2196F3 : 0x101010);
           equipmentBoxMesh.material.polygonOffset = hovered;
         }
@@ -289,10 +287,46 @@ class BagVr {
     };
     render.on('update', _update);
 
+    const _gripdown = e => {
+      const {side} = e;
+
+      const equipmentState = equipmentStates[side];
+      const {equipmentIndex} = equipmentState;
+      if (equipmentIndex !== -1) {
+        const grabbable = equipmentState.asset;
+
+        const equipmentBoxMesh = bagMesh.equipmentBoxMeshes[equipmentIndex];
+        equipmentBoxMesh.remove(grabbable.mesh);
+
+        grabbable.grab();
+
+        equipmentState.asset = grabbable;
+      }
+    };
+    input.on('gripdown', _gripdown);
+
+    const _release = e => {
+      const {side, grabbable} = e;
+
+      const equipmentState = equipmentStates[side];
+      const {equipmentIndex} = equipmentState;
+      if (equipmentIndex !== -1) {
+        equipmentState.asset = grabbable;
+
+        const equipmentBoxMesh = bagMesh.equipmentBoxMeshes[equipmentIndex];
+        equipmentBoxMesh.add(grabbable.mesh);
+        grabbable.setState(zeroVector, zeroQuaternion, localVector.copy(oneVector).multiplyScalar(0.4));
+        grabbable.disablePhysics();
+      }
+    };
+    hands.on('release', _release);
+
     this._cleanup = () => {
       scene.remove(bagMesh);
 
       render.removeListener('update', _update);
+      input.removeListener('gripdown', _gripdown);
+      hands.removeListener('release', _release);
     };
 
     const _getBagMesh = () => bagMesh;
