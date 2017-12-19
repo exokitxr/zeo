@@ -207,6 +207,7 @@ class Floor {
                 texture.needsUpdate = true;
                 const material = new THREE.MeshBasicMaterial({
                   map: texture,
+                  side: THREE.DoubleSide,
                 });
                 const mesh = new THREE.Mesh(geometry, material);
                 object.add(mesh);
