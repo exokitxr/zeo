@@ -12,7 +12,7 @@ const dataSymbol = Symbol();
 
 class Lightsaber {
   mount() {
-    const {three: {THREE, scene, camera}, items, input, pose, render, sound, utils: {geometry: geometryUtils}} = zeo;
+    const {three: {THREE, scene, camera}, elements, items, input, pose, render, sound, utils: {geometry: geometryUtils}} = zeo;
 
     let live = true;
     this.cleanup = () => {
@@ -77,6 +77,7 @@ class Lightsaber {
             color: 0xFFFFFF,
           });
 
+          const lightsaberMeshes = [];
           const lightsaberItem = {
             path: 'lightsaber-vr/lightsaber',
             itemAddedCallback(itemElement) {
@@ -291,9 +292,11 @@ class Lightsaber {
                 const object = new THREE.Object3D();
                 object.visible = false;
                 object.mesh = null;
+                object.side = null;
                 return object;
               })();
               object.add(lightsaberMesh);
+              lightsaberMeshes.push(lightsaberMesh);
 
               const soundBodies = [
                 kylo1Audio,
@@ -325,6 +328,7 @@ class Lightsaber {
                 const {side} = e;
                 const lightsaberState = lightsaberStates[side];
                 lightsaberState.grabbed = true;
+                lightsaberMesh.side = side;
 
                 itemElement.hide();
                 itemElement.setLocalTransform(zeroVector, localTransformRotationQuaterion, oneVector);
@@ -336,6 +340,7 @@ class Lightsaber {
                 const {side} = e;
                 const lightsaberState = lightsaberStates[side];
                 lightsaberState.grabbed = false;
+                lightsaberMesh.side = null;
 
                 itemElement.setLocalTransform(zeroVector, zeroQuaternion, oneVector);
 
@@ -519,6 +524,8 @@ class Lightsaber {
                 _cleanup: () => {
                   bladeMaterial.dispose();
 
+                  lightsaberMeshes.splice(lightsaberMeshes.indexOf(lightsaberMesh), 1);
+
                   itemElement.removeListener('grab', _grab);
                   itemElement.removeListener('release', _release);
 
@@ -551,6 +558,19 @@ class Lightsaber {
             },
           };
           items.registerItem(this, lightsaberItem);
+
+          elements.requestPlugin('drone-vr')
+            .then(droneVr => {
+              const _update = () => {
+                for (let i = 0; i < lightsaberMeshes.length; i++) {
+                  droneVr.intersectLightsaber(lightsaberMeshes[i]);
+                }
+              };
+              render.on('update', _update);
+            })
+            .catch(err => {
+              console.warn(err);
+            });
 
           this._cleanup = () => {
             whiteMaterial.dispose();
