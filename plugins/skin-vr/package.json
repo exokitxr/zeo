@@ -1,8 +1,10 @@
 {
   "name": "skin-vr",
   "description": "Load minecraft skins in vr.",
-  "version": "0.0.1",
-  "keywords": [],
+  "version": "0.0.2",
+  "keywords": [
+    "zeo-mod"
+  ],
   "client": "client.js",
   "serves": {
     "male.png": "lib/img/male.png"
