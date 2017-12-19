@@ -63,11 +63,11 @@ class FileEngine {
     ]) => {
       if (live) {
         const {THREE} = three;
-        const {sfx} = resource;
+        // const {sfx} = resource;
 
-        const fileRenderer = fileRender.makeRenderer({creatureUtils});
+        // const fileRenderer = fileRender.makeRenderer({creatureUtils});
 
-        const transparentImg = biolumi.getTransparentImg();
+        // const transparentImg = biolumi.getTransparentImg();
         // const blackImg = biolumi.getBlackImg();
 
         /* const _decorateFile = item => {
@@ -198,7 +198,7 @@ class FileEngine {
           } else {
             return Promise.resolve();
           }
-        }; */
+        };
 
         const updatePromises = [];
         const _cancelNpm = () => {
@@ -213,7 +213,7 @@ class FileEngine {
         const _updateNpm = () => {
           _cancelNpm();
 
-          /* const {inputText} = npmState;
+          const {inputText} = npmState;
 
           const files = tags.getTagMeshes()
             .filter(({item}) =>
@@ -240,7 +240,7 @@ class FileEngine {
                 updatePromises.length = 0;
                 _updatePages();
               });
-          } */
+          }
           const files = [];
 
           npmState.loading = false;
@@ -282,7 +282,7 @@ class FileEngine {
         };
         rend.on('tabchange', _tabchange);
 
-        /* const _trigger = e => {
+        const _trigger = e => {
           const {side} = e;
 
           const _clickMenu = () => {
@@ -415,14 +415,14 @@ class FileEngine {
             e.stopImmediatePropagation();
           }
         };
-        input.on('trigger', _trigger); */
+        input.on('trigger', _trigger);
 
         cleanups.push(() => {
           rend.removeListener('tabchange', _tabchange);
           // input.removeListener('trigger', _trigger);
         });
 
-        /* const _setFile = itemSpec => {
+        const _setFile = itemSpec => {
           if (itemSpec) {
             npmState.file = itemSpec;
 
@@ -508,7 +508,7 @@ class FileEngine {
   }
 }
 const _makeId = () => Math.random().toString(36).substring(7);
-const _resizeImage = (img, width, height) => {
+/* const _resizeImage = (img, width, height) => {
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
@@ -516,6 +516,6 @@ const _resizeImage = (img, width, height) => {
   ctx.drawImage(img, 0, 0, width, height);
   const imageData = ctx.getImageData(0, 0, width, height);
   return imageData;
-};
+}; */
 
 module.exports = FileEngine;
