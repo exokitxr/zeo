@@ -487,7 +487,7 @@ class Wallet {
                 }
               };
 
-              const _makeAssetsMesh = () => {
+              const assetsMesh = (() => {
                 const mesh = new THREE.Object3D();
 
                 class AssetInstance extends Grabbable {
@@ -839,8 +839,7 @@ class Wallet {
                 };
 
                 return mesh;
-              };
-              const assetsMesh = _makeAssetsMesh();
+              })();
               scene.add(assetsMesh);
 
               const itemApis = {};

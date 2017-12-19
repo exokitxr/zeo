@@ -900,6 +900,10 @@ class Zeo {
                           craft.unregisterRecipe(pluginInstance, recipe);
                         }
 
+                        getAssetInstances() {
+                          return wallet.getAssetInstances();
+                        }
+
                         getAssetsMaterial() {
                           return wallet.getAssetsMaterial();
                         }
