@@ -594,17 +594,21 @@ class Zeo {
                           return tags.requestElement(selector);
                         }
 
-                        /* on(event, handler) {
-                          return tags.on(event, handler);
+                        requestPlugin(selector) {
+                          return loader.requestLoadedPlugin(selector);
+                        }
+
+                        on(event, handler) {
+                          return loader.on(event, handler);
                         }
 
                         removeListener(event, handler) {
-                          return tags.removeListener(event, handler);
+                          return loader.removeListener(event, handler);
                         }
 
                         removeAllListeners(event) {
-                          return tags.removeAllListeners(event);
-                        } */
+                          return loader.removeAllListeners(event);
+                        }
                       }
 
                       class ZeoWorldApi {
