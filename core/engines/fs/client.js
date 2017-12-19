@@ -147,7 +147,7 @@ class Fs {
             _getFiles(items)
               .then(files => Promise.all(files.map((file, i) => {
                 const {type} = file;
-                const serverFile = fsApi.makeServerFile();
+                const serverFile = fsApi.makeServerFile(null, file.name);
                 const dropMatrix = (() => {
                   const {hmd} = webvr.getStatus();
                   const {worldPosition: hmdPosition, worldRotation: hmdRotation, worldScale: hmdScale} = hmd;
@@ -422,8 +422,8 @@ class Fs {
 
         class ServerFile {
           constructor(id, name) {
-            this.n = id !== undefined ? (typeof id === 'number' ? id : murmur(id)) : _makeN();
-            this.name = name || 'untitled.txt';
+            this.n = id != undefined ? (typeof id === 'number' ? id : murmur(id)) : _makeN();
+            this.name = name || 'untitled';
           }
 
           getUrl() {
