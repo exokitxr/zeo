@@ -132,7 +132,7 @@ class Inventory {
     const _requestModReadme = (name, version) => {
       let live = true;
       const result = new Promise((accept, reject) => {
-        _requestImageBitmap(`archae/rend/readmeImg/?name=${name}&version=${version}`)
+        _requestImageBitmap(`https://try.zeovr.io/readme/${name}/${version}`)
           .then(img => {
             if (live) {
               accept(img);
