@@ -85,7 +85,7 @@ class DroneVr {
     };
 
     const droneItem = {
-      path: 'drone/drone',
+      path: 'drone-vr/drone',
       itemAddedCallback(itemElement) {
         const _trigger = e => {
           const {side} = e;

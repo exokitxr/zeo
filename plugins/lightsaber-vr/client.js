@@ -78,7 +78,7 @@ class Lightsaber {
           });
 
           const lightsaberItem = {
-            path: 'lightsaber/lightsaber',
+            path: 'lightsaber-vr/lightsaber',
             itemAddedCallback(itemElement) {
               const {mesh: object} = itemElement;
 
