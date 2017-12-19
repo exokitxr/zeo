@@ -1,8 +1,10 @@
 {
-  "name": "drone",
+  "name": "drone-vr",
   "description": "The Marksman-H training remote, often referred to as a remote, was a type of droid used to train its user how to properly deflect blaster bolts with a lightsaber.",
   "version": "0.0.1",
-  "keywords": [],
+  "keywords": [
+    "zeo-mod"
+  ],
   "dependencies": {},
   "client": "client.js",
   "metadata": {
@@ -19,5 +21,11 @@
         }
       }
     ]
-  }
+  },
+  "main": "client.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Avaer Kazmer <a@modules.io>",
+  "license": "ISC"
 }

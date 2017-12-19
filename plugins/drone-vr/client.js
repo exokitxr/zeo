@@ -15,7 +15,7 @@ const DRONE_DISTANCE = 3;
 const SIDES = ['left', 'right'];
 const dataSymbol = Symbol();
 
-class Drone {
+class DroneVr {
   mount() {
     const {three: {THREE, scene, camera}, items, input, pose, hands, render, sound, utils: {geometry: geometryUtils}} = zeo;
 
@@ -427,4 +427,4 @@ class Drone {
   }
 }
 
-module.exports = Drone;
+module.exports = DroneVr;
