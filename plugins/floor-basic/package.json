@@ -3,6 +3,9 @@
   "version": "0.0.1",
   "description": "Provides a basic floor.",
   "main": "client.js",
+  "serves": {
+    "graphy.png": "img/graphy.png"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
