@@ -794,7 +794,7 @@ class Wallet {
                     dyAttribute.array = geometry.dys;
                     dyAttribute.needsUpdate = true;
                   });
-                  assetInstance.on('update', () => {
+                  const _update = () => {
                     const {position, rotation, scale, localPosition, localRotation, localScale} = assetInstance;
 
                     mesh.position.copy(position);
@@ -820,7 +820,9 @@ class Wallet {
                     }
 
                     mesh.updateMatrixWorld();
-                  });
+                  };
+                  _update();
+                  assetInstance.on('update', _update);
                   assetInstance.on('setVisible', visible => {
                     mesh.submesh.visible = visible;
                   });
@@ -988,7 +990,7 @@ class Wallet {
               };
 
               const _pullItem = (assetSpec, side) => {
-                const {id, name, ext, path, attributes, icon = null} = assetSpec;
+                const {id, name, ext, path = null, attributes = {}, icon = null} = assetSpec;
                 const itemSpec = {
                   type: 'asset',
                   id: _makeId(),
@@ -1169,16 +1171,26 @@ class Wallet {
 
               const _upload = ({file, dropMatrix}) => {
                 const id = String(file.n);
+                const match = file.name.match(/^(.*?)(?:\.([^\.]*))?$/);
+                const name = match[1];
+                const ext = match[2] || 'bin';
                 const itemSpec = {
-                  type: 'file',
+                  ext: 'file',
                   id: id,
-                  name: id,
-                  displayName: id,
+                  name: file.name,
+                  displayName: file.name,
                   attributes: {
-                    type: {value: 'file'},
-                    value: {value: id},
+                    type: {value: 'asset'},
+                    id: {value: id},
+                    name: {value: name},
+                    ext: {value: ext},
+                    path: {value: ''},
+                    attributes: {value: {}},
+                    icon: {value: null},
                     position: {value: dropMatrix},
                     physics: {value: true},
+                    visible: {value: true},
+                    open: {value: false},
                   },
                   metadata: {},
                 };
@@ -1289,7 +1301,7 @@ class Wallet {
                   }));
                 }
 
-                makeFile(fileSpec) {
+                /* makeFile(fileSpec) {
                   const {name, data, matrix} = fileSpec;
                   const file = fs.makeRemoteFile();
                   return file.write(data).then(() => this.reifyFile({name, file, matrix}));
@@ -1317,7 +1329,7 @@ class Wallet {
                     metadata: {},
                   };
                   return walletApi.makeItem(itemSpec);
-                }
+                } */
 
                 getAssetInstances() {
                   return assetsMesh.getAssetInstances();

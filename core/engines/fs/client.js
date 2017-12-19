@@ -147,7 +147,7 @@ class Fs {
             _getFiles(items)
               .then(files => Promise.all(files.map((file, i) => {
                 const {type} = file;
-                const remoteFile = fsApi.makeRemoteFile();
+                const serverFile = fsApi.makeServerFile();
                 const dropMatrix = (() => {
                   const {hmd} = webvr.getStatus();
                   const {worldPosition: hmdPosition, worldRotation: hmdRotation, worldScale: hmdScale} = hmd;
@@ -164,13 +164,13 @@ class Fs {
 
                 const note = notification.addNotification(_makeNotificationText(0));
 
-                const req = remoteFile.write(file);
+                const req = serverFile.write(file);
                 req.onprogress = n => {
                   note.set(_makeNotificationText(n));
                 };
                 req.then(() => {
                   fsApi.emit('upload', {
-                    file: remoteFile,
+                    file: serverFile,
                     dropMatrix,
                   });
 
@@ -420,9 +420,10 @@ class Fs {
           }
         };
 
-        class RemoteFile {
-          constructor(id) {
+        class ServerFile {
+          constructor(id, name) {
             this.n = id !== undefined ? (typeof id === 'number' ? id : murmur(id)) : _makeN();
+            this.name = name || 'untitled.txt';
           }
 
           getUrl() {
@@ -484,8 +485,12 @@ class Fs {
         }
 
         class FsApi extends EventEmitter {
-          makeRemoteFile(id) {
-            return new RemoteFile(id);
+          makeServerFile(id, name) {
+            return new ServerFile(id, name);
+          }
+
+          makeStorageFile(id, name) {
+            return new StorageFile(id, name); // XXX
           }
 
           /* makeFile(url) {
@@ -564,14 +569,14 @@ class Fs {
               };
               _recurse(0);
             });
-          } */
+          }
 
           dragover(e) {
             dragover(e);
-          }
+          } */
         }
-
         const fsApi = new FsApi();
+
         return fsApi;
       }
     });
