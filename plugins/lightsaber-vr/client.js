@@ -59,13 +59,13 @@ class Lightsaber {
     });
 
     return Promise.all([
-      _requestAudio('archae/lightsaber/audio/kylo1.ogg'),
-      _requestAudio('archae/lightsaber/audio/kylo2.ogg')
+      _requestAudio('archae/plugins/lightsaber-vr/serve/kylo1.ogg'),
+      _requestAudio('archae/plugins/lightsaber-vr/serve/kylo2.ogg')
         .then(audio => {
           audio.loop = true;
           return audio;
         }),
-      _requestAudio('archae/lightsaber/audio/kylo3.ogg'),
+      _requestAudio('archae/plugins/lightsaber-vr/serve/kylo3.ogg'),
     ])
       .then(([
         kylo1Audio,

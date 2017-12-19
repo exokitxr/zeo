@@ -1,11 +1,18 @@
 {
-  "name": "lightsaber",
+  "name": "lightsaber-vr",
   "description": "The lightsaber, sometimes referred to as a laser sword, was a weapon used by the Jedi, the Sith, and other Force-sensitives.",
   "version": "0.0.1",
-  "keywords": [],
+  "keywords": [
+    "zeo-mod"
+  ],
   "dependencies": {},
   "client": "client.js",
   "server": "server.js",
+  "serves": {
+    "kylo1.ogg": "audio/kylo1.ogg",
+    "kylo2.ogg": "audio/kylo2.ogg",
+    "kylo3.ogg": "audio/kylo3.ogg"
+  },
   "metadata": {
     "owner": "avaer",
     "items": [
@@ -28,5 +35,11 @@
         }
       }
     ]
-  }
+  },
+  "scripts": {
+    "start": "node server.js"
+  },
+  "main": "client.js",
+  "author": "Avaer Kazmer <a@modules.io>",
+  "license": "ISC"
 }
