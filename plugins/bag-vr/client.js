@@ -428,7 +428,7 @@ class BagVr {
               const note = notification.addNotification(`Picked up ${assetInstance.name}.${assetInstance.ext}`);
               setTimeout(() => {
                 notification.removeNotification(note);
-              }, 3 * 1000);
+              }, 3000);
             }
           }
         }
