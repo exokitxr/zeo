@@ -249,6 +249,33 @@ class BagVr {
     })();
     scene.add(hudMesh); */
 
+    const _saveEquipment = _debounce(next => {
+      items.requestStorageFiles()
+        .then(storageFiles => {
+          const bagVrDataFile = storageFiles.find(fileSpec => fileSpec.name === 'bag-vr-data' && fileSpec.ext === 'json');
+
+          if (bagVrDataFile) {
+            return Promise.resolve(bagVrDataFile);
+          } else {
+            return items.requestMakeStorageFile('bag-vr-data', 'json');
+          }
+        })
+        .then(bagVrDataFile => {
+          for (let i = 0; i < equipmentState.assets.length; i++) {
+            const assetInstance = equipmentState.assets[i];
+            // XXX upload the data here
+          }
+        })
+        .then(() => {
+          next();
+        })
+        .catch(err => {
+          console.warn(err);
+
+          next();
+        });
+    });
+
     const equipmentState = {
       assets: (() => {
         const numEquipmentBoxMeshes = bagMesh.equipmentBoxMeshes.length;
@@ -349,12 +376,14 @@ class BagVr {
 
               if (freeEquipmentIndex !== -1) {
                 const grabbable = assetInstance;
-                equipmentState.assets[freeEquipmentIndex] = grabbable;
 
                 const equipmentBoxMesh = bagMesh.equipmentBoxMeshes[freeEquipmentIndex];
                 equipmentBoxMesh.add(grabbable.mesh);
                 grabbable.setState(zeroVector, zeroQuaternion, localVector.copy(oneVector).multiplyScalar(0.4));
                 grabbable.disablePhysics();
+
+                equipmentState.assets[freeEquipmentIndex] = grabbable;
+                _saveEquipment();
               }
 
               const note = notification.addNotification(`Picked up ${assetInstance.name}.${assetInstance.ext}`);
@@ -388,6 +417,7 @@ class BagVr {
           grabbable.grab(side);
 
           equipmentState.assets[equipmentIndex] = null;
+          _saveEquipment();
         }
       }
     };
@@ -399,12 +429,13 @@ class BagVr {
       const equipmentHoverState = equipmentHoverStates[side];
       const {equipmentIndex} = equipmentHoverState;
       if (equipmentIndex !== -1) {
-        equipmentState.assets[equipmentIndex] = grabbable;
-
         const equipmentBoxMesh = bagMesh.equipmentBoxMeshes[equipmentIndex];
         equipmentBoxMesh.add(grabbable.mesh);
         grabbable.setState(zeroVector, zeroQuaternion, localVector.copy(oneVector).multiplyScalar(0.4));
         grabbable.disablePhysics();
+
+        equipmentState.assets[equipmentIndex] = grabbable;
+        _saveEquipment();
       }
     };
     hands.on('release', _release);
@@ -439,5 +470,28 @@ class BagVr {
     this._cleanup();
   }
 }
+const _debounce = fn => {
+  let running = false;
+  let queued = false;
+
+  const _go = () => {
+    if (!running) {
+      running = true;
+
+      fn(() => {
+        running = false;
+
+        if (queued) {
+          queued = false;
+
+          _go();
+        }
+      });
+    } else {
+      queued = true;
+    }
+  };
+  return _go;
+};
 
 module.exports = BagVr;
