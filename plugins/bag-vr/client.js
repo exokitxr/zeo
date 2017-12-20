@@ -249,6 +249,29 @@ class BagVr {
     })();
     scene.add(hudMesh); */
 
+    const _loadEquipment = () => {
+      items.requestStorageFiles()
+        .then(storageFiles => storageFiles.find(fileSpec => fileSpec.name === 'bag-vr-data' && fileSpec.ext === 'json'))
+        .then(bagVrDataFile => {
+          if (bagVrDataFile) {
+            return bagVrDataFile.readAsJson();
+          } else {
+            return Promise.resolve(null);
+          }
+        })
+        .then(assetsData => {
+          if (assetsData) {
+            const {id, name, ext, json, file} = assetsData;
+            // XXX hook this in
+            /* const itemSpec = {
+              type: 'asset',
+              id,
+              name,
+              displayName: name,
+            }; */
+          }
+        });
+    };
     const _saveEquipment = _debounce(next => {
       items.requestStorageFiles()
         .then(storageFiles => {
@@ -263,17 +286,24 @@ class BagVr {
         .then(bagVrDataFile => {
           const assetsData = equipmentState.assets.map(assetInstance => {
             if (assetInstance) {
-              return {
+              const assetData = {
                 id: assetInstance.id,
                 name: assetInstance.name,
                 ext: assetInstance.ext,
               };
+              if (assetInstance.json) { // XXX hook this in
+                assetData.json = assetInstance.json;
+              }
+              if (assetInstance.file) {
+                assetData.file = assetInstance.file;
+              }
+              return assetData;
             } else {
               return null;
             }
-          }).filter(file => file !== null);
+          });
           const assetsDataJson = JSON.stringify(assetsData);
-          return bagVrDataFile.write(assetsDataJson); // XXX load this on plugin load
+          return bagVrDataFile.write(assetsDataJson);
         })
         .then(() => {
           next();
