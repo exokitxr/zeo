@@ -1,7 +1,0 @@
-{
-  "name": "glass",
-  "description": "Provides a virtual audio/video recording system on your headset.",
-  "version": "0.0.1",
-  "client": "client.js",
-  "dependencies": {}
-}

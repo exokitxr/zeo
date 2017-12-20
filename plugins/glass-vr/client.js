@@ -6,11 +6,10 @@ const {
   WORLD_HEIGHT,
   WORLD_DEPTH,
 } = require('./lib/constants/constants');
-const menuRenderer = require('./lib/render/menu');
 
 const SIDES = ['left', 'right'];
 
-class Glass {
+class GlassVr {
   mount() {
     const {three: {THREE, scene, camera, renderer}, pose, input, render, ui} = zeo;
 
@@ -36,72 +35,37 @@ class Glass {
       right: _makeGlassState(),
     };
 
-    const hudMesh = (() => {
-      const menuUi = ui.makeUi({
-        width: WIDTH,
-        height: HEIGHT,
-        color: [1, 1, 1, 0],
-      });
-      const mesh = menuUi.makePage(({
-        globalGlassState,
-        glassStates,
-      }) => {
-        const {mode} = globalGlassState;
-        const highlights = [glassStates.left.highlight, glassStates.right.highlight];
-
-        return {
-          type: 'html',
-          src: menuRenderer.getHudSrc({mode, highlights}),
-          x: 0,
-          y: 0,
-          w: WIDTH,
-          h: HEIGHT,
-        };
-      }, {
-        type: 'glass',
-        state: {
-          globalGlassState,
-          glassStates,
-        },
-        worldWidth: WORLD_WIDTH,
-        worldHeight: WORLD_HEIGHT,
-      });
-      mesh.visible = false;
-
-      const _align = (position, rotation, scale, lerpFactor) => {
-        const targetPosition = position.clone().add(
-          new THREE.Vector3(
-            0,
-            0,
-            -0.5
-          ).applyQuaternion(rotation)
-        );
-        const targetRotation = rotation;
-        const distance = position.distanceTo(targetPosition);
-
-        if (lerpFactor < 1) {
-          mesh.position.add(
-            targetPosition.clone().sub(mesh.position).multiplyScalar(distance * lerpFactor)
-          );
-          mesh.quaternion.slerp(targetRotation, lerpFactor);
-          mesh.scale.copy(scale);
-        } else {
-          mesh.position.copy(targetPosition);
-          mesh.quaternion.copy(targetRotation);
-          mesh.scale.copy(scale);
-        }
-      };
-      mesh.align = _align;
-
-      const {position: cameraPosition, rotation: cameraRotation, scale: cameraScale} = _decomposeObjectMatrixWorld(camera);
-      mesh.align(cameraPosition, cameraRotation, cameraScale, 1);
-
-      const {page} = mesh;
-      page.initialUpdate();
-
-      return mesh;
-    })();
-    scene.add(hudMesh);
+    /* const getHudSrc = ({mode, highlights}) => {
+      return `<div style="display: flex; position: relative; width: ${WIDTH}px; height: ${HEIGHT}px; color: #FFF; flex-direction: column;">
+        <div style="position: absolute; top: 20px; right: 20px; display: flex; font-family: Consolas, 'Liberation Mono', Menlo, Courier, monospace; font-size: 60px; line-height: 1.4; font-weight: 600; flex-direction: column;">
+          <div style="display: flex; padding: 0 10px; border: 2px solid transparent; ${(highlights.indexOf('picture') !== -1) ? 'border-color: #FFF' : ''}; justify-content: center; align-items: center;">
+            ${mode === 'picture' ? `\
+              <div style="width: 40px; height: 40px; margin-right: 30px; background-color: #FF0000; border-radius: 100px;"></div>
+            ` : `\
+              <div style="width: 40px; height: 40px; margin-right: 30px;"></div>
+            `}
+            <div style="margin-right: auto;">Picture</div>
+          </div>
+          <div style="display: flex; padding: 0 10px; border: 2px solid transparent; ${(highlights.indexOf('audio') !== -1) ? 'border-color: #FFF' : ''}; justify-content: center; align-items: center;">
+            ${mode === 'audio' ? `\
+              <div style="width: 40px; height: 40px; margin-right: 30px; background-color: #FF0000; border-radius: 100px;"></div>
+            ` : `\
+              <div style="width: 40px; height: 40px; margin-right: 30px;"></div>
+            `}
+            <div style="margin-right: auto;">Audio</div>
+          </div>
+          <div style="display: flex; padding: 0 10px; border: 2px solid transparent; ${(highlights.indexOf('video') !== -1) ? 'border-color: #FFF' : ''}; justify-content: center; align-items: center;">
+            ${mode === 'video' ? `\
+              <div style="width: 40px; height: 40px; margin-right: 30px; background-color: #FF0000; border-radius: 100px;"></div>
+            ` : `\
+              <div style="width: 40px; height: 40px; margin-right: 30px;"></div>
+            `}
+            <div style="margin-right: auto;">Video</div>
+          </div>
+        </div>
+        <div style="position: absolute; top: 0; bottom: 0; left: 0; right: 0; border: 2px solid; border-radius: 30px;"></div>
+      </div>`;
+    }; */
 
     const highlightSpecs = [
       {
@@ -127,6 +91,101 @@ class Glass {
       },
     ];
 
+    const hudMesh = (() => {
+      const geometry = new THREE.PlaneBufferGeometry(WORLD_WIDTH, WORLD_HEIGHT);
+      const canvas = document.createElement('canvas');
+      canvas.width = WIDTH;
+      canvas.height = HEIGHT;
+      const ctx = canvas.getContext('2d');
+
+      const texture = new THREE.Texture(
+        canvas,
+        THREE.UVMapping,
+        THREE.ClampToEdgeWrapping,
+        THREE.ClampToEdgeWrapping,
+        THREE.LinearFilter,
+        THREE.LinearFilter,
+        THREE.RGBAFormat,
+        THREE.UnsignedByteType,
+        16
+      );
+
+      const material = new THREE.MeshBasicMaterial({
+        map: texture,
+        transparent: true,
+        alphaTest: 0.5,
+      });
+
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.visible = false;
+
+      const _align = (position, rotation, scale, lerpFactor) => {
+        const targetPosition = position.clone().add(
+          new THREE.Vector3(
+            0,
+            0,
+            -0.5
+          ).applyQuaternion(rotation)
+        );
+        const targetRotation = rotation;
+        const distance = position.distanceTo(targetPosition);
+
+        if (lerpFactor < 1) {
+          mesh.position.add(
+            targetPosition.clone().sub(mesh.position).multiplyScalar(distance * lerpFactor)
+          );
+          mesh.quaternion.slerp(targetRotation, lerpFactor);
+          mesh.scale.copy(scale);
+        } else {
+          mesh.position.copy(targetPosition);
+          mesh.quaternion.copy(targetRotation);
+          mesh.scale.copy(scale);
+        }
+        mesh.updateMatrixWorld();
+      };
+      mesh.align = _align;
+
+      const _render = () => {
+        ctx.clearRect(0, 0, WIDTH, HEIGHT);
+        ctx.fillStyle = '#111';
+        ctx.font = `50px Open Sans`;
+        ctx.lineWidth = 5;
+
+        const highlightIndex = highlightSpecs.findIndex(highlightSpec => SIDES.some(side => highlightSpec.mode === glassStates[side].highlight));
+        if (!globalGlassState.mode) {
+          ctx.fillText('Picture', WIDTH - 250, HEIGHT * 0.4);
+          ctx.fillText('Audio', WIDTH - 250, HEIGHT * 0.6);
+          ctx.fillText('Video', WIDTH - 250, HEIGHT * 0.8);
+
+          if (highlightIndex !== -1) {
+            ctx.strokeRect(WIDTH - 300, (HEIGHT * 0.2 * highlightIndex) + HEIGHT * 0.31, 300, HEIGHT * 0.11);
+          }
+        } else {
+          ctx.fillStyle = '#F44336';
+          ctx.beginPath();
+          ctx.arc(WIDTH - HEIGHT * 0.045, HEIGHT * 0.045, HEIGHT * 0.04, 0, 2 * Math.PI);
+          ctx.fill();
+
+          if (highlightIndex !== -1) {
+            ctx.fillStyle = '#111';
+            ctx.beginPath();
+            ctx.arc(WIDTH - HEIGHT * 0.045, HEIGHT * 0.045, HEIGHT * 0.04, 0, 2 * Math.PI);
+            ctx.stroke();
+          }
+        }
+
+        texture.needsUpdate = true;
+      };
+      _render();
+      mesh.render = _render;
+
+      const {hmd: {worldPosition, worldRotation, worldScale}} = pose.getStatus();
+      mesh.align(worldPosition, worldRotation, worldScale, 1);
+
+      return mesh;
+    })();
+    scene.add(hudMesh);
+
     let cancelRecording = null;
     const _setMode = mode => {
       switch (mode) {
@@ -151,8 +210,7 @@ console.log('save picture', dataUrl.length); // XXX
             live = false;
 
             globalGlassState.mode = null;
-            const {page} = hudMesh;
-            page.update();
+            hudMesh.render();
           });
 
           navigator.mediaDevices.getUserMedia({
@@ -193,8 +251,7 @@ console.log('save audio', data.size); // XXX
             });
 
           globalGlassState.mode = 'audio';
-          const {page} = hudMesh;
-          page.update();
+          hudMesh.render();
 
           break;
         }
@@ -211,51 +268,37 @@ console.log('save audio', data.size); // XXX
             live = false;
 
             globalGlassState.mode = null;
-            const {page} = hudMesh;
-            page.update();
+            hudMesh.render();
           });
 
-          navigator.mediaDevices.getUserMedia({
-            video: true,
-            audio: true,
-          })
-            .then(mediaStream => {
-              const mediaRecorder = new MediaRecorder(mediaStream, {
-                mimeType: 'video/webm',
-              });
-              mediaRecorder.ondataavailable = e => {
-                const {data} = e;
+          const {domElement: canvas} = renderer;
+          const mediaStream = canvas.captureStream(25);
+          const mediaRecorder = new MediaRecorder(mediaStream, {
+            mimeType: 'video/webm',
+          });
+          mediaRecorder.ondataavailable = e => {
+            const {data} = e;
 console.log('save video', data.size); // XXX
-              };
-              mediaRecorder.start(100);
+          };
+          mediaRecorder.start(100);
 
-              const cancelMedia = () => {
-                const tracks = mediaStream.getTracks();
-                for (let i = 0; i < tracks.length; i++) {
-                  const track = tracks[i];
-                  track.stop();
-                }
-                mediaRecorder.stop();
-              };
+          const cancelMedia = () => {
+            const tracks = mediaStream.getTracks();
+            for (let i = 0; i < tracks.length; i++) {
+              const track = tracks[i];
+              track.stop();
+            }
+            mediaRecorder.stop();
+          };
 
-              if (live) {
-                cancels.push(cancelMedia);
-              } else {
-                cancelMedia();
-              }
-            })
-            .catch(err => {
-              console.warn(err);
-
-              if (live) {
-                cancelRecording();
-                cancelRecording = null;
-              }
-            });
+          if (live) {
+            cancels.push(cancelMedia);
+          } else {
+            cancelMedia();
+          }
 
           globalGlassState.mode = 'video';
-          const {page} = hudMesh;
-          page.update();
+          hudMesh.render();
 
           break;
         }
@@ -285,21 +328,13 @@ console.log('save video', data.size); // XXX
     const _update = () => {
       now = Date.now();
 
-      const {position: cameraPosition, rotation: cameraRotation, scale: cameraScale} = _decomposeObjectMatrixWorld(camera);
-      const _updateHudMesh = () => {
-        const timeDiff = now - lastUpdateTime;
-        const lerpFactor = timeDiff * 0.005;
-        hudMesh.align(cameraPosition, cameraRotation, cameraScale, lerpFactor);
-
-        if (!hudMesh.visible) {
-          hudMesh.visible = true;
-        }
-      };
+      const {hmd: {worldPosition, worldRotation, worldScale}} = pose.getStatus();
       const _updateHover = () => {
         const {gamepads} = pose.getStatus();
-        const cameraPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(forwardVector.clone().applyQuaternion(cameraRotation), cameraPosition.clone());
+        const cameraPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(forwardVector.clone().applyQuaternion(worldRotation), worldPosition.clone());
 
-        SIDES.forEach(side => {
+        for (let s = 0; s < SIDES.length; s++) {
+          const side = SIDES[s];
           const gamepad = gamepads[side];
 
           if (gamepad) {
@@ -308,8 +343,8 @@ console.log('save video', data.size); // XXX
 
             const distanceSpecs = highlightSpecs.map(highlightSpec => {
               const {mode, x, y, counterplanarSize, coplanarSize} = highlightSpec;
-              const highlightPosition = cameraPosition.clone()
-                .add(new THREE.Vector3(x, y).applyQuaternion(cameraRotation));
+              const highlightPosition = worldPosition.clone()
+                .add(new THREE.Vector3(x, y).applyQuaternion(worldRotation));
               const counterplanarDistance = Math.abs(cameraPlane.distanceToPoint(controllerPosition));
 
               if (counterplanarDistance <= counterplanarSize) {
@@ -338,9 +373,15 @@ console.log('save video', data.size); // XXX
               if (newHighlight !== oldHighlight) {
                 glassState.highlight = newHighlight;
 
-                const {page} = hudMesh;
-                page.update();
+                hudMesh.align(worldPosition, worldRotation, worldScale, 1);
+                hudMesh.render();
+              } else {
+                const timeDiff = now - lastUpdateTime;
+                const lerpFactor = timeDiff * 0.05;
+                hudMesh.align(worldPosition, worldRotation, worldScale, lerpFactor);
               }
+
+              hudMesh.visible = true;
             } else {
               const {highlight: oldHighlight} = glassState;
               const newHighlight = null;
@@ -348,15 +389,14 @@ console.log('save video', data.size); // XXX
               if (newHighlight !== oldHighlight) {
                 glassState.highlight = null;
 
-                const {page} = hudMesh;
-                page.update();
+                hudMesh.render();
               }
+
+              hudMesh.visible = Boolean(globalGlassState.mode);
             }
           }
-        });
+        }
       };
-
-      _updateHudMesh();
       _updateHover();
 
       lastUpdateTime = now;
@@ -376,4 +416,4 @@ console.log('save video', data.size); // XXX
   }
 }
 
-module.exports = Glass;
+module.exports = GlassVr;
