@@ -261,10 +261,19 @@ class BagVr {
           }
         })
         .then(bagVrDataFile => {
-          for (let i = 0; i < equipmentState.assets.length; i++) {
-            const assetInstance = equipmentState.assets[i];
-            // XXX upload the data here
-          }
+          const assetsData = equipmentState.assets.map(assetInstance => {
+            if (assetInstance) {
+              return {
+                id: assetInstance.id,
+                name: assetInstance.name,
+                ext: assetInstance.ext,
+              };
+            } else {
+              return null;
+            }
+          }).filter(file => file !== null);
+          const assetsDataJson = JSON.stringify(assetsData);
+          return bagVrDataFile.write(assetsDataJson); // XXX load this on plugin load
         })
         .then(() => {
           next();
