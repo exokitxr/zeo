@@ -168,6 +168,8 @@ class Inventory {
         });
       }
     };
+
+    let remoteMods = [];
     const _requestRemoteMods = () => {
       if (!offline) {
         return fetch('archae/rend/search')
@@ -186,6 +188,23 @@ class Inventory {
         );
       }
     };
+    const _refreshRemoteMods = () => _requestRemoteMods()
+      .then(newRemoteMods => {
+        remoteMods = newRemoteMods;
+      });
+    _refreshRemoteMods()
+      .catch(err => {
+        console.warn(err);
+      });
+    const refreshModsInterval = setInterval(() => {
+      _refreshRemoteMods()
+        .catch(err => {
+          console.warn(err);
+        });
+    }, 2 * 60 * 1000);
+    cleanups.push(() => {
+      clearInterval(refreshModsInterval);
+    });
 
     return Promise.all([
       archae.requestPlugins([
@@ -214,7 +233,6 @@ class Inventory {
       _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/arrow-down.png'),
       _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/link.png'),
       // _requestImageBitmap('/archae/inventory/img/color.png'),
-      _requestRemoteMods(),
     ]).then(([
       [
         bootstrap,
@@ -242,7 +260,6 @@ class Inventory {
       arrowDownImg,
       linkImg,
       // colorImg,
-      remoteMods,
     ]) => {
       if (live) {
         const {THREE, scene, camera, renderer} = three;
