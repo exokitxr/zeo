@@ -151,7 +151,6 @@ class Fs {
           if (items.length > 0) {
             _getFiles(items)
               .then(files => Promise.all(files.map((file, i) => {
-                const {type} = file;
                 const serverFile = fsApi.makeServerFile(null, file.name);
                 const dropMatrix = (() => {
                   const {hmd} = webvr.getStatus();
