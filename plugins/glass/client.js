@@ -8,9 +8,6 @@ const {
 } = require('./lib/constants/constants');
 const menuRenderer = require('./lib/render/menu');
 
-const BAG_Y_OFFSET = -0.5;
-const BAG_Z_OFFSET = -0.05;
-
 const SIDES = ['left', 'right'];
 
 class Glass {
