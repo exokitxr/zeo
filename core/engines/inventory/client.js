@@ -2029,12 +2029,17 @@ class Inventory {
                 return result;
               })();
               const itemSpec = {
+                assetId: _makeId(),
                 id: _makeId(),
                 name: 'new-item',
                 ext: 'itm',
-                path: localMod.displayName + '/' + localMod.metadata.items[0].type,
-                attributes,
-                icon: localImage,
+                json: {
+                  data: {
+                    path: localMod.displayName + '/' + localMod.metadata.items[0].type,
+                    attributes,
+                    icon: localImage,
+                  },
+                },
               };
               wallet.pullItem(itemSpec, side);
 

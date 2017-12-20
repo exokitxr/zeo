@@ -170,7 +170,7 @@ class Wallet {
               const imageDataCtx = imageDataCanvas.getContext('2d');
               const _requestAssetImageData = assetSpec => (() => {
                 if (assetSpec.ext === 'itm') {
-                  if (assetSpec.icon) {
+                  if (assetSpec.json.data.icon) {
                     return new Promise((accept, reject) => {
                       const img = new Image();
                       img.crossOrigin = 'Anonymous';
@@ -184,7 +184,7 @@ class Wallet {
                       img.onerror = err => {
                         reject(err);
                       };
-                      img.src = 'data:application/octet-stream;base64,' + assetSpec.icon;
+                      img.src = 'data:application/octet-stream;base64,' + assetSpec.json.data.icon;
                     });
                   } else {
                     return resource.getItemImageData(assetSpec.name);
@@ -192,19 +192,12 @@ class Wallet {
                 } else /* if (asset.ext === 'files') */ {
                   return resource.getFileImageData(assetSpec.name);
                 }
-                /* } else if (type === 'mod') {
-                  return resource.getModImageData(name);
-                } else if (type === 'skin') {
-                  return resource.getSkinImageData(name);
-                } else {
-                  return Promise.resolve(null);
-                } */
               })().then(arrayBuffer => ({
                 width: 16,
                 height: 16,
                 data: new Uint8Array(arrayBuffer),
               }));
-              const _addStrgAsset = (id, name, ext, path, attributes, icon) => vridApi.get('assets')
+              const _addStrgAsset = (id, name, ext, json, file) => vridApi.get('assets')
                 .then(assets => {
                   assets = assets || [];
                   let assetSpec = assets.find(assetSpec => assetSpec.id === id);
@@ -213,13 +206,8 @@ class Wallet {
                       id,
                       name,
                       ext,
-                      json: {
-                        data: {
-                          path,
-                          attributes,
-                          icon,
-                        },
-                      },
+                      json,
+                      file,
                       timestamp: Date.now(),
                     };
                     assets.push(assetSpec);
@@ -237,20 +225,18 @@ class Wallet {
                   return vridApi.set('assets', assets);
                 });
 
-              const _addAsset = (id, type, assetId, name, ext, path, attributes, icon, n, physics, matrix, visible, open) => {
+              const _addAsset = (assetId, id, name, ext, json, file, n, physics, matrix, visible, open) => {
                 const position = new THREE.Vector3(matrix[0], matrix[1], matrix[2]);
                 const rotation = new THREE.Quaternion(matrix[3], matrix[4], matrix[5], matrix[6]);
                 const scale = new THREE.Vector3(matrix[7], matrix[8], matrix[9]);
 
                 const assetInstance = assetsMesh.addAssetInstance(
-                  id,
-                  type,
                   assetId,
+                  id,
                   name,
                   ext,
-                  path,
-                  attributes,
-                  icon,
+                  json,
+                  file,
                   n,
                   physics,
                   visible,
@@ -280,14 +266,12 @@ class Wallet {
                       for (let i = 0; i < assets.length; i++) {
                         const assetSpec = assets[i];
                         const {
-                          id,
-                          type,
                           assetId,
+                          id,
                           name,
                           ext,
-                          path,
-                          attributes,
-                          icon,
+                          json,
+                          file,
                           n,
                           physics,
                           matrix,
@@ -295,18 +279,16 @@ class Wallet {
                           open,
                         } = assetSpec;
 
-                        _addAsset(id, type, assetId, name, ext, path, attributes, icon, n, physics, matrix, visible, open);
+                        _addAsset(assetId, id, name, ext, json, file, n, physics, matrix, visible, open);
                       }
                     } else if (type === 'addAsset') {
                       const {
-                        id,
-                        type,
                         assetId,
+                        id,
                         name,
                         ext,
-                        path,
-                        attributes,
-                        icon,
+                        json,
+                        file,
                         n,
                         physics,
                         matrix,
@@ -314,7 +296,7 @@ class Wallet {
                         open,
                       } = args;
 
-                      _addAsset(id, type, assetId, name, ext, path, attributes, icon, n, physics, matrix, visible, open);
+                      _addAsset(assetId, id, name, ext, json, file, n, physics, matrix, visible, open);
                     } else if (type === 'removeAsset') {
                       const {
                         id,
@@ -492,14 +474,12 @@ class Wallet {
 
                 class AssetInstance extends Grabbable {
                   constructor(
-                    id,
-                    type,
                     assetId,
+                    id,
                     name,
                     ext,
-                    path,
-                    attributes,
-                    icon,
+                    json,
+                    file,
                     n,
                     physics,
                     visible,
@@ -513,14 +493,12 @@ class Wallet {
                   ) {
                     super(n, position, rotation, scale, localPosition, localRotation, localScale);
 
-                    this.id = id;
-                    this.type = type;
                     this.assetId = assetId;
+                    this.id = id;
                     this.name = name;
                     this.ext = ext;
-                    this.path = path;
-                    this.attributes = attributes;
-                    this.icon = icon;
+                    this.json = json;
+                    this.file = file;
                     this.physics = physics;
                     this.visible = visible;
                     this.open = open;
@@ -597,7 +575,7 @@ class Wallet {
                     connection && connection.send(JSON.stringify({
                       method: 'setVisible',
                       args: {
-                        id: this.id,
+                        assetId: this.assetId,
                         visible: true,
                       },
                     }));
@@ -610,7 +588,7 @@ class Wallet {
                     connection && connection.send(JSON.stringify({
                       method: 'setVisible',
                       args: {
-                        id: this.id,
+                        assetId: this.assetId,
                         visible: false,
                       },
                     }));
@@ -623,7 +601,7 @@ class Wallet {
                     connection && connection.send(JSON.stringify({
                       method: 'setOpen',
                       args: {
-                        id: this.id,
+                        assetId: this.assetId,
                         open,
                       },
                     }));
@@ -636,7 +614,7 @@ class Wallet {
                     connection && connection.send(JSON.stringify({
                       method: 'setPhysics',
                       args: {
-                        id: this.id,
+                        assetId: this.assetId,
                         physics: true,
                       },
                     }));
@@ -649,21 +627,21 @@ class Wallet {
                     connection && connection.send(JSON.stringify({
                       method: 'setPhysics',
                       args: {
-                        id: this.id,
+                        assetId: this.assetId,
                         physics: false,
                       },
                     }));
                   }
 
                   setAttribute(name, value) {
-                    const {id} = this;
+                    const {assetId} = this;
 
                     this.updateAttribute(name, value);
 
                     connection && connection.send(JSON.stringify({
                       method: 'setAttribute',
                       args: {
-                        id,
+                        assetId,
                         name,
                         value,
                       },
@@ -671,10 +649,10 @@ class Wallet {
                   }
 
                   updateAttribute(name, value) {
-                    const {value: oldValue} = this.attributes[name] || {};
-                    this.attributes[name].value = value;
+                    const {value: oldValue} = this.json.data.attributes[name] || {};
+                    this.json.data.attributes[name].value = value;
 
-                    const {path} = this;
+                    const {json: {data: {path}}} = this;
                     const itemEntry = itemApis[path];
                     if (itemEntry) {
                       for (let i = 0; i < itemEntry.length; i++) {
@@ -710,8 +688,8 @@ class Wallet {
                 const assetInstances = [];
                 mesh.getAssetInstances = () => assetInstances;
                 mesh.getAssetInstance = id => assetInstances.find(assetInstance => assetInstance.id === id);
-                mesh.addAssetInstance = (id, type, assetId, name, ext, path, attributes, icon, n, physics, visible, open, position, rotation, scale, localPosition, localRotation, localScale) => {
-                  const assetInstance = new AssetInstance(id, type, assetId, name, ext, path, attributes, icon, n, physics, visible, open, position, rotation, scale, localPosition, localRotation, localScale);
+                mesh.addAssetInstance = (assetId, id, name, ext, json, file, n, physics, visible, open, position, rotation, scale, localPosition, localRotation, localScale) => {
+                  const assetInstance = new AssetInstance(assetId, id, name, ext, json, file, n, physics, visible, open, position, rotation, scale, localPosition, localRotation, localScale);
 
                   hand.addGrabbable(assetInstance);
                   assetInstances.push(assetInstance);
@@ -720,7 +698,7 @@ class Wallet {
                     let live = true;
 
                     const geometry = (() => {
-                      _requestAssetImageData({name, ext, path, attributes, icon})
+                      _requestAssetImageData({name, ext, json, file})
                         .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize))
                         .then(geometrySpec => {
                           if (live) {
@@ -844,38 +822,42 @@ class Wallet {
 
               const itemApis = {};
               const _bindAssetInstance = assetInstance => {
-                const {path} = assetInstance;
-                const itemEntry = itemApis[path];
+                if (assetInstance.ext === 'itm') {
+                  const {json: {data: {path}}} = assetInstance;
+                  const itemEntry = itemApis[path];
 
-                if (itemEntry) {
-                  for (let i = 0; i < itemEntry.length; i++) {
-                    const itemApi = itemEntry[i];
+                  if (itemEntry) {
+                    for (let i = 0; i < itemEntry.length; i++) {
+                      const itemApi = itemEntry[i];
 
-                    if (typeof itemApi.itemAddedCallback === 'function') {
-                      itemApi.itemAddedCallback(assetInstance);
-                    }
+                      if (typeof itemApi.itemAddedCallback === 'function') {
+                        itemApi.itemAddedCallback(assetInstance);
+                      }
 
-                    if (typeof itemApi.itemAttributeValueChangedCallback === 'function') {
-                      const {attributes} = assetInstance;
+                      if (typeof itemApi.itemAttributeValueChangedCallback === 'function') {
+                        const {json: {data: {attributes}}} = assetInstance;
 
-                      for (const name in attributes) {
-                        const {value} = attributes[name];
-                        itemApi.itemAttributeValueChangedCallback(assetInstance, name, null, value);
+                        for (const name in attributes) {
+                          const {value} = attributes[name];
+                          itemApi.itemAttributeValueChangedCallback(assetInstance, name, null, value);
+                        }
                       }
                     }
                   }
                 }
               };
               const _unbindAssetInstance = assetInstance => {
-                const {path} = assetInstance;
-                const itemEntry = itemApis[path];
+                if (assetInstance.ext === 'itm') {
+                  const {json: {data: {path}}} = assetInstance;
+                  const itemEntry = itemApis[path];
 
-                if (itemEntry) {
-                  for (let i = 0; i < itemEntry.length; i++) {
-                    const itemApi = itemEntry[i];
+                  if (itemEntry) {
+                    for (let i = 0; i < itemEntry.length; i++) {
+                      const itemApi = itemEntry[i];
 
-                    if (typeof itemApi.itemRemovedCallback === 'function') {
-                      itemApi.itemRemovedCallback(assetInstance);
+                      if (typeof itemApi.itemRemovedCallback === 'function') {
+                        itemApi.itemRemovedCallback(assetInstance);
+                      }
                     }
                   }
                 }
@@ -895,7 +877,7 @@ class Wallet {
                   if (typeof itemApi.itemAttributeValueChangedCallback === 'function') {
                     for (let i = 0; i < boundAssetInstances.length; i++) {
                       const assetInstance = boundAssetInstances[i];
-                      const {attributes} = assetInstance;
+                      const {json: {data: {attributes}}} = assetInstance;
 
                       for (const name in attributes) {
                         const {value} = attributes[name];
@@ -989,36 +971,28 @@ class Wallet {
               };
 
               const _pullItem = (assetSpec, side) => {
-                const {id, name, ext, path = null, attributes = {}, icon = null} = assetSpec;
+                const {id, name, ext, json = null, file = null} = assetSpec;
                 const itemSpec = {
-                  type: 'asset',
-                  id: _makeId(),
-                  name: name + '.' + ext,
-                  displayName: name + '.' + ext,
-                  attributes: {
-                    type: {value: 'asset'},
-                    id: {value: id},
-                    name: {value: name},
-                    ext: {value: ext},
-                    path: {value: path},
-                    attributes: {value: attributes},
-                    icon: {value: icon},
-                    position: {value: DEFAULT_MATRIX},
-                    physics: {value: false},
-                    visible: {value: true},
-                    open: {value: false},
-                  },
-                  metadata: {},
+                  assetId: _makeId(),
+                  id,
+                  name,
+                  ext,
+                  json,
+                  file,
+                  position: DEFAULT_MATRIX,
+                  physics: false,
+                  visible: true,
+                  open: false,
                 };
                 const assetInstance = walletApi.makeItem(itemSpec);
                 assetInstance.grab(side);
 
                 /* const {assets: oldAssets} = walletState;
                 _removeStrgAsset(asset)
-                  .then(() => { */
+                  .then(() => {
                     const {assets: newAssets} = walletState;
 
-                    /* if (oldAssets === newAssets) { */
+                    if (oldAssets === newAssets) {
                       const index = newAssets.findIndex(assetSpec => assetSpec.path === path);
                       if (index !== -1) {
                         newAssets.splice(index, 1);
@@ -1038,13 +1012,13 @@ class Wallet {
 
                         // _updatePages();
                       }
-                    /* }
+                    }
                   })
                   .catch(err => {
                     console.warn(err);
-                  }); */
+                  });
 
-                /* const match = asset.match(/^MOD\.(.+)$/);
+                const match = asset.match(/^MOD\.(.+)$/);
                 if (match) {
                   const modName = match[1];
                   world.addMod(modName);
@@ -1059,113 +1033,42 @@ class Wallet {
               const _storeItem = assetInstance => {
                 walletApi.destroyItem(assetInstance);
 
-                const {type} = assetInstance;
-                if (type === 'asset') {
-                  const {assetId, name, ext, path, attributes, icon} = assetInstance;
-                  const {assets: oldAssets} = walletState;
-                  _addStrgAsset(assetId, name, ext, path, attributes, icon)
-                    .then(() => {
-                      const {assets: newAssets} = walletState;
+                const {id, name, ext, json, file} = assetInstance;
+                const {assets: oldAssets} = walletState;
+                _addStrgAsset(id, name, ext, json, file)
+                  .then(() => {
+                    const {assets: newAssets} = walletState;
 
-                      if (oldAssets === newAssets) {
-                        let newAsset = newAssets.find(assetSpec => assetSpec.id === assetId);
-                        if (!newAsset) {
-                          newAsset = {
-                            id: assetId,
-                            name,
-                            ext,
-                            json: {
-                              data: {
-                                path,
-                                icon,
-                                attributes,
-                              },
-                            },
-                            owner: bootstrap.getUsername(),
-                            timestamp: Date.now(),
-                          };
-                          newAssets.push(newAsset);
-                        }
-
-                        // _updatePages();
-                      }
-                    })
-                    .then(() => {
-                      walletApi.emit('assets', walletState.assets);
-                    })
-                    .catch(err => {
-                      console.warn(err);
-                    });
-
-                  sfx.drop.trigger();
-                  const newNotification = notification.addNotification(`Stored ${name}.${ext}.`);
-                  setTimeout(() => {
-                    notification.removeNotification(newNotification);
-                  }, 3000);
-                } /* else if (type === 'file') {
-                  const {id, value} = assetInstance;
-                  const {id: n, name} = value;
-                  const file = fs.makeRemoteFile(n);
-                  const url = file.getUrl();
-                  file.readAsArrayBuffer()
-                    .then(arrayBuffer => {
-                      const _makeNotificationText = n => {
-                        let s = 'Uploading ' + (n * 100).toFixed(1) + '% [';
-                        let i;
-                        const roundN = Math.round(n * 20);
-                        for (i = 0; i < roundN; i++) {
-                          s += '|';
-                        }
-                        for (; i < 20; i++) {
-                          s += '.';
-                        }
-                        s += ']';
-                        return s;
-                      };
-                      const newNotification = notification.addNotification(_makeNotificationText(0));
-
-                      vridApi.upload(n, arrayBuffer, progress => {
-                        newNotification.set(_makeNotificationText(progress));
-                      })
-                        .then(() => {
-                          notification.removeNotification(newNotification);
-                        })
-                        .catch(err => {
-                          notification.removeNotification(newNotification);
-
-                          return Promise.reject(err);
-                        });
-                    })
-                    .then(() => vridApi.get('assets'))
-                    .then(assets => {
-                      assets = assets || [];
-
-                      const assetSpec = {
-                        id,
-                        asset: 'ITEM.FILE',
-                        file: {
-                          id: n,
+                    if (oldAssets === newAssets) {
+                      let newAsset = newAssets.find(assetSpec => assetSpec.id === id);
+                      if (!newAsset) {
+                        newAsset = {
+                          id,
                           name,
-                        },
-                        timestamp: Date.now(),
-                      };
-                      assets.push(assetSpec);
+                          ext,
+                          json,
+                          file,
+                          owner: bootstrap.getUsername(),
+                          timestamp: Date.now(),
+                        };
+                        newAssets.push(newAsset);
+                      }
 
-                      return vridApi.set('assets', assets);
-                    })
-                    .then(() => {
-                       walletApi.emit('assets', assets);
-                    })
-                    .catch(err => {
-                      console.warn(err);
-                    });
+                      // _updatePages();
+                    }
+                  })
+                  .then(() => {
+                    walletApi.emit('assets', walletState.assets);
+                  })
+                  .catch(err => {
+                    console.warn(err);
+                  });
 
-                  sfx.drop.trigger();
-                  const newNotification = notification.addNotification(`Stored ${name}.`);
-                  setTimeout(() => {
-                    notification.removeNotification(newNotification);
-                  }, 3000);
-                } */
+                sfx.drop.trigger();
+                const newNotification = notification.addNotification(`Stored ${name}.${ext}.`);
+                setTimeout(() => {
+                  notification.removeNotification(newNotification);
+                }, 3000);
               };
 
               const _upload = ({file, dropMatrix}) => {
@@ -1174,24 +1077,18 @@ class Wallet {
                 const name = match[1];
                 const ext = match[2] || 'bin';
                 const itemSpec = {
-                  ext: 'file',
-                  id: id,
+                  assetId: _makeId(),
+                  id,
                   name: file.name,
-                  displayName: file.name,
-                  attributes: {
-                    type: {value: 'asset'},
-                    id: {value: id},
-                    name: {value: name},
-                    ext: {value: ext},
-                    path: {value: ''},
-                    attributes: {value: {}},
-                    icon: {value: null},
-                    position: {value: dropMatrix},
-                    physics: {value: true},
-                    visible: {value: true},
-                    open: {value: false},
+                  ext,
+                  file: {
+                    id: file.n,
+                    name: file.name,
                   },
-                  metadata: {},
+                  position: dropMatrix,
+                  physics: true,
+                  visible: true,
+                  open: false,
                 };
                 walletApi.makeItem(itemSpec);
               };
@@ -1219,20 +1116,16 @@ class Wallet {
 
                 makeItem(itemSpec) {
                   const {
+                    assetId,
                     id,
-                    attributes: {
-                      type: {value: type},
-                      id: {value: assetId},
-                      name: {value: name},
-                      ext: {value: ext},
-                      path: {value: path},
-                      attributes: {value: attributes},
-                      icon: {value: icon},
-                      position: {value: matrix},
-                      physics: {value: physics},
-                      visible: {value: visible},
-                      open: {value: open},
-                    },
+                    name,
+                    ext,
+                    json,
+                    file,
+                    position: matrix,
+                    physics,
+                    visible,
+                    open,
                   } = itemSpec;
                   const n = murmur(id);
                   const position = new THREE.Vector3(matrix[0], matrix[1], matrix[2]);
@@ -1240,14 +1133,12 @@ class Wallet {
                   const scale = new THREE.Vector3(matrix[7], matrix[8], matrix[9]);
 
                   const assetInstance = assetsMesh.addAssetInstance(
-                    id,
-                    type,
                     assetId,
+                    id,
                     name,
                     ext,
-                    path,
-                    attributes,
-                    icon,
+                    json,
+                    file,
                     n,
                     physics,
                     visible,
@@ -1266,14 +1157,12 @@ class Wallet {
                   connection && connection.send(JSON.stringify({
                     method: 'addAsset',
                     args: {
-                      id,
-                      type,
                       assetId,
+                      id,
                       name,
                       ext,
-                      path,
-                      attributes,
-                      icon,
+                      json,
+                      file,
                       n,
                       physics,
                       matrix,
@@ -1286,7 +1175,7 @@ class Wallet {
                 }
 
                 destroyItem(itemSpec) {
-                  const {id} = itemSpec;
+                  const {assetId} = itemSpec;
                   const assetInstance = assetsMesh.getAssetInstance(id);
                   _unbindAssetInstance(assetInstance);
 
@@ -1295,7 +1184,7 @@ class Wallet {
                   connection && connection.send(JSON.stringify({
                     method: 'removeAsset',
                     args: {
-                      id,
+                      assetId,
                     },
                   }));
                 }

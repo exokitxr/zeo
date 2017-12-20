@@ -23,15 +23,13 @@ class Wallet {
       ]) => {
         if (live) {
           class AssetInstance {
-            constructor(id, type, assetId, name, ext, path, attributes, icon, n, physics, matrix, visible, open) {
-              this.id = id;
-              this.type = type;
+            constructor(assetId, id, name, ext, json, file, n, physics, matrix, visible, open) {
               this.assetId = assetId;
+              this.id = id;
               this.name = name;
               this.ext = ext;
-              this.path = path;
-              this.attributes = attributes;
-              this.icon = icon;
+              this.json = json;
+              this.file = file;
               this.n = n;
               this.physics = physics;
               this.matrix = matrix;
@@ -69,55 +67,55 @@ class Wallet {
                 const {method, args} = m;
 
                 if (method === 'addAsset') {
-                  const {id, type, assetId, name, ext, path, attributes, icon, n, physics, matrix, visible, open} = args;
-                  const assetInstance = new AssetInstance(id, type, assetId, name, ext, path, attributes, icon, n, physics, matrix, visible, open);
+                  const {assetId, id, name, ext, json, file, n, physics, matrix, visible, open} = args;
+                  const assetInstance = new AssetInstance(assetId, id, name, ext, json, file, n, physics, matrix, visible, open);
                   assetInstances.push(assetInstance);
 
-                  _broadcast(JSON.stringify({type: 'addAsset', args: {id, type, assetId, name, ext, path, attributes, icon, n, physics, matrix, visible, open}}));
+                  _broadcast(JSON.stringify({type: 'addAsset', args: {assetId, id, name, ext, json, file, n, physics, matrix, visible, open}}));
 
                   analytics.addFile({id});
                 } else if (method === 'removeAsset') {
-                  const {id} = args;
-                  assetInstances.splice(assetInstances.findIndex(assetInstance => assetInstance.id === id), 1);
+                  const {assetId} = args;
+                  assetInstances.splice(assetInstances.findIndex(assetInstance => assetInstance.assetId === assetId), 1);
 
-                  _broadcast(JSON.stringify({type: 'removeAsset', args: {id}}));
+                  _broadcast(JSON.stringify({type: 'removeAsset', args: {assetId}}));
 
                   analytics.removeFile({id});
                 } else if (method === 'setAttribute') {
-                  const {id, name, value} = args;
-                  const assetInstance = assetInstances.find(assetInstance => assetInstance.id === id);
+                  const {assetId, name, value} = args;
+                  const assetInstance = assetInstances.find(assetInstance => assetInstance.assetId === assetId);
 
-                  if (assetInstance) {
-                    assetInstance.attributes[name].value = value;
+                  if (assetInstance && assetInstance.json && assetInstance.json.data && typeof assetInstance.json.data === 'object') {
+                    assetInstance.json.data.attributes[name].value = value;
 
-                    _broadcast(JSON.stringify({type: 'setAttribute', args: {id, name, value}}));
+                    _broadcast(JSON.stringify({type: 'setAttribute', args: {assetId, name, value}}));
                   }
                 } else if (method === 'setVisible') {
-                  const {id, visible} = args;
-                  const assetInstance = assetInstances.find(assetInstance => assetInstance.id === id);
+                  const {assetId, visible} = args;
+                  const assetInstance = assetInstances.find(assetInstance => assetInstance.assetId === assetId);
 
                   if (assetInstance) {
                     assetInstance.visible = visible;
 
-                    _broadcast(JSON.stringify({type: 'setVisible', args: {id, visible}}));
+                    _broadcast(JSON.stringify({type: 'setVisible', args: {assetId, visible}}));
                   }
                 } else if (method === 'setOpen') {
-                  const {id, open} = args;
-                  const assetInstance = assetInstances.find(assetInstance => assetInstance.id === id);
+                  const {assetId, open} = args;
+                  const assetInstance = assetInstances.find(assetInstance => assetInstance.assetId === assetId);
 
                   if (assetInstance) {
                     assetInstance.open = open;
 
-                    _broadcast(JSON.stringify({type: 'setOpen', args: {id, open}}));
+                    _broadcast(JSON.stringify({type: 'setOpen', args: {assetId, open}}));
                   }
                 } else if (method === 'setPhysics') {
-                  const {id, physics} = args;
-                  const assetInstance = assetInstances.find(assetInstance => assetInstance.id === id);
+                  const {assetId, physics} = args;
+                  const assetInstance = assetInstances.find(assetInstance => assetInstance.assetId === assetId);
 
                   if (assetInstance) {
                     assetInstance.physics = physics;
 
-                    _broadcast(JSON.stringify({type: 'setPhysics', args: {id, physics}}));
+                    _broadcast(JSON.stringify({type: 'setPhysics', args: {assetId, physics}}));
                   }
                 } else {
                   console.warn('no such method:' + JSON.stringify(method));
