@@ -864,7 +864,7 @@ class Zeo {
                           wallet.destroyItem(item);
                         }
 
-                        makeFile(options) {
+                        /* makeFile(options) {
                           return wallet.makeFile(options);
                         }
 
@@ -874,6 +874,18 @@ class Zeo {
 
                         getFile(id) {
                           return fs.makeRemoteFile(id);
+                        } */
+
+                        makeServerFile(id, name) {
+                          return fs.makeServerFile(id, name);
+                        }
+
+                        requestStorageFiles() {
+                          return fs.requestStorageFiles();
+                        }
+
+                        requestMakeStorageFile(id, name, ext) {
+                          return fs.requestMakeStorageFile(id, name, ext);
                         }
 
                         registerItem(pluginInstance, itemApi) {

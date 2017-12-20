@@ -16,11 +16,13 @@ class Fs {
     };
 
     return archae.requestPlugins([
+      '/core/engines/bootstrap',
       '/core/engines/three',
       '/core/engines/webvr',
       '/core/engines/notification',
       '/core/utils/js-utils',
     ]).then(([
+      bootstrap,
       three,
       webvr,
       notification,
@@ -420,16 +422,7 @@ class Fs {
           }
         };
 
-        class ServerFile {
-          constructor(id, name) {
-            this.n = id != undefined ? (typeof id === 'number' ? id : murmur(id)) : _makeN();
-            this.name = name || 'untitled';
-          }
-
-          getUrl() {
-            return `/archae/fs/hash/${this.n}`;
-          }
-
+        class FsFile {
           readAsBlob() {
             return fetch(this.getUrl(), {
               credentials: 'include',
@@ -483,14 +476,64 @@ class Fs {
             document.body.removeChild(a);
           }
         }
+        class ServerFile extends FsFile {
+          constructor(id, name) {
+            super();
+
+            this.n = id != undefined ? (typeof id === 'number' ? id : murmur(id)) : _makeN();
+            this.name = name || 'untitled';
+          }
+
+          getUrl() {
+            return `/archae/fs/hash/${this.n}`;
+          }
+        }
+        class StorageFile extends FsFile {
+          constructor(id, name, ext) {
+            super();
+
+            this.id = id;
+            this.name = name;
+            this.ext = ext;
+          }
+
+          getUrl() {
+            return `https://my-site.zeovr.io/files/${this.id}/${this.name}.${this.ext}`;
+          }
+        }
 
         class FsApi extends EventEmitter {
           makeServerFile(id, name) {
             return new ServerFile(id, name);
           }
 
-          makeStorageFile(id, name) {
-            return new StorageFile(id, name); // XXX
+          requestStorageFiles() {
+            return vrid.get('files')
+              .then(files =>
+                (files || []).map(file => new StorageFile(file.id, file.name, file.ext))
+              );
+          }
+
+          requestMakeStorageFile(name, ext) {
+            return vrid.get('files')
+              .then(files => {
+                files = files || [];
+
+                const fileSpec = {
+                  id: _makeId(),
+                  name,
+                  ext,
+                  file: {
+                    id: _makeId(),
+                    name: name + '.' + ext,
+                  },
+                  owner: bootstrap.getUsername(),
+                  timestamp: Date.now(),
+                };
+                files.push(fileSpec);
+                return vrid.set('files', files)
+                  .then(() => new StorageFile(fileSpec.id, fileSpec.name, fileSpec.ext));
+              });
           }
 
           /* makeFile(url) {
@@ -593,8 +636,8 @@ const _makeN = (() => {
     return array[0];
   };
 })();
-/* const _makeId = () => Math.random().toString(36).substring(7);
-const _padNumber = (n, width) => {
+const _makeId = () => Math.random().toString(36).substring(7);
+/* const _padNumber = (n, width) => {
   n = n + '';
   return n.length >= width ? n : new Array(width - n.length + 1).join('0') + n;
 };
