@@ -174,11 +174,11 @@ class BagVr {
         position: [0, 0.1, 0.05],
       });
       result.headMesh = headMesh;
-      const bodyMesh = _makeMesh({
+      /* const bodyMesh = _makeMesh({
         position: [0, BAG_Y_OFFSET, BAG_Z_OFFSET],
       });
-      result.bodyMesh = bodyMesh;
-      const armMeshes = [
+      result.bodyMesh = bodyMesh; */
+      /* const armMeshes = [
         {
           position: [0.25, -0.1, 0.05], // right
         },
@@ -186,7 +186,7 @@ class BagVr {
           position: [-0.25, -0.1, 0.05], // left
         },
       ].map(_makeMesh);
-      result.armMeshes = armMeshes;
+      result.armMeshes = armMeshes; */
       const pocketMeshes = [
         {
           position: [0.2, BAG_Y_OFFSET + 0.15, BAG_Z_OFFSET], // top right
@@ -215,13 +215,39 @@ class BagVr {
       ].map(_makeMesh);
       result.pocketMeshes = pocketMeshes;
 
-      const equipmentBoxMeshes = pocketMeshes.concat([headMesh, bodyMesh]).concat(armMeshes);
+      const equipmentBoxMeshes = pocketMeshes.concat([headMesh/*, bodyMesh*/])/*.concat(armMeshes)*/;
       result.equipmentBoxMeshes = equipmentBoxMeshes;
 
       return result;
     };
     const bagMesh = _makeBagMesh();
     scene.add(bagMesh);
+
+    /* const hudMesh = (() => {
+      const geometry = new THREE.PlaneBufferGeometry(0.5, 0.5);
+      const canvas = document.createElement('canvas');
+      canvas.width = 1280;
+      canvas.height = 100;
+      const ctx = canvas.getContext('2d');
+      const texture = new THREE.Texture(
+        canvas,
+        THREE.UVMapping,
+        THREE.ClampToEdgeWrapping,
+        THREE.ClampToEdgeWrapping,
+        THREE.LinearFilter,
+        THREE.LinearFilter,
+        THREE.RGBAFormat,
+        THREE.UnsignedByteType,
+        16
+      );
+      const material = new THREE.MeshBasicMaterial({
+        map: texture,
+      });
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.visible = false;
+      return mesh;
+    })();
+    scene.add(hudMesh); */
 
     const equipmentState = {
       assets: (() => {
