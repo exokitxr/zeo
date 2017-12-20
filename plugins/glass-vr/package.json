@@ -1,7 +1,10 @@
 {
   "name": "glass-vr",
   "description": "Provides a virtual audio/video recording system on your headset.",
-  "version": "0.0.1",
+  "version": "0.0.2",
+  "keywords": [
+    "zeo-mod"
+  ],
   "client": "client.js",
   "dependencies": {},
   "main": "client.js",
