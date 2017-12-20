@@ -21,17 +21,20 @@ class Fs {
       '/core/engines/webvr',
       '/core/engines/notification',
       '/core/utils/js-utils',
+      '/core/utils/vrid-utils',
     ]).then(([
       bootstrap,
       three,
       webvr,
       notification,
       jsUtils,
+      vridUtils,
     ]) => {
       if (live) {
         const {THREE} = three;
         const {events} = jsUtils;
         const {EventEmitter} = events;
+        const {vridApi} = vridUtils;
 
         const forwardVector = new THREE.Vector3(0, 0, -1);
         const localVector = new THREE.Vector3();
@@ -499,6 +502,15 @@ class Fs {
 
           getUrl() {
             return `https://my-site.zeovr.io/files/${this.id}/${this.name}.${this.ext}`;
+          }
+
+          write(d) {
+            const result = vridApi.upload(this.id, d, progress => {
+              if (result.onprogress) {
+                result.onprogress(progress);
+              }
+            });
+            return result;
           }
         }
 
