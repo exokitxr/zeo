@@ -9,20 +9,21 @@ const {
 
 const SIDES = ['left', 'right'];
 
+const _makeId = () => Math.random().toString(36).substring(7);
+
 class GlassVr {
   mount() {
-    const {three: {THREE, scene, camera, renderer}, pose, input, render, ui} = zeo;
+    const {three: {THREE, scene, camera, renderer}, pose, input, render, items} = zeo;
 
-    const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
-    const _decomposeMatrix = matrix => {
-      const position = new THREE.Vector3();
-      const rotation = new THREE.Quaternion();
-      const scale = new THREE.Vector3();
-      matrix.decompose(position, rotation, scale);
-      return {position, rotation, scale};
-    };
+    const _requestCanvasBlob = canvas => new Promise((accept, reject) => {
+      canvas.toBlob(blob => {
+        accept(blob);
+      });
+    });
 
     const forwardVector = new THREE.Vector3(0, 0, -1);
+    const localVector = new THREE.Vector3();
+    const localVector2 = new THREE.Vector3();
 
     const globalGlassState = {
       mode: null,
@@ -34,38 +35,6 @@ class GlassVr {
       left: _makeGlassState(),
       right: _makeGlassState(),
     };
-
-    /* const getHudSrc = ({mode, highlights}) => {
-      return `<div style="display: flex; position: relative; width: ${WIDTH}px; height: ${HEIGHT}px; color: #FFF; flex-direction: column;">
-        <div style="position: absolute; top: 20px; right: 20px; display: flex; font-family: Consolas, 'Liberation Mono', Menlo, Courier, monospace; font-size: 60px; line-height: 1.4; font-weight: 600; flex-direction: column;">
-          <div style="display: flex; padding: 0 10px; border: 2px solid transparent; ${(highlights.indexOf('picture') !== -1) ? 'border-color: #FFF' : ''}; justify-content: center; align-items: center;">
-            ${mode === 'picture' ? `\
-              <div style="width: 40px; height: 40px; margin-right: 30px; background-color: #FF0000; border-radius: 100px;"></div>
-            ` : `\
-              <div style="width: 40px; height: 40px; margin-right: 30px;"></div>
-            `}
-            <div style="margin-right: auto;">Picture</div>
-          </div>
-          <div style="display: flex; padding: 0 10px; border: 2px solid transparent; ${(highlights.indexOf('audio') !== -1) ? 'border-color: #FFF' : ''}; justify-content: center; align-items: center;">
-            ${mode === 'audio' ? `\
-              <div style="width: 40px; height: 40px; margin-right: 30px; background-color: #FF0000; border-radius: 100px;"></div>
-            ` : `\
-              <div style="width: 40px; height: 40px; margin-right: 30px;"></div>
-            `}
-            <div style="margin-right: auto;">Audio</div>
-          </div>
-          <div style="display: flex; padding: 0 10px; border: 2px solid transparent; ${(highlights.indexOf('video') !== -1) ? 'border-color: #FFF' : ''}; justify-content: center; align-items: center;">
-            ${mode === 'video' ? `\
-              <div style="width: 40px; height: 40px; margin-right: 30px; background-color: #FF0000; border-radius: 100px;"></div>
-            ` : `\
-              <div style="width: 40px; height: 40px; margin-right: 30px;"></div>
-            `}
-            <div style="margin-right: auto;">Video</div>
-          </div>
-        </div>
-        <div style="position: absolute; top: 0; bottom: 0; left: 0; right: 0; border: 2px solid; border-radius: 30px;"></div>
-      </div>`;
-    }; */
 
     const highlightSpecs = [
       {
@@ -191,9 +160,43 @@ class GlassVr {
       switch (mode) {
         case 'picture': {
           const {domElement: canvas} = renderer;
-          const dataUrl = canvas.toDataURL();
 
-console.log('save picture', dataUrl.length); // XXX
+          _requestCanvasBlob(canvas)
+            .then(blob => {
+              const serverFile = items.makeServerFile(null, 'capture.png');
+              serverFile.write(blob)
+                .then(() => {
+                  const dropMatrix = (() => {
+                    const {hmd} = pose.getStatus();
+                    const {worldPosition: hmdPosition, worldRotation: hmdRotation, worldScale: hmdScale} = hmd;
+                    localVector.copy(hmdPosition)
+                      .add(
+                        localVector2.copy(forwardVector).multiplyScalar(0.5)
+                          .applyQuaternion(hmdRotation)
+                      );
+                    return localVector.toArray().concat(hmdRotation.toArray()).concat(hmdScale.toArray());
+                  })();
+
+                  const itemSpec = {
+                    assetId: _makeId(),
+                    id: _makeId(),
+                    name: 'capture',
+                    ext: 'png',
+                    file: {
+                      id: serverFile.n,
+                      name: serverFile.name,
+                    },
+                    position: dropMatrix,
+                    physics: true, // XXX fix this
+                    visible: true,
+                    open: false,
+                  };
+                  items.makeItem(itemSpec);
+                });
+            })
+            .catch(err => {
+              console.warn(err);
+            });
 
           break;
         }
