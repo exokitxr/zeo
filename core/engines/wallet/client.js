@@ -1214,10 +1214,10 @@ class Wallet {
 
                 destroyItem(itemSpec) {
                   const {assetId} = itemSpec;
-                  const assetInstance = assetsMesh.getAssetInstance(id);
+                  const assetInstance = assetsMesh.getAssetInstance(assetId);
                   _unbindAssetInstance(assetInstance);
 
-                  assetsMesh.removeAssetInstance(id);
+                  assetsMesh.removeAssetInstance(assetId);
 
                   connection && connection.send(JSON.stringify({
                     method: 'removeAsset',
