@@ -12,9 +12,6 @@ const semver = require('semver');
 const DEFAULT_TAGS = {
   tags: {},
 };
-const DEFAULT_FILES = {
-  files: [],
-};
 
 class World {
   constructor(archae) {
@@ -48,7 +45,6 @@ class World {
       });
     });
     const _requestTagsJson = () => _requestFile(worldTagsJsonPath, DEFAULT_TAGS);
-    const _requestFilesJson = () => _requestFile(worldFilesJsonPath, DEFAULT_FILES);
     const _ensureWorldPath = () => new Promise((accept, reject) => {
       const worldPath = path.join(dirname, dataDirectory, 'world');
 
@@ -67,7 +63,6 @@ class World {
         '/core/engines/analytics',
       ]),
       _requestTagsJson(),
-      _requestFilesJson(),
       _ensureWorldPath(),
     ])
       .then(([
@@ -76,7 +71,6 @@ class World {
           analytics,
         ],
         tagsJson,
-        filesJson,
         ensureWorldPathResult,
       ]) => {
         if (live) {
