@@ -53,7 +53,7 @@ class Wallet {
           multiplayer,
           analytics,
         ],
-        itemsJson,
+        assetInstances,
       ]) => {
         if (live) {
           const _saveFile = (p, j) => new Promise((accept, reject) => {
@@ -99,8 +99,6 @@ class Wallet {
               this.open = open;
             }
           }
-
-          const assetInstances = [];
 
           const connections = [];
           const _connection = (c, {url}) => {
