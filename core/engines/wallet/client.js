@@ -611,6 +611,18 @@ class Wallet {
                     }));
                   }
 
+                  setState(position, rotation, scale) {
+                    super.setState(position, rotation, scale);
+
+                    connection && connection.send(JSON.stringify({
+                      method: 'setState',
+                      args: {
+                        assetId: this.assetId,
+                        matrix: this.position.toArray().concat(this.rotation.toArray()).concat(this.scale.toArray()),
+                      },
+                    }));
+                  }
+
                   setOwner(owner) {
                     this.owner = owner;
                     this.emit('setOwner', owner);

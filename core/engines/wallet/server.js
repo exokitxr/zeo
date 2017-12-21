@@ -156,6 +156,17 @@ class Wallet {
                   }
 
                   _saveItems();
+                } else if (method === 'setState') {
+                  const {assetId, matrix} = args;
+                  const assetInstance = assetInstances.find(assetInstance => assetInstance.assetId === assetId);
+
+                  if (assetInstance) {
+                    assetInstance.matrix = matrix;
+
+                    // do not broadcast change; it will have already been broadcast via physics
+                  }
+
+                  _saveItems();
                 } else if (method === 'setOwner') {
                   const {assetId, owner} = args;
                   const assetInstance = assetInstances.find(assetInstance => assetInstance.assetId === assetId);
