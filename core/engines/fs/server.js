@@ -3,6 +3,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 
 const mkdirp = require('mkdirp');
+const rangeParser = require('range-parser');
 const murmur = require('murmurhash');
 
 class Fs {
@@ -50,7 +51,13 @@ class Fs {
 
           function serveFsUpload(req, res, next) {
             const fileName = req.params[0] === 'name' ? String(murmur(req.params[1])) : req.params[1];
-            const ws = fs.createWriteStream(path.join(fsPath, fileName));
+            const rangeString = req.get('Range');
+            const range = rangeString && rangeParser(Infinity, rangeString);
+            const start = Array.isArray(range) ? range[0].start : 0;
+            const ws = fs.createWriteStream(path.join(fsPath, fileName), {
+              flags: 'a+',
+              start,
+            });
             req.pipe(ws);
             ws.on('finish', err => {
               res.send();

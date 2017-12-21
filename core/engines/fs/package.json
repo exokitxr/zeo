@@ -6,6 +6,7 @@
   "server": "server.js",
   "dependencies": {
     "mkdirp": "^0.5.1",
-    "murmurhash": "0.0.2"
+    "murmurhash": "0.0.2",
+    "range-parser": "^1.2.0"
   }
 }

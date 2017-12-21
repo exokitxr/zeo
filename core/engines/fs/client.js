@@ -443,10 +443,13 @@ class Fs {
             }).then(_resJson);
           }
 
-          write(d) {
+          write(d, {start = 0} = {}) {
             const result = new Promise((accept, reject) => {
               const xhr = new XMLHttpRequest();
               xhr.open('PUT', this.getUrl(), true);
+              if (start > 0) {
+                xhr.setRequestHeader('Range', `bytes=${start}`);
+              }
               xhr.withCredentials = true;
               xhr.upload.addEventListener('progress', e => {
                 if (result.onprogress) {
