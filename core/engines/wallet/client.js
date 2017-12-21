@@ -1290,8 +1290,8 @@ class Wallet {
                   _pullItem(assetSpec, side);
                 }
 
-                storeItem(asset, side) {
-                  _storeItem(asset, side);
+                storeItem(asset) {
+                  _storeItem(asset);
                 }
 
                 registerItem(pluginInstance, itemApi) {
