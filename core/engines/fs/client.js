@@ -427,19 +427,19 @@ class Fs {
         class FsFile {
           readAsBlob() {
             return fetch(this.getUrl(), {
-              credentials: 'include',
+              credentials: this._credentials ? 'include' : 'omit',
             }).then(_resBlob);
           }
 
           readAsArrayBuffer() {
             return fetch(this.getUrl(), {
-              credentials: 'include',
+              credentials: this._credentials ? 'include' : 'omit',
             }).then(_resArrayBuffer);
           }
 
           readAsJson() {
             return fetch(this.getUrl(), {
-              credentials: 'include',
+              credentials: this._credentials ? 'include' : 'omit',
             }).then(_resJson);
           }
 
@@ -450,7 +450,7 @@ class Fs {
               if (start > 0) {
                 xhr.setRequestHeader('Range', `bytes=${start}`);
               }
-              xhr.withCredentials = true;
+              xhr.withCredentials = this._credentials;
               xhr.upload.addEventListener('progress', e => {
                 if (result.onprogress) {
                   if (e.lengthComputable) {
@@ -487,6 +487,8 @@ class Fs {
 
             this.n = id != undefined ? (typeof id === 'number' ? id : murmur(id)) : _makeN();
             this.name = name || 'untitled';
+
+            this._credentials = true;
           }
 
           getUrl() {
@@ -500,6 +502,8 @@ class Fs {
             this.id = id;
             this.name = name;
             this.ext = ext;
+
+            this._credentials = false;
           }
 
           getUrl() {
