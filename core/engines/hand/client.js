@@ -328,19 +328,6 @@ class Hand {
             }
           }
 
-          setFullStateLocal(position, rotation, scale, localPosition, localRotation, localScale) {
-            if (!this.position.equals(position) || !this.rotation.equals(rotation) || !this.scale.equals(scale) || !this.localPosition.equals(localPosition) || !this.localRotation.equals(localRotation) || !this.localScale.equals(localScale)) {
-              this.position.copy(position);
-              this.rotation.copy(rotation);
-              this.scale.copy(scale);
-              this.localPosition.copy(localPosition);
-              this.localRotation.copy(localRotation);
-              this.localScale.copy(localScale);
-
-              this.emitUpdate();
-            }
-          }
-
           emitUpdate() {
             this.emit('update');
           }
