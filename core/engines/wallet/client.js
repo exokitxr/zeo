@@ -1064,35 +1064,60 @@ class Wallet {
                   notification.removeNotification(newNotification);
                 }, 3000);
               };
+              const _remotizeFile = file => {
+                if (file && file.local) {
+                  const fileSpec = {
+                    id: file.id,
+                    name: file.name,
+                  };
+                  return fetch('archae/fs/remotizeFile', { // do not wait for request to finish
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                      file: fileSpec,
+                    }),
+                    credentials: 'include',
+                  })
+                    .then(() => fileSpec);
+                } else {
+                  return Promise.resolve(file);
+                }
+              };
               const _storeItem = assetInstance => {
                 walletApi.destroyItem(assetInstance);
 
                 const {id, name, ext, json, file} = assetInstance;
-                const {assets: oldAssets} = walletState;
-                _addStrgAsset(id, name, ext, json, file)
-                  .then(() => {
-                    const {assets: newAssets} = walletState;
+                _remotizeFile(file)
+                  .then(file => {
+                    const {assets: oldAssets} = walletState;
 
-                    if (oldAssets === newAssets) {
-                      let newAsset = newAssets.find(assetSpec => assetSpec.id === id);
-                      if (!newAsset) {
-                        newAsset = {
-                          id,
-                          name,
-                          ext,
-                          json,
-                          file,
-                          owner: bootstrap.getUsername(),
-                          timestamp: Date.now(),
-                        };
-                        newAssets.push(newAsset);
-                      }
+                    return _addStrgAsset(id, name, ext, json, file)
+                      .then(() => {
+                        const {assets: newAssets} = walletState;
 
-                      // _updatePages();
-                    }
-                  })
-                  .then(() => {
-                    walletApi.emit('assets', walletState.assets);
+                        if (oldAssets === newAssets) {
+                          let newAsset = newAssets.find(assetSpec => assetSpec.id === id);
+                          if (!newAsset) {
+                            newAsset = {
+                              id,
+                              name,
+                              ext,
+                              json,
+                              file,
+                              owner: bootstrap.getUsername(),
+                              timestamp: Date.now(),
+                            };
+                            newAssets.push(newAsset);
+                          }
+
+                          // _updatePages();
+                        }
+                      })
+                      .then(() => {
+                        walletApi.emit('assets', walletState.assets);
+                      });
                   })
                   .catch(err => {
                     console.warn(err);
@@ -1118,6 +1143,7 @@ class Wallet {
                   file: {
                     id: file.n,
                     name: file.name,
+                    local: true,
                   },
                   position: dropMatrix,
                   owner: null,
