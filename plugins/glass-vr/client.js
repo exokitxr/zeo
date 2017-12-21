@@ -183,6 +183,7 @@ class GlassVr {
                     file: {
                       id: serverFile.n,
                       name: serverFile.name,
+                      local: true,
                     },
                     position: dropMatrix,
                     physics: true,
@@ -249,6 +250,7 @@ class GlassVr {
                   file: {
                     id: serverFile.n,
                     name: serverFile.name,
+                    local: true,
                   },
                   position: dropMatrix,
                   physics: true,
@@ -337,6 +339,7 @@ class GlassVr {
               file: {
                 id: serverFile.n,
                 name: serverFile.name,
+                local: true,
               },
               position: dropMatrix,
               physics: true,
