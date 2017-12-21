@@ -187,7 +187,7 @@ class GlassVr {
                       name: serverFile.name,
                     },
                     position: dropMatrix,
-                    physics: true, // XXX fix this
+                    physics: true,
                     visible: true,
                     open: false,
                   };
@@ -216,6 +216,9 @@ class GlassVr {
             hudMesh.render();
           });
 
+          const serverFile = items.makeServerFile(null, 'capture.webm');
+          let offset = 0;
+
           navigator.mediaDevices.getUserMedia({
             audio: true,
           })
@@ -225,7 +228,36 @@ class GlassVr {
               });
               mediaRecorder.ondataavailable = e => {
                 const {data} = e;
-console.log('save audio', data.size); // XXX
+                serverFile.write(data, {start: offset});
+                offset += data.size;
+              };
+              mediaRecorder.onstop = () => {
+                const dropMatrix = (() => {
+                  const {hmd} = pose.getStatus();
+                  const {worldPosition: hmdPosition, worldRotation: hmdRotation, worldScale: hmdScale} = hmd;
+                  localVector.copy(hmdPosition)
+                    .add(
+                      localVector2.copy(forwardVector).multiplyScalar(0.5)
+                        .applyQuaternion(hmdRotation)
+                    );
+                  return localVector.toArray().concat(hmdRotation.toArray()).concat(hmdScale.toArray());
+                })();
+
+                const itemSpec = {
+                  assetId: _makeId(),
+                  id: _makeId(),
+                  name: 'capture',
+                  ext: 'webm',
+                  file: {
+                    id: serverFile.n,
+                    name: serverFile.name,
+                  },
+                  position: dropMatrix,
+                  physics: true,
+                  visible: true,
+                  open: false,
+                };
+                items.makeItem(itemSpec);
               };
               mediaRecorder.start(100);
 
@@ -274,6 +306,9 @@ console.log('save audio', data.size); // XXX
             hudMesh.render();
           });
 
+          const serverFile = items.makeServerFile(null, 'capture.webm');
+          let offset = 0;
+
           const {domElement: canvas} = renderer;
           const mediaStream = canvas.captureStream(25);
           const mediaRecorder = new MediaRecorder(mediaStream, {
@@ -281,7 +316,36 @@ console.log('save audio', data.size); // XXX
           });
           mediaRecorder.ondataavailable = e => {
             const {data} = e;
-console.log('save video', data.size); // XXX
+            serverFile.write(data, {start: offset});
+            offset += data.size;
+          };
+          mediaRecorder.onstop = () => {
+            const dropMatrix = (() => {
+              const {hmd} = pose.getStatus();
+              const {worldPosition: hmdPosition, worldRotation: hmdRotation, worldScale: hmdScale} = hmd;
+              localVector.copy(hmdPosition)
+                .add(
+                  localVector2.copy(forwardVector).multiplyScalar(0.5)
+                    .applyQuaternion(hmdRotation)
+                );
+              return localVector.toArray().concat(hmdRotation.toArray()).concat(hmdScale.toArray());
+            })();
+
+            const itemSpec = {
+              assetId: _makeId(),
+              id: _makeId(),
+              name: 'capture',
+              ext: 'webm',
+              file: {
+                id: serverFile.n,
+                name: serverFile.name,
+              },
+              position: dropMatrix,
+              physics: true,
+              visible: true,
+              open: false,
+            };
+            items.makeItem(itemSpec);
           };
           mediaRecorder.start(100);
 
