@@ -16,14 +16,16 @@ class Wallet {
     };
 
     return archae.requestPlugins([
+      '/core/engines/multiplayer',
       '/core/engines/analytics',
     ])
       .then(([
+        multiplayer,
         analytics,
       ]) => {
         if (live) {
           class AssetInstance {
-            constructor(assetId, id, name, ext, json, file, n, physics, matrix, visible, open) {
+            constructor(assetId, id, name, ext, json, file, n, owner, physics, matrix, visible, open) {
               this.assetId = assetId;
               this.id = id;
               this.name = name;
@@ -31,6 +33,7 @@ class Wallet {
               this.json = json;
               this.file = file;
               this.n = n;
+              this.owner = owner;
               this.physics = physics;
               this.matrix = matrix;
               this.visible = visible;
@@ -41,7 +44,7 @@ class Wallet {
           const assetInstances = [];
 
           const connections = [];
-          wss.on('connection', (c, {url}) => {
+          const _connection = (c, {url}) => {
             if (url === '/archae/walletWs') {
               const _init = () => {
                 c.send(JSON.stringify({
@@ -67,11 +70,11 @@ class Wallet {
                 const {method, args} = m;
 
                 if (method === 'addAsset') {
-                  const {assetId, id, name, ext, json, file, n, physics, matrix, visible, open} = args;
-                  const assetInstance = new AssetInstance(assetId, id, name, ext, json, file, n, physics, matrix, visible, open);
+                  const {assetId, id, name, ext, json, file, n, owner, physics, matrix, visible, open} = args;
+                  const assetInstance = new AssetInstance(assetId, id, name, ext, json, file, n, owner, physics, matrix, visible, open);
                   assetInstances.push(assetInstance);
 
-                  _broadcast(JSON.stringify({type: 'addAsset', args: {assetId, id, name, ext, json, file, n, physics, matrix, visible, open}}));
+                  _broadcast(JSON.stringify({type: 'addAsset', args: {assetId, id, name, ext, json, file, n, owner, physics, matrix, visible, open}}));
 
                   analytics.addFile({id});
                 } else if (method === 'removeAsset') {
@@ -89,6 +92,15 @@ class Wallet {
                     assetInstance.json.data.attributes[name].value = value;
 
                     _broadcast(JSON.stringify({type: 'setAttribute', args: {assetId, name, value}}));
+                  }
+                } else if (method === 'setOwner') {
+                  const {assetId, owner} = args;
+                  const assetInstance = assetInstances.find(assetInstance => assetInstance.assetId === assetId);
+
+                  if (assetInstance) {
+                    assetInstance.owner = owner;
+
+                    _broadcast(JSON.stringify({type: 'setOwner', args: {assetId, owner}}));
                   }
                 } else if (method === 'setVisible') {
                   const {assetId, visible} = args;
@@ -127,7 +139,37 @@ class Wallet {
 
               connections.push(c);
             }
-          });
+          };
+          wss.on('connection', _connection);
+
+          const _broadcastAll = m => {
+            for (let i = 0; i < connections.length; i++) {
+              const connection = connections[i];
+              if (connection.readyState === ws.OPEN) {
+                connection.send(m);
+              }
+            };
+          };
+
+          const _playerLeave = playerId => {
+            const oldAssetInstances = assetInstances.slice();
+            for (let i = 0; i < oldAssetInstances.length; i++) {
+              const assetInstance = oldAssetInstances[i];
+              if (String(assetInstance.owner) === playerId) {
+                assetInstances.splice(assetInstances.indexOf(assetInstance), 1);
+
+                _broadcastAll(JSON.stringify({type: 'removeAsset', args: {assetId: assetInstance.assetId}}));
+
+                analytics.removeFile({id: assetInstance.id});
+              }
+            }
+          };
+          multiplayer.on('playerLeave', _playerLeave);
+
+          this._cleanup = () => {
+            wss.removeListener('connection', _connection);
+            multiplayer.removeListener('playerLeave', c);
+          };
         }
       });
   }

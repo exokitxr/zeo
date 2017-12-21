@@ -225,7 +225,7 @@ class Wallet {
                   return vridApi.set('assets', assets);
                 });
 
-              const _addAsset = (assetId, id, name, ext, json, file, n, physics, matrix, visible, open) => {
+              const _addAsset = (assetId, id, name, ext, json, file, n, owner, physics, matrix, visible, open) => {
                 const position = new THREE.Vector3(matrix[0], matrix[1], matrix[2]);
                 const rotation = new THREE.Quaternion(matrix[3], matrix[4], matrix[5], matrix[6]);
                 const scale = new THREE.Vector3(matrix[7], matrix[8], matrix[9]);
@@ -238,6 +238,7 @@ class Wallet {
                   json,
                   file,
                   n,
+                  owner,
                   physics,
                   visible,
                   open,
@@ -273,13 +274,14 @@ class Wallet {
                           json,
                           file,
                           n,
+                          owner,
                           physics,
                           matrix,
                           visible,
                           open,
                         } = assetSpec;
 
-                        _addAsset(assetId, id, name, ext, json, file, n, physics, matrix, visible, open);
+                        _addAsset(assetId, id, name, ext, json, file, n, owner, physics, matrix, visible, open);
                       }
                     } else if (type === 'addAsset') {
                       const {
@@ -290,13 +292,14 @@ class Wallet {
                         json,
                         file,
                         n,
+                        owner,
                         physics,
                         matrix,
                         visible,
                         open,
                       } = args;
 
-                      _addAsset(assetId, id, name, ext, json, file, n, physics, matrix, visible, open);
+                      _addAsset(assetId, id, name, ext, json, file, n, owner, physics, matrix, visible, open);
                     } else if (type === 'removeAsset') {
                       const {
                         id,
@@ -315,6 +318,14 @@ class Wallet {
 
                       const assetInstance = assetsMesh.getAssetInstance(id);
                       assetInstance.updateAttribute(name, value);
+                    } else if (type === 'setOwner') {
+                      const {
+                        id,
+                        owner,
+                      } = args;
+
+                      const assetInstance = assetsMesh.getAssetInstance(id);
+                      assetInstance.updateOwner(owner);
                     } else if (type === 'setVisible') {
                       const {
                         id,
@@ -481,6 +492,7 @@ class Wallet {
                     json,
                     file,
                     n,
+                    owner,
                     physics,
                     visible,
                     open,
@@ -499,6 +511,7 @@ class Wallet {
                     this.ext = ext;
                     this.json = json;
                     this.file = file;
+                    this.owner = owner;
                     this.physics = physics;
                     this.visible = visible;
                     this.open = open;
@@ -594,6 +607,19 @@ class Wallet {
                     }));
                   }
 
+                  setOwner(owner) {
+                    this.owner = owner;
+                    this.emit('setOwner', owner);
+
+                    connection && connection.send(JSON.stringify({
+                      method: 'setOwner',
+                      args: {
+                        assetId: this.assetId,
+                        owner,
+                      },
+                    }));
+                  }
+
                   setOpen(open) {
                     this.open = open;
                     this.emit('setOpen', open);
@@ -665,6 +691,11 @@ class Wallet {
                     }
                   }
 
+                  updateOwner(owner) {
+                    this.owner = owner;
+                    this.emit('setOwner', owner);
+                  }
+
                   updateVisible(visible) {
                     this.visible = visible;
                     this.emit('setVisible', visible);
@@ -688,8 +719,8 @@ class Wallet {
                 const assetInstances = [];
                 mesh.getAssetInstances = () => assetInstances;
                 mesh.getAssetInstance = id => assetInstances.find(assetInstance => assetInstance.id === id);
-                mesh.addAssetInstance = (assetId, id, name, ext, json, file, n, physics, visible, open, position, rotation, scale, localPosition, localRotation, localScale) => {
-                  const assetInstance = new AssetInstance(assetId, id, name, ext, json, file, n, physics, visible, open, position, rotation, scale, localPosition, localRotation, localScale);
+                mesh.addAssetInstance = (assetId, id, name, ext, json, file, n, owner, physics, visible, open, position, rotation, scale, localPosition, localRotation, localScale) => {
+                  const assetInstance = new AssetInstance(assetId, id, name, ext, json, file, n, owner, physics, visible, open, position, rotation, scale, localPosition, localRotation, localScale);
 
                   hand.addGrabbable(assetInstance);
                   assetInstances.push(assetInstance);
@@ -978,6 +1009,7 @@ class Wallet {
                   json,
                   file,
                   position: DEFAULT_MATRIX,
+                  owner: null,
                   physics: false,
                   visible: true,
                   open: false,
@@ -1084,6 +1116,7 @@ class Wallet {
                     name: file.name,
                   },
                   position: dropMatrix,
+                  owner: null,
                   physics: true,
                   visible: true,
                   open: false,
@@ -1121,6 +1154,7 @@ class Wallet {
                     json,
                     file,
                     position: matrix,
+                    owner,
                     physics,
                     visible,
                     open,
@@ -1138,6 +1172,7 @@ class Wallet {
                     json,
                     file,
                     n,
+                    owner,
                     physics,
                     visible,
                     open,
@@ -1162,6 +1197,7 @@ class Wallet {
                       json,
                       file,
                       n,
+                      owner,
                       physics,
                       matrix,
                       visible,
