@@ -6,7 +6,9 @@
   "serves": {
     "arrow-left.png": "lib/img/arrow-left.png",
     "arrow-down.png": "lib/img/arrow-down.png",
-    "link.png": "lib/img/link.png"
+    "link.png": "lib/img/link.png",
+    "x.png": "lib/img/x.png",
+    "up.png": "lib/img/up.png"
   },
   "dependencies": {
     "html-tag-names": "^1.1.2"

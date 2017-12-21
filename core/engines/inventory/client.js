@@ -1846,7 +1846,7 @@ class Inventory {
                   ];
                 } else {
                   return [
-                    _requestImageData('archae/inventory/img/up.png')
+                    _requestImageData('/archae/plugins/_core_engines_inventory/serve/up.png')
                       .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
                         localVector.set(
                           WORLD_WIDTH / 2 - pixelSize * 16 - pixelSize * 16*1.5,
@@ -1856,7 +1856,7 @@ class Inventory {
                         zeroQuaternion,
                         oneVector
                       ))),
-                    _requestImageData('archae/inventory/img/x.png')
+                    _requestImageData('/archae/plugins/_core_engines_inventory/serve/x.png')
                       .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
                         localVector.set(
                           WORLD_WIDTH / 2 - pixelSize * 16,
