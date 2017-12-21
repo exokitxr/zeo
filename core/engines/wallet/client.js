@@ -206,10 +206,14 @@ class Wallet {
                       id,
                       name,
                       ext,
-                      json,
-                      file,
                       timestamp: Date.now(),
                     };
+                    if (json) {
+                      assetSpec.json = json;
+                    }
+                    if (file) {
+                      assetSpec.file = file;
+                    }
                     assets.push(assetSpec);
                   }
 
