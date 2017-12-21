@@ -45,17 +45,6 @@ class World {
       });
     });
     const _requestTagsJson = () => _requestFile(worldTagsJsonPath, DEFAULT_TAGS);
-    const _ensureWorldPath = () => new Promise((accept, reject) => {
-      const worldPath = path.join(dirname, dataDirectory, 'world');
-
-      mkdirp(worldPath, err => {
-        if (!err) {
-          accept();
-        } else {
-          reject(err);
-        }
-      });
-    });
 
     return Promise.all([
       archae.requestPlugins([
@@ -63,7 +52,6 @@ class World {
         '/core/engines/analytics',
       ]),
       _requestTagsJson(),
-      _ensureWorldPath(),
     ])
       .then(([
         [
@@ -71,13 +59,18 @@ class World {
           analytics,
         ],
         tagsJson,
-        ensureWorldPathResult,
       ]) => {
         if (live) {
           const _saveFile = (p, j) => new Promise((accept, reject) => {
-            fs.writeFile(p, JSON.stringify(j, null, 2), 'utf8', err => {
+            mkdirp(path.dirname(p), err => {
               if (!err) {
-                accept();
+                fs.writeFile(p, JSON.stringify(j, null, 2), 'utf8', err => {
+                  if (!err) {
+                    accept();
+                  } else {
+                    reject(err);
+                  }
+                });
               } else {
                 reject(err);
               }
