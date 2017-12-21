@@ -9,8 +9,6 @@ const {
 
 const SIDES = ['left', 'right'];
 
-const _makeId = () => Math.random().toString(36).substring(7);
-
 class GlassVr {
   mount() {
     const {three: {THREE, scene, camera, renderer}, pose, input, render, items} = zeo;
@@ -482,5 +480,6 @@ class GlassVr {
     this._cleanup();
   }
 }
+const _makeId = () => Math.random().toString(36).substring(7);
 
 module.exports = GlassVr;
