@@ -17,7 +17,7 @@ const {
 } = require('./lib/constants/menu');
 
 const NUM_POSITIONS = 500 * 1024;
-const MENU_RANGE = 3;
+const MENU_RANGE = 4;
 const SIDES = ['left', 'right'];
 
 const width = 0.1;
@@ -232,6 +232,7 @@ class Inventory {
       _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/arrow-left.png'),
       _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/arrow-down.png'),
       _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/link.png'),
+      _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/box.png'),
       // _requestImageBitmap('/archae/inventory/img/color.png'),
     ]).then(([
       [
@@ -259,6 +260,7 @@ class Inventory {
       arrowLeftImg,
       arrowDownImg,
       linkImg,
+      boxImg,
       // colorImg,
     ]) => {
       if (live) {
@@ -879,11 +881,10 @@ class Inventory {
           THREE.UVMapping,
           THREE.ClampToEdgeWrapping,
           THREE.ClampToEdgeWrapping,
-          THREE.LinearFilter,
-          THREE.LinearFilter,
+          THREE.NearestFilter,
+          THREE.NearestFilter,
           THREE.RGBAFormat,
-          THREE.UnsignedByteType,
-          16
+          THREE.UnsignedByteType
         );
 
         let tab = 'status';
@@ -1026,9 +1027,9 @@ class Inventory {
           // ctx.clearRect(0, 0, canvas.width, canvas.height);
 
           ctx.fillStyle = '#FFF';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          // ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-          ctx.fillStyle = '#111';
+          /* ctx.fillStyle = '#111';
           ctx.fillRect(0, 0, canvas.width, 150);
 
           ctx.font = `${fontSize}px Open sans`;
@@ -1038,42 +1039,39 @@ class Inventory {
           ctx.fillStyle = tab === 'mods' ? '#4CAF50' : '#FFF';
           ctx.fillText('Mods', canvas.width * 1/8 + (canvas.width/8 - ctx.measureText('Mods').width)/2, 150 - 60, canvas.width / 8);
           ctx.fillStyle = tab === 'files' ? '#4CAF50' : '#FFF';
-          ctx.fillText('Files', canvas.width * 2/8 + (canvas.width/8 - ctx.measureText('Files').width)/2, 150 - 60, canvas.width / 8);
+          ctx.fillText('Files', canvas.width * 2/8 + (canvas.width/8 - ctx.measureText('Files').width)/2, 150 - 60, canvas.width / 8); */
 
           ctx.fillStyle = '#4CAF50';
           if (tab === 'status') {
-            ctx.fillRect(canvas.width * 0/8, 150 - 10, canvas.width / 8, 10);
+            ctx.fillRect(canvas.width * 0/8, -10, canvas.width / 8, 10);
 
             ctx.fillStyle = '#EEE';
-            ctx.fillRect(0, 150, canvas.width, 150);
+            ctx.fillRect(0, 0, canvas.width, 150);
 
             if (localProfileImg) {
-              ctx.drawImage(localProfileImg, canvas.width * 0.8, 150 + 20, 100, 100);
+              ctx.drawImage(localProfileImg, canvas.width * 0.8, 20, 100, 100);
             } else {
               ctx.fillStyle = '#EEE';
-              ctx.fillRect(canvas.width * 0.8, 150 + 20, 100, 100);
+              ctx.fillRect(canvas.width * 0.8, 20, 100, 100);
             }
             ctx.fillStyle = '#111';
-            ctx.fillText(bootstrap.getUsername(), canvas.width * 0.8 + 100 + 30, 150 + 90);
+            ctx.fillText(bootstrap.getUsername(), canvas.width * 0.8 + 100 + 30, 90);
 
             ctx.font = `${fontSize*1.6}px Open sans`;
-            ctx.fillText('Server', 60, 150 + fontSize*2 + 35);
-
-            // ctx.fillStyle = '#111';
-            // ctx.fillRect(0, 150 + fontSize*1.6 + 50, canvas.width, 2);
+            // ctx.fillText('My VR Server', 60, fontSize*2 + 35);
 
             ctx.font = `${fontSize}px Open sans`;
             for (let i = 0; i < remoteProfiles.length; i++) {
               const {username: remoteUsername, profileImg: remoteProfileImg} = remoteProfiles[i];
 
               if (remoteProfileImg) {
-                ctx.drawImage(remoteProfileImg, 40, 150*2 + 40 + i*(100 + 40), 100, 100);
+                ctx.drawImage(remoteProfileImg, 40, 150 + 40 + i*(100 + 40), 100, 100);
 
                 ctx.fillStyle = '#111';
-                ctx.fillText(remoteUsername, 40 + 100 + 30, 150*2 + 100 + i*(100 + 40));
+                ctx.fillText(remoteUsername, 40 + 100 + 30, 150 + 100 + i*(100 + 40));
               } else {
                 ctx.fillStyle = '#EEE';
-                ctx.fillRect(40, 150*2 + 40 + i*(100 + 40), 100, 100);
+                ctx.fillRect(40, 150 + 40 + i*(100 + 40), 100, 100);
               }
             }
           } else if (tab === 'mods') {
@@ -1696,7 +1694,7 @@ class Inventory {
         menuMesh.add(plane);
         uiTracker.addPlane(plane);
 
-        const lensMesh = (() => {
+        /* const lensMesh = (() => {
           const object = new THREE.Object3D();
           // object.position.set(0, 0, 0);
 
@@ -1753,14 +1751,15 @@ class Inventory {
 
           return object;
         })();
-        menuMesh.add(lensMesh);
+        menuMesh.add(lensMesh); */
 
         const _makePlaneMesh = (width, height, texture) => {
           const geometry = new THREE.PlaneBufferGeometry(width, height);
           const material = new THREE.MeshBasicMaterial({
-            map: texture,
+            // map: texture,
             side: THREE.DoubleSide,
-            // transparent: true,
+            transparent: true,
+            alphaTest: 0.5,
             // renderOrder: -1,
           });
           const mesh = new THREE.Mesh(geometry, material);
@@ -1768,7 +1767,123 @@ class Inventory {
           return mesh;
         };
         const planeMesh = _makePlaneMesh(WORLD_WIDTH, WORLD_HEIGHT, texture);
+        planeMesh.material.map = texture;
         menuMesh.add(planeMesh);
+
+        const planeMeshLeft = _makePlaneMesh(WORLD_WIDTH, WORLD_HEIGHT, texture);
+        const s = Math.sqrt(Math.pow(WORLD_WIDTH, 2) / 2);
+        planeMeshLeft.position.set(-WORLD_WIDTH/2 - s/2, 0, s/2);
+        planeMeshLeft.quaternion.setFromAxisAngle(localVector.set(0, 1, 0), Math.PI/4);
+        planeMeshLeft.updateMatrixWorld();
+        planeMeshLeft.material.map = (() => {
+          const canvas = document.createElement('canvas');
+          canvas.width = WIDTH;
+          canvas.height = HEIGHT;
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#FFF';
+          // ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+          ctx.fillStyle = '#EEE';
+          ctx.fillRect(0, 0, canvas.width, 150);
+
+          ctx.fillStyle = '#111';
+          ctx.font = `${fontSize*1.6}px Open sans`;
+          ctx.fillText('Server', 60, fontSize*2 + 35);
+
+          for (let x = 0; x < 6; x++) {
+            for (let y = 0; y < 4; y++) {
+              ctx.drawImage(boxImg, x * canvas.width/6, 150 + y * canvas.width/6, canvas.width/6, canvas.width/6);
+            }
+          }
+
+          const texture = new THREE.Texture(
+            canvas,
+            THREE.UVMapping,
+            THREE.ClampToEdgeWrapping,
+            THREE.ClampToEdgeWrapping,
+            THREE.NearestFilter,
+            THREE.NearestFilter,
+            THREE.RGBAFormat,
+            THREE.UnsignedByteType
+          );
+          texture.needsUpdate = true;
+          return texture;
+        })();
+        menuMesh.add(planeMeshLeft);
+        const planeLeft = new THREE.Object3D();
+        planeLeft.visible = false;
+        planeLeft.position.copy(planeMeshLeft.position);
+        planeLeft.quaternion.copy(planeMeshLeft.quaternion);
+        planeLeft.scale.copy(planeMeshLeft.scale);
+        planeLeft.updateMatrixWorld();
+        // planeLeft.visible = false;
+        planeLeft.width = ITEM_MENU_SIZE;
+        planeLeft.height = ITEM_MENU_SIZE;
+        planeLeft.worldWidth = WORLD_WIDTH;
+        planeLeft.worldHeight = WORLD_HEIGHT;
+        planeLeft.open = false;
+        planeLeft.anchors = [];
+        menuMesh.add(planeLeft);
+        uiTracker.addPlane(planeLeft);
+
+        const planeMeshRight = _makePlaneMesh(WORLD_WIDTH, WORLD_HEIGHT, texture);
+        planeMeshRight.position.set(WORLD_WIDTH/2 + s/2, 0, s/2);
+        planeMeshRight.quaternion.setFromAxisAngle(localVector.set(0, 1, 0), -Math.PI/4);
+        planeMeshRight.updateMatrixWorld();
+        planeMeshRight.material.map = (() => {
+          const canvas = document.createElement('canvas');
+          canvas.width = WIDTH;
+          canvas.height = HEIGHT;
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#FFF';
+          // ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+          ctx.fillStyle = '#EEE';
+          ctx.fillRect(0, 0, canvas.width, 150);
+
+          ctx.fillStyle = '#111';
+          ctx.font = `${fontSize*1.6}px Open sans`;
+          ctx.fillText('Inventory', 60, fontSize*2 + 35);
+
+          for (let x = 0; x < 5; x++) {
+            for (let y = 0; y < 4; y++) {
+              ctx.drawImage(boxImg, x * canvas.width/6, 150 + y * canvas.width/6, canvas.width/6, canvas.width/6);
+            }
+          }
+
+          ctx.font = `${fontSize}px Open sans`;
+          ctx.fillText('Save', 5.25 * canvas.width/6, 150 + 425);
+          ctx.fillText('Remove', 5.25 * canvas.width/6, 150 + 850);
+
+          const texture = new THREE.Texture(
+            canvas,
+            THREE.UVMapping,
+            THREE.ClampToEdgeWrapping,
+            THREE.ClampToEdgeWrapping,
+            THREE.NearestFilter,
+            THREE.NearestFilter,
+            THREE.RGBAFormat,
+            THREE.UnsignedByteType
+          );
+          texture.needsUpdate = true;
+          return texture;
+        })();
+        menuMesh.add(planeMeshRight);
+        const planeRight = new THREE.Object3D();
+        planeRight.visible = false;
+        planeRight.position.copy(planeMeshRight.position);
+        planeRight.quaternion.copy(planeMeshRight.quaternion);
+        planeRight.scale.copy(planeMeshRight.scale);
+        planeRight.updateMatrixWorld();
+        // planeRight.visible = false;
+        planeRight.width = ITEM_MENU_SIZE;
+        planeRight.height = ITEM_MENU_SIZE;
+        planeRight.worldWidth = WORLD_WIDTH;
+        planeRight.worldHeight = WORLD_HEIGHT;
+        planeRight.open = false;
+        planeRight.anchors = [];
+        menuMesh.add(planeRight);
+        uiTracker.addPlane(planeRight);
 
         const {dotMeshes, boxMeshes} = uiTracker;
         for (let i = 0; i < SIDES.length; i++) {
@@ -1806,8 +1921,33 @@ class Inventory {
           })();
           const material = assetsMaterial;
           const mesh = new THREE.Mesh(geometry, material);
+          mesh.frustumCulled = false;
           const _renderAssets = _debounce(next => {
-            const promises = (() => {
+            const s = Math.sqrt(Math.pow(WORLD_WIDTH, 2) / 2);
+            const promises = [
+              _requestImageData('/archae/plugins/_core_engines_inventory/serve/up.png')
+                .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
+                  localVector.set(
+                    WORLD_WIDTH / 2 + s - pixelSize * 16,
+                    WORLD_HEIGHT / 2 - pixelSize * 16 * 2,
+                    s
+                  ),
+                  zeroQuaternion,
+                  oneVector
+                ))),
+              _requestImageData('/archae/plugins/_core_engines_inventory/serve/x.png')
+                .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
+                  localVector.set(
+                    WORLD_WIDTH / 2 + s - pixelSize * 16,
+                    WORLD_HEIGHT / 2 - pixelSize * 16 * 2 - pixelSize * 16 * 2,
+                    s
+                  ),
+                  zeroQuaternion,
+                  oneVector
+                ))),
+            ];
+
+            /* const promises = (() => {
               if (tab === 'mods' && subtab === 'installed' && localMod) {
                 if (localMod.metadata && localMod.metadata.items && Array.isArray(localMod.metadata.items) && localMod.metadata.items.length > 0) {
                   return [
@@ -1871,7 +2011,7 @@ class Inventory {
               } else {
                 return [];
               }
-            })();
+            })(); */
             Promise.all(promises)
               .then(geometrySpecs => {
                 const positions = new Float32Array(NUM_POSITIONS);
@@ -1919,6 +2059,8 @@ class Inventory {
 
           menuState.open = false;
           plane.open = false;
+          planeLeft.open = false;
+          planeRight.open = false;
 
           sfx.digi_powerdown.trigger();
 
@@ -1948,6 +2090,8 @@ class Inventory {
           menuState.rotation.copy(newMenuRotation);
           menuState.scale.copy(newMenuScale);
           plane.open = true;
+          planeLeft.open = true;
+          planeRight.open = true;
 
           sfx.digi_slide.trigger();
 
@@ -2238,12 +2382,18 @@ class Inventory {
                   planeMesh.scale.set(1, value, 1);
                   planeMesh.updateMatrixWorld();
 
+                  planeMeshLeft.scale.set(1, value, 1);
+                  planeMeshLeft.updateMatrixWorld();
+
+                  planeMeshRight.scale.set(1, value, 1);
+                  planeMeshRight.updateMatrixWorld();
+
                   assetsMesh.scale.set(1, value, 1);
                   assetsMesh.updateMatrixWorld();
 
                   // lensMesh.scale.set(value, value, value);
                   // lensMesh.updateMatrixWorld();
-                  lensMesh.planeMesh.material.uniforms.opacity.value = value;
+                  // lensMesh.planeMesh.material.uniforms.opacity.value = value;
 
                   menuMesh.visible = true;
                 } else {
@@ -2258,13 +2408,13 @@ class Inventory {
           _updateUiTracker();
           _updateAnimation();
         });
-        rend.on('updateEye', eyeCamera => {
+        /* rend.on('updateEye', eyeCamera => {
           if (menuMesh.visible) {
             lensMesh.planeMesh.visible = false;
             lensMesh.render(scene, eyeCamera);
             lensMesh.planeMesh.visible = true;
           }
-        });
+        }); */
       }
     });
   }

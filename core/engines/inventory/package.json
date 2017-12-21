@@ -8,7 +8,8 @@
     "arrow-down.png": "lib/img/arrow-down.png",
     "link.png": "lib/img/link.png",
     "x.png": "lib/img/x.png",
-    "up.png": "lib/img/up.png"
+    "up.png": "lib/img/up.png",
+    "box.png": "lib/img/box.png"
   },
   "dependencies": {
     "html-tag-names": "^1.1.2"
