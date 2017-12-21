@@ -722,7 +722,7 @@ class Wallet {
 
                 const assetInstances = [];
                 mesh.getAssetInstances = () => assetInstances;
-                mesh.getAssetInstance = id => assetInstances.find(assetInstance => assetInstance.id === id);
+                mesh.getAssetInstance = assetId => assetInstances.find(assetInstance => assetInstance.assetId === assetId);
                 mesh.addAssetInstance = (assetId, id, name, ext, json, file, n, owner, physics, visible, open, position, rotation, scale, localPosition, localRotation, localScale) => {
                   const assetInstance = new AssetInstance(assetId, id, name, ext, json, file, n, owner, physics, visible, open, position, rotation, scale, localPosition, localRotation, localScale);
 
