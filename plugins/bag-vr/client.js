@@ -10,7 +10,7 @@ const DEFAULT_MATRIX = [
 
 class BagVr {
   mount() {
-    const {three: {THREE, scene, camera}, input, hands, items, pose, notification, render} = zeo;
+    const {three: {THREE, scene, camera}, input, hands, items, pose, player, notification, render} = zeo;
 
     const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
     const _decomposeMatrix = matrix => {
@@ -279,6 +279,7 @@ class BagVr {
                 json,
                 file,
                 position: zeroVector.toArray().concat(zeroQuaternion.toArray()).concat(localVector.copy(oneVector).multiplyScalar(0.4).toArray()),
+                owner: player.getId(),
                 physics: false,
                 visible: true,
                 open: false,
