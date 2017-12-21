@@ -306,53 +306,53 @@ class Wallet {
                       _addAsset(assetId, id, name, ext, json, file, n, owner, physics, matrix, visible, open);
                     } else if (type === 'removeAsset') {
                       const {
-                        id,
+                        assetId,
                       } = args;
 
-                      const assetInstance = assetsMesh.getAssetInstance(id);
+                      const assetInstance = assetsMesh.getAssetInstance(assetId);
                       _unbindAssetInstance(assetInstance);
 
-                      assetsMesh.removeAssetInstance(id);
+                      assetsMesh.removeAssetInstance(assetId);
                     } else if (type === 'setAttribute') {
                       const {
-                        id,
+                        assetId,
                         name,
                         value,
                       } = args;
 
-                      const assetInstance = assetsMesh.getAssetInstance(id);
+                      const assetInstance = assetsMesh.getAssetInstance(assetId);
                       assetInstance.updateAttribute(name, value);
                     } else if (type === 'setOwner') {
                       const {
-                        id,
+                        assetId,
                         owner,
                       } = args;
 
-                      const assetInstance = assetsMesh.getAssetInstance(id);
+                      const assetInstance = assetsMesh.getAssetInstance(assetId);
                       assetInstance.updateOwner(owner);
                     } else if (type === 'setVisible') {
                       const {
-                        id,
+                        assetId,
                         visible,
                       } = args;
 
-                      const assetInstance = assetsMesh.getAssetInstance(id);
+                      const assetInstance = assetsMesh.getAssetInstance(assetId);
                       assetInstance.updateVisible(visible);
                     } else if (type === 'setPhysics') {
                       const {
-                        id,
+                        assetId,
                         physics,
                       } = args;
 
-                      const assetInstance = assetsMesh.getAssetInstance(id);
+                      const assetInstance = assetsMesh.getAssetInstance(assetId);
                       assetInstance.updatePhysics(physics);
                     } else if (type === 'setOpen') {
                       const {
-                        id,
+                        assetId,
                         open,
                       } = args;
 
-                      const assetInstance = assetsMesh.getAssetInstance(id);
+                      const assetInstance = assetsMesh.getAssetInstance(assetId);
                       assetInstance.updateOpen(open);
                     } else {
                       console.warn('wallet got unknown message type:', JSON.stringify(type));
