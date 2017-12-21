@@ -2,6 +2,11 @@ const BAG_Y_OFFSET = -0.5;
 const BAG_Z_OFFSET = -0.05;
 
 const SIDES = ['left', 'right'];
+const DEFAULT_MATRIX = [
+  0, 0, 0,
+  0, 0, 0, 1,
+  1, 1, 1,
+];
 
 class BagVr {
   mount() {
@@ -260,18 +265,36 @@ class BagVr {
           }
         })
         .then(assetsData => {
-          if (assetsData) {
-            const {id, name, ext, json, file} = assetsData;
-            // XXX hook this in
-            /* const itemSpec = {
-              type: 'asset',
-              id,
-              name,
-              displayName: name,
-            }; */
+          assetsData = assetsData || [];
+          for (let i = 0; i < assetsData.length; i++) {
+            const assetData = assetsData[i];
+
+            if (assetData) {
+              const {id, name, ext, json, file} = assetData;
+              const itemSpec = {
+                assetId: _makeId(),
+                id,
+                name,
+                ext,
+                json,
+                file,
+                position: zeroVector.toArray().concat(zeroQuaternion.toArray()).concat(localVector.copy(oneVector).multiplyScalar(0.4).toArray()),
+                physics: false,
+                visible: true,
+                open: false,
+              };
+              const grabbable = items.makeItem(itemSpec); // XXX remove these on hte server side on quit via owner binding
+
+              const equipmentBoxMesh = bagMesh.equipmentBoxMeshes[i];
+              equipmentBoxMesh.add(grabbable.mesh);
+              // grabbable.setState(zeroVector, zeroQuaternion, localVector.copy(oneVector).multiplyScalar(0.4));
+
+              equipmentState.assets[i] = grabbable;
+            }
           }
         });
     };
+    _loadEquipment();
     const _saveEquipment = _debounce(next => {
       items.requestStorageFiles()
         .then(storageFiles => {
@@ -291,7 +314,7 @@ class BagVr {
                 name: assetInstance.name,
                 ext: assetInstance.ext,
               };
-              if (assetInstance.json) { // XXX hook this in
+              if (assetInstance.json) {
                 assetData.json = assetInstance.json;
               }
               if (assetInstance.file) {
@@ -399,7 +422,7 @@ class BagVr {
         const assetInstances = items.getAssetInstances();
         for (let i = 0; i < assetInstances.length; i++) {
           const assetInstance = assetInstances[i];
-          if (!assetInstance.isGrabbed()) {
+          if (!assetInstance.isGrabbed() && !equipmentState.assets.includes(assetInstance)) {
             const diffVector = localVector2.copy(assetInstance.position)
               .applyMatrix4(destinationMatrixInverse)
               .sub(zeroVector);
@@ -509,6 +532,7 @@ class BagVr {
     this._cleanup();
   }
 }
+const _makeId = () => Math.random().toString(36).substring(7);
 const _debounce = fn => {
   let running = false;
   let queued = false;
