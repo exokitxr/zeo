@@ -901,62 +901,60 @@ class Wallet {
               };
 
               const _bindAssetInstancePhysics = assetInstance => {
-                assetInstance.once('update', () => {
-                  let body = null;
-                  const _addBody = ({velocity = new THREE.Vector3()} = {}) => {
-                    body = stck.makeDynamicBoxBody(assetInstance.position, assetSizeVector, velocity);
-                    body.on('update', () => {
-                      assetInstance.setStateLocal(body.position, body.rotation, body.scale);
+                let body = null;
+                const _addBody = ({velocity = new THREE.Vector3()} = {}) => {
+                  body = stck.makeDynamicBoxBody(assetInstance.position, assetSizeVector, velocity);
+                  body.on('update', () => {
+                    assetInstance.setStateLocal(body.position, body.rotation, body.scale);
+                  });
+                  body.on('collide', () => {
+                    assetInstance.collide();
+                  });
+                };
+                const _removeBody = () => {
+                  stck.destroyBody(body);
+                  body = null;
+                };
+
+                assetInstance.on('release', e => {
+                  const {userId} = e;
+
+                  if (userId === localUserId) {
+                    const {side} = e;
+                    const player = cyborg.getPlayer();
+                    const linearVelocity = player.getControllerLinearVelocity(side);
+
+                    _addBody({
+                      velocity: linearVelocity,
                     });
-                    body.on('collide', () => {
-                      assetInstance.collide();
-                    });
-                  };
-                  const _removeBody = () => {
-                    stck.destroyBody(body);
-                    body = null;
-                  };
 
-                  assetInstance.on('release', e => {
-                    const {userId} = e;
-
-                    if (userId === localUserId) {
-                      const {side} = e;
-                      const player = cyborg.getPlayer();
-                      const linearVelocity = player.getControllerLinearVelocity(side);
-
-                      _addBody({
-                        velocity: linearVelocity,
-                      });
-
-                      assetInstance.enablePhysics();
-                    }
-                  });
-                  assetInstance.on('grab', e => {
-                    const {userId} = e;
-                    if (userId === localUserId) {
-                      assetInstance.disablePhysics();
-                    }
-                  });
-                  assetInstance.on('physics', enabled => {
-                    if (enabled && !body) {
-                      _addBody();
-                    } else if (!enabled && body) {
-                      _removeBody();
-                    }
-                  });
-                  assetInstance.on('destroy', () => {
-                    if (body) {
-                      _removeBody();
-                    }
-                  });
-
-                  if (assetInstance.physics) {
-                    _addBody();
-                  } else {
-                    assetInstance.emit('update');
+                    assetInstance.enablePhysics();
                   }
                 });
+                assetInstance.on('grab', e => {
+                  const {userId} = e;
+                  if (userId === localUserId) {
+                    assetInstance.disablePhysics();
+                  }
+                });
+                assetInstance.on('physics', enabled => {
+                  if (enabled && !body) {
+                    _addBody();
+                  } else if (!enabled && body) {
+                    _removeBody();
+                  }
+                });
+                assetInstance.on('destroy', () => {
+                  if (body) {
+                    _removeBody();
+                  }
+                });
+
+                if (assetInstance.physics) {
+                  _addBody();
+                } else {
+                  assetInstance.emit('update');
+                }
               };
               const _bindAssetInstanceMenu = assetInstance => {
                 assetInstance.once('update', () => {
