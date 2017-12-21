@@ -83,7 +83,7 @@ class Wallet {
 
                   _broadcast(JSON.stringify({type: 'removeAsset', args: {assetId}}));
 
-                  analytics.removeFile({id});
+                  analytics.removeFile({assetId});
                 } else if (method === 'setAttribute') {
                   const {assetId, name, value} = args;
                   const assetInstance = assetInstances.find(assetInstance => assetInstance.assetId === assetId);
