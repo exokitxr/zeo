@@ -444,6 +444,7 @@ class BagVr {
                 equipmentBoxMesh.add(grabbable.mesh);
                 grabbable.setState(zeroVector, zeroQuaternion, localVector.copy(oneVector).multiplyScalar(0.4));
                 grabbable.disablePhysics();
+                grabbable.setOwner(player.getId());
 
                 equipmentState.assets[freeEquipmentIndex] = grabbable;
                 _saveEquipment();
@@ -478,6 +479,7 @@ class BagVr {
           scene.add(grabbable.mesh);
 
           grabbable.grab(side);
+          grabbable.setOwner(null);
 
           equipmentState.assets[equipmentIndex] = null;
           _saveEquipment();
@@ -496,6 +498,7 @@ class BagVr {
         equipmentBoxMesh.add(grabbable.mesh);
         grabbable.setState(zeroVector, zeroQuaternion, localVector.copy(oneVector).multiplyScalar(0.4));
         grabbable.disablePhysics();
+        grabbable.setOwner(player.getId());
 
         equipmentState.assets[equipmentIndex] = grabbable;
         _saveEquipment();

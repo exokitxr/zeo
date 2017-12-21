@@ -1,7 +1,7 @@
 {
   "name": "bag-vr",
   "description": "Provides a waist bag for carrying items.",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "client": "client.js",
   "keywords": [
     "zeo-mod"
