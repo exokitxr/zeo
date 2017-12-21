@@ -807,6 +807,7 @@ class Inventory {
 
         const localVector = new THREE.Vector3();
         const localVector2 = new THREE.Vector3();
+        const localQuaternion = new THREE.Quaternion();
         const localMatrix = new THREE.Matrix4();
         const zeroQuaternion = new THREE.Quaternion();
         const oneVector = new THREE.Vector3(1, 1, 1);
@@ -1855,13 +1856,20 @@ class Inventory {
           ctx.font = `${fontSize*1.6}px Open sans`;
           ctx.fillText('Inventory', 60, fontSize*2 + 35);
 
+          ctx.font = `${fontSize}px Open sans`;
+
+          let i = 0;
           for (let x = 0; x < 5; x++) {
             for (let y = 0; y < 4; y++) {
               ctx.drawImage(boxImg, x * canvas.width/6, 150 + y * canvas.width/6, canvas.width/6, canvas.width/6);
+
+              const assetSpec = assets[i++];
+              if (assetSpec) {
+                ctx.fillText(`${assetSpec.name}.${assetSpec.ext}`, x * canvas.width/6, 150 + (y+1) * canvas.width/6 - 20);
+              }
             }
           }
 
-          ctx.font = `${fontSize}px Open sans`;
           ctx.fillText('Save', 5.25 * canvas.width/6, 150 + 425);
           ctx.fillText('Remove', 5.25 * canvas.width/6, 150 + 850);
 
@@ -1965,7 +1973,29 @@ class Inventory {
                   zeroQuaternion,
                   oneVector
                 ))),
-            ];
+            ].concat(
+              assets.map((assetSpec, i) => {
+                const x = Math.floor(i % 5);
+                const y = Math.floor(i / 5);
+                return fetch(`https://my-site.zeovr.io/imgData/files/${assetSpec.name}.${assetSpec.ext}`)
+                  .then(_resArrayBuffer)
+                  .then(buffer => ({
+                    width: 16,
+                    height: 16,
+                    data: {buffer},
+                  }))
+                  .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
+                    localVector.set(
+                      x * WORLD_WIDTH/6,
+                      WORLD_HEIGHT/2 - 150*WORLD_HEIGHT/HEIGHT - y * WORLD_WIDTH/6 - WORLD_WIDTH/6/2,
+                      0
+                    ).applyQuaternion(localQuaternion.setFromAxisAngle(localVector2.set(0, 1, 0), -Math.PI/4))
+                    .add(localVector2.set(WORLD_WIDTH/2, 0, Math.sqrt(pixelSize * 16)/2)),
+                    zeroQuaternion,
+                    oneVector
+                  )));
+              })
+            );
 
             /* const promises = (() => {
               if (tab === 'mods' && subtab === 'installed' && localMod) {
