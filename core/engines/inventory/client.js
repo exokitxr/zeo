@@ -1817,12 +1817,22 @@ class Inventory {
         planeLeft.scale.copy(planeMeshLeft.scale);
         planeLeft.updateMatrixWorld();
         // planeLeft.visible = false;
-        planeLeft.width = ITEM_MENU_SIZE;
-        planeLeft.height = ITEM_MENU_SIZE;
+        planeLeft.width = WIDTH;
+        planeLeft.height = HEIGHT;
         planeLeft.worldWidth = WORLD_WIDTH;
         planeLeft.worldHeight = WORLD_HEIGHT;
         planeLeft.open = false;
-        planeLeft.anchors = [];
+        planeLeft.anchors = (() => {
+          const result = [];
+          for (let x = 0; x < 6; x++) {
+            for (let y = 0; y < 4; y++) {
+              _pushAnchor(result, x * canvas.width/6, 150 + y * canvas.width/6, canvas.width/6, canvas.width/6, e => {
+                console.log('click', x, y);
+              });
+            }
+          }
+          return result;
+        })();
         menuMesh.add(planeLeft);
         uiTracker.addPlane(planeLeft);
 
@@ -1876,12 +1886,22 @@ class Inventory {
         planeRight.scale.copy(planeMeshRight.scale);
         planeRight.updateMatrixWorld();
         // planeRight.visible = false;
-        planeRight.width = ITEM_MENU_SIZE;
-        planeRight.height = ITEM_MENU_SIZE;
+        planeRight.width = WIDTH;
+        planeRight.height = HEIGHT;
         planeRight.worldWidth = WORLD_WIDTH;
         planeRight.worldHeight = WORLD_HEIGHT;
         planeRight.open = false;
-        planeRight.anchors = [];
+        planeRight.anchors = (() => {
+          const result = [];
+          for (let x = 0; x < 5; x++) {
+            for (let y = 0; y < 4; y++) {
+              _pushAnchor(result, x * canvas.width/6, 150 + y * canvas.width/6, canvas.width/6, canvas.width/6, e => {
+                console.log('click', x, y);
+              });
+            }
+          }
+          return result;
+        })();
         menuMesh.add(planeRight);
         uiTracker.addPlane(planeRight);
 
