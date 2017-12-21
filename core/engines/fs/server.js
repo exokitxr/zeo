@@ -1,8 +1,11 @@
 const path = require('path');
 const fs = require('fs');
+const https = require('https');
 const crypto = require('crypto');
 
 const mkdirp = require('mkdirp');
+const bodyParser = require('body-parser');
+const bodyParserJson = bodyParser.json();
 const rangeParser = require('range-parser');
 const murmur = require('murmurhash');
 
@@ -70,6 +73,63 @@ class Fs {
             });
           }
           app.put(/^\/archae\/fs\/(name|hash)\/([^\/]+)$/, serveFsUpload);
+
+          // copy file from local server to remote storage
+          function serveRemotizeFile(req, res, next) {
+            bodyParserJson(req, res, () => {
+              if (req.body && req.body.file && req.body.file.id && typeof req.body.file.id === 'number' && req.body.file.name && typeof req.body.file.name === 'string') {
+                const id = String(req.body.file.id);
+                const rs = fs.createReadStream(path.join(fsPath, id));
+                rs.on('error', err => {
+                  res.status(500);
+                  res.json({
+                    error: err.stack,
+                  });
+                });
+                const proxyReq = https.request({
+                  method: 'PUT',
+                  host: 'my-site.zeovr.io',
+                  path: `/files/${id}`,
+                });
+                proxyReq.on('error', err => {
+                  res.status(500);
+                  res.json({
+                    error: err.stack,
+                  });
+                });
+                proxyReq.on('finish', () => {
+                  res.json({});
+                });
+                rs.pipe(proxyReq);
+              } else {
+                res.status(400);
+                res.json({
+                  error: new Error('invalid arguments').stack,
+                });
+              }
+            });
+          }
+          app.post('/archae/fs/remotizeFile', serveRemotizeFile);
+
+          this._cleanup = () => {
+            browser.close();
+
+            clearInterval(interval);
+
+            function removeMiddlewares(route, i, routes) {
+              if (
+                route.handle.name === 'serveRendImg' ||
+                route.handle.name === 'serveSearch' ||
+                route.handle.name === 'serveMods'
+              ) {
+                routes.splice(i, 1);
+              }
+              if (route.route) {
+                route.route.stack.forEach(removeMiddlewares);
+              }
+            }
+            app._router.stack.forEach(removeMiddlewares);
+          };
 
           cleanups.push(() => {
             function removeMiddlewares(route, i, routes) {
