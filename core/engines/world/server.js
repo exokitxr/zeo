@@ -29,7 +29,6 @@ class World {
 
     const worldPath = path.join(dirname, dataDirectory, 'world');
     const worldTagsJsonPath = path.join(worldPath, 'tags.json');
-    const worldFilesJsonPath = path.join(worldPath, 'files.json');
 
     const _requestFile = (p, defaultValue) => new Promise((accept, reject) => {
       fs.readFile(p, 'utf8', (err, s) => {
