@@ -2141,6 +2141,7 @@ class Inventory {
         menuMesh.add(assetsMesh);
 
         let animation = null;
+        let savedAssetInstances = [];
         const _openMenu = () => {
           const {hmd: hmdStatus} = webvr.getStatus();
           const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
@@ -2177,6 +2178,9 @@ class Inventory {
 
             if (!assetInstance.owner) {
               assetInstance.saveState();
+              assetInstance.mesh.submesh.visible = true;
+
+              savedAssetInstances.push(assetInstance);
             }
           }
 
@@ -2191,6 +2195,11 @@ class Inventory {
           plane.open = false;
           planeLeft.open = false;
           planeRight.open = false;
+
+          for (let i = 0; i < savedAssetInstances.length; i++) {
+            const savedAssetInstance = savedAssetInstances[i];
+            savedAssetInstance.mesh.submesh.visible = savedAssetInstance.savedVisible;
+          }
 
           sfx.digi_powerdown.trigger();
 
