@@ -873,7 +873,7 @@ class Wallet {
               const itemApis = {};
               const _bindAssetInstance = assetInstance => {
                 if (assetInstance.ext === 'itm') {
-                  const {json: {data: {path}}} = assetInstance;
+                  const path = (assetInstance.json && assetInstance.json.data && assetInstance.json.data.path) || null;
                   const itemEntry = itemApis[path];
 
                   if (itemEntry) {
@@ -916,7 +916,7 @@ class Wallet {
                 if (typeof itemApi.path === 'string') {
                   const {path} = itemApi;
                   const boundAssetInstances = assetsMesh.getAssetInstances()
-                    .filter(assetInstance => assetInstance.path === path);
+                    .filter(assetInstance => assetInstance.json && assetInstance.json.data && assetInstance.json.data.path === path);
 
                   if (typeof itemApi.itemAddedCallback === 'function') {
                     for (let i = 0; i < boundAssetInstances.length; i++) {
