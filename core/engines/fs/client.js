@@ -131,6 +131,54 @@ class Fs {
           return _recurseEntries(entries)
             .then(() => files);
         };
+        const _uploadJsonFile = file => new Promise((accept, reject) => {
+          const reader = new FileReader();
+          reader.readAsText(file);
+          reader.onload = () => {
+            const s = reader.result;
+            const json = _jsonParse(s);
+            if (json !== null) {
+              accept(json);
+            } else {
+              _uploadDataFile(file)
+                .then(accept, reject);
+            }
+          };
+          reader.onerror = reject;
+        });
+        const _uploadDataFile = file => {
+          const serverFile = fsApi.makeServerFile(null, file.name);
+
+          const note = notification.addNotification(_makeNotificationText(0));
+
+          const req = serverFile.write(file);
+          req.onprogress = n => {
+            note.set(_makeNotificationText(n));
+          };
+          req.then(() => {
+            notification.removeNotification(note);
+
+            return serverFile;
+          })
+          .catch(err => {
+            notification.removeNotification(note);
+
+            return Promise.rejecr(err);
+          });
+        };
+        const _getDropMatrix = (numFiles, fileIndex) => {
+          const {hmd} = webvr.getStatus();
+          const {worldPosition: hmdPosition, worldRotation: hmdRotation, worldScale: hmdScale} = hmd;
+          const width = 0.2;
+          const fullWidth = (numFiles - 1) * width;
+          localVector.copy(hmdPosition)
+            .add(
+              localVector2.copy(forwardVector).multiplyScalar(0.5)
+                .add(localVector3.set(-fullWidth/2 + fileIndex*width, 0, 0))
+                .applyQuaternion(hmdRotation)
+            );
+          return localVector.toArray().concat(hmdRotation.toArray()).concat(hmdScale.toArray());
+        };
         const _makeNotificationText = n => {
           let s = 'Uploading ' + (n * 100).toFixed(1) + '% [';
           let i;
@@ -151,40 +199,25 @@ class Fs {
           if (items.length > 0) {
             _getFiles(items)
               .then(files => Promise.all(files.map((file, i) => {
-                const serverFile = fsApi.makeServerFile(null, file.name);
-                const dropMatrix = (() => {
-                  const {hmd} = webvr.getStatus();
-                  const {worldPosition: hmdPosition, worldRotation: hmdRotation, worldScale: hmdScale} = hmd;
-                  const width = 0.2;
-                  const fullWidth = (files.length - 1) * width;
-                  localVector.copy(hmdPosition)
-                    .add(
-                      localVector2.copy(forwardVector).multiplyScalar(0.5)
-                        .add(localVector3.set(-fullWidth/2 + i*width, 0, 0))
-                        .applyQuaternion(hmdRotation)
-                    );
-                  return localVector.toArray().concat(hmdRotation.toArray()).concat(hmdScale.toArray());
-                })();
-
-                const note = notification.addNotification(_makeNotificationText(0));
-
-                const req = serverFile.write(file);
-                req.onprogress = n => {
-                  note.set(_makeNotificationText(n));
-                };
-                req.then(() => {
-                  fsApi.emit('upload', {
-                    file: serverFile,
-                    dropMatrix,
-                  });
-
-                  notification.removeNotification(note);
-                })
-                .catch(err => {
-                  console.warn(err);
-
-                  notification.removeNotification(note);
-                });
+                if (/\.itm/.test(file.name)) {
+                  return _uploadJsonFile(file)
+                    .then(json => {
+                      fsApi.emit('upload', {
+                        fileName: file.name,
+                        json,
+                        dropMatrix: _getDropMatrix(files.length, i),
+                      });
+                    });
+                } else {
+                  return _uploadDataFile(file)
+                    .then(file => {
+                      fsApi.emit('upload', {
+                        fileName: file.name,
+                        file,
+                        dropMatrix: _getDropMatrix(files.length, i),
+                      });
+                    });
+                }
               })));
           }
         };
@@ -653,6 +686,13 @@ const _makeN = (() => {
   };
 })();
 const _makeId = () => Math.random().toString(36).substring(7);
+const _jsonParse = s => {
+  try {
+    return JSON.parse(s);
+  } catch(err) {
+    return null;
+  }
+};
 /* const _padNumber = (n, width) => {
   n = n + '';
   return n.length >= width ? n : new Array(width - n.length + 1).join('0') + n;

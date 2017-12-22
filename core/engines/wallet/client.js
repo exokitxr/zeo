@@ -1145,27 +1145,33 @@ class Wallet {
                 }, 3000);
               };
 
-              const _upload = ({file, dropMatrix}) => {
-                const id = String(file.n);
-                const match = file.name.match(/^(.*?)(?:\.([^\.]*))?$/);
+              const _upload = ({fileName, file, json, dropMatrix}) => {
+                const match = fileName.match(/^(.*?)(?:\.([^\.]*))?$/);
                 const name = match[1];
                 const ext = match[2] || 'bin';
                 const itemSpec = {
                   assetId: _makeId(),
-                  id,
-                  name: file.name,
+                  id: _makeId(),
+                  name: fileName,
                   ext,
-                  file: {
-                    id: file.n,
-                    name: file.name,
-                    local: true,
-                  },
                   position: dropMatrix,
                   owner: null,
                   physics: true,
                   visible: true,
                   open: false,
                 };
+                if (file) {
+                  itemSpec.file = {
+                    id: file.n,
+                    name: fileName,
+                    local: true,
+                  };
+                }
+                if (json) {
+                  itemSpec.json = {
+                    data: json,
+                  };
+                }
                 walletApi.makeItem(itemSpec);
               };
               fs.on('upload', _upload);
