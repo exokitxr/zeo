@@ -14,7 +14,8 @@
     "image.png": "lib/img/image.png",
     "audio.png": "lib/img/audio.png",
     "video.png": "lib/img/video.png",
-    "model.png": "lib/img/model.png"
+    "model.png": "lib/img/model.png",
+    "earth-box.png": "lib/img/earth-box.png"
   },
   "dependencies": {
     "html-tag-names": "^1.1.2"

@@ -1825,7 +1825,7 @@ class Inventory {
             ctx.fillText('Server', 60, fontSize*2 + 35);
 
             for (let y = 0; y < 4; y++) {
-              for (let x = 0; x < 6; x++) {
+              for (let x = 0; x < 5; x++) {
                 ctx.drawImage(boxImg, x * canvas.width/6, 150 + y * canvas.width/6, canvas.width/6, canvas.width/6);
               }
             }
@@ -1838,14 +1838,16 @@ class Inventory {
               const assetInstance = assetInstances[i];
 
               if (!assetInstance.owner) {
-                const x = numMenuAssets % 6;
-                const y = Math.floor(numMenuAssets / 6);
+                const x = numMenuAssets % 5;
+                const y = Math.floor(numMenuAssets / 5);
                 numMenuAssets++;
 
                 ctx.clearRect(x * canvas.width/6, 150 + (y+1) * canvas.width/6 - 20 - fontSize, canvas.width, fontSize*2);
                 ctx.fillText(`${assetInstance.name}.${assetInstance.ext}`, x * canvas.width/6 + canvas.width/6*0.1, 150 + (y+1) * canvas.width/6 - 20);
               }
             }
+
+            ctx.fillText('Pack world', 5 * canvas.width/6 + canvas.width/6*0.1, 150 + (0+1) * canvas.width/6 - 20);
 
             texture.needsUpdate = true;
           };
@@ -1869,7 +1871,7 @@ class Inventory {
         planeLeft.anchors = (() => {
           const result = [];
           for (let y = 0; y < 4; y++) {
-            for (let x = 0; x < 6; x++) {
+            for (let x = 0; x < 5; x++) {
               _pushAnchor(result, x * canvas.width/6, 150 + y * canvas.width/6, canvas.width/6, canvas.width/6, e => {
                 console.log('click', x, y);
               });
@@ -2022,6 +2024,16 @@ class Inventory {
                     WORLD_WIDTH / 2 + s - pixelSize * 16,
                     WORLD_HEIGHT / 2 - pixelSize * 16 * 2 - pixelSize * 16 * 2,
                     s
+                  ),
+                  zeroQuaternion,
+                  oneVector
+                ))),
+              _requestImageData('/archae/plugins/_core_engines_inventory/serve/earth-box.png')
+                .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
+                  localVector.set(
+                    -WORLD_WIDTH / 2,
+                    WORLD_HEIGHT / 2 - 150*WORLD_HEIGHT/HEIGHT - pixelSize * 16,
+                    pixelSize * 16
                   ),
                   zeroQuaternion,
                   oneVector
