@@ -1007,14 +1007,12 @@ class Wallet {
                 }
               };
               const _bindAssetInstanceMenu = assetInstance => {
-                assetInstance.once('update', () => {
-                  if (assetInstance.open) {
-                    walletApi.emit('menuopen', assetInstance);
-                  }
+                if (assetInstance.open) {
+                  walletApi.emit('menuopen', assetInstance);
+                }
 
-                  assetInstance.on('setOpen', open => {
-                    walletApi.emit(open ? 'menuopen' : 'menuclose', assetInstance);
-                  });
+                assetInstance.on('setOpen', open => {
+                  walletApi.emit(open ? 'menuopen' : 'menuclose', assetInstance);
                 });
               };
 
