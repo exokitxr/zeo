@@ -1757,7 +1757,7 @@ class Inventory {
         const _makePlaneMesh = (width, height, texture) => {
           const geometry = new THREE.PlaneBufferGeometry(width, height);
           const material = new THREE.MeshBasicMaterial({
-            // map: texture,
+            map: texture,
             side: THREE.DoubleSide,
             transparent: true,
             alphaTest: 0.5,
@@ -1768,34 +1768,13 @@ class Inventory {
           return mesh;
         };
         const planeMesh = _makePlaneMesh(WORLD_WIDTH, WORLD_HEIGHT, texture);
-        planeMesh.material.map = texture;
         menuMesh.add(planeMesh);
 
-        const planeMeshLeft = _makePlaneMesh(WORLD_WIDTH, WORLD_HEIGHT, texture);
-        const s = Math.sqrt(Math.pow(WORLD_WIDTH, 2) / 2);
-        planeMeshLeft.position.set(-WORLD_WIDTH/2 - s/2, 0, s/2);
-        planeMeshLeft.quaternion.setFromAxisAngle(localVector.set(0, 1, 0), Math.PI/4);
-        planeMeshLeft.updateMatrixWorld();
-        planeMeshLeft.material.map = (() => {
+        const planeMeshLeft = (() => {
           const canvas = document.createElement('canvas');
           canvas.width = WIDTH;
           canvas.height = HEIGHT;
-          const ctx = canvas.getContext('2d');
-          ctx.fillStyle = '#FFF';
-          // ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-          ctx.fillStyle = '#EEE';
-          ctx.fillRect(0, 0, canvas.width, 150);
-
-          ctx.fillStyle = '#111';
-          ctx.font = `${fontSize*1.6}px Open sans`;
-          ctx.fillText('Server', 60, fontSize*2 + 35);
-
-          for (let x = 0; x < 6; x++) {
-            for (let y = 0; y < 4; y++) {
-              ctx.drawImage(boxImg, x * canvas.width/6, 150 + y * canvas.width/6, canvas.width/6, canvas.width/6);
-            }
-          }
+          const ctx = canvas.getContext('2d')
 
           const texture = new THREE.Texture(
             canvas,
@@ -1808,7 +1787,52 @@ class Inventory {
             THREE.UnsignedByteType
           );
           texture.needsUpdate = true;
-          return texture;
+
+          const planeMeshLeft = _makePlaneMesh(WORLD_WIDTH, WORLD_HEIGHT, texture);
+          const s = Math.sqrt(Math.pow(WORLD_WIDTH, 2) / 2);
+          planeMeshLeft.position.set(-WORLD_WIDTH/2 - s/2, 0, s/2);
+          planeMeshLeft.quaternion.setFromAxisAngle(localVector.set(0, 1, 0), Math.PI/4);
+          planeMeshLeft.updateMatrixWorld();
+
+          const _render = () => {
+            ctx.fillStyle = '#FFF';
+            // ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = '#EEE';
+            ctx.fillRect(0, 0, canvas.width, 150);
+
+            ctx.fillStyle = '#111';
+            ctx.font = `${fontSize*1.6}px Open sans`;
+            ctx.fillText('Server', 60, fontSize*2 + 35);
+
+            for (let x = 0; x < 6; x++) {
+              for (let y = 0; y < 4; y++) {
+                ctx.drawImage(boxImg, x * canvas.width/6, 150 + y * canvas.width/6, canvas.width/6, canvas.width/6);
+              }
+            }
+
+            ctx.font = `${fontSize}px Open sans`;
+
+            let numMenuAssets = 0;
+            const assetInstances = wallet.getAssetInstances();
+            for (let i = 0; i < assetInstances.length; i++) {
+              const assetInstance = assetInstances[i];
+
+              if (!assetInstance.owner) {
+                const x = numMenuAssets % 6;
+                const y = Math.floor(numMenuAssets / 6);
+                numMenuAssets++;
+
+                ctx.clearRect(x * canvas.width/6, 150 + (y+1) * canvas.width/6 - 20 - fontSize, canvas.width, fontSize*2);
+                ctx.fillText(`${assetInstance.name}.${assetInstance.ext}`, x * canvas.width/6 + canvas.width/6*0.1, 150 + (y+1) * canvas.width/6 - 20);
+              }
+            }
+
+            texture.needsUpdate = true;
+          };
+          planeMeshLeft.render = _render;
+
+          return planeMeshLeft;
         })();
         menuMesh.add(planeMeshLeft);
         const planeLeft = new THREE.Object3D();
@@ -1837,41 +1861,11 @@ class Inventory {
         menuMesh.add(planeLeft);
         uiTracker.addPlane(planeLeft);
 
-        const planeMeshRight = _makePlaneMesh(WORLD_WIDTH, WORLD_HEIGHT, texture);
-        planeMeshRight.position.set(WORLD_WIDTH/2 + s/2, 0, s/2);
-        planeMeshRight.quaternion.setFromAxisAngle(localVector.set(0, 1, 0), -Math.PI/4);
-        planeMeshRight.updateMatrixWorld();
-        planeMeshRight.material.map = (() => {
+        const planeMeshRight = (() => {
           const canvas = document.createElement('canvas');
           canvas.width = WIDTH;
           canvas.height = HEIGHT;
           const ctx = canvas.getContext('2d');
-          ctx.fillStyle = '#FFF';
-          // ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-          ctx.fillStyle = '#EEE';
-          ctx.fillRect(0, 0, canvas.width, 150);
-
-          ctx.fillStyle = '#111';
-          ctx.font = `${fontSize*1.6}px Open sans`;
-          ctx.fillText('Inventory', 60, fontSize*2 + 35);
-
-          ctx.font = `${fontSize}px Open sans`;
-
-          let i = 0;
-          for (let x = 0; x < 5; x++) {
-            for (let y = 0; y < 4; y++) {
-              ctx.drawImage(boxImg, x * canvas.width/6, 150 + y * canvas.width/6, canvas.width/6, canvas.width/6);
-
-              const assetSpec = assets[i++];
-              if (assetSpec) {
-                ctx.fillText(`${assetSpec.name}.${assetSpec.ext}`, x * canvas.width/6, 150 + (y+1) * canvas.width/6 - 20);
-              }
-            }
-          }
-
-          ctx.fillText('Save', 5.25 * canvas.width/6, 150 + 425);
-          ctx.fillText('Remove', 5.25 * canvas.width/6, 150 + 850);
 
           const texture = new THREE.Texture(
             canvas,
@@ -1884,7 +1878,47 @@ class Inventory {
             THREE.UnsignedByteType
           );
           texture.needsUpdate = true;
-          return texture;
+
+          const planeMeshRight = _makePlaneMesh(WORLD_WIDTH, WORLD_HEIGHT, texture);
+          const s = Math.sqrt(Math.pow(WORLD_WIDTH, 2) / 2);
+          planeMeshRight.position.set(WORLD_WIDTH/2 + s/2, 0, s/2);
+          planeMeshRight.quaternion.setFromAxisAngle(localVector.set(0, 1, 0), -Math.PI/4);
+          planeMeshRight.updateMatrixWorld();
+
+          const _render = () => {
+            ctx.fillStyle = '#FFF';
+            // ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = '#EEE';
+            ctx.fillRect(0, 0, canvas.width, 150);
+
+            ctx.fillStyle = '#111';
+            ctx.font = `${fontSize*1.6}px Open sans`;
+            ctx.fillText('Inventory', 60, fontSize*2 + 35);
+
+            ctx.font = `${fontSize}px Open sans`;
+
+            let i = 0;
+            for (let x = 0; x < 5; x++) {
+              for (let y = 0; y < 4; y++) {
+                ctx.drawImage(boxImg, x * canvas.width/6, 150 + y * canvas.width/6, canvas.width/6, canvas.width/6);
+
+                const assetSpec = assets[i++];
+                if (assetSpec) {
+                  ctx.clearRect(x * canvas.width/6, 150 + (y+1) * canvas.width/6 - 20 - fontSize, canvas.width, fontSize*2);
+                  ctx.fillText(`${assetSpec.name}.${assetSpec.ext}`, x * canvas.width/6 + canvas.width/6*0.1, 150 + (y+1) * canvas.width/6 - 20);
+                }
+              }
+            }
+
+            ctx.fillText('Save', 5.25 * canvas.width/6, 150 + 425);
+            ctx.fillText('Remove', 5.25 * canvas.width/6, 150 + 850);
+
+            texture.needsUpdate = true;
+          };
+          planeMeshRight.render = _render;
+
+          return planeMeshRight;
         })();
         menuMesh.add(planeMeshRight);
         const planeRight = new THREE.Object3D();
@@ -1975,7 +2009,7 @@ class Inventory {
                 ))),
             ].concat(
               assets.map((assetSpec, i) => {
-                const x = Math.floor(i % 5);
+                const x = i % 5;
                 const y = Math.floor(i / 5);
                 return fetch(`https://my-site.zeovr.io/imgData/files/${assetSpec.name}.${assetSpec.ext}`)
                   .then(_resArrayBuffer)
@@ -2104,18 +2138,6 @@ class Inventory {
         menuMesh.add(assetsMesh);
 
         let animation = null;
-        const _closeMenu = () => {
-          // menuMesh.visible = false;
-
-          menuState.open = false;
-          plane.open = false;
-          planeLeft.open = false;
-          planeRight.open = false;
-
-          sfx.digi_powerdown.trigger();
-
-          animation = anima.makeAnimation(1, 0, 500);
-        };
         const _openMenu = () => {
           const {hmd: hmdStatus} = webvr.getStatus();
           const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
@@ -2143,9 +2165,33 @@ class Inventory {
           planeLeft.open = true;
           planeRight.open = true;
 
+          planeMeshLeft.render();
+          planeMeshRight.render();
+
+          const assetInstances = wallet.getAssetInstances();
+          for (let i = 0; i < assetInstances.length; i++) {
+            const assetInstance = assetInstances[i];
+
+            if (!assetInstance.owner) {
+              assetInstance.saveState();
+            }
+          }
+
           sfx.digi_slide.trigger();
 
-          animation = anima.makeAnimation(0, 1, 500);
+          animation = anima.makeAnimation(0, 1, 1000);
+        };
+        const _closeMenu = () => {
+          // menuMesh.visible = false;
+
+          menuState.open = false;
+          plane.open = false;
+          planeLeft.open = false;
+          planeRight.open = false;
+
+          sfx.digi_powerdown.trigger();
+
+          animation = anima.makeAnimation(1, 0, 1000);
         };
         const _menudown2 = () => {
           const {open} = menuState;
@@ -2444,6 +2490,33 @@ class Inventory {
                   // lensMesh.scale.set(value, value, value);
                   // lensMesh.updateMatrixWorld();
                   // lensMesh.planeMesh.material.uniforms.opacity.value = value;
+
+                  const s = Math.sqrt(Math.pow(WORLD_WIDTH, 2) / 2);
+                  let numMenuAssets = 0;
+                  const assetInstances = wallet.getAssetInstances();
+                  for (let i = 0; i < assetInstances.length; i++) {
+                    const assetInstance = assetInstances[i];
+
+                    if (!assetInstance.owner) {
+                      const x = numMenuAssets % 5;
+                      const y = Math.floor(numMenuAssets / 5);
+                      numMenuAssets++;
+
+                      assetInstance.setStateLocal(
+                        localVector.set(
+                          x * WORLD_WIDTH/6 + WORLD_WIDTH/6/2,
+                          WORLD_HEIGHT/2 - 150*WORLD_HEIGHT/HEIGHT - y * WORLD_WIDTH/6 - WORLD_WIDTH/6/2,
+                          pixelSize * 16/2
+                        )
+                          .applyQuaternion(localQuaternion.setFromAxisAngle(localVector2.set(0, 1, 0), Math.PI/4))
+                          .add(localVector2.set(-WORLD_WIDTH/2 - s, 0, s))
+                          .applyMatrix4(menuMesh.matrixWorld)
+                          .lerp(assetInstance.savedPosition, 1 - value),
+                        zeroQuaternion,
+                        oneVector
+                      );
+                    }
+                  }
 
                   menuMesh.visible = true;
                 } else {
