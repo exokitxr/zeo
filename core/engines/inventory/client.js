@@ -1824,8 +1824,8 @@ class Inventory {
             ctx.font = `${fontSize*1.6}px Open sans`;
             ctx.fillText('Server', 60, fontSize*2 + 35);
 
-            for (let x = 0; x < 6; x++) {
-              for (let y = 0; y < 4; y++) {
+            for (let y = 0; y < 4; y++) {
+              for (let x = 0; x < 6; x++) {
                 ctx.drawImage(boxImg, x * canvas.width/6, 150 + y * canvas.width/6, canvas.width/6, canvas.width/6);
               }
             }
@@ -1868,8 +1868,8 @@ class Inventory {
         planeLeft.open = false;
         planeLeft.anchors = (() => {
           const result = [];
-          for (let x = 0; x < 6; x++) {
-            for (let y = 0; y < 4; y++) {
+          for (let y = 0; y < 4; y++) {
+            for (let x = 0; x < 6; x++) {
               _pushAnchor(result, x * canvas.width/6, 150 + y * canvas.width/6, canvas.width/6, canvas.width/6, e => {
                 console.log('click', x, y);
               });
@@ -1918,8 +1918,8 @@ class Inventory {
             ctx.font = `${fontSize}px Open sans`;
 
             let i = 0;
-            for (let x = 0; x < 5; x++) {
-              for (let y = 0; y < 4; y++) {
+            for (let y = 0; y < 4; y++) {
+              for (let x = 0; x < 5; x++) {
                 ctx.drawImage(boxImg, x * canvas.width/6, 150 + y * canvas.width/6, canvas.width/6, canvas.width/6);
 
                 const assetSpec = assets[i++];
@@ -1954,8 +1954,8 @@ class Inventory {
         planeRight.open = false;
         planeRight.anchors = (() => {
           const result = [];
-          for (let x = 0; x < 5; x++) {
-            for (let y = 0; y < 4; y++) {
+          for (let y = 0; y < 4; y++) {
+            for (let x = 0; x < 5; x++) {
               _pushAnchor(result, x * canvas.width/6, 150 + y * canvas.width/6, canvas.width/6, canvas.width/6, e => {
                 console.log('click', x, y);
               });
