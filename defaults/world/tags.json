@@ -110,11 +110,11 @@
     "0pdq0ak": {
       "type": "entity",
       "id": "0pdq0ak",
-      "name": "skin",
-      "displayName": "skin",
+      "name": "skin-vr",
+      "displayName": "skin-vr",
       "version": "0.0.1",
-      "module": "skin",
-      "tagName": "skin",
+      "module": "skin-vr",
+      "tagName": "skin-vr",
       "attributes": {},
       "metadata": {}
     },
