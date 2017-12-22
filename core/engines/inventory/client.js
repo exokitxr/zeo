@@ -647,10 +647,13 @@ class Inventory {
           }
         };
         const _walletMenuOpen = grabbable => {
-          const {assetId: id, position, rotation, scale, attributes} = grabbable;
+          const {assetId: id, position, rotation, scale, json} = grabbable;
+          const attributes = (json && json.data && json.data.attributes && typeof json.data.attributes === 'object' && !Array.isArray(json.data.attributes)) ?
+            json.data.attributes
+            : {};
 
           let match;
-          if (grabbable && grabbable.ext === 'itm' && grabbable.path && (match = grabbable.path.match(/^(.+?)\/(.+?)$/))) {
+          if (grabbable && grabbable.ext === 'itm' && grabbable.json && grabbable.json.data && grabbable.json.data.path && typeof grabbable.json.data.path === 'string' && (match = grabbable.json.data.path.match(/^(.+?)\/(.+?)$/))) {
             const modName = match[1];
             const fileType = match[2];
 
