@@ -9,7 +9,12 @@
     "link.png": "lib/img/link.png",
     "x.png": "lib/img/x.png",
     "up.png": "lib/img/up.png",
-    "box.png": "lib/img/box.png"
+    "box.png": "lib/img/box.png",
+    "file.png": "lib/img/file.png",
+    "image.png": "lib/img/image.png",
+    "audio.png": "lib/img/audio.png",
+    "video.png": "lib/img/video.png",
+    "model.png": "lib/img/model.png"
   },
   "dependencies": {
     "html-tag-names": "^1.1.2"

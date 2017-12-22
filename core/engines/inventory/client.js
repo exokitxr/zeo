@@ -28,19 +28,24 @@ const numFilesPerPage = 10;
 const numModsPerPage = 10;
 const fontSize = 34;
 
-const _normalizeType = type => {
-  if (type === 'itm' || type === 'pls') {
-    return type;
+const _normalizeType = ext => {
+  if (ext === 'itm' || ext === 'pls') {
+    return ext;
   } else if (
-    type === 'png' || type === 'jpg' || type === 'bmp' ||
-    type === 'mp3' || type === 'ogg' ||
-    type === 'fbx'
+    isImageType(ext) ||
+    isAudioType(ext) ||
+    isVideoType(ext) ||
+    isModelType(ext)
   ) {
     return 'med';
   } else {
     return 'dat';
   }
 };
+const isImageType = ext => /^(?:png|jpg|jfif|gif|svg|bmp)$/i.test(ext);
+const isAudioType = ext => ext === 'mp3' || ext === 'ogg' || ext === 'wav';
+const isVideoType = ext => ext === 'webm' || ext === 'mp4' || ext === 'mov';
+const isModelType = ext => ext === 'obj' || ext === 'dae' || ext === 'fbx' || ext === 'mtl' || ext === 'tar';
 
 const LENS_SHADER = {
   uniforms: {
@@ -129,6 +134,7 @@ class Inventory {
         imageDataCtx.drawImage(img, 0, 0);
         return imageDataCtx.getImageData(0, 0, width, height);
       });
+    const _cloneImageData = imageData => new ImageData(imageData.data.slice(), imageData.width, imageData.height);
     /* const _requestModReadme = (name, version) => {
       let live = true;
       const result = new Promise((accept, reject) => {
@@ -233,6 +239,11 @@ class Inventory {
       _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/arrow-down.png'),
       _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/link.png'),
       _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/box.png'),
+      _requestImageData('/archae/plugins/_core_engines_inventory/serve/file.png'),
+      _requestImageData('/archae/plugins/_core_engines_inventory/serve/image.png'),
+      _requestImageData('/archae/plugins/_core_engines_inventory/serve/audio.png'),
+      _requestImageData('/archae/plugins/_core_engines_inventory/serve/video.png'),
+      _requestImageData('/archae/plugins/_core_engines_inventory/serve/model.png'),
       // _requestImageBitmap('/archae/inventory/img/color.png'),
     ]).then(([
       [
@@ -261,6 +272,11 @@ class Inventory {
       arrowDownImg,
       linkImg,
       boxImg,
+      fileImgData,
+      imageImgData,
+      audioImgData,
+      videoImgData,
+      modelImgData,
       // colorImg,
     ]) => {
       if (live) {
@@ -2014,13 +2030,32 @@ class Inventory {
               assets.map((assetSpec, i) => {
                 const x = i % 5;
                 const y = Math.floor(i / 5);
-                return fetch(`https://my-site.zeovr.io/imgData/files/${assetSpec.name}.${assetSpec.ext}`)
-                  .then(_resArrayBuffer)
-                  .then(buffer => ({
-                    width: 16,
-                    height: 16,
-                    data: {buffer},
-                  }))
+
+                const _requestAssetImageData = () => {
+                  const type = _normalizeType(assetSpec.ext);
+                  if (type === 'itm') {
+                    if (assetSpec.json && assetSpec.json.data && assetSpec.json.data.icon && typeof assetSpec.json.data.icon === 'string') {
+                      return _requestImageData('data:application/octet-stream;base64,' + assetSpec.json.data.icon);
+                    } else {
+                      return Promise.resolve(_cloneImageData(fileImgData));
+                    }
+                  } else if (type === 'med') {
+                    if (isImageType(assetSpec.ext)) {
+                      return Promise.resolve(_cloneImageData(imageImgData));
+                    } else if (isAudioType(assetSpec.ext)) {
+                      return Promise.resolve(_cloneImageData(audioImgData));
+                    } else if (isVideoType(assetSpec.ext)) {
+                      return Promise.resolve(_cloneImageData(videoImgData));
+                    } else if (isModelType(assetSpec.ext)) {
+                      return Promise.resolve(_cloneImageData(modelImgData));
+                    } else {
+                      return Promise.resolve(_cloneImageData(fileImgData));
+                    }
+                  } else {
+                    return Promise.resolve(_cloneImageData(fileImgData));
+                  }
+                };
+                return _requestAssetImageData()
                   .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
                     localVector.set(
                       x * WORLD_WIDTH/6,
