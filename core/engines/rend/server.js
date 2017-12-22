@@ -32,18 +32,29 @@ class Rend {
         host: 'my-site.zeovr.io',
         path: '/mods',
       }, proxyRes => {
-        const bs = [];
-        proxyRes.on('data', b => {
-          bs.push(b);
-        });
-        proxyRes.on('end', () => {
-          const b = Buffer.concat(bs);
-          const s = b.toString('utf8');
-          npmModSpecs = JSON.parse(s);
-        });
-        proxyRes.on('error', err => {
-          reject(err);
-        });
+        if (proxyRes.statusCode >= 200 && proxyRes.statusCode < 300) {
+          const bs = [];
+          proxyRes.on('data', b => {
+            bs.push(b);
+          });
+          proxyRes.on('end', () => {
+            const b = Buffer.concat(bs);
+            const s = b.toString('utf8');
+            const j = _jsonParse(s);
+            if (j !== null) {
+              npmModSpecs = j;
+
+              accept();
+            } else {
+              reject(new Error('refresh npm mods got invalid json: ' + JSON.stringify(s.slice(0, 1000))));
+            }
+          });
+          proxyRes.on('error', err => {
+            reject(err);
+          });
+        } else {
+          reject(new Error('refresh npm mods got invalid status code: ' + proxyRes.statusCode));
+        }
       });
       proxyReq.on('error', err => {
         reject(err);
@@ -167,5 +178,12 @@ class Rend {
     this._cleanup();
   }
 }
+const _jsonParse = s => {
+  try {
+    return JSON.parse(s);
+  } catch(err) {
+    return null;
+  }
+};
 
 module.exports = Rend;
