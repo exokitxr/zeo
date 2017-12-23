@@ -32,7 +32,6 @@ class Multiplayer {
       '/core/engines/biolumi',
       '/core/engines/rend',
       '/core/utils/js-utils',
-      '/core/utils/network-utils',
       '/core/utils/skin-utils',
     ]).then(([
       bootstrap,
@@ -42,7 +41,6 @@ class Multiplayer {
       biolumi,
       rend,
       jsUtils,
-      networkUtils,
       skinUtils,
     ]) => {
       if (live) {
@@ -50,7 +48,6 @@ class Multiplayer {
         const {models: {hmdModelMesh, controllerModelMesh}} = resource;
         const {events} = jsUtils;
         const {EventEmitter} = events;
-        const {AutoWs} = networkUtils;
 
         const zeroVector = new THREE.Vector3();
         const zeroQuaternion = new THREE.Quaternion();
