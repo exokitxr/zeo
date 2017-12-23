@@ -5,6 +5,7 @@
   "client": "client.js",
   "server": "server.js",
   "dependencies": {
+    "body-parser": "^1.18.2",
     "mkdirp": "^0.5.1"
   }
 }

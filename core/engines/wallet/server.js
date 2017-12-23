@@ -4,6 +4,8 @@ const path = require('path');
 const fs = require('fs');
 
 const mkdirp = require('mkdirp');
+const bodyParser = require('body-parser');
+const bodyParserJson = bodyParser.json();
 
 const DEFAULT_ITEMS = [];
 
@@ -14,7 +16,7 @@ class Wallet {
 
   mount() {
     const {_archae: archae} = this;
-    const {ws, wss, dirname, dataDirectory} = archae.getCore();
+    const {app, ws, wss, dirname, dataDirectory} = archae.getCore();
 
     let live = true;
     this._cleanup = () => {
@@ -148,7 +150,11 @@ class Wallet {
                   const assetInstance = assetInstances.find(assetInstance => assetInstance.assetId === assetId);
 
                   if (assetInstance && assetInstance.json && assetInstance.json.data && typeof assetInstance.json.data === 'object') {
-                    assetInstance.json.data.attributes[name].value = value;
+                    if (value !== null) {
+                      assetInstance.json.data.attributes[name].value = value;
+                    } else {
+                      delete assetInstance.json.data.attributes[name];
+                    }
 
                     _broadcast(JSON.stringify({type: 'setAttribute', args: {assetId, name, value}}));
                   }
@@ -222,6 +228,96 @@ class Wallet {
           };
           wss.on('connection', _connection);
 
+          function serveSetItems(req, res, next) {
+            bodyParserJson(req, res, () => {
+              const {body: data} = req;
+
+              const _respondInvalid = () => {
+                res.status(400);
+                res.send();
+              };
+
+              if (Array.isArray(data)) {
+                const newAssetInstances = data;
+
+                const addedAssetInstances = newAssetInstances.filter(assetInstance =>
+                  !assetInstances.some(assetInstance2 => assetInstance2.assetId === assetInstance.assetId)
+                );
+                const removedAssetInstances = assetInstances.filter(assetInstance =>
+                  !newAssetInstances.some(assetInstance2 => assetInstance2.assetId === assetInstance.assetId)
+                );
+                const keptAssetInstances = newAssetInstances.filter(assetInstance =>
+                  assetInstances.some(assetInstance2 => assetInstance2.assetId === assetInstance.assetId)
+                );
+
+                for (let i = 0; i < addedAssetInstances.length; i++) {
+                  const addedAssetInstance = addedAssetInstances[i];
+
+                  const {assetId, id, name, ext, json, file, n, owner, physics, matrix, visible, open} = addedAssetInstance;
+                  const assetInstance = new AssetInstance(assetId, id, name, ext, json, file, n, owner, physics, matrix, visible, open);
+                  assetInstances.push(assetInstance);
+
+                  _broadcastAll(JSON.stringify({type: 'addAsset', args: {assetId, id, name, ext, json, file, n, owner, physics, matrix, visible, open}}));
+
+                  analytics.addFile({id});
+                }
+                for (let i = 0; i < removedAssetInstances.length; i++) {
+                  const removedAssetInstance = removedAssetInstances[i];
+
+                  const {assetId} = removedAssetInstance;
+                  assetInstances.splice(assetInstances.findIndex(assetInstance => assetInstance.assetId === assetId), 1);
+
+                  _broadcastAll(JSON.stringify({type: 'removeAsset', args: {assetId}}));
+
+                  analytics.removeFile({assetId});
+                }
+                for (let i = 0; i < keptAssetInstances.length; i++) {
+                  const keptAssetInstance = keptAssetInstances[i];
+
+                  const {assetId} = keptAssetInstance;
+                  const newAttributes = (keptAssetInstance.json && keptAssetInstance.json.data && keptAssetInstance.json.data.attributes) || {};
+                  const oldAssetInstance = assetInstances.find(assetInstance => assetInstance.assetId === assetId);
+                  const oldAttributes = (oldAssetInstance.json && oldAssetInstance.json.data && oldAssetInstance.json.data.attributes) || {};
+
+                  if (!oldAssetInstance.json) {
+                    oldAssetInstance.json = {};
+                  }
+                  if (!oldAssetInstance.json.data) {
+                    oldAssetInstance.json.data = {};
+                  }
+
+                  for (const newAttributeName in newAttributes) {
+                    const newAttribute = newAttributes[newAttributeName];
+                    const oldAttribute = oldAttributes[newAttributeName];
+                    if (oldAttribute) {
+                      oldAttribute.value = newAttribute.value;
+                    } else {
+                      oldAttributes[newAttributeName] = {
+                        value: newAttribute.value,
+                      };
+                    }
+
+                    _broadcast(JSON.stringify({type: 'setAttribute', args: {assetId, name: newAttributeName, value: newAttribute.value}}));
+                  }
+                  for (const oldAttributeName in oldAttributes) {
+                    const oldAttribute = oldAttributes[oldAttributeName];
+                    const newAttribute = newAttributes[oldAttributeName];
+                    if (!newAttribute) {
+                      delete oldAttributes[oldAttributeName];
+
+                      _broadcast(JSON.stringify({type: 'setAttribute', args: {assetId, name: oldAttributeName, value: null}}));
+                    }
+                  }
+                }
+
+                _saveItems();
+              } else {
+                _respondInvalid();
+              }
+            });
+          }
+          app.put('/archae/world/setItems', serveSetItems);
+
           const _broadcastAll = m => {
             for (let i = 0; i < connections.length; i++) {
               const connection = connections[i];
@@ -247,6 +343,18 @@ class Wallet {
           multiplayer.on('playerLeave', _playerLeave);
 
           this._cleanup = () => {
+            function removeMiddlewares(route, i, routes) {
+              if (
+                route.handle.name === 'serveSetItems'
+              ) {
+                routes.splice(i, 1);
+              }
+              if (route.route) {
+                route.route.stack.forEach(removeMiddlewares);
+              }
+            }
+            app._router.stack.forEach(removeMiddlewares);
+
             wss.removeListener('connection', _connection);
             multiplayer.removeListener('playerLeave', c);
           };
