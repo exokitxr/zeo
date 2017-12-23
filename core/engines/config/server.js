@@ -1,9 +1,11 @@
 const path = require('path');
 const fs = require('fs');
+const url = require('url');
 
 const mkdirp = require('mkdirp');
 const bodyParser = require('body-parser');
 const bodyParserJson = bodyParser.json();
+const zeoTerm = require('zeo-term')
 
 const DEFAULT_SERVER_CONFIG = {
   name: 'VR Server',
@@ -19,7 +21,7 @@ class Config {
 
   mount() {
     const {_archae: archae} = this;
-    const {app, dirname, dataDirectory} = archae.getCore();
+    const {app, wss, dirname, dataDirectory} = archae.getCore();
 
     let live = true;
     this._cleanup = () => {
@@ -116,11 +118,26 @@ class Config {
           }
           app.put('/archae/config/config.json', serveConfigJsonSet);
 
+          function serveTerm(req, res, next) {
+            zeoTerm.app(req, res, next);
+          }
+          app.use('/term', serveTerm);
+
+          const _connection = (c, req) => {
+            const parsedUrl = url.parse(req.url);
+            if (parsedUrl.pathname === '/term') {
+              zeoTerm.handleConnection(c);
+            }
+          };
+          wss.on('connection', _connection);
+
           this._cleanup = () => {
             function removeMiddlewares(route, i, routes) {
               if (
+                route.handle.name === 'serveConfigGet' ||
                 route.handle.name === 'serveConfigJsonGet' ||
-                route.handle.name === 'serveConfigJsonSet'
+                route.handle.name === 'serveConfigJsonSet' ||
+                route.handle.name === 'serveTerm'
               ) {
                 routes.splice(i, 1);
               }
@@ -129,12 +146,12 @@ class Config {
               }
             }
             app._router.stack.forEach(removeMiddlewares);
+
+            wss.removeListener('connection', _connection);
           };
 
-          const _getConfig = () => configJson;
-
           return {
-            getConfig: _getConfig,
+            getConfig: () => configJson,
           };
         }
       });

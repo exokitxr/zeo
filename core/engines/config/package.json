@@ -7,6 +7,7 @@
   "dependencies": {
     "body-parser": "^1.16.0",
     "mkdirp": "^0.5.1",
-    "stats.js": "^0.17.0"
+    "stats.js": "^0.17.0",
+    "zeo-term": "0.0.9"
   }
 }
