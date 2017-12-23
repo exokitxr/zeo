@@ -5,9 +5,7 @@ const fs = require('fs');
 
 const mkdirp = require('mkdirp');
 
-const DEFAULT_ITEMS = {
-  items: {},
-};
+const DEFAULT_ITEMS = [];
 
 class Wallet {
   constructor(archae) {

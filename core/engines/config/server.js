@@ -48,6 +48,7 @@ class Config {
       archae.requestPlugins([
         '/core/engines/world',
         '/core/engines/wallet',
+        '/core/engines/multiplayer',
       ]),
       _requestConfigJson(),
     ])
@@ -55,6 +56,7 @@ class Config {
         [
           world,
           wallet,
+          multiplayer,
         ],
         configJson,
       ]) => {
@@ -76,7 +78,7 @@ class Config {
             res.end(JSON.stringify({
               tags: world.getTags(),
               items: wallet.getItems(),
-              players: wallet.getItems(),
+              players: multiplayer.getPlayers(),
               config: configJson,
             }, null, 2));
           }
