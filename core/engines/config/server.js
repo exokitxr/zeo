@@ -43,43 +43,51 @@ class Config {
       });
     });
     const _requestConfigJson = () => _requestFile(worldConfigJsonPath, DEFAULT_SERVER_CONFIG);
-    const _ensureWorldPath = () => new Promise((accept, reject) => {
-      const worldPath = path.join(dirname, dataDirectory, 'world');
-
-      mkdirp(worldPath, err => {
-        if (!err) {
-          accept();
-        } else {
-          reject(err);
-        }
-      });
-    });
 
     return Promise.all([
+      archae.requestPlugins([
+        '/core/engines/world',
+        '/core/engines/wallet',
+      ]),
       _requestConfigJson(),
-      _ensureWorldPath(),
     ])
       .then(([
+        [
+          world,
+          wallet,
+        ],
         configJson,
-        ensureWorldPathResult,
       ]) => {
         if (live) {
           const _saveFile = (p, j) => new Promise((accept, reject) => {
-            fs.writeFile(p, JSON.stringify(j, null, 2), 'utf8', err => {
-              if (!err) {
-                accept();
-              } else {
-                reject(err);
-              }
+            mkdirp(path.dirname(p), err => {
+              fs.writeFile(p, JSON.stringify(j, null, 2), 'utf8', err => {
+                if (!err) {
+                  accept();
+                } else {
+                  reject(err);
+                }
+              });
             });
           });
 
           function serveConfigGet(req, res, next) {
             res.type('application/json');
+            res.end(JSON.stringify({
+              tags: world.getTags(),
+              items: wallet.getItems(),
+              players: wallet.getItems(),
+              config: configJson,
+            }, null, 2));
+          }
+          app.get('/archae/config', serveConfigGet);
+
+          function serveConfigJsonGet(req, res, next) {
+            res.type('application/json');
             res.end(JSON.stringify(configJson, null, 2));
           }
-          app.get('/archae/config/config.json', serveConfigGet);
-          function serveConfigSet(req, res, next) {
+          app.get('/archae/config/config.json', serveConfigJsonGet);
+          function serveConfigJsonSet(req, res, next) {
             bodyParserJson(req, res, () => {
               const {body: data} = req;
 
@@ -104,13 +112,13 @@ class Config {
               }
             });
           }
-          app.put('/archae/config/config.json', serveConfigSet);
+          app.put('/archae/config/config.json', serveConfigJsonSet);
 
           this._cleanup = () => {
             function removeMiddlewares(route, i, routes) {
               if (
-                route.handle.name === 'serveConfigGet' ||
-                route.handle.name === 'serveConfigSet'
+                route.handle.name === 'serveConfigJsonGet' ||
+                route.handle.name === 'serveConfigJsonSet'
               ) {
                 routes.splice(i, 1);
               }

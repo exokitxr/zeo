@@ -252,6 +252,12 @@ class Wallet {
             wss.removeListener('connection', _connection);
             multiplayer.removeListener('playerLeave', c);
           };
+
+          return {
+            getItems() {
+              return assetInstances;
+            },
+          };
         }
       });
   }

@@ -249,6 +249,17 @@ class Multiplayer {
           getPlayerUsernames() {
             return usernames;
           }
+
+          getPlayers() {
+            const result = [];
+            statuses.forEach((status, n) => {
+              result.push({
+                id: n,
+                username: usernames.get(n),
+              });
+            });
+            return result;
+          }
         }
         const multiplayerApi = new MultiplayerApi();
         return multiplayerApi;
