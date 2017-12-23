@@ -101,132 +101,130 @@ class Wallet {
           }
 
           const connections = [];
-          const _connection = (c, {url}) => {
-            if (url === '/archae/walletWs') {
-              const _init = () => {
-                c.send(JSON.stringify({
-                  type: 'init',
-                  args: {
-                    assets: assetInstances,
-                  }
-                }));
-              };
-              _init();
-
-              const _broadcast = m => {
-                for (let i = 0; i < connections.length; i++) {
-                  const connection = connections[i];
-                  if (connection.readyState === ws.OPEN && connection !== c) {
-                    connection.send(m);
-                  }
-                };
-              };
-
-              c.on('message', s => {
-                const m = _jsonParse(s);
-                const {method, args} = m;
-
-                if (method === 'addAsset') {
-                  const {assetId, id, name, ext, json, file, n, owner, physics, matrix, visible, open} = args;
-                  const assetInstance = new AssetInstance(assetId, id, name, ext, json, file, n, owner, physics, matrix, visible, open);
-                  assetInstances.push(assetInstance);
-
-                  _broadcast(JSON.stringify({type: 'addAsset', args: {assetId, id, name, ext, json, file, n, owner, physics, matrix, visible, open}}));
-
-                  _saveItems();
-
-                  analytics.addFile({id});
-                } else if (method === 'removeAsset') {
-                  const {assetId} = args;
-                  assetInstances.splice(assetInstances.findIndex(assetInstance => assetInstance.assetId === assetId), 1);
-
-                  _broadcast(JSON.stringify({type: 'removeAsset', args: {assetId}}));
-
-                  _saveItems();
-
-                  analytics.removeFile({assetId});
-                } else if (method === 'setAttribute') {
-                  const {assetId, name, value} = args;
-                  const assetInstance = assetInstances.find(assetInstance => assetInstance.assetId === assetId);
-
-                  if (assetInstance && assetInstance.json && assetInstance.json.data && typeof assetInstance.json.data === 'object') {
-                    if (value !== null) {
-                      assetInstance.json.data.attributes[name].value = value;
-                    } else {
-                      delete assetInstance.json.data.attributes[name];
-                    }
-
-                    _broadcast(JSON.stringify({type: 'setAttribute', args: {assetId, name, value}}));
-                  }
-
-                  _saveItems();
-                } else if (method === 'setState') {
-                  const {assetId, matrix} = args;
-                  const assetInstance = assetInstances.find(assetInstance => assetInstance.assetId === assetId);
-
-                  if (assetInstance) {
-                    assetInstance.matrix = matrix;
-
-                    // do not broadcast change; it will have already been broadcast via physics
-                  }
-
-                  _saveItems();
-                } else if (method === 'setOwner') {
-                  const {assetId, owner} = args;
-                  const assetInstance = assetInstances.find(assetInstance => assetInstance.assetId === assetId);
-
-                  if (assetInstance) {
-                    assetInstance.owner = owner;
-
-                    _broadcast(JSON.stringify({type: 'setOwner', args: {assetId, owner}}));
-                  }
-
-                  _saveItems();
-                } else if (method === 'setVisible') {
-                  const {assetId, visible} = args;
-                  const assetInstance = assetInstances.find(assetInstance => assetInstance.assetId === assetId);
-
-                  if (assetInstance) {
-                    assetInstance.visible = visible;
-
-                    _broadcast(JSON.stringify({type: 'setVisible', args: {assetId, visible}}));
-                  }
-
-                  _saveItems();
-                } else if (method === 'setOpen') {
-                  const {assetId, open} = args;
-                  const assetInstance = assetInstances.find(assetInstance => assetInstance.assetId === assetId);
-
-                  if (assetInstance) {
-                    assetInstance.open = open;
-
-                    _broadcast(JSON.stringify({type: 'setOpen', args: {assetId, open}}));
-                  }
-
-                  _saveItems();
-                } else if (method === 'setPhysics') {
-                  const {assetId, physics} = args;
-                  const assetInstance = assetInstances.find(assetInstance => assetInstance.assetId === assetId);
-
-                  if (assetInstance) {
-                    assetInstance.physics = physics;
-
-                    _broadcast(JSON.stringify({type: 'setPhysics', args: {assetId, physics}}));
-                  }
-
-                  _saveItems();
-                } else {
-                  console.warn('no such method:' + JSON.stringify(method));
+          const channel = wss.channel('wallet');
+          channel.on('connection', c => {
+            const _init = () => {
+              c.send(JSON.stringify({
+                type: 'init',
+                args: {
+                  assets: assetInstances,
                 }
-              });
-              c.on('close', () => {
-                connections.splice(connections.indexOf(c), 1);
-              });
+              }));
+            };
+            _init();
 
-              connections.push(c);
-            }
-          };
-          wss.on('connection', _connection);
+            const _broadcast = m => {
+              for (let i = 0; i < connections.length; i++) {
+                const connection = connections[i];
+                if (connection.readyState === ws.OPEN && connection !== c) {
+                  connection.send(m);
+                }
+              };
+            };
+
+            c.on('message', s => {
+              const m = _jsonParse(s);
+              const {method, args} = m;
+
+              if (method === 'addAsset') {
+                const {assetId, id, name, ext, json, file, n, owner, physics, matrix, visible, open} = args;
+                const assetInstance = new AssetInstance(assetId, id, name, ext, json, file, n, owner, physics, matrix, visible, open);
+                assetInstances.push(assetInstance);
+
+                _broadcast(JSON.stringify({type: 'addAsset', args: {assetId, id, name, ext, json, file, n, owner, physics, matrix, visible, open}}));
+
+                _saveItems();
+
+                analytics.addFile({id});
+              } else if (method === 'removeAsset') {
+                const {assetId} = args;
+                assetInstances.splice(assetInstances.findIndex(assetInstance => assetInstance.assetId === assetId), 1);
+
+                _broadcast(JSON.stringify({type: 'removeAsset', args: {assetId}}));
+
+                _saveItems();
+
+                analytics.removeFile({assetId});
+              } else if (method === 'setAttribute') {
+                const {assetId, name, value} = args;
+                const assetInstance = assetInstances.find(assetInstance => assetInstance.assetId === assetId);
+
+                if (assetInstance && assetInstance.json && assetInstance.json.data && typeof assetInstance.json.data === 'object') {
+                  if (value !== null) {
+                    assetInstance.json.data.attributes[name].value = value;
+                  } else {
+                    delete assetInstance.json.data.attributes[name];
+                  }
+
+                  _broadcast(JSON.stringify({type: 'setAttribute', args: {assetId, name, value}}));
+                }
+
+                _saveItems();
+              } else if (method === 'setState') {
+                const {assetId, matrix} = args;
+                const assetInstance = assetInstances.find(assetInstance => assetInstance.assetId === assetId);
+
+                if (assetInstance) {
+                  assetInstance.matrix = matrix;
+
+                  // do not broadcast change; it will have already been broadcast via physics
+                }
+
+                _saveItems();
+              } else if (method === 'setOwner') {
+                const {assetId, owner} = args;
+                const assetInstance = assetInstances.find(assetInstance => assetInstance.assetId === assetId);
+
+                if (assetInstance) {
+                  assetInstance.owner = owner;
+
+                  _broadcast(JSON.stringify({type: 'setOwner', args: {assetId, owner}}));
+                }
+
+                _saveItems();
+              } else if (method === 'setVisible') {
+                const {assetId, visible} = args;
+                const assetInstance = assetInstances.find(assetInstance => assetInstance.assetId === assetId);
+
+                if (assetInstance) {
+                  assetInstance.visible = visible;
+
+                  _broadcast(JSON.stringify({type: 'setVisible', args: {assetId, visible}}));
+                }
+
+                _saveItems();
+              } else if (method === 'setOpen') {
+                const {assetId, open} = args;
+                const assetInstance = assetInstances.find(assetInstance => assetInstance.assetId === assetId);
+
+                if (assetInstance) {
+                  assetInstance.open = open;
+
+                  _broadcast(JSON.stringify({type: 'setOpen', args: {assetId, open}}));
+                }
+
+                _saveItems();
+              } else if (method === 'setPhysics') {
+                const {assetId, physics} = args;
+                const assetInstance = assetInstances.find(assetInstance => assetInstance.assetId === assetId);
+
+                if (assetInstance) {
+                  assetInstance.physics = physics;
+
+                  _broadcast(JSON.stringify({type: 'setPhysics', args: {assetId, physics}}));
+                }
+
+                _saveItems();
+              } else {
+                console.warn('no such method:' + JSON.stringify(method));
+              }
+            });
+            c.on('close', () => {
+              connections.splice(connections.indexOf(c), 1);
+            });
+
+            connections.push(c);
+          });
 
           function serveSetItems(req, res, next) {
             bodyParserJson(req, res, () => {
@@ -355,7 +353,6 @@ class Wallet {
             }
             app._router.stack.forEach(removeMiddlewares);
 
-            wss.removeListener('connection', _connection);
             multiplayer.removeListener('playerLeave', c);
           };
 

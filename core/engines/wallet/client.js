@@ -56,7 +56,6 @@ class Wallet {
       '/core/engines/notification',
       '/core/utils/js-utils',
       '/core/utils/hash-utils',
-      '/core/utils/network-utils',
       '/core/utils/creature-utils',
       '/core/utils/sprite-utils',
       '/core/utils/vrid-utils',
@@ -79,7 +78,6 @@ class Wallet {
       notification,
       jsUtils,
       hashUtils,
-      networkUtils,
       creatureUtils,
       spriteUtils,
       vridUtils,
@@ -89,7 +87,6 @@ class Wallet {
         const {events} = jsUtils;
         const {EventEmitter} = events;
         const {murmur} = hashUtils;
-        const {AutoWs} = networkUtils;
         const {Grabbable} = hand;
         const {materials: {assets: assetsMaterial}, sfx} = resource;
         const {vridApi} = vridUtils;
@@ -260,7 +257,7 @@ class Wallet {
 
               const connection = (() => {
                 if (!offline) {
-                  const connection = new AutoWs(_relativeWsUrl('archae/walletWs'));
+                  const connection = archae.connection.channel('wallet');
                   connection.on('message', e => {
                     const {data} = e;
                     const m = JSON.parse(data);
