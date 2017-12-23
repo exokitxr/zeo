@@ -1,11 +1,13 @@
 const ws = require('ws');
-const AutoWs = require('autows');
-AutoWs.config.WebSocket = ws;
+const AutoWsClient = require('autows/client.js');
+const AutoWsServer = require('autows');
+AutoWsClient.config.WebSocket = ws;
 
 module.exports = {
   mount() {
     return {
-      AutoWs,
+      AutoWsClient,
+      AutoWsServer,
     };
   },
   unmount() {},

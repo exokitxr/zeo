@@ -1,4 +1,4 @@
-const AutoWs = require('autows');
+const AutoWs = require('autows/client.js');
 
 class NetworkUtils {
   constructor(archae) {

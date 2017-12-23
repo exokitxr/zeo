@@ -37,13 +37,13 @@ class Analytics {
       networkUtils,
     ]) => {
       if (live) {
-        const {AutoWs} = networkUtils;
+        const {AutoWsClient} = networkUtils;
 
         const modSpecs = [];
         const fileSpecs = [];
 
         const {port} = _parseUrlSpec(serverUrl);
-        const ws = new AutoWs(`wss://my-site.zeovr.io/analytics/ws?port=${port}`);
+        const ws = new AutoWsClient(`wss://my-site.zeovr.io/analytics/ws?port=${port}`);
         let needsUpdate = true;
         ws.on('connect', () => {
           if (needsUpdate) {
