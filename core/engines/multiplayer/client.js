@@ -89,7 +89,6 @@ class Multiplayer {
             return this.playerStatuses.get(n) || null;
           }
 
-
           setPlayerSkin(n, skinImgBuffer) {
             const oldSkinMesh = this.remotePlayerSkinMeshes.get(n);
             if (oldSkinMesh) {
