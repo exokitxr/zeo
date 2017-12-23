@@ -68,196 +68,194 @@ class Hand {
 
         const connections = [];
 
-        wss.on('connection', (c, {url}) => {
-          let match;
-          if (match = url.match(/\/archae\/handWs\?id=(.+)$/)) {
-            const userId = match[1];
-            c.userId = userId;
+        const channel = wss.channel('hand');
+        channel.on('connection', c => {
+          c.userId = null;
 
-            const buffer = new ArrayBuffer(protocolUtils.BUFFER_SIZE);
+          const buffer = new ArrayBuffer(protocolUtils.BUFFER_SIZE);
 
-            const _sendObject = (type, args) => {
-              const e = {
+          const _sendObject = (type, args) => {
+            const e = {
+              type,
+              args,
+            };
+            const es = JSON.stringify(e);
+
+            c.send(es);
+          };
+          const _sendBuffer = buffer => {
+            c.send(buffer);
+          };
+          const _broadcastObject = (interestId, type, args) => {
+            if (connections.some(connection => connection !== c)) {
+              const es = JSON.stringify({
                 type,
                 args,
-              };
-              const es = JSON.stringify(e);
+              });
 
-              c.send(es);
-            };
-            const _sendBuffer = buffer => {
-              c.send(buffer);
-            };
-            const _broadcastObject = (interestId, type, args) => {
-              if (connections.some(connection => connection !== c)) {
-                const es = JSON.stringify({
-                  type,
-                  args,
-                });
+              const interest = interests[interestId];
+              for (let i = 0; i < connections.length; i++) {
+                const connection = connections[i];
 
-                const interest = interests[interestId];
-                for (let i = 0; i < connections.length; i++) {
-                  const connection = connections[i];
-
-                  if (connection.readyState === ws.OPEN && connection !== c) {
-                    const {userId} = connection;
-
-                    if (interest.includes(userId)) {
-                      connection.send(es);
-                    }
+                if (connection.readyState === ws.OPEN && connection !== c) {
+                  if (interest.includes(connection.userId)) {
+                    connection.send(es);
                   }
                 }
               }
-            };
-            const _broadcastBuffer = (interestId, buffer) => {
-              if (connections.some(connection => connection !== c)) {
-                const interest = interests[interestId];
+            }
+          };
+          const _broadcastBuffer = (interestId, buffer) => {
+            if (connections.some(connection => connection !== c)) {
+              const interest = interests[interestId];
 
-                for (let i = 0; i < connections.length; i++) {
-                  const connection = connections[i];
-                  const {userId} = connection;
-                  if (interest.includes(userId) && connection !== c) {
-                    connection.send(buffer);
-                  }
+              for (let i = 0; i < connections.length; i++) {
+                const connection = connections[i];
+                if (interest.includes(connection.userId) && connection !== c) {
+                  connection.send(buffer);
                 }
               }
-            };
+            }
+          };
 
-            const localInterests = [];
+          const localInterests = [];
 
-            c.on('message', o => {
-              if (typeof o === 'string') {
-                const m = JSON.parse(o);
+          c.on('message', o => {
+            if (typeof o === 'string') {
+              const m = JSON.parse(o);
 
-                if (typeof m === 'object' && m !== null && typeof m.method === 'string' && Array.isArray(m.args)) {
-                  const {method, args} = m;
+              if (typeof m === 'object' && m !== null && typeof m.method === 'string' && Array.isArray(m.args)) {
+                const {method, args} = m;
 
-                  if (method === 'addGrabbable') {
-                    const [n, position, rotation, scale, localPosition, localRotation, localScale] = args;
+                if (method === 'init') {
+                  const [userId] = args;
 
-                    const grabbable = grabbables[n];
-                    if (!grabbable) {
-                      const newGrabbable = new Grabbable(
-                        n,
-                        new THREE.Vector3().fromArray(position),
-                        new THREE.Quaternion().fromArray(rotation),
-                        new THREE.Vector3().fromArray(scale),
-                        new THREE.Vector3().fromArray(localPosition),
-                        new THREE.Quaternion().fromArray(localRotation),
-                        new THREE.Vector3().fromArray(localScale)
-                      );
-                      grabbables[n] = newGrabbable;
+                  c.userId = userId;
+                } else if (method === 'addGrabbable') {
+                  const [n, position, rotation, scale, localPosition, localRotation, localScale] = args;
+
+                  const grabbable = grabbables[n];
+                  if (!grabbable) {
+                    const newGrabbable = new Grabbable(
+                      n,
+                      new THREE.Vector3().fromArray(position),
+                      new THREE.Quaternion().fromArray(rotation),
+                      new THREE.Vector3().fromArray(scale),
+                      new THREE.Vector3().fromArray(localPosition),
+                      new THREE.Quaternion().fromArray(localRotation),
+                      new THREE.Vector3().fromArray(localScale)
+                    );
+                    grabbables[n] = newGrabbable;
+                  }
+
+                  let interest = interests[n];
+                  if (!interest) {
+                    interest = [];
+                    interests[n] = interest;
+                  }
+                  if (!interest.includes(c.userId)) {
+                    interest.push(c.userId);
+                  }
+
+                  if (!localInterests.includes(n)) {
+                    localInterests.push(n);
+                  }
+
+                  if (grabbable) {
+                    const {userId, side, data} = grabbable;
+                    if (userId) {
+                      _sendObject('grab', [n, userId, side]);
+                    }
+                    for (const key in data) {
+                      const value = data[key];
+                      _sendObject('data', [n, key, value]);
                     }
 
-                    let interest = interests[n];
-                    if (!interest) {
-                      interest = [];
-                      interests[n] = interest;
+                    const {position, rotation, scale, localPosition, localRotation, localScale} = grabbable;
+                    _sendBuffer(protocolUtils.stringifyUpdate(n, position, rotation, scale, localPosition, localRotation, localScale, buffer, 0));
+                  }
+                } else if (method === 'removeGrabbable') {
+                  const [n] = args;
+
+                  const grabbable = grabbables[n];
+
+                  if (grabbable) {
+                    delete grabbables[n];
+
+                    const interest = interests[n];
+                    interest.splice(interest.indexOf(c.userId), 1);
+                    if (interest.length === 0) {
+                      delete interests[n];
                     }
-                    if (!interest.includes(userId)) {
-                      interest.push(userId);
-                    }
 
-                    if (!localInterests.includes(n)) {
-                      localInterests.push(n);
-                    }
+                    localInterests.splice(localInterests.indexOf(n), 1);
+                  }
+                } else if (method === 'grab') {
+                  const [n, side] = args;
 
-                    if (grabbable) {
-                      const {userId, side, data} = grabbable;
-                      if (userId) {
-                        _sendObject('grab', [n, userId, side]);
-                      }
-                      for (const key in data) {
-                        const value = data[key];
-                        _sendObject('data', [n, key, value]);
-                      }
+                  const grabbable = grabbables[n];
 
-                      const {position, rotation, scale, localPosition, localRotation, localScale} = grabbable;
-                      _sendBuffer(protocolUtils.stringifyUpdate(n, position, rotation, scale, localPosition, localRotation, localScale, buffer, 0));
-                    }
-                  } else if (method === 'removeGrabbable') {
-                    const [n] = args;
+                  if (grabbable) {
+                    grabbable.grab(c.userId, side);
+                    _broadcastObject(n, 'grab', [n, c.userId, side]);
+                  }
+                } else if (method === 'release') {
+                  const [n] = args;
 
-                    const grabbable = grabbables[n];
+                  const grabbable = grabbables[n];
 
-                    if (grabbable) {
-                      delete grabbables[n];
+                  if (grabbable) {
+                    grabbable.release();
+                    _broadcastObject(n, 'release', [n]);
+                  }
+                } else if (method === 'data') {
+                  const [n, key, value] = args;
 
-                      const interest = interests[n];
-                      interest.splice(interest.indexOf(userId), 1);
-                      if (interest.length === 0) {
-                        delete interests[n];
-                      }
+                  const grabbable = grabbables[n];
 
-                      localInterests.splice(localInterests.indexOf(n), 1);
-                    }
-                  } else if (method === 'grab') {
-                    const [n, side] = args;
+                  if (grabbable) {
+                    grabbable.setData(key, value);
 
-                    const grabbable = grabbables[n];
-
-                    if (grabbable) {
-                      grabbable.grab(userId, side);
-                      _broadcastObject(n, 'grab', [n, userId, side]);
-                    }
-                  } else if (method === 'release') {
-                    const [n] = args;
-
-                    const grabbable = grabbables[n];
-
-                    if (grabbable) {
-                      grabbable.release();
-                      _broadcastObject(n, 'release', [n]);
-                    }
-                  } else if (method === 'data') {
-                    const [n, key, value] = args;
-
-                    const grabbable = grabbables[n];
-
-                    if (grabbable) {
-                      grabbable.setData(key, value);
-
-                      _broadcastObject(n, 'data', [n, key, value]);
-                    }
-                  } else {
-                    console.warn('no such hand method:' + JSON.stringify(method));
+                    _broadcastObject(n, 'data', [n, key, value]);
                   }
                 } else {
-                  console.warn('invalid message', m);
+                  console.warn('no such hand method:' + JSON.stringify(method));
                 }
               } else {
-                if (o.byteOffset % 4 !== 0) {
-                  const b = new Uint8Array(new ArrayBuffer(o.byteLength));
-                  b.set(new Uint8Array(o.buffer, o.byteOffset, o.byteLength));
-                  o = b;
-                }
-                const n = protocolUtils.parseUpdateN(o.buffer, o.byteOffset);
-                const grabbable = grabbables[n];
-
-                if (grabbable) {
-                  protocolUtils.parseUpdate(grabbable.position, grabbable.rotation, grabbable.scale, grabbable.localPosition, grabbable.localRotation, grabbable.localScale, o.buffer, o.byteOffset);
-
-                  _broadcastBuffer(n, o);
-                }
+                console.warn('invalid message', m);
               }
-            });
-
-            connections.push(c);
-
-            c.on('close', () => {
-              for (let i = 0; i < localInterests.length; i++) {
-                const n = localInterests[i];
-                const interest = interests[n];
-
-                interest.splice(interest.indexOf(userId), 1);
-                if (interest.length === 0) {
-                  delete interests[n];
-                }
+            } else {
+              if (o.byteOffset % 4 !== 0) {
+                const b = new Uint8Array(new ArrayBuffer(o.byteLength));
+                b.set(new Uint8Array(o.buffer, o.byteOffset, o.byteLength));
+                o = b;
               }
+              const n = protocolUtils.parseUpdateN(o.buffer, o.byteOffset);
+              const grabbable = grabbables[n];
 
-              connections.splice(connections.indexOf(c), 1);
-            });
-          }
+              if (grabbable) {
+                protocolUtils.parseUpdate(grabbable.position, grabbable.rotation, grabbable.scale, grabbable.localPosition, grabbable.localRotation, grabbable.localScale, o.buffer, o.byteOffset);
+
+                _broadcastBuffer(n, o);
+              }
+            }
+          });
+
+          connections.push(c);
+
+          c.on('close', () => {
+            for (let i = 0; i < localInterests.length; i++) {
+              const n = localInterests[i];
+              const interest = interests[n];
+
+              interest.splice(interest.indexOf(c.userId), 1);
+              if (interest.length === 0) {
+                delete interests[n];
+              }
+            }
+
+            connections.splice(connections.indexOf(c), 1);
+          });
         });
 
         this._cleanup = () => {

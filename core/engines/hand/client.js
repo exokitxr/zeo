@@ -32,7 +32,6 @@ class Hand {
       '/core/engines/rend',
       '/core/engines/multiplayer',
       '/core/utils/js-utils',
-      '/core/utils/network-utils',
     ]).then(([
       three,
       input,
@@ -40,13 +39,11 @@ class Hand {
       rend,
       multiplayer,
       jsUtils,
-      networkUtils,
     ]) => {
       if (live) {
         const {THREE, scene, camera} = three;
         const {events} = jsUtils;
         const {EventEmitter} = events;
-        const {AutoWs} = networkUtils;
 
         const buffer = new ArrayBuffer(protocolUtils.BUFFER_SIZE);
 
@@ -56,7 +53,13 @@ class Hand {
 
         const connection = (() => {
           if (!offline) {
-            const connection = new AutoWs(_relativeWsUrl('archae/handWs?id=' + localUserId));
+            const connection = archae.connection.channel('hand');
+
+            connection.send(JSON.stringify({
+              method: 'init',
+              args: [localUserId],
+            }));
+
             connection.on('message', msg => {
               const {data} = msg;
 
