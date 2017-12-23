@@ -19,7 +19,6 @@ export default class VoiceChat {
       '/core/engines/somnifer',
       '/core/engines/multiplayer',
       '/core/utils/js-utils',
-      '/core/utils/network-utils',
     ])
       .then(([
         three,
@@ -28,13 +27,11 @@ export default class VoiceChat {
         somnifer,
         multiplayer,
         jsUtils,
-        networkUtils,
       ]) => {
         if (live) {
           const {THREE} = three;
           const {events} = jsUtils;
           const {EventEmitter} = events;
-          const {AutoWs} = networkUtils;
 
           const _makeSoundBody = (id, remoteMediaStream) => {
             const soundBody = somnifer.makeBody();
@@ -123,12 +120,15 @@ export default class VoiceChat {
           }
           const connections = {};
 
-          const _requestSignalConnection = () => new Promise((accept, reject) => {
+          const signalConnection = (() => {
             if (!offline) {
-              const signalConnection = new AutoWs(_relativeWsUrl('archae/voicechatWs?id=' + multiplayer.getId()));
-              signalConnection.once('connect', () => {
-                accept(signalConnection);
-              });
+              const signalConnection = archae.connection.channel('voicechat');
+
+              signalConnection.send(JSON.stringify({
+                type: 'init',
+                id: multiplayer.getId(),
+              }));
+
               signalConnection.on('message', e => {
                 const m = JSON.parse(e.data) ;
                 const {type} = m;
@@ -171,108 +171,105 @@ export default class VoiceChat {
                   console.warn('signal connection got unknown message type', JSON.stringify(type));
                 }
               });
+
+              return signalConnection;
             } else {
-              accept(null);
+              return null;
             }
+          })();
+
+          const _defaultCleanup = () => {
+            for (const id in connections) {
+              connections[id].destroy();
+            }
+          };
+          this._cleanup = _defaultCleanup;
+
+          const _requestMicrophoneMediaStream = () => navigator.mediaDevices.getUserMedia({
+            audio: true,
           });
 
-          return _requestSignalConnection()
-            .then(signalConnection => {
-              if (live) {
-                const _defaultCleanup = () => {
-                  for (const id in connections) {
-                    connections[id].destroy();
+          let enabled = false;
+          return {
+            isEnabled: () => enabled,
+            enable: () => {
+              enabled = true;
+
+              return _requestMicrophoneMediaStream()
+                .then(mediaStream => {
+                  const cleanups = [];
+                  cleanups.push(() => {
+                    _closeMediaStream(mediaStream);
+                  });
+
+                  const _connect = id => {
+                    const connection = new VoicechatConnection(id);
+                    connection.on('description', description => {
+                      signalConnection.send(JSON.stringify({
+                        type: 'offer',
+                        target: id,
+                        source: multiplayer.getId(),
+                        offer: description,
+                      }));
+                    });
+                    connection.on('icecandidate', candidate => {
+                      signalConnection.send(JSON.stringify({
+                        type: 'icecandidate',
+                        target: id,
+                        source: multiplayer.getId(),
+                        candidate,
+                      }));
+                    });
+                    connection.on('close', () => {
+                      connections[id] = null;
+                    });
+                    connections[id] = connection;
+
+                    connection.createOffer(mediaStream);
+                  };
+
+                  const playerStatuses = multiplayer.getPlayerStatuses();
+                  for (let i = 0; i < playerStatuses.length; i++) {
+                    _connect(playerStatuses[i].playerId);
                   }
-                };
-                this._cleanup = _defaultCleanup;
 
-                const _requestMicrophoneMediaStream = () => navigator.mediaDevices.getUserMedia({
-                  audio: true,
+                  const _playerEnter = ({id}) => {
+                    _connect(id);
+                  };
+                  multiplayer.on('playerEnter', _playerEnter);
+                  cleanups.push(() => {
+                    multiplayer.removeListener('playerEnter', _playerEnter);
+                  });
+
+                  const _playerLeave = ({id}) => {
+                    const connection = connections[id];
+                    if (connection) {
+                      connection.destroy();
+                    }
+                  };
+                  multiplayer.on('playerLeave', _playerLeave);
+                  cleanups.push(() => {
+                    multiplayer.removeListener('playerLeave', _playerLeave);
+                  });
+
+                  this._cleanup = () => {
+                    for (let i = 0; i < cleanups.length; i++) {
+                      cleanups[i]();
+                    }
+
+                    _defaultCleanup();
+                  };
                 });
+            },
+            disable: () => {
+              this._cleanup();
+              this._cleanup = _defaultCleanup;
 
-                let enabled = false;
-                return {
-                  isEnabled: () => enabled,
-                  enable: () => {
-                    enabled = true;
+              enabled = false;
 
-                    return _requestMicrophoneMediaStream()
-                      .then(mediaStream => {
-                        const cleanups = [];
-                        cleanups.push(() => {
-                          _closeMediaStream(mediaStream);
-                        });
-
-                        const _connect = id => {
-                          const connection = new VoicechatConnection(id);
-                          connection.on('description', description => {
-                            signalConnection.send(JSON.stringify({
-                              type: 'offer',
-                              target: id,
-                              source: multiplayer.getId(),
-                              offer: description,
-                            }));
-                          });
-                          connection.on('icecandidate', candidate => {
-                            signalConnection.send(JSON.stringify({
-                              type: 'icecandidate',
-                              target: id,
-                              source: multiplayer.getId(),
-                              candidate,
-                            }));
-                          });
-                          connection.on('close', () => {
-                            connections[id] = null;
-                          });
-                          connections[id] = connection;
-
-                          connection.createOffer(mediaStream);
-                        };
-
-                        const playerStatuses = multiplayer.getPlayerStatuses();
-                        for (let i = 0; i < playerStatuses.length; i++) {
-                          _connect(playerStatuses[i].playerId);
-                        }
-
-                        const _playerEnter = ({id}) => {
-                          _connect(id);
-                        };
-                        multiplayer.on('playerEnter', _playerEnter);
-                        cleanups.push(() => {
-                          multiplayer.removeListener('playerEnter', _playerEnter);
-                        });
-
-                        const _playerLeave = ({id}) => {
-                          const connection = connections[id];
-                          if (connection) {
-                            connection.destroy();
-                          }
-                        };
-                        multiplayer.on('playerLeave', _playerLeave);
-                        cleanups.push(() => {
-                          multiplayer.removeListener('playerLeave', _playerLeave);
-                        });
-
-                        this._cleanup = () => {
-                          for (let i = 0; i < cleanups.length; i++) {
-                            cleanups[i]();
-                          }
-
-                          _defaultCleanup();
-                        };
-                      });
-                  },
-                  disable: () => {
-                    this._cleanup();
-                    this._cleanup = _defaultCleanup;
-
-                    enabled = false;
-
-                    return Promise.resolve();
-                  },
-                };
-              }
-            });
+              return Promise.resolve();
+            },
+          };
         }
       });
   }

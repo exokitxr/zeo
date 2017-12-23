@@ -9,26 +9,32 @@ class VoiceChat {
 
     const connections = [];
 
-    wss.on('connection', (c, {url}) => {
-      let match;
-      if (match = url.match(/\/archae\/voicechatWs\?id=(.+)$/)) {
-        const peerId = parseInt(decodeURIComponent(match[1]), 10);
+    const channel = wss.channel('voicechat');
+    channel.on('connection', c => {
+      c.peerId = null;
 
-        c.peerId = peerId;
-        c.on('message', (s, flags) => {
-          const {target} = JSON.parse(s);
+      c.on('message', (s, flags) => {
+        const m = JSON.parse(s);
+
+        const {type} = m;
+        if (type === 'init') {
+          const {id: peerId} = m;
+
+          c.peerId = peerId;
+        } else {
+          const {target} = m;
 
           const c = connections.find(connection => connection.peerId === target);
           if (c) {
             c.send(s);
           }
-        });
-        c.on('close', () => {
-          connections.splice(connections.indexOf(c), 1);
-        });
+        }
+      });
+      c.on('close', () => {
+        connections.splice(connections.indexOf(c), 1);
+      });
 
-        connections.push(c);
-      }
+      connections.push(c);
     });
 
     this._cleanup = () => {
