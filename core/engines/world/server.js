@@ -199,56 +199,71 @@ class World {
 
           const connections = [];
           const usersJson = {};
-          wss.on('connection', (c, {url}) => {
-            let match;
-            if (match = url.match(/\/archae\/worldWs\?id=(.+)$/)) {
-              const userId = match[1];
+          const channel = wss.channel('world');
+          channel.on('connection', c => {
+            c.userId = null;
 
-              const user = {
-                id: userId,
+            const _sendInit = () => {
+              const e = {
+                type: 'init',
+                args: [
+                  _arrayify(tagsJson.tags),
+                  _arrayify(usersJson),
+                ],
               };
-              usersJson[userId] = user;
+              const es = JSON.stringify(e);
+              c.send(es);
+            };
+            _sendInit();
 
-              const _sendInit = () => {
+            const _broadcastLocal = (type, args) => {
+              if (connections.some(connection => connection !== c)) {
                 const e = {
-                  type: 'init',
-                  args: [
-                    _arrayify(tagsJson.tags),
-                    _arrayify(usersJson),
-                  ],
+                  type,
+                  args,
                 };
                 const es = JSON.stringify(e);
-                c.send(es);
-              };
-              _sendInit();
 
-              const _broadcastLocal = (type, args) => {
-                if (connections.some(connection => connection !== c)) {
-                  const e = {
-                    type,
-                    args,
-                  };
-                  const es = JSON.stringify(e);
-
-                  for (let i = 0; i < connections.length; i++) {
-                    const connection = connections[i];
-                    if (connection !== c) {
-                      connection.send(es);
-                    }
+                for (let i = 0; i < connections.length; i++) {
+                  const connection = connections[i];
+                  if (connection !== c) {
+                    connection.send(es);
                   }
                 }
-              };
-              const _removeTag = (userId, id) => {
-                const itemSpec = tagsJson.tags[id];
-                delete tagsJson.tags[id];
+              }
+            };
+            const _removeTag = (userId, id) => {
+              const itemSpec = tagsJson.tags[id];
+              delete tagsJson.tags[id];
 
-                _saveTags();
+              _saveTags();
 
-                _broadcastLocal('removeTag', [userId, id]);
-              };
-              const _setTagAttribute = (userId, id, {name, value}) => {
-                const itemSpec = tagsJson.tags[id];
-                const {attributes} = itemSpec;
+              _broadcastLocal('removeTag', [userId, id]);
+            };
+            const _setTagAttribute = (userId, id, {name, value}) => {
+              const itemSpec = tagsJson.tags[id];
+              const {attributes} = itemSpec;
+              const oldValue = attributes[name] ? attributes[name].value : undefined;
+
+              if (value !== undefined) {
+                attributes[name] = {
+                  value,
+                };
+              } else {
+                delete attributes[name];
+              }
+
+              _saveTags();
+
+              _broadcastLocal('setTagAttribute', [userId, id, {name, value}]);
+            };
+            const _setTagAttributes = (userId, id, newAttributes) => {
+              const itemSpec = tagsJson.tags[id];
+              const {type, attributes} = itemSpec;
+
+              for (let i = 0; i < newAttributes.length; i++) {
+                const newAttribute = newAttributes[i];
+                const {name, value} = newAttribute;
                 const oldValue = attributes[name] ? attributes[name].value : undefined;
 
                 if (value !== undefined) {
@@ -258,106 +273,95 @@ class World {
                 } else {
                   delete attributes[name];
                 }
+              }
 
-                _saveTags();
+              _saveTags();
 
-                _broadcastLocal('setTagAttribute', [userId, id, {name, value}]);
-              };
-              const _setTagAttributes = (userId, id, newAttributes) => {
-                const itemSpec = tagsJson.tags[id];
-                const {type, attributes} = itemSpec;
+              _broadcastLocal('setTagAttributes', [userId, id, newAttributes]);
+            };
 
-                for (let i = 0; i < newAttributes.length; i++) {
-                  const newAttribute = newAttributes[i];
-                  const {name, value} = newAttribute;
-                  const oldValue = attributes[name] ? attributes[name].value : undefined;
+            c.on('message', s => {
+              const m = _jsonParse(s);
 
-                  if (value !== undefined) {
-                    attributes[name] = {
-                      value,
-                    };
-                  } else {
-                    delete attributes[name];
-                  }
-                }
+              if (typeof m === 'object' && m !== null && typeof m.method === 'string' && Array.isArray(m.args)) {
+                const {method, args} = m;
 
-                _saveTags();
+                if (method === 'init') {
+                  const [userId] = args;
 
-                _broadcastLocal('setTagAttributes', [userId, id, newAttributes]);
-              };
+                  c.userId = userId;
 
-              c.on('message', s => {
-                const m = _jsonParse(s);
+                  usersJson[userId] = {
+                    id: userId,
+                  };
+                } else if (method === 'addTag') {
+                  const [userId, itemSpec] = args;
 
-                if (typeof m === 'object' && m !== null && typeof m.method === 'string' && Array.isArray(m.args)) {
-                  const {method, args} = m;
+                  const {id} = itemSpec;
+                  tagsJson.tags[id] = itemSpec;
 
-                  if (method === 'addTag') {
-                    const [userId, itemSpec] = args;
+                  _saveTags();
 
+                  _broadcastLocal('addTag', [userId, itemSpec]);
+                } else if (method === 'addTags') {
+                  const [userId, itemSpecs] = args;
+
+                  for (let i = 0; i < itemSpecs.length; i++) {
+                    const itemSpec = itemSpecs[i];
                     const {id} = itemSpec;
                     tagsJson.tags[id] = itemSpec;
-
-                    _saveTags();
-
-                    _broadcastLocal('addTag', [userId, itemSpec]);
-                  } else if (method === 'addTags') {
-                    const [userId, itemSpecs] = args;
-
-                    for (let i = 0; i < itemSpecs.length; i++) {
-                      const itemSpec = itemSpecs[i];
-                      const {id} = itemSpec;
-                      tagsJson.tags[id] = itemSpec;
-                    }
-
-                    _saveTags();
-
-                    _broadcastLocal('addTags', [userId, itemSpecs]);
-                  } else if (method === 'removeTag') {
-                    const [userId, id] = args;
-
-                    _removeTag(userId, id);
-                  } else if (method === 'removeTags') {
-                    const [userId, ids] = args;
-
-                    for (let i = 0; i < ids.length; i++) {
-                      const id = ids[i];
-                      delete tagsJson.tags[id];
-                    }
-
-                    _saveTags();
-
-                    _broadcastLocal('removeTags', [userId, ids]);
-                  } else if (method === 'setTagAttribute') {
-                    const [userId, id, {name, value}] = args;
-
-                    _setTagAttribute(userId, id, {name, value});
-                  } else if (method === 'setTagAttributes') {
-                    const [userId, id, newAttributes] = args;
-
-                    _setTagAttributes(userId, id, newAttributes);
-                  } else if (method === 'loadModule') {
-                    const [userId, id] = args;
-
-                    _broadcastLocal('loadModule', [userId, id]);
-                  } else if (method === 'unloadModule') {
-                    const [userId, id] = args;
-
-                    _broadcastLocal('unloadModule', [userId, id]);
-                  } else {
-                    console.warn('no such method:' + JSON.stringify(method));
                   }
-                } else {
-                  console.warn('invalid message', m);
-                }
-              });
-              c.on('close', () => {
-                delete usersJson[userId];
-                connections.splice(connections.indexOf(c), 1);
-              });
 
-              connections.push(c);
-            }
+                  _saveTags();
+
+                  _broadcastLocal('addTags', [userId, itemSpecs]);
+                } else if (method === 'removeTag') {
+                  const [userId, id] = args;
+
+                  _removeTag(userId, id);
+                } else if (method === 'removeTags') {
+                  const [userId, ids] = args;
+
+                  for (let i = 0; i < ids.length; i++) {
+                    const id = ids[i];
+                    delete tagsJson.tags[id];
+                  }
+
+                  _saveTags();
+
+                  _broadcastLocal('removeTags', [userId, ids]);
+                } else if (method === 'setTagAttribute') {
+                  const [userId, id, {name, value}] = args;
+
+                  _setTagAttribute(userId, id, {name, value});
+                } else if (method === 'setTagAttributes') {
+                  const [userId, id, newAttributes] = args;
+
+                  _setTagAttributes(userId, id, newAttributes);
+                } else if (method === 'loadModule') {
+                  const [userId, id] = args;
+
+                  _broadcastLocal('loadModule', [userId, id]);
+                } else if (method === 'unloadModule') {
+                  const [userId, id] = args;
+
+                  _broadcastLocal('unloadModule', [userId, id]);
+                } else {
+                  console.warn('no such method:' + JSON.stringify(method));
+                }
+              } else {
+                console.warn('invalid message', m);
+              }
+            });
+            c.on('close', () => {
+              if (c.userId !== null) {
+                delete usersJson[c.userId];
+              }
+
+              connections.splice(connections.indexOf(c), 1);
+            });
+
+            connections.push(c);
           });
 
           const _playerLeave = ({address}) => {

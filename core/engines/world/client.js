@@ -54,7 +54,6 @@ class World {
       '/core/engines/loader',
       '/core/engines/tags',
       '/core/utils/js-utils',
-      '/core/utils/network-utils',
       '/core/utils/geometry-utils',
       '/core/utils/creature-utils',
     ]).then(([
@@ -72,7 +71,6 @@ class World {
       loader,
       tags,
       jsUtils,
-      networkUtils,
       geometryUtils,
       creatureUtils,
     ]) => {
@@ -80,7 +78,6 @@ class World {
         const {THREE, scene, camera} = three;
         const {events} = jsUtils;
         const {EventEmitter} = events;
-        const {AutoWs} = networkUtils;
         const {sfx} = resource;
 
         const worldRenderer = worldRender.makeRenderer({creatureUtils});
@@ -144,12 +141,10 @@ class World {
 
         const _request = (method, args) => {
           if (connection) {
-            const e = {
+            connection.send(JSON.stringify({
               method,
               args,
-            };
-            const es = JSON.stringify(e);
-            connection.send(es);
+            }));
           }
         };
         const _addTag = (itemSpec, {element = null} = {}) => {
@@ -622,7 +617,13 @@ class World {
 
         const connection = (() => {
           if (!offline) {
-            const connection = new AutoWs(_relativeWsUrl('archae/worldWs?id=' + localUserId));
+            const connection = archae.connection.channel('world');
+
+            connection.send(JSON.stringify({
+              method: 'init',
+              args: [localUserId],
+            }));
+
             let connectionInitialized = false;
             connection.on('message', msg => {
               const m = JSON.parse(msg.data);
