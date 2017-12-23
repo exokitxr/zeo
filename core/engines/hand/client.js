@@ -200,7 +200,7 @@ class Hand {
           add() {
             const {n, position, rotation, scale, localPosition, localRotation, localScale} = this;
 
-            _broadcastObject('addGrabbable', [n, position, rotation, scale, localPosition, localRotation, localScale]);
+            _broadcastObject('addGrabbable', [n, position.toArray(), rotation.toArray(), scale.toArray(), localPosition.toArray(), localRotation.toArray(), localScale.toArray()]);
           }
 
           remove() {
