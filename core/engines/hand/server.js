@@ -75,13 +75,10 @@ class Hand {
           const buffer = new ArrayBuffer(protocolUtils.BUFFER_SIZE);
 
           const _sendObject = (type, args) => {
-            const e = {
+            c.send(JSON.stringify({
               type,
               args,
-            };
-            const es = JSON.stringify(e);
-
-            c.send(es);
+            }));
           };
           const _sendBuffer = buffer => {
             c.send(buffer);
