@@ -66,163 +66,164 @@ class Multiplayer {
           },
         });
 
-        wss.on('connection', (c, {url, connection: {remoteAddress}}) => {
-          let match;
-          if (match = url.match(/^\/archae\/multiplayerWs\?id=(.+?)&username=(.+?)$/)) {
-            if (connections.length < maxUsers) {
-              const n = parseInt(match[1], 10);
-              const username = decodeURIComponent(match[2]);
+        const channel = wss.channel('multiplayer');
+        channel.on('connection', (c, {connection: {remoteAddress}}) => {
+          if (connections.length < maxUsers) {
+            let n = null;
+            let username = null;
 
-              remoteAddress = remoteAddress.replace(/^::ffff:/, '');
-              console.log('multiplayer connection', {n, username, remoteAddress});
+            let pendingMessage = null;
+            c.on('message', o => {
+              if (typeof o === 'string') {
+                const m = JSON.parse(o);
+                const {type} = m;
 
-              const _init = () => {
-                statuses.forEach((status, n) => {
-                  c.send(JSON.stringify({
-                    type: 'playerEnter',
-                    n,
-                    username: usernames.get(n),
-                  }));
+                if (type === 'init') {
+                  n = m.n;
+                  username = m.username;
 
-                  protocolUtils.stringifyUpdate(n, status, buffer, 0);
-                  c.send(buffer);
-                });
-                skins.forEach((skinImgBuffer, n) => {
-                  c.send(JSON.stringify({
-                    type: 'setSkin',
-                    n: n,
-                  }));
-                  c.send(skinImgBuffer);
-                });
+                  remoteAddress = remoteAddress.replace(/^::ffff:/, '');
+                  console.log('multiplayer connection', {n, username, remoteAddress});
 
-                statuses.set(n, _makePlayerStatus());
-                usernames.set(n, username);
+                  const _init = () => {
+                    statuses.forEach((status, n) => {
+                      c.send(JSON.stringify({
+                        type: 'playerEnter',
+                        n,
+                        username: usernames.get(n),
+                      }));
 
-                const es = JSON.stringify({
-                  type: 'playerEnter',
-                  n,
-                  username,
-                });
-                for (let i = 0; i < connections.length; i++) {
-                  const connection = connections[i];
-                  if (connection.readyState === ws.OPEN && connection !== c) {
-                    connection.send(es);
-                  }
-                }
+                      protocolUtils.stringifyUpdate(n, status, buffer, 0);
+                      c.send(buffer);
+                    });
+                    skins.forEach((skinImgBuffer, n) => {
+                      c.send(JSON.stringify({
+                        type: 'setSkin',
+                        n: n,
+                      }));
+                      c.send(skinImgBuffer);
+                    });
 
-                multiplayerApi.emit('playerEnter', {
-                  id: String(n),
-                  username,
-                });
-              };
-              _init();
-
-              let pendingMessage = null;
-              c.on('message', o => {
-                if (typeof o === 'string') {
-                  const m = JSON.parse(o);
-                  const {type} = m;
-
-                  if (type === 'setSkin') {
-                    pendingMessage = m;
-                  } else if (type === 'clearSkin') {
-                    skins.delete(n);
-
-                    const e = {
-                      type: 'clearSkin',
-                      n,
-                    };
-                    const es = JSON.stringify(e);
-                    for (let i = 0; i < connections.length; i++) {
-                      const connection = connections[i];
-
-                      if (connection.readyState === ws.OPEN && connection !== c) {
-                        connection.send(es);
-                        connection.send(skinImgBuffer);
-                      }
-                    }
-                  } else {
-                    console.warn('multiplayer unknown message type', JSON.stringify(type));
-                  }
-                } else {
-                  if (!pendingMessage) { // update
-                    const n = protocolUtils.parseUpdateN(o.buffer, o.byteOffset);
-
-                    const status = statuses.get(n);
-                    if (status) {
-                      protocolUtils.parseUpdate(
-                        status.hmd.position,
-                        status.hmd.rotation,
-                        status.hmd.scale,
-                        status.gamepads.left.position,
-                        status.gamepads.left.rotation,
-                        status.gamepads.left.scale,
-                        status.gamepads.right.position,
-                        status.gamepads.right.rotation,
-                        status.gamepads.right.scale,
-                        status.metadata.menu,
-                        status.metadata.menu.position,
-                        status.metadata.menu.rotation,
-                        status.metadata.menu.scale,
-                        o.buffer,
-                        o.byteOffset
-                      );
-
-                      for (let i = 0; i < connections.length; i++) {
-                        const connection = connections[i];
-
-                        if (connection.readyState === ws.OPEN && connection !== c) {
-                          connection.send(o);
-                        }
-                      }
-                    } else {
-                      console.warn('multiplayer ignoring status for nonexistent user', {n});
-                    }
-                  } else { // pending message
-                    const skinImgBuffer = o;
-                    skins.set(n, skinImgBuffer);
+                    statuses.set(n, _makePlayerStatus());
+                    usernames.set(n, username);
 
                     const es = JSON.stringify({
-                      type: 'setSkin',
+                      type: 'playerEnter',
                       n,
+                      username,
                     });
                     for (let i = 0; i < connections.length; i++) {
                       const connection = connections[i];
                       if (connection.readyState === ws.OPEN && connection !== c) {
                         connection.send(es);
-                        connection.send(skinImgBuffer);
                       }
                     }
 
-                    pendingMessage = null;
+                    multiplayerApi.emit('playerEnter', {
+                      id: String(n),
+                      username,
+                    });
+                  };
+                  _init();
+                } else if (type === 'setSkin') {
+                  pendingMessage = m;
+                } else if (type === 'clearSkin') {
+                  skins.delete(n);
+
+                  const e = {
+                    type: 'clearSkin',
+                    n,
+                  };
+                  const es = JSON.stringify(e);
+                  for (let i = 0; i < connections.length; i++) {
+                    const connection = connections[i];
+
+                    if (connection.readyState === ws.OPEN && connection !== c) {
+                      connection.send(es);
+                      connection.send(skinImgBuffer);
+                    }
                   }
+                } else {
+                  console.warn('multiplayer unknown message type', JSON.stringify(o), new Error().stack);
                 }
-              });
-              c.on('close', () => {
-                statuses.delete(n);
-                usernames.delete(n);
-                skins.delete(n);
+              } else {
+                if (!pendingMessage) { // update
+                  const n = protocolUtils.parseUpdateN(o.buffer, o.byteOffset);
 
-                const es = JSON.stringify({
-                  type: 'playerLeave',
-                  n,
-                });
-                for (let i = 0; i < connections.length; i++) {
-                  const connection = connections[i];
-                  if (connection.readyState === ws.OPEN && connection !== c) {
-                    connection.send(es);
+                  const status = statuses.get(n);
+                  if (status) {
+                    protocolUtils.parseUpdate(
+                      status.hmd.position,
+                      status.hmd.rotation,
+                      status.hmd.scale,
+                      status.gamepads.left.position,
+                      status.gamepads.left.rotation,
+                      status.gamepads.left.scale,
+                      status.gamepads.right.position,
+                      status.gamepads.right.rotation,
+                      status.gamepads.right.scale,
+                      status.metadata.menu,
+                      status.metadata.menu.position,
+                      status.metadata.menu.rotation,
+                      status.metadata.menu.scale,
+                      o.buffer,
+                      o.byteOffset
+                    );
+
+                    for (let i = 0; i < connections.length; i++) {
+                      const connection = connections[i];
+
+                      if (connection.readyState === ws.OPEN && connection !== c) {
+                        connection.send(o);
+                      }
+                    }
+                  } else {
+                    console.warn('multiplayer ignoring status for nonexistent user', {n});
                   }
+                } else { // pending message
+                  const skinImgBuffer = o;
+                  skins.set(n, skinImgBuffer);
+
+                  const es = JSON.stringify({
+                    type: 'setSkin',
+                    n,
+                  });
+                  for (let i = 0; i < connections.length; i++) {
+                    const connection = connections[i];
+                    if (connection.readyState === ws.OPEN && connection !== c) {
+                      connection.send(es);
+                      connection.send(skinImgBuffer);
+                    }
+                  }
+
+                  pendingMessage = null;
                 }
+              }
+            });
+            c.on('close', () => {
+              statuses.delete(n);
+              usernames.delete(n);
+              skins.delete(n);
 
-                connections.splice(connections.indexOf(c), 1);
-
-                multiplayerApi.emit('playerLeave', String(n));
+              const es = JSON.stringify({
+                type: 'playerLeave',
+                n,
               });
+              for (let i = 0; i < connections.length; i++) {
+                const connection = connections[i];
+                if (connection.readyState === ws.OPEN && connection !== c) {
+                  connection.send(es);
+                }
+              }
 
-              connections.push(c);
-            } else {
-              connection.close();
-            }
+              connections.splice(connections.indexOf(c), 1);
+
+              multiplayerApi.emit('playerLeave', String(n));
+            });
+
+            connections.push(c);
+          } else {
+            connection.close();
           }
         });
 

@@ -295,7 +295,14 @@ class Multiplayer {
 
         const connection = (() => {
           if (!offline) {
-            const connection = new AutoWs(_relativeWsUrl(`archae/multiplayerWs?id=${encodeURIComponent(String(multiplayerApi.getId()))}&username=${bootstrap.getUsername()}`));
+            const connection = archae.connection.channel('multiplayer');
+
+            connection.send(JSON.stringify({
+              type: 'init',
+              n: multiplayerApi.getId(),
+              username: bootstrap.getUsername(),
+            }));
+
             let pendingMessage = null;
             connection.on('message', msg => {
               const {data} = msg;
@@ -493,12 +500,7 @@ class Multiplayer {
   }
 }
 
-const _relativeWsUrl = s => {
-  const l = window.location;
-  return ((l.protocol === 'https:') ? 'wss://' : 'ws://') + l.host + l.pathname + (!/\/$/.test(l.pathname) ? '/' : '') + s;
-};
 const _makeN = () => Math.floor(Math.random() * 0xFFFFFFFF);
-const _arrayEquals = (a, b) => Array.isArray(a) && Array.isArray(b) && a.length === b.length && a.every((ae, i) => b[i] === ae);
 const _makeImg = (imgBuffer, width, height) => {
   const canvas = document.createElement('canvas');
   canvas.width = width;
