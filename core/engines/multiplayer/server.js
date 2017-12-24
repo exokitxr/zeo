@@ -201,24 +201,26 @@ class Multiplayer {
               }
             });
             c.on('close', () => {
-              statuses.delete(n);
-              usernames.delete(n);
-              skins.delete(n);
+              if (n !== null) {
+                statuses.delete(n);
+                usernames.delete(n);
+                skins.delete(n);
 
-              const es = JSON.stringify({
-                type: 'playerLeave',
-                n,
-              });
-              for (let i = 0; i < connections.length; i++) {
-                const connection = connections[i];
-                if (connection.readyState === ws.OPEN && connection !== c) {
-                  connection.send(es);
+                const es = JSON.stringify({
+                  type: 'playerLeave',
+                  n,
+                });
+                for (let i = 0; i < connections.length; i++) {
+                  const connection = connections[i];
+                  if (connection.readyState === ws.OPEN && connection !== c) {
+                    connection.send(es);
+                  }
                 }
+
+                connections.splice(connections.indexOf(c), 1);
+
+                multiplayerApi.emit('playerLeave', String(n));
               }
-
-              connections.splice(connections.indexOf(c), 1);
-
-              multiplayerApi.emit('playerLeave', String(n));
             });
 
             connections.push(c);
