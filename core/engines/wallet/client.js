@@ -1402,10 +1402,6 @@ const _arrayify = (array, numElements) => {
   }
   return result;
 };
-const _relativeWsUrl = s => {
-  const l = window.location;
-  return ((l.protocol === 'https:') ? 'wss://' : 'ws://') + l.host + l.pathname + (!/\/$/.test(l.pathname) ? '/' : '') + s;
-};
 const _clone = o => JSON.parse(JSON.stringify(o));
 const _debounce = fn => {
   let running = false;

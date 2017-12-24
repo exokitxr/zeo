@@ -120,10 +120,6 @@ class Bootstrap {
   }
 }
 
-const _relativeWsUrl = s => {
-  const l = window.location;
-  return ((l.protocol === 'https:') ? 'wss://' : 'ws://') + l.host + l.pathname + (!/\/$/.test(l.pathname) ? '/' : '') + s;
-};
 const _getQueryVariable = (url, variable) => {
   const match = url.match(/\?(.+)$/);
   const query = match ? match[1] : '';

@@ -464,9 +464,4 @@ class Hand {
   }
 }
 
-const _relativeWsUrl = s => {
-  const l = window.location;
-  return ((l.protocol === 'https:') ? 'wss://' : 'ws://') + l.host + l.pathname + (!/\/$/.test(l.pathname) ? '/' : '') + s;
-};
-
 module.exports = Hand;

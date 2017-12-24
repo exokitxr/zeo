@@ -278,10 +278,6 @@ export default class VoiceChat {
     this._cleanup();
   }
 }
-const _relativeWsUrl = s => {
-  const l = window.location;
-  return ((l.protocol === 'https:') ? 'wss://' : 'ws://') + l.host + l.pathname + (!/\/$/.test(l.pathname) ? '/' : '') + s;
-};
 const _closeMediaStream = mediaStream => {
   mediaStream.getTracks()[0].stop();
 };
