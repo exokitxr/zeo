@@ -294,11 +294,13 @@ class Multiplayer {
           if (!offline) {
             const connection = archae.connection.channel('multiplayer');
 
-            connection.send(JSON.stringify({
-              type: 'init',
-              n: multiplayerApi.getId(),
-              username: bootstrap.getUsername(),
-            }));
+            if (!bootstrap.isSpectating()) {
+              connection.send(JSON.stringify({
+                type: 'init',
+                n: multiplayerApi.getId(),
+                username: bootstrap.getUsername(),
+              }));
+            }
 
             let pendingMessage = null;
             connection.on('message', msg => {
@@ -464,7 +466,7 @@ class Multiplayer {
             }
           }; */
           const _sendUpdate = () => {
-            if (updated && connection) {
+            if (updated && connection && !bootstrap.isSpectating()) {
               protocolUtils.stringifyUpdate(multiplayerApi.getId(), localStatus, buffer, 0);
               connection.send(buffer);
             }

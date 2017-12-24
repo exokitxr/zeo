@@ -26,6 +26,7 @@ class Hand {
     });
 
     return archae.requestPlugins([
+      '/core/engines/bootstrap',
       '/core/engines/three',
       '/core/engines/input',
       '/core/engines/webvr',
@@ -33,6 +34,7 @@ class Hand {
       '/core/engines/multiplayer',
       '/core/utils/js-utils',
     ]).then(([
+      bootstrap,
       three,
       input,
       webvr,
@@ -55,10 +57,12 @@ class Hand {
           if (!offline) {
             const connection = archae.connection.channel('hand');
 
-            connection.send(JSON.stringify({
-              method: 'init',
-              args: [localUserId],
-            }));
+            if (!bootstrap.isSpectating()) {
+              connection.send(JSON.stringify({
+                method: 'init',
+                args: [localUserId],
+              }));
+            }
 
             connection.on('message', msg => {
               const {data} = msg;

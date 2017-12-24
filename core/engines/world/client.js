@@ -619,10 +619,12 @@ class World {
           if (!offline) {
             const connection = archae.connection.channel('world');
 
-            connection.send(JSON.stringify({
-              method: 'init',
-              args: [localUserId],
-            }));
+            if (!bootstrap.isSpectating()) {
+              connection.send(JSON.stringify({
+                method: 'init',
+                args: [localUserId],
+              }));
+            }
 
             let connectionInitialized = false;
             connection.on('message', msg => {
