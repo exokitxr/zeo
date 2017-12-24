@@ -455,7 +455,7 @@ class Zeo {
                           }
                         });
 
-                        const urlRequestPresent = getQueryVariable('e');
+                        const urlRequestPresent = _getQueryVariable(window.location.search, 'e');
                         if (webvr.supportsWebVR() && urlRequestPresent === 'hmd') {
                           _enterHeadsetVR();
                         } else if (urlRequestPresent === 'keyboard') {
@@ -1007,15 +1007,18 @@ class Zeo {
     this._cleanup();
   }
 }
-function getQueryVariable(variable) {
-  const vars = window.location.search.substring(1).split('&');
+const _getQueryVariable = (url, variable) => {
+  const match = url.match(/\?(.+)$/);
+  const query = match ? match[1] : '';
+  const vars = query.split('&');
   for (let i = 0; i < vars.length; i++) {
     const pair = vars[i].split('=');
+
     if (decodeURIComponent(pair[0]) === variable) {
       return decodeURIComponent(pair[1]);
     }
   }
   return null;
-}
+};
 
 module.exports = Zeo;
