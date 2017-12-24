@@ -85,7 +85,12 @@ class Bootstrap {
                 }
 
                 isSpectating() {
-                  return Boolean(_getQueryVariable(window.location.href, 's'));
+                  return Boolean(_getQueryVariable(window.location.search, 's'));
+                }
+
+                getCaptureTime() {
+                  const captureTime = parseInt(_getQueryVariable(window.location.search, 'c'), 10);
+                  return !isNaN(captureTime) ? captureTime : null;
                 }
 
                 getRoamMode() {
@@ -127,10 +132,8 @@ const _getQueryVariable = (url, variable) => {
   const match = url.match(/\?(.+)$/);
   const query = match ? match[1] : '';
   const vars = query.split('&');
-
   for (let i = 0; i < vars.length; i++) {
     const pair = vars[i].split('=');
-
     if (decodeURIComponent(pair[0]) === variable) {
       return decodeURIComponent(pair[1]);
     }
