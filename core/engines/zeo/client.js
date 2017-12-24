@@ -340,7 +340,7 @@ class Zeo {
 
                   return renderLoop;
                 };
-                const _enterVR = ({stereoscopic, onExit}) => {
+                const _enterVR = ({stereoscopic, spectate, onExit}) => {
                   _stopRenderLoop();
 
                   blockerMesh.visible = false;
@@ -355,6 +355,7 @@ class Zeo {
 
                   renderLoop = webvr.requestEnterVR({
                     stereoscopic,
+                    spectate,
                     update: _update,
                     // updateEye: _updateEye,
                     updateStart: _updateStart,
@@ -394,6 +395,7 @@ class Zeo {
                       const _enterHeadsetVR = () => {
                         _enterVR({
                           stereoscopic: true,
+                          spectate: false,
                           onExit: () => {
                             bootstrap.setVrMode(null);
                           },
@@ -401,9 +403,21 @@ class Zeo {
 
                         bootstrap.setVrMode('hmd');
                       };
+                      const _enterSpectateVR = () => {
+                        _enterVR({
+                          stereoscopic: false,
+                          spectate: true,
+                          onExit: () => {
+                            bootstrap.setVrMode(null);
+                          },
+                        });
+
+                        bootstrap.setVrMode('keyboard');
+                      };
                       const _enterKeyboardVR = () => {
                         _enterVR({
                           stereoscopic: false,
+                          spectate: false,
                           onExit: () => {
                             bootstrap.setVrMode(null);
                           },
@@ -412,46 +426,43 @@ class Zeo {
                         bootstrap.setVrMode('keyboard');
                       };
 
-                      window.onvrdisplayactivate = null;
-                      window.addEventListener('vrdisplayactivate', () => {
-                        _enterHeadsetVR();
-                      });
+                      if (!bootstrap.isSpectating()) {
+                        window.onvrdisplayactivate = null;
+                        window.addEventListener('vrdisplayactivate', () => {
+                          _enterHeadsetVR();
+                        });
 
-                      canvas.addEventListener('click', e => {
-                        if (!webvr.isPresenting()) {
-                          const iconSize = parseInt(canvas.style.width, 10) * 0.1;
-                          const fx = parseInt(canvas.style.width, 10) - e.clientX;
-                          const fy = parseInt(canvas.style.height, 10) - e.clientY;
-                          if (fx >= iconSize*0.5 && fx <= iconSize*1.5 && fy >= iconSize*0.5 && fy <= iconSize*1.5) {
-                            if (webvr.supportsWebVR()) {
-                              _enterHeadsetVR();
-                            }
-                          } else if (fx >= iconSize*1.5 && fx <= iconSize*2.5 && fy >= iconSize*0.5 && fy <= iconSize*1.5) {
-                            if (voicechat.isEnabled()) {
-                              voicechat.disable();
+                        canvas.addEventListener('click', e => {
+                          if (!webvr.isPresenting()) {
+                            const iconSize = parseInt(canvas.style.width, 10) * 0.1;
+                            const fx = parseInt(canvas.style.width, 10) - e.clientX;
+                            const fy = parseInt(canvas.style.height, 10) - e.clientY;
+                            if (fx >= iconSize*0.5 && fx <= iconSize*1.5 && fy >= iconSize*0.5 && fy <= iconSize*1.5) {
+                              if (webvr.supportsWebVR()) {
+                                _enterHeadsetVR();
+                              }
+                            } else if (fx >= iconSize*1.5 && fx <= iconSize*2.5 && fy >= iconSize*0.5 && fy <= iconSize*1.5) {
+                              if (voicechat.isEnabled()) {
+                                voicechat.disable();
+                              } else {
+                                voicechat.enable();
+                              }
+
+                              _renderBlocker();
                             } else {
-                              voicechat.enable();
+                              _enterKeyboardVR();
                             }
-
-                            _renderBlocker();
-                          } else {
-                            _enterKeyboardVR();
                           }
-                        }
-                      });
+                        });
 
-                      const urlRequestPresent = getQueryVariable('e');
-                      if (webvr.supportsWebVR() && urlRequestPresent === 'hmd') {
-                        _enterHeadsetVR();
-                      } else if (urlRequestPresent === 'keyboard') {
-                        _enterKeyboardVR();
-                      }
-
-                      class Listener {
-                        constructor(handler, priority) {
-                          this.handler = handler;
-                          this.priority = priority;
+                        const urlRequestPresent = getQueryVariable('e');
+                        if (webvr.supportsWebVR() && urlRequestPresent === 'hmd') {
+                          _enterHeadsetVR();
+                        } else if (urlRequestPresent === 'keyboard') {
+                          _enterKeyboardVR();
                         }
+                      } else {
+                        _enterSpectateVR();
                       }
 
                       this._cleanup = () => {

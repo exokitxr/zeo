@@ -143,10 +143,22 @@ class WebVR {
           return {position, rotation, scale};
         };
         const _decomposeObjectMatrixWorld = object => _decomposeMatrix(object.matrixWorld);
+        const _getLoopedTime = (() => {
+          let timeOffset = 0;
+          return () => {
+            const now = Date.now();
+            const timeDiff = now - timeOffset;
+            if (timeDiff > (60 * 1000)) {
+              timeOffset = Math.floor(now / (60 * 1000)) * (60 * 1000);
+            }
+            return now - timeOffset;
+          };
+        })();
 
         const zeroVector = new THREE.Vector3();
         const zeroQuaternion = new THREE.Quaternion();
         const oneVector = new THREE.Vector3(1, 1, 1);
+        const upVector = new THREE.Vector3(0, 1, 0);
         const localVector = new THREE.Vector3();
         const localVector2 = new THREE.Vector3();
         const localVector3 = new THREE.Vector3();
@@ -375,7 +387,7 @@ class WebVR {
                     this.isOpen = false;
                   });
 
-                  const frameData = (!display || (display instanceof FakeVRDisplay)) ? new VRFrameDataFake() : new VRFrameData();
+                  const frameData = (!display || display instanceof FakeVRDisplay || display instanceof SpectateVRDisplay) ? new VRFrameDataFake() : new VRFrameData();
                   this._frameData = frameData;
 
                   if (display && stereoscopic) {
@@ -497,6 +509,7 @@ class WebVR {
 
           requestEnterVR({
             stereoscopic = true,
+            spectate = false,
             update = () => {},
             updateStart = () => {},
             updateEnd = () => {},
@@ -547,6 +560,8 @@ class WebVR {
                 const display = (() => {
                   if (stereoscopic && _canPresent(bestDisplay)) {
                     return bestDisplay;
+                  } else if (spectate) {
+                    return new SpectateVRDisplay();
                   } else {
                     return new FakeVRDisplay();
                   }
@@ -583,6 +598,8 @@ class WebVR {
 
                           document.removeEventListener('pointerlockchange', pointerlockchange);
                         });
+                      } else if (display instanceof SpectateVRDisplay) {
+                        // nothing
                       } else {
                         const vrdisplaypresentchange = () => {
                           const {isPresenting} = display;
@@ -897,6 +914,47 @@ class WebVR {
           }
         }
 
+        class SpectateVRDisplay {
+          constructor() {
+            this.canPresent = true;
+            this.isPresenting = false;
+
+            this.position = new THREE.Vector3();
+            this.rotation = new THREE.Quaternion();
+          }
+
+          requestPresent() {
+            this.isPresenting = true;
+
+            return Promise.resolve();
+          }
+
+          getFrameData(frameData) {
+            frameData.pose.set(this.position, this.rotation);
+          }
+
+          updatePose() {
+            const angle = ((_getLoopedTime() / 20000) % 1) * Math.PI * 2;
+            this.position.lerp(
+              localVector.copy(zeroVector).add(
+                localVector2.set(
+                  Math.sin(angle) * 5,
+                  3,
+                  -Math.cos(angle) * 5,
+                )
+              ),
+              0.1
+            );
+            this.rotation.setFromRotationMatrix(
+              localMatrix.lookAt(
+                this.position,
+                zeroVector,
+                upVector
+              )
+            );
+          }
+        }
+
         class FakeVRDisplay extends EventEmitter {
           constructor() {
             super();
@@ -1120,7 +1178,7 @@ class WebVR {
             };
           }
 
-          requestPresent(/*[{source}]*/) {
+          requestPresent() {
             domElement.requestPointerLock();
             return Promise.resolve();
           }
