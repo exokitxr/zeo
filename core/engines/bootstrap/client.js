@@ -84,6 +84,10 @@ class Bootstrap {
                   vrMode = newVrMode;
                 }
 
+                isSpectating() {
+                  return Boolean(_getQueryVariable(window.location.href, 's'));
+                }
+
                 getRoamMode() {
                   return roamMode;
                 }
@@ -119,7 +123,6 @@ class Bootstrap {
     this._cleanup();
   }
 }
-
 const _getQueryVariable = (url, variable) => {
   const match = url.match(/\?(.+)$/);
   const query = match ? match[1] : '';
