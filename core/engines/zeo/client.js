@@ -465,6 +465,62 @@ class Zeo {
                         _enterSpectateVR();
                       }
 
+                      const captureTime = parseInt(_getQueryVariable(window.location.search, 'c'), 10);
+                      if (!isNaN(captureTime)) {
+                        let running = false;
+                        let queue = [];
+                        const _requestTicket = fn => {
+                          if (!running) {
+                            running = true;
+
+                            fn(() => {
+                              running = false;
+
+                              if (queue.length > 0) {
+                                _requestTicket(queue.shift());
+                              }
+                            });
+                          } else {
+                            queue.push(fn);
+                          }
+                        };
+
+                        const {renderer: {domElement}} = three;
+                        const stream = domElement.captureStream(24);
+                        const mediaRecorder = new MediaRecorder(stream, {
+                          mimeType: 'video/webm',
+                        });
+                        mediaRecorder.ondataavailable = e => {
+                          _requestTicket(next => {
+                            const fileReader = new FileReader();
+                            fileReader.onload = () => {
+                              console.log('data', fileReader.result.replace(/^.*?,/, ''));
+
+                              next();
+                            };
+                            fileReader.onerror = err => {
+                              console.warn('error', 500, err.stack);
+
+                              next();
+                            };
+                            fileReader.readAsDataURL(e.data);
+                          });
+                        };
+                        mediaRecorder.onstart = () => {
+                          setTimeout(() => {
+                            mediaRecorder.stop();
+                          }, captureTime);
+                        };
+                        mediaRecorder.onstop = () => {
+                          _requestTicket(next => {
+                            console.log('end');
+
+                            next();
+                          });
+                        };
+                        mediaRecorder.start(100);
+                      }
+
                       this._cleanup = () => {
                         _stopRenderLoop();
                       };
