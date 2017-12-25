@@ -12,4 +12,4 @@ ADD . /root/zeo
 RUN bash -c 'cd /root/zeo && npm install --unsafe-perm'
 
 WORKDIR /root/zeo/
-ENTRYPOINT ["npm", "start"]
+CMD ["npm", "start"]
