@@ -217,10 +217,10 @@ class Multiplayer {
                   }
                 }
 
-                connections.splice(connections.indexOf(c), 1);
-
                 multiplayerApi.emit('playerLeave', String(n));
               }
+
+              connections.splice(connections.indexOf(c), 1);
             });
 
             connections.push(c);
