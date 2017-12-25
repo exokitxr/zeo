@@ -68,7 +68,7 @@ class Multiplayer {
 
         const channel = wss.channel('multiplayer');
         channel.on('connection', (c, {connection: {remoteAddress}}) => {
-          if (connections.length < maxUsers) {
+          if (_getNumUsers() < maxUsers) {
             let n = null;
             let username = null;
 
@@ -229,7 +229,7 @@ class Multiplayer {
           }
         });
 
-        const _getNumUsers = () => connections.length;
+        const _getNumUsers = () => connections.filter(c => c.n !== null).length;
 
         transient.multiplayer = {
           getNumUsers: _getNumUsers,
