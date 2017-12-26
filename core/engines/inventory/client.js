@@ -129,7 +129,7 @@ class Inventory {
         imageDataCtx.drawImage(img, 0, 0);
         return imageDataCtx.getImageData(0, 0, width, height);
       });
-    const _requestModReadme = (name, version) => {
+    /* const _requestModReadme = (name, version) => {
       let live = true;
       const result = new Promise((accept, reject) => {
         _requestImageBitmap(`https://try.zeovr.io/readme/${name}/${version}`)
@@ -143,7 +143,7 @@ class Inventory {
         live = false;
       };
       return result;
-    };
+    }; */
     const _resJson = res => {
       if (res.status >= 200 && res.status < 300) {
         return res.json();
@@ -1576,7 +1576,7 @@ class Inventory {
                 modReadmeImgPromise.cancel();
                 modReadmeImgPromise = null;
               }
-              modReadmeImgPromise = _requestModReadme(localMod.name, localMod.version);
+              /* modReadmeImgPromise = _requestModReadme(localMod.name, localMod.version);
               modReadmeImgPromise.then(img => {
                 modReadmeImg = img;
                 modReadmeImgPromise = null;
@@ -1587,7 +1587,7 @@ class Inventory {
 
                 _renderMenu();
                 plane.anchors = _getAnchors();
-              });
+              }); */
               modBarValue = 0;
               modPage = 0;
               modPages = 0;
