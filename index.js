@@ -296,6 +296,95 @@ const _listenArchae = () => {
   if (flags.server) {
     const _listenOffline = () => {
       if (flags.offline) {
+        a.app.get('/build/:mod', (req, res, next) => {
+          a.requestPlugin(req.params.mod, {offline: true})
+            .then(() => {
+              res.json({});
+            })
+            .catch(err => {
+              res.status(500);
+              res.json({
+                error: err.stack,
+              });
+            });
+        });
+        a.app.get(/^\/build\/([^\/]+?)\/(.+)\.js$/, (req, res, next) => {
+          res.set('Cache-Control', 'max-age=60, public');
+
+          const {params} = req;
+          const mod = params[0];
+          const target = params[1];
+
+          if (mod === target) {
+            a.requestPluginBundle(mod)
+              .then(codeString => {
+                res.type('application/json');
+                res.end(codeString);
+              })
+              .catch(err => {
+                if (err.code === 'ENOENT') {
+                  res.status(404);
+                  res.end(http.STATUS_CODES[404]);
+                } else {
+                  res.status(500);
+                  res.end(err.stack);
+                }
+              });
+          } else {
+            res.status(404);
+            res.end(http.STATUS_CODES[404]);
+          }
+        });
+        a.app.get(/^\/build\/([^\/]+?)\/serve\/(.+)\.js$/, (req, res, next) => {
+          res.set('Cache-Control', 'max-age=60, public');
+
+          const {params} = req;
+          const mod = params[0];
+          const serve = params[1];
+
+          if (mod === target) {
+            a.requestPluginServe(mod, serve)
+              .then(d => {
+                res.type(serve);
+                res.end(d);
+              })
+              .catch(err => {
+                if (err.code === 'ENOENT') {
+                  res.status(404);
+                  res.end(http.STATUS_CODES[404]);
+                } else {
+                  res.status(500);
+                  res.end(err.stack);
+                }
+              });
+          } else {
+            res.status(404);
+            res.end(http.STATUS_CODES[404]);
+          }
+        });
+        a.app.get(/^\/build\/([^\/]+?)\/build\/(.+)\.js$/, (req, res, next) => {
+          res.set('Cache-Control', 'max-age=60, public');
+
+          const {params} = req;
+          const mod = params[0];
+          const build = params[1];
+
+          if (mod === target) {
+            a.requestPluginBuild(mod, build)
+              .then(d => {
+                res.type('application/javascript');
+                res.end(d);
+              })
+              .catch(err => {
+                res.status(500);
+                res.end(err.stack);
+              });
+          } else {
+            res.status(404);
+            res.end(http.STATUS_CODES[404]);
+          }
+        });
+
         a.ensurePublicBundlePromise();
         return a.publicBundlePromise
           .then(() => {});
