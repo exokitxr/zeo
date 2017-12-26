@@ -465,7 +465,7 @@ class Zeo {
                         _enterSpectateVR();
                       }
 
-                      const captureTime = parseInt(_getQueryVariable(window.location.search, 'c'), 10);
+                      /* const captureTime = parseInt(_getQueryVariable(window.location.search, 'c'), 10);
                       if (!isNaN(captureTime)) {
                         let running = false;
                         let queue = [];
@@ -519,7 +519,7 @@ class Zeo {
                           });
                         };
                         mediaRecorder.start(100);
-                      }
+                      } */
 
                       this._cleanup = () => {
                         _stopRenderLoop();
