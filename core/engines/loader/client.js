@@ -28,7 +28,7 @@ class Loader {
             const _preload = () => {
               if (offline) {
                 window.module = {};
-                return _loadScript(`https://try.zeovr.io/build/${plugin}/${plugin}.js`)
+                return _loadScript(`/build/${plugin}/${plugin}.js`)
                   .then(() => {
                     window.plugins[plugin] = window.module.exports;
                     window.module = {};
