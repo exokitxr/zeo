@@ -144,13 +144,13 @@ class Hand {
         })();
 
         const _broadcastObject = (method, args) => {
-          connection && connection.send(JSON.stringify({
+          connection && !bootstrap.isSpectating() && connection.send(JSON.stringify({
             method,
             args,
           }));
         };
         const _broadcastBuffer = buffer => {
-          connection && connection.send(buffer);
+          connection && !bootstrap.isSpectating() && connection.send(buffer);
         };
 
         const _makeGrabState = () => ({
