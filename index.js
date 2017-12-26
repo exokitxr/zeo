@@ -296,7 +296,7 @@ const _listenArchae = () => {
   if (flags.server) {
     const _listenOffline = () => {
       if (flags.offline) {
-        a.app.get('/build/:mod', (req, res, next) => {
+        a.app.post('/build/:mod', (req, res, next) => {
           a.requestPlugin(req.params.mod, {offline: true})
             .then(() => {
               res.json({});
