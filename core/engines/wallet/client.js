@@ -586,7 +586,7 @@ class Wallet {
                     this.visible = true;
                     this.emit('setVisible', true);
 
-                    connection && connection.send(JSON.stringify({
+                    connection && !bootstrap.isSpectating() && connection.send(JSON.stringify({
                       method: 'setVisible',
                       args: {
                         assetId: this.assetId,
@@ -599,7 +599,7 @@ class Wallet {
                     this.visible = false;
                     this.emit('setVisible', false);
 
-                    connection && connection.send(JSON.stringify({
+                    connection && !bootstrap.isSpectating() && connection.send(JSON.stringify({
                       method: 'setVisible',
                       args: {
                         assetId: this.assetId,
@@ -611,7 +611,7 @@ class Wallet {
                   setState(position, rotation, scale) {
                     super.setState(position, rotation, scale);
 
-                    connection && connection.send(JSON.stringify({
+                    connection && !bootstrap.isSpectating() && connection.send(JSON.stringify({
                       method: 'setState',
                       args: {
                         assetId: this.assetId,
@@ -624,7 +624,7 @@ class Wallet {
                     this.owner = owner;
                     this.emit('setOwner', owner);
 
-                    connection && connection.send(JSON.stringify({
+                    connection && !bootstrap.isSpectating() && connection.send(JSON.stringify({
                       method: 'setOwner',
                       args: {
                         assetId: this.assetId,
@@ -637,7 +637,7 @@ class Wallet {
                     this.open = open;
                     this.emit('setOpen', open);
 
-                    connection && connection.send(JSON.stringify({
+                    connection && !bootstrap.isSpectating() && connection.send(JSON.stringify({
                       method: 'setOpen',
                       args: {
                         assetId: this.assetId,
@@ -650,7 +650,7 @@ class Wallet {
                     this.physics = true;
                     this.emit('physics', true);
 
-                    connection && connection.send(JSON.stringify({
+                    connection && !bootstrap.isSpectating() && connection.send(JSON.stringify({
                       method: 'setPhysics',
                       args: {
                         assetId: this.assetId,
@@ -663,7 +663,7 @@ class Wallet {
                     this.physics = false;
                     this.emit('physics', false);
 
-                    connection && connection.send(JSON.stringify({
+                    connection && !bootstrap.isSpectating() && connection.send(JSON.stringify({
                       method: 'setPhysics',
                       args: {
                         assetId: this.assetId,
@@ -677,7 +677,7 @@ class Wallet {
 
                     this.updateAttribute(name, value);
 
-                    connection && connection.send(JSON.stringify({
+                    connection && !bootstrap.isSpectating() && connection.send(JSON.stringify({
                       method: 'setAttribute',
                       args: {
                         assetId,
@@ -1226,7 +1226,7 @@ class Wallet {
                   _bindAssetInstancePhysics(assetInstance);
                   _bindAssetInstanceMenu(assetInstance);
 
-                  connection && connection.send(JSON.stringify({
+                  connection && !bootstrap.isSpectating() && connection.send(JSON.stringify({
                     method: 'addAsset',
                     args: {
                       assetId,
@@ -1254,7 +1254,7 @@ class Wallet {
 
                   assetsMesh.removeAssetInstance(assetId);
 
-                  connection && connection.send(JSON.stringify({
+                  connection && !bootstrap.isSpectating() && connection.send(JSON.stringify({
                     method: 'removeAsset',
                     args: {
                       assetId,
