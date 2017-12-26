@@ -340,7 +340,7 @@ class Zeo {
 
                   return renderLoop;
                 };
-                const _enterVR = ({stereoscopic, spectate, onExit}) => {
+                const _enterVR = ({stereoscopic, spectate, capture, onExit}) => {
                   _stopRenderLoop();
 
                   blockerMesh.visible = false;
@@ -356,6 +356,7 @@ class Zeo {
                   renderLoop = webvr.requestEnterVR({
                     stereoscopic,
                     spectate,
+                    capture,
                     update: _update,
                     // updateEye: _updateEye,
                     updateStart: _updateStart,
@@ -395,7 +396,6 @@ class Zeo {
                       const _enterHeadsetVR = () => {
                         _enterVR({
                           stereoscopic: true,
-                          spectate: false,
                           onExit: () => {
                             bootstrap.setVrMode(null);
                           },
@@ -405,8 +405,17 @@ class Zeo {
                       };
                       const _enterSpectateVR = () => {
                         _enterVR({
-                          stereoscopic: false,
                           spectate: true,
+                          onExit: () => {
+                            bootstrap.setVrMode(null);
+                          },
+                        });
+
+                        bootstrap.setVrMode('keyboard');
+                      };
+                      const _enterCaptureVR = () => {
+                        _enterVR({
+                          capture: true,
                           onExit: () => {
                             bootstrap.setVrMode(null);
                           },
@@ -417,7 +426,6 @@ class Zeo {
                       const _enterKeyboardVR = () => {
                         _enterVR({
                           stereoscopic: false,
-                          spectate: false,
                           onExit: () => {
                             bootstrap.setVrMode(null);
                           },
@@ -426,7 +434,11 @@ class Zeo {
                         bootstrap.setVrMode('keyboard');
                       };
 
-                      if (!bootstrap.isSpectating()) {
+                      if (bootstrap.isCapturing()) {
+                        _enterCaptureVR();
+                      } else if (bootstrap.isSpectating()) {
+                        _enterSpectateVR();
+                      } else {
                         window.onvrdisplayactivate = null;
                         window.addEventListener('vrdisplayactivate', () => {
                           _enterHeadsetVR();
@@ -461,8 +473,6 @@ class Zeo {
                         } else if (urlRequestPresent === 'keyboard') {
                           _enterKeyboardVR();
                         }
-                      } else {
-                        _enterSpectateVR();
                       }
 
                       /* const captureTime = parseInt(_getQueryVariable(window.location.search, 'c'), 10);

@@ -53,6 +53,7 @@ const POSITION_SPEED_FAST = POSITION_SPEED * 2;
 const POSITION_SPEED_ROAM = 5 / 1000;
 const POSITION_SPEED_ROAM_FAST = POSITION_SPEED_ROAM * 5;
 const ROTATION_SPEED = 0.02 / (Math.PI * 2);
+const NUM_FRAMES = 24 * 8;
 
 const BUTTONS = {
   PAD: 0,
@@ -387,7 +388,10 @@ class WebVR {
                     this.isOpen = false;
                   });
 
-                  const frameData = (!display || display instanceof FakeVRDisplay || display instanceof SpectateVRDisplay) ? new VRFrameDataFake() : new VRFrameData();
+                  const frameData = (!display || display instanceof FakeVRDisplay || display instanceof SpectateVRDisplay || display instanceof CaptureVRDisplay) ?
+                    new VRFrameDataFake()
+                  :
+                    new VRFrameData();
                   this._frameData = frameData;
 
                   if (display && stereoscopic) {
@@ -508,8 +512,9 @@ class WebVR {
           };
 
           requestEnterVR({
-            stereoscopic = true,
+            stereoscopic = false,
             spectate = false,
+            capture = false,
             update = () => {},
             updateStart = () => {},
             updateEnd = () => {},
@@ -562,6 +567,8 @@ class WebVR {
                     return bestDisplay;
                   } else if (spectate) {
                     return new SpectateVRDisplay();
+                  } else if (capture) {
+                    return new CaptureVRDisplay();
                   } else {
                     return new FakeVRDisplay();
                   }
@@ -598,7 +605,7 @@ class WebVR {
 
                           document.removeEventListener('pointerlockchange', pointerlockchange);
                         });
-                      } else if (display instanceof SpectateVRDisplay) {
+                      } else if (display instanceof SpectateVRDisplay || display instanceof CaptureVRDisplay) {
                         // nothing
                       } else {
                         const vrdisplaypresentchange = () => {
@@ -952,6 +959,54 @@ class WebVR {
                 upVector
               )
             );
+          }
+        }
+
+        class CaptureVRDisplay {
+          constructor() {
+            this.canPresent = true;
+            this.isPresenting = false;
+
+            this.position = new THREE.Vector3();
+            this.rotation = new THREE.Quaternion();
+
+            this._frame = 0;
+          }
+
+          requestPresent() {
+            this.isPresenting = true;
+
+            return Promise.resolve();
+          }
+
+          getFrameData(frameData) {
+            frameData.pose.set(this.position, this.rotation);
+          }
+
+          updatePose() {
+            if (this._frame < NUM_FRAMES) {
+              const angle = this._frame / NUM_FRAMES * Math.PI * 2;
+              this.position.copy(zeroVector).add(
+                localVector.set(
+                  Math.sin(angle) * 5,
+                  3,
+                  -Math.cos(angle) * 5,
+                )
+              );
+              this.rotation.setFromRotationMatrix(
+                localMatrix.lookAt(
+                  this.position,
+                  zeroVector,
+                  upVector
+                )
+              );
+
+              console.log('data', renderer.domElement.toDataURL('image/jpeg'));
+
+              this._frame++;
+            } else if (this._frame === NUM_FRAMES) {
+              console.log('end');
+            }
           }
         }
 
