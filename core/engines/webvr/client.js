@@ -1002,11 +1002,11 @@ class WebVR {
               );
 
               console.log('data', renderer.domElement.toDataURL('image/jpeg'));
-
-              this._frame++;
             } else if (this._frame === NUM_FRAMES) {
               console.log('end');
             }
+
+            this._frame++;
           }
         }
 
