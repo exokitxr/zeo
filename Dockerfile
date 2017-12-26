@@ -8,7 +8,6 @@ RUN apt-get update && apt-get install -y \
 RUN curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.8/install.sh | bash && \
   bash -c 'NVM_DIR="/root/.nvm"; . "$NVM_DIR/nvm.sh"; nvm install 8.9.3;'
 ENV PATH $PATH:/root/.nvm/versions/node/v8.9.3/bin/
-RUN npm install -g npm
 ADD . /root/zeo
 RUN bash -c 'cd /root/zeo && npm install --unsafe-perm'
 
