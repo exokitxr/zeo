@@ -29,8 +29,16 @@ class Three {
       };
     });
 
-    return _requestThree()
-      .then(THREE => {
+    return Promise.all([
+      archae.requestPlugins([
+        '/core/engines/bootstrap',
+      ]),
+      _requestThree(),
+    ])
+      .then(([
+        [bootstrap],
+        THREE,
+      ]) => {
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0xFFFFFF);
         scene.autoUpdate = false;
@@ -72,7 +80,7 @@ class Three {
           stencil: true,
           antialias: true,
           premultipliedAlpha: true,
-          preserveDrawingBuffer: false,
+          preserveDrawingBuffer: bootstrap.isCapturing(), // needed to read canvas image data
         });
         const renderer = new THREE.WebGLRenderer({
           canvas: canvas,
