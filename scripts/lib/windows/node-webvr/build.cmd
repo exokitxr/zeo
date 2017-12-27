@@ -1,6 +1,6 @@
 cd %~dp0
 
-set npm_config_target=1.7.9
+set npm_config_target=1.7.10
 set npm_config_arch=x64
 set npm_config_target_arch=x64
 set npm_config_disturl=https://atom.io/download/electron
