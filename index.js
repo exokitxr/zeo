@@ -2,6 +2,7 @@
 
 const path = require('path');
 const fs = require('fs');
+const http = require('http');
 const child_process = require('child_process');
 
 const archae = require('archae');
@@ -318,21 +319,21 @@ const _listenArchae = () => {
           if (mod === target) {
             a.requestPluginBundle(mod)
               .then(codeString => {
-                res.type('application/json');
-                res.end(codeString);
+                if (codeString !== null) {
+                  res.type('application/javascript');
+                  res.end(codeString);
+                } else {
+                  res.status(404);
+                  res.end(http.STATUS_CODES[404] + '\n');
+                }
               })
               .catch(err => {
-                if (err.code === 'ENOENT') {
-                  res.status(404);
-                  res.end(http.STATUS_CODES[404]);
-                } else {
-                  res.status(500);
-                  res.end(err.stack);
-                }
+                res.status(500);
+                res.end(err.stack);
               });
           } else {
             res.status(404);
-            res.end(http.STATUS_CODES[404]);
+            res.end(http.STATUS_CODES[404] + '\n');
           }
         });
         a.app.get(/^\/build\/([^\/]+?)\/serve\/(.+)\.js$/, (req, res, next) => {
@@ -345,21 +346,21 @@ const _listenArchae = () => {
           if (mod === target) {
             a.requestPluginServe(mod, serve)
               .then(d => {
-                res.type(serve);
-                res.end(d);
+                if (d !== null) {
+                  res.type(serve);
+                  res.end(d);
+                } else {
+                  res.status(404);
+                  res.end(http.STATUS_CODES[404] + '\n');
+                }
               })
               .catch(err => {
-                if (err.code === 'ENOENT') {
-                  res.status(404);
-                  res.end(http.STATUS_CODES[404]);
-                } else {
-                  res.status(500);
-                  res.end(err.stack);
-                }
+                res.status(500);
+                res.end(err.stack);
               });
           } else {
             res.status(404);
-            res.end(http.STATUS_CODES[404]);
+            res.end(http.STATUS_CODES[404] + '\n');
           }
         });
         a.app.get(/^\/build\/([^\/]+?)\/build\/(.+)\.js$/, (req, res, next) => {
@@ -372,8 +373,13 @@ const _listenArchae = () => {
           if (mod === target) {
             a.requestPluginBuild(mod, build)
               .then(d => {
-                res.type('application/javascript');
-                res.end(d);
+                if (d !== null) {
+                  res.type('application/javascript');
+                  res.end(d);
+                } else {
+                  res.status(404);
+                  res.end(http.STATUS_CODES[404] + '\n');
+                }
               })
               .catch(err => {
                 res.status(500);
@@ -381,7 +387,7 @@ const _listenArchae = () => {
               });
           } else {
             res.status(404);
-            res.end(http.STATUS_CODES[404]);
+            res.end(http.STATUS_CODES[404] + '\n');
           }
         });
 
