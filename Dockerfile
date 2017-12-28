@@ -14,6 +14,7 @@ WORKDIR /root/zeo
 RUN npm install --unsafe-perm
 RUN curl https://nodejs.org/dist/v8.9.3/node-v8.9.3-win-x64.7z >node.7z && \
   7z x node.7z && \
+  rm node.7z && \
   mkdir -p windows && \
   mv node-v8.9.3-win-x64 windows/node
 
