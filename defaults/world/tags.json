@@ -70,42 +70,20 @@
         "exists": false
       }
     },
-    "7w06": {
+    "ji5a4i0": {
       "type": "entity",
-      "id": "7w06",
-      "name": "heightfield",
-      "displayName": "heightfield",
+      "id": "ji5a4i0",
+      "name": "floor-basic",
+      "displayName": "floor-basic",
       "version": "0.0.1",
-      "module": "heightfield",
-      "tagName": "heightfield",
-      "attributes": [],
-      "metadata": {}
-    },
-    "7w07": {
-      "type": "entity",
-      "id": "7w07",
-      "name": "generator",
-      "displayName": "generator",
-      "version": "0.0.1",
-      "module": "generator",
-      "tagName": "generator",
-      "attributes": [],
-      "metadata": {}
-    },
-    "kkvl7d": {
-      "type": "entity",
-      "id": "kkvl7d",
-      "name": "day-night-skybox",
-      "displayName": "day-night-skybox",
-      "version": "0.0.1",
-      "module": "day-night-skybox",
-      "tagName": "day-night-skybox",
+      "module": "floor-basic",
+      "tagName": "floor-basic",
       "attributes": {},
       "metadata": {}
     },
-    "0pdq0ak": {
+    "ji5a4i1": {
       "type": "entity",
-      "id": "0pdq0ak",
+      "id": "ji5a4i",
       "name": "skin-vr",
       "displayName": "skin-vr",
       "version": "0.0.1",
@@ -114,91 +92,47 @@
       "attributes": {},
       "metadata": {}
     },
-    "0pdq0al": {
+    "ji5a4i2": {
       "type": "entity",
-      "id": "0pdq0al",
-      "name": "objects",
-      "displayName": "objects",
+      "id": "ji5a4i2",
+      "name": "lightsaber-vr",
+      "displayName": "lightsaber-vr",
       "version": "0.0.1",
-      "module": "objects",
-      "tagName": "objects",
+      "module": "lightsaber-vr",
+      "tagName": "lightsaber-vr",
       "attributes": {},
       "metadata": {}
     },
-    "0pdq0an": {
+    "ji5a4i3": {
       "type": "entity",
-      "id": "0pdq0an",
-      "name": "weather",
-      "displayName": "weather",
+      "id": "ji5a4i3",
+      "name": "drone-vr",
+      "displayName": "drone-vr",
       "version": "0.0.1",
-      "module": "weather",
-      "tagName": "weather",
+      "module": "drone-vr",
+      "tagName": "drone-vr",
       "attributes": {},
       "metadata": {}
     },
-    "0pdq0ao": {
+    "ji5a4i4": {
       "type": "entity",
-      "id": "0pdq0ao",
-      "name": "particle",
-      "displayName": "particle",
+      "id": "ji5a4i4",
+      "name": "bag-vr",
+      "displayName": "bag-vr",
       "version": "0.0.1",
-      "module": "particle",
-      "tagName": "particle",
+      "module": "bag-vr",
+      "tagName": "bag-vr",
       "attributes": {},
       "metadata": {}
     },
-    "0pdq0ap": {
+    "ji5a4i5": {
       "type": "entity",
-      "id": "0pdq0ap",
-      "name": "craft",
-      "displayName": "craft",
+      "id": "ji5a4i5",
+      "name": "glass-vr",
+      "displayName": "glass-vr",
       "version": "0.0.1",
-      "module": "craft",
-      "tagName": "craft",
-      "attributes": {},
-      "metadata": {}
-    },
-    "x76y1": {
-      "type": "entity",
-      "id": "x76y1",
-      "name": "health",
-      "displayName": "health",
-      "version": "0.0.1",
-      "module": "health",
-      "tagName": "health",
-      "attributes": {},
-      "metadata": {}
-    },
-    "u3xub": {
-      "type": "entity",
-      "id": "u3xub",
-      "name": "tools",
-      "displayName": "tools",
-      "version": "0.0.1",
-      "module": "tools",
-      "tagName": "tools",
-      "attributes": {},
-      "metadata": {}
-    },
-    "u3xuc": {
-      "type": "entity",
-      "id": "u3xuc",
-      "name": "model",
-      "displayName": "models",
-      "version": "0.0.1",
-      "module": "model",
-      "tagName": "model",
-      "attributes": {},
-      "metadata": {}
-    },
-    "ji5a4i": {
-      "type": "entity",
-      "id": "ji5a4i",
-      "name": "tutorial",
-      "displayName": "tutorial",
-      "version": "0.0.1",
-      "module": "tutorial",
-      "tagName": "tutorial",
+      "module": "glass-vr",
+      "tagName": "glass-vr",
       "attributes": {},
       "metadata": {}
     }
