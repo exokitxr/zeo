@@ -35,11 +35,6 @@ after_test:
       rm node.zip
       mv "node-v8.9.3-win-x64" node
       rm -R node/node_modules
-      msbuild 'scripts/lib/windows/Zeo VR.sln'
-      cp 'scripts/lib/windows/Zeo VR/bin/Zeo VR.exe' .
-      cp 'scripts/lib/windows/Zeo VR Server/bin/Zeo VR Server.exe' server.exe
-      cp 'scripts/lib/windows/Zeo VR Connect/bin/Zeo VR Connect.exe' connect.exe
-      cp 'scripts/lib/windows/Zeo VR Server Reset/bin/Zeo VR Server Reset.exe' reset.exe
       touch data/no-hotload.json
       7z a windows-release.zip * -xr'!.git'
 
