@@ -24,7 +24,6 @@ const flags = {
   server: args.includes('server'),
   connect: args.includes('connect'),
   install: args.includes('install'),
-  reset: args.includes('reset'),
   host: _findArg('host'),
   port: (() => {
     const s = _findArg('port');
@@ -61,7 +60,7 @@ const flags = {
   sw: args.includes('sw'),
   maxUsers: _findArg('maxUsers'),
 };
-if (!flags.server && !flags.connect && !flags.install && !flags.reset && !flags.bundle) {
+if (!flags.server && !flags.connect && !flags.install && !flags.bundle) {
   flags.server = true;
 }
 
@@ -177,20 +176,6 @@ const config = {
   },
 };
 const a = archae(config);
-
-const _reset = () => new Promise((accept, reject) => {
-  if (flags.reset) {
-    rimraf(path.join(dataDirectory, 'world'), err => {
-      if (!err) {
-        accept();
-      } else {
-        reject(err);
-      }
-    });
-  } else {
-    accept();
-  }
-});
 
 const _preload = () => {
   if (flags.server) {
@@ -463,7 +448,6 @@ const _boot = () => {
 };
 
 _configure()
-  .then(() => _reset())
   .then(() => _preload())
   .then(() => _install())
   .then(() => _listenLibs())
