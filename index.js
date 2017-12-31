@@ -56,7 +56,6 @@ const flags = {
   noTty: args.includes('noTty'),
   offline: args.includes('offline'),
   bundle: args.includes('bundle'),
-  sw: args.includes('sw'),
   maxUsers: _findArg('maxUsers'),
 };
 if (!flags.server && !flags.install && !flags.bundle) {
