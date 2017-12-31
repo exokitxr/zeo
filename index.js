@@ -22,7 +22,6 @@ const _findArg = name => {
 };
 const flags = {
   server: args.includes('server'),
-  connect: args.includes('connect'),
   install: args.includes('install'),
   host: _findArg('host'),
   port: (() => {
@@ -60,7 +59,7 @@ const flags = {
   sw: args.includes('sw'),
   maxUsers: _findArg('maxUsers'),
 };
-if (!flags.server && !flags.connect && !flags.install && !flags.bundle) {
+if (!flags.server && !flags.install && !flags.bundle) {
   flags.server = true;
 }
 
@@ -422,19 +421,6 @@ const _boot = () => {
     } else {
       console.log('Local URL: ' + fullUrl);
     }
-  }
-  if (flags.connect) {
-    const nodeWebvrPath = path.join(requireRelative.resolve('node-webvr', path.join(__dirname, 'scripts', 'lib', 'windows', 'node-webvr')), '..');
-    const childProcess = child_process.spawn(path.join(nodeWebvrPath, 'run' + (process.platform === 'win32' ? '.cmd' : '.sh')), [fullUrl + '?e=hmd']);
-    childProcess.on('error', err => {
-      console.warn(err);
-    });
-    childProcess.on('exit', code => {
-      if (code !== 0) {
-        console.warn('Warning: connect process exited with nonzero status code', code);
-      }
-      process.exit(code);
-    });
   }
   if (flags.bundle) {
     a.ensurePublicBundlePromise();
