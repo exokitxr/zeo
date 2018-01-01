@@ -36,7 +36,7 @@ class Floor {
     });
 
     return _requestImage('/archae/plugins/floor-basic/serve/graphy.png')
-      .then(skinImg => {
+      .then(graphImg => {
         if (live) {
           const floorEntity = {
             attributes: {
@@ -194,7 +194,7 @@ class Floor {
                   uvs[i * 2 + 1] *= 2;
                 }
                 const texture = new THREE.Texture(
-                  skinImg,
+                  graphImg,
                   THREE.UVMapping,
                   THREE.RepeatWrapping,
                   THREE.RepeatWrapping,
