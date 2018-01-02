@@ -142,7 +142,7 @@ class Config {
                   const m = _jsonParse(msg);
 
                   if (m !== null && typeof m === 'object') {
-                    if (wallet.handleMessge(m)) {
+                    if (wallet.handleMessage(m)) {
                       // nothing
                     } else {
                       console.warn('config ws got unknown message', JSON.stringify(m));
