@@ -127,7 +127,7 @@ class Config {
             const parsedUrl = url.parse(req.url);
 
             if (parsedUrl.pathname === '/config') {
-              c.send({
+              c.send(JSON.stringify({
                 method: 'init',
                 args: {
                   // tags: world.getTags(),
@@ -135,7 +135,7 @@ class Config {
                   players: multiplayer.getPlayers(),
                   config: configJson,
                 }
-              });
+              }));
 
               c.on('message', msg => {
                 if (typeof msg === 'string') {
