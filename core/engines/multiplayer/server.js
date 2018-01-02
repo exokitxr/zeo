@@ -263,6 +263,14 @@ class Multiplayer {
             });
             return result;
           }
+
+          registerConnection(c) {
+            connections.push(c);
+          }
+
+          unregisterConnection(c) {
+            connections.splice(connections.indexOf(c), 1);
+          }
         }
         const multiplayerApi = new MultiplayerApi();
         return multiplayerApi;

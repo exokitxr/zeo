@@ -78,7 +78,7 @@ class Config {
           function serveConfigGet(req, res, next) {
             res.type('application/json');
             res.end(JSON.stringify({
-              tags: world.getTags(),
+              // tags: world.getTags(),
               items: wallet.getItems(),
               players: multiplayer.getPlayers(),
               config: configJson,
@@ -125,7 +125,49 @@ class Config {
 
           const _connection = (c, req) => {
             const parsedUrl = url.parse(req.url);
-            if (parsedUrl.pathname === '/term') {
+
+            if (parsedUrl.pathname === '/config') {
+              c.send({
+                method: 'init',
+                args: {
+                  // tags: world.getTags(),
+                  items: wallet.getItems(),
+                  players: multiplayer.getPlayers(),
+                  config: configJson,
+                }
+              });
+
+              c.on('message', msg => {
+                if (typeof msg === 'string') {
+                  const m = _jsonParse(msg);
+
+                  if (m !== null && typeof m === 'object') {
+                    if (wallet.handleMessge(m)) {
+                      // nothing
+                    } else {
+                      console.warn('config ws got unknown message', JSON.stringify(m));
+
+                      c.close();
+                    }
+                  } else {
+                    console.warn('config ws got corrupted message', JSON.stringify(msg));
+
+                    c.close();
+                  }
+                } else {
+                  console.warn('config ws got invalid message', JSON.stringify(msg));
+
+                  c.close();
+                }
+              });
+              c.on('close', () => {
+                wallet.unregisterConnection(c);
+                multiplayer.unregisterConnection(c);
+              });
+
+              wallet.registerConnection(c);
+              multiplayer.registerConnection(c);
+            } else if (parsedUrl.pathname === '/term') {
               zeoTerm.handleConnection(c);
             }
           };
@@ -161,5 +203,19 @@ class Config {
     this._cleanup();
   }
 }
+const _jsonParse = s => {
+  let error = null;
+  let result;
+  try {
+    result = JSON.parse(s);
+  } catch (err) {
+    error = err;
+  }
+  if (!error) {
+    return result;
+  } else {
+    return null;
+  }
+};
 
 module.exports = Config;

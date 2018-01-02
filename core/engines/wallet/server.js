@@ -121,9 +121,7 @@ class Wallet {
                 }
               };
             };
-
-            c.on('message', s => {
-              const m = _jsonParse(s);
+            const _handleMessage = m => {
               const {method, args} = m;
 
               if (method === 'addAsset') {
@@ -136,6 +134,8 @@ class Wallet {
                 _saveItems();
 
                 analytics.addFile({id});
+
+                return true;
               } else if (method === 'removeAsset') {
                 const {assetId} = args;
                 assetInstances.splice(assetInstances.findIndex(assetInstance => assetInstance.assetId === assetId), 1);
@@ -145,6 +145,8 @@ class Wallet {
                 _saveItems();
 
                 analytics.removeFile({assetId});
+
+                return true;
               } else if (method === 'setAttribute') {
                 const {assetId, name, value} = args;
                 const assetInstance = assetInstances.find(assetInstance => assetInstance.assetId === assetId);
@@ -160,6 +162,8 @@ class Wallet {
                 }
 
                 _saveItems();
+
+                return true;
               } else if (method === 'setState') {
                 const {assetId, matrix} = args;
                 const assetInstance = assetInstances.find(assetInstance => assetInstance.assetId === assetId);
@@ -171,6 +175,8 @@ class Wallet {
                 }
 
                 _saveItems();
+
+                return true;
               } else if (method === 'setOwner') {
                 const {assetId, owner} = args;
                 const assetInstance = assetInstances.find(assetInstance => assetInstance.assetId === assetId);
@@ -182,6 +188,8 @@ class Wallet {
                 }
 
                 _saveItems();
+
+                return true;
               } else if (method === 'setVisible') {
                 const {assetId, visible} = args;
                 const assetInstance = assetInstances.find(assetInstance => assetInstance.assetId === assetId);
@@ -193,6 +201,8 @@ class Wallet {
                 }
 
                 _saveItems();
+
+                return true;
               } else if (method === 'setOpen') {
                 const {assetId, open} = args;
                 const assetInstance = assetInstances.find(assetInstance => assetInstance.assetId === assetId);
@@ -204,6 +214,8 @@ class Wallet {
                 }
 
                 _saveItems();
+
+                return true;
               } else if (method === 'setPhysics') {
                 const {assetId, physics} = args;
                 const assetInstance = assetInstances.find(assetInstance => assetInstance.assetId === assetId);
@@ -215,8 +227,24 @@ class Wallet {
                 }
 
                 _saveItems();
+
+                return true;
               } else {
                 console.warn('no such method:' + JSON.stringify(method));
+
+                return false;
+              }
+            };
+
+            c.on('message', msg => {
+              const m = _jsonParse(msg);
+
+              if (m !== null && typeof m === 'object') {
+                _handleMessage(m);
+              } else {
+                console.warn('wallet engine server got invalid message', JSON.stringify(msg));
+
+                c.close();
               }
             });
             c.on('close', () => {
@@ -360,6 +388,15 @@ class Wallet {
             getItems() {
               return assetInstances;
             },
+            registerConnection(c) {
+              connections.push(c);
+            },
+            unregisterConnection(c) {
+              connections.splice(connections.indexOf(c), 1);
+            },
+            handleMessage(msg) {
+              return _handleMessage(msg);
+            }
           };
         }
       });
