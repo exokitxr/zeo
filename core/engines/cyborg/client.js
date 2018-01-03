@@ -73,7 +73,7 @@ class Cyborg {
           const solidMaterial = new THREE.MeshPhongMaterial({
             color: 0x666666,
             shininess: 0,
-            shading: THREE.FlatShading,
+            flatShading: true,
           });
 
           const BUTTON_COLOR = 0xFF4444;
