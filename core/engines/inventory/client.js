@@ -533,44 +533,44 @@ class Inventory {
             const di = i - menuState.page * 7;
 
             if (type === 'matrix') {
-              _pushAttributeAnchor(w, h + di*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2, attributeName, type);
+              _pushAttributeAnchor(w, 150 + h + di*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2, attributeName, type);
             } else if (type === 'vector') {
-              _pushAttributeAnchor(w, h + di*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2, attributeName, type);
+              _pushAttributeAnchor(w, 150 + h + di*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2, attributeName, type);
             } else if (type === 'text') {
-              _pushAttributeAnchor(w, h + di*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2, attributeName, type);
+              _pushAttributeAnchor(w, 150 + h + di*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2, attributeName, type);
             } else if (type === 'number') {
-              _pushAttributeAnchor(w, h - 25 + di*rowHeight, ITEM_MENU_INNER_SIZE, 25 + 5 + 25, attributeName, type);
+              _pushAttributeAnchor(w, 150 + h - 25 + di*rowHeight, ITEM_MENU_INNER_SIZE, 25 + 5 + 25, attributeName, type);
             } else if (type === 'select') {
               if (menuState.focus !== attributeName) {
-                _pushAttributeAnchor(w, h + di*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2, attributeName, type);
+                _pushAttributeAnchor(w, 150 + h + di*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2, attributeName, type);
               } else {
                 const {options} = attributeSpec;
                 for (let j = 0; j < options.length; j++) {
-                  _pushAttributeAnchor(w, h + di*rowHeight + j*fontSize*2, ITEM_MENU_INNER_SIZE, fontSize*2, attributeName, type, options[j]);
+                  _pushAttributeAnchor(w, 150 + h + di*rowHeight + j*fontSize*2, ITEM_MENU_INNER_SIZE, fontSize*2, attributeName, type, options[j]);
                 }
               }
             } else if (type === 'color') {
               if (menuState.focus === attributeName) {
-                _pushAttributeAnchor(w, h + di*rowHeight, 256, 256, attributeName, type, (fx, fy) => '#' + localColor.setHex(colorWheelImg.getColor(fx, fy)).getHexString());
+                _pushAttributeAnchor(w, 150 + h + di*rowHeight, 256, 256, attributeName, type, (fx, fy) => '#' + localColor.setHex(colorWheelImg.getColor(fx, fy)).getHexString());
               }
 
-              _pushAttributeAnchor(w, h + di*rowHeight, fontSize*2, fontSize*2, attributeName, type);
-              _pushAttributeAnchor(w + fontSize*2, h + di*rowHeight, ITEM_MENU_INNER_SIZE - fontSize*2, fontSize*2, attributeName, type);
+              _pushAttributeAnchor(w, 150 + h + di*rowHeight, fontSize*2, fontSize*2, attributeName, type);
+              _pushAttributeAnchor(w + fontSize*2, 150 + h + di*rowHeight, ITEM_MENU_INNER_SIZE - fontSize*2, fontSize*2, attributeName, type);
             } else if (type === 'checkbox') {
-              _pushAttributeAnchor(w, h + di*rowHeight, ITEM_MENU_INNER_SIZE, 30, attributeName, type, !value);
+              _pushAttributeAnchor(w, 150 + h + di*rowHeight, ITEM_MENU_INNER_SIZE, 30, attributeName, type, !value);
             } else if (type === 'file') {
-              _pushAttributeAnchor(w, h + di*rowHeight, ITEM_MENU_INNER_SIZE - fontSize*2, fontSize*2, attributeName, type);
+              _pushAttributeAnchor(w, 150 + h + di*rowHeight, ITEM_MENU_INNER_SIZE - fontSize*2, fontSize*2, attributeName, type);
             }
           }
 
           const numPages = Math.ceil(attributeNames.length / 7);
-          _pushAnchor(result, ITEM_MENU_SIZE - 60, ITEM_MENU_SIZE*0.05, 30, ITEM_MENU_SIZE*0.9, e => {
+          _pushAnchor(result, canvas.width - 150, 150, 30, canvas.height - 150, e => {
             if (numPages > 0) {
               const {side} = e;
 
               onmove = () => {
                 const hoverState = uiTracker.getHoverState(side);
-                menuState.barValue = Math.min(Math.max(hoverState.y - ITEM_MENU_SIZE*0.05, 0), ITEM_MENU_SIZE*0.9) / (ITEM_MENU_SIZE*0.9);
+                menuState.barValue = Math.min(Math.max(hoverState.y - 150, 0), canvas.height - 150) / (canvas.height - 150);
                 menuState.page = _snapToIndex(numPages, menuState.barValue);
 
                 render();
@@ -1123,12 +1123,8 @@ class Inventory {
                         json.data.attributes
                         : {};
                       const {attributes: attributeSpecs} = item;
-                      const itemMenuState = {
-                        focus: null,
-                        barValue: 0,
-                        page: 0,
-                      };
                       renderAttributes(canvas, ctx, attributes, attributeSpecs, fontSize, ITEM_MENU_BORDER_SIZE, ITEM_MENU_BORDER_SIZE, itemMenuState);
+                      plane.anchors = _getAnchors();
                     }
                   }
                 }
@@ -1737,6 +1733,11 @@ class Inventory {
         let modAnchors = _getModAnchors();
 
         let focusState = {};
+        const itemMenuState = {
+          focus: null,
+          barValue: 0,
+          page: 0,
+        };
         const _setFocus = newFocusState => {
           const oldFocusState = focusState;
           focusState = newFocusState;
@@ -1750,10 +1751,86 @@ class Inventory {
             planeMeshRight.render();
             assetsMesh.render();
           }
+          plane.anchors = _getAnchors();
         };
 
         const _getAnchors = () => {
-          // const result = tabsAnchors.slice();
+          if (focusState.type === 'leftPane' || focusState.type === 'rightPane') {
+            const {target} = focusState;
+            const {ext} = target;
+            if (ext === 'itm') {
+              const {json} = target;
+
+              if (json && json.data && json.data.attributes && typeof json.data.path === 'string') {
+                const path = json.data.path;
+                const match = path.match(/^(.+?)\/(.+?)$/);
+
+                if (match) {
+                  const moduleName = match[1];
+                  const itemName = match[2];
+                  const module = remoteMods.find(moduleSpec => moduleSpec.name === moduleName);
+
+                  if (module) {
+                    const item = module.metadata.items.find(itemSpec => itemSpec.type === itemName);
+
+                    if (item) {
+                      const attributes = (json && json.data && json.data.attributes && typeof json.data.attributes === 'object' && !Array.isArray(json.data.attributes)) ?
+                        json.data.attributes
+                        : {};
+                      const {attributes: attributeSpecs} = item;
+
+                      return getAttributesAnchors(attributes, attributeSpecs, fontSize, ITEM_MENU_BORDER_SIZE, ITEM_MENU_BORDER_SIZE, itemMenuState, {
+                        focusAttribute: ({name: attributeName, type, newValue}) => { // XXX
+                          /* if (type === 'number') {
+                            grabbable.setAttribute(attributeName, newValue);
+                            grabbable.assetId = _getAssetId();
+
+                            itemMenuState.focus = null;
+                          } else if (type === 'select') {
+                            if (newValue !== undefined) {
+                              grabbable.setAttribute(attributeName, newValue);
+                              grabbable.assetId = _getAssetId();
+
+                              itemMenuState.focus = null;
+                            } else {
+                              itemMenuState.focus = attributeName;
+                            }
+                          } else if (type === 'color') {
+                            if (newValue !== undefined) {
+                              grabbable.setAttribute(attributeName, newValue);
+                              grabbable.assetId = _getAssetId();
+
+                              itemMenuState.focus = null;
+                            } else {
+                              itemMenuState.focus = attributeName;
+                            }
+                          } else if (type === 'checkbox') {
+                            grabbable.setAttribute(attributeName, newValue);
+                            grabbable.assetId = _getAssetId();
+
+                            itemMenuState.focus = null;
+                          } else {
+                            itemMenuState.focus = null;
+                          }
+
+                          _renderItemMenu();
+                          _updateAttributesAnchors(); */
+                        },
+                        render: () => {
+                        },
+                        updateAnchors: () => {
+                        },
+                      });
+                    }
+                  }
+                }
+              }
+            }
+          } else {
+            return [];
+          }
+
+          /* // const result = tabsAnchors.slice();
           const result = [];
           if (tab === 'status') {
             result.push.apply(result, statusAnchors);
@@ -1766,7 +1843,7 @@ class Inventory {
           } else if (tab === 'files') {
             result.push.apply(result, filesAnchors);
           }
-          return result;
+          return result; */
         };
         plane.anchors = _getAnchors();
         menuMesh.add(plane);
