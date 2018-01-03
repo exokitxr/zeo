@@ -245,14 +245,14 @@ class Wallet {
 
               return true;
             } else if (method === 'removeAsset') {
-              const {assetId} = args;
+              const {assetId, id} = args;
               assetInstances.splice(assetInstances.findIndex(assetInstance => assetInstance.assetId === assetId), 1);
 
               _broadcast(c, JSON.stringify({type: 'removeAsset', args: {assetId}}));
 
               _saveItems();
 
-              analytics.removeFile({assetId});
+              analytics.removeFile({id});
 
               return true;
             } else if (method === 'setAttribute') {
