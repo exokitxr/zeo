@@ -70,7 +70,7 @@ class DroneVr {
     const bulletGeometry = new THREE.BoxBufferGeometry(0.01, 0.01, 0.1);
     const bulletMaterial = new THREE.MeshBasicMaterial({
       color: 0x2196F3,
-      shading: THREE.FlatShading,
+      flatShading: true,
     });
 
     const _makeBulletMesh = () => {
@@ -139,7 +139,7 @@ class DroneVr {
                 const geometry = new THREE.SphereBufferGeometry(0.1, 8, 6);
                 const material = new THREE.MeshPhongMaterial({
                   color: 0xCCCCCC,
-                  shading: THREE.FlatShading,
+                  flatShading: true,
                 });
 
                 const mesh = new THREE.Mesh(geometry, material);
@@ -153,7 +153,7 @@ class DroneVr {
                   .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
                 const material = new THREE.MeshPhongMaterial({
                   color: 0xEEEEEE,
-                  shading: THREE.FlatShading,
+                  flatShading: true,
                 });
 
                 const mesh = new THREE.Mesh(geometry, material);
@@ -170,7 +170,7 @@ class DroneVr {
                   .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
                 const material = new THREE.MeshPhongMaterial({
                   color: 0x111111,
-                  shading: THREE.FlatShading,
+                  flatShading: true,
                 });
 
                 const mesh = new THREE.Mesh(geometry, material);
