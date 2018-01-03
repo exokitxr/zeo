@@ -85,7 +85,7 @@ class Lightsaber {
 
               const bladeMaterial = new THREE.MeshBasicMaterial({
                 color: 0xF44336,
-                shading: THREE.FlatShading,
+                flatShading: true,
               });
 
               const _makeCrossguardLightsaberMesh = () => {
