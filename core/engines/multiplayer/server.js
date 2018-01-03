@@ -148,6 +148,11 @@ class Multiplayer {
                 }
               } else {
                 if (!pendingMessage) { // update
+                  if (o.byteOffset % 4 !== 0) {
+                    const b = new Uint8Array(new ArrayBuffer(o.byteLength));
+                    b.set(new Uint8Array(o.buffer, o.byteOffset, o.byteLength));
+                    o = b;
+                  }
                   const n = protocolUtils.parseUpdateN(o.buffer, o.byteOffset);
 
                   const status = statuses.get(n);
