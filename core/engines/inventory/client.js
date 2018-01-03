@@ -352,7 +352,7 @@ class Inventory {
 
         const rowHeight = 100;
         const localColor = new THREE.Color();
-        const renderAttributes = (ctx, attributes, attributeSpecs, fontSize, w, h, menuState) => {
+        const renderAttributes = (canvas, ctx, attributes, attributeSpecs, fontSize, w, h, menuState) => {
           ctx.font = `${fontSize}px Open sans`;
 
           const attributeNames = Object.keys(attributeSpecs);
@@ -371,19 +371,19 @@ class Inventory {
 
             if (type === 'matrix') {
               ctx.fillStyle = '#EEE';
-              ctx.fillRect(w, h + i*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2);
+              ctx.fillRect(w, 150 + h + i*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2);
               ctx.fillStyle = '#111';
-              ctx.fillText(value.join(','), w, h + fontSize*2 - fontSize*0.3 + di*rowHeight, ITEM_MENU_INNER_SIZE);
+              ctx.fillText(value.join(','), w, 150 + h + fontSize*2 - fontSize*0.3 + di*rowHeight, ITEM_MENU_INNER_SIZE);
             } else if (type === 'vector') {
               ctx.fillStyle = '#EEE';
-              ctx.fillRect(w, h + i*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2);
+              ctx.fillRect(w, 150 + h + i*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2);
               ctx.fillStyle = '#111';
-              ctx.fillText(value.join(','), w, h + fontSize*2 - fontSize*0.3 + di*rowHeight, ITEM_MENU_INNER_SIZE);
+              ctx.fillText(value.join(','), w, 150 + h + fontSize*2 - fontSize*0.3 + di*rowHeight, ITEM_MENU_INNER_SIZE);
             } else if (type === 'text') {
               ctx.fillStyle = '#EEE';
-              ctx.fillRect(w, h + i*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2);
+              ctx.fillRect(w, 150 + h + i*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2);
               ctx.fillStyle = '#111';
-              ctx.fillText(value, w, h + fontSize*2 - fontSize*0.3 + di*rowHeight, ITEM_MENU_INNER_SIZE);
+              ctx.fillText(value, w, 150 + h + fontSize*2 - fontSize*0.3 + di*rowHeight, ITEM_MENU_INNER_SIZE);
             } else if (type === 'number') {
               const {min, max} = attributeSpec;
 
@@ -397,89 +397,89 @@ class Inventory {
               const factor = (value - min) / (max - min);
 
               ctx.fillStyle = '#CCC';
-              ctx.fillRect(w, h + di*rowHeight, ITEM_MENU_INNER_SIZE, 5);
+              ctx.fillRect(w, 150 + h + di*rowHeight, ITEM_MENU_INNER_SIZE, 5);
               ctx.fillStyle = '#ff4b4b';
-              ctx.fillRect(w + (factor * ITEM_MENU_INNER_SIZE), h - 25 + di*rowHeight, 5, 25 + 5 + 25);
+              ctx.fillRect(w + (factor * ITEM_MENU_INNER_SIZE), 150 + h - 25 + di*rowHeight, 5, 25 + 5 + 25);
             } else if (type === 'select') {
               if (menuState.focus !== attributeName) {
                 ctx.fillStyle = '#FFF';
-                ctx.fillRect(w, h + i*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2);
+                ctx.fillRect(w, 150 + h + i*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2);
 
                 ctx.fillStyle = '#111';
-                ctx.fillText(value, w, h + fontSize*2 - fontSize*0.5 + di*rowHeight, ITEM_MENU_INNER_SIZE);
-                ctx.drawImage(triangleDownImg, w + ITEM_MENU_INNER_SIZE - fontSize*2, h + di*rowHeight, fontSize*2, fontSize*2);
+                ctx.fillText(value, w, 150 + h + fontSize*2 - fontSize*0.5 + di*rowHeight, ITEM_MENU_INNER_SIZE);
+                ctx.drawImage(triangleDownImg, w + ITEM_MENU_INNER_SIZE - fontSize*2, 150 + h + di*rowHeight, fontSize*2, fontSize*2);
 
                 ctx.strokeStyle = '#111';
                 ctx.lineWidth = 3;
-                ctx.strokeRect(w, h + di*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2);
+                ctx.strokeRect(w, 150 + h + di*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2);
               } else {
                 const {options} = attributeSpec;
 
                 ctx.fillStyle = '#FFF';
-                ctx.fillRect(w, h + di*rowHeight, ITEM_MENU_INNER_SIZE, Math.max(options.length, 1) * fontSize*2);
+                ctx.fillRect(w, 150 + h + di*rowHeight, ITEM_MENU_INNER_SIZE, Math.max(options.length, 1) * fontSize*2);
 
                 for (let j = 0; j < options.length; j++) {
                   const option = options[j];
 
                   if (value === option) {
                     ctx.fillStyle = '#EEE';
-                    ctx.fillRect(w, h + di*rowHeight + j*fontSize*2, ITEM_MENU_INNER_SIZE, fontSize*2);
+                    ctx.fillRect(w, 150 + h + di*rowHeight + j*fontSize*2, ITEM_MENU_INNER_SIZE, fontSize*2);
                   }
 
                   ctx.fillStyle = '#111';
-                  ctx.fillText(option, w, h + fontSize*2 - fontSize*0.5 + di*rowHeight + j*fontSize*2, ITEM_MENU_INNER_SIZE);
+                  ctx.fillText(option, w, 150 + h + fontSize*2 - fontSize*0.5 + di*rowHeight + j*fontSize*2, ITEM_MENU_INNER_SIZE);
                 }
 
                 ctx.strokeStyle = '#111';
                 ctx.lineWidth = 3;
-                ctx.strokeRect(w, h + di*rowHeight, ITEM_MENU_INNER_SIZE, Math.max(options.length, 1) * fontSize*2);
+                ctx.strokeRect(w, 150 + h + di*rowHeight, ITEM_MENU_INNER_SIZE, Math.max(options.length, 1) * fontSize*2);
               }
             } else if (type === 'color') {
               ctx.strokeStyle = '#111';
               ctx.lineWidth = 3;
-              ctx.strokeRect(w, h + di*rowHeight, fontSize*2, fontSize*2);
+              ctx.strokeRect(w, 150 + h + di*rowHeight, fontSize*2, fontSize*2);
               ctx.fillStyle = value;
-              ctx.fillRect(w + 5, h + 5 + di*rowHeight, fontSize*2 - 5*2, fontSize*2 - 5*2);
+              ctx.fillRect(w + 5, 150 + h + 5 + di*rowHeight, fontSize*2 - 5*2, fontSize*2 - 5*2);
               ctx.fillStyle = '#EEE';
-              ctx.fillRect(w + fontSize*2, h + di*rowHeight, ITEM_MENU_INNER_SIZE - fontSize*2, fontSize*2);
+              ctx.fillRect(w + fontSize*2, 150 + h + di*rowHeight, ITEM_MENU_INNER_SIZE - fontSize*2, fontSize*2);
               ctx.fillStyle = '#111';
-              ctx.fillText(value, w + fontSize*2, h + fontSize*2 - fontSize*0.3 + di*rowHeight, ITEM_MENU_INNER_SIZE);
+              ctx.fillText(value, w + fontSize*2, 150 + h + fontSize*2 - fontSize*0.3 + di*rowHeight, ITEM_MENU_INNER_SIZE);
 
               if (menuState.focus === attributeName) {
-                ctx.drawImage(colorWheelImg, w, h + di*rowHeight, 256, 256);
+                ctx.drawImage(colorWheelImg, w, 150 + h + di*rowHeight, 256, 256);
               }
             } else if (type === 'checkbox') {
               if (value) {
                 ctx.strokeStyle = '#111';
                 ctx.lineWidth = 3;
-                ctx.strokeRect(w, h + di*rowHeight, 60, 30);
+                ctx.strokeRect(w, 150 + h + di*rowHeight, 60, 30);
 
                 ctx.fillStyle = '#111';
-                ctx.fillRect(w + 30, h + 5 + di*rowHeight, (60 - 5*2)/2, 30 - 5*2);
+                ctx.fillRect(w + 30, 150 + h + 5 + di*rowHeight, (60 - 5*2)/2, 30 - 5*2);
               } else {
                 ctx.strokeStyle = '#CCC';
                 ctx.lineWidth = 3;
-                ctx.strokeRect(w, h + di*rowHeight, 60, 30);
+                ctx.strokeRect(w, 150 + h + di*rowHeight, 60, 30);
 
                 ctx.fillStyle = '#CCC';
-                ctx.fillRect(w + 5, h + 5 + di*rowHeight, (60 - 5*2)/2, 30 - 5*2);
+                ctx.fillRect(w + 5, 150 + h + 5 + di*rowHeight, (60 - 5*2)/2, 30 - 5*2);
               }
             } else if (type === 'file') {
               ctx.fillStyle = '#EEE';
-              ctx.fillRect(w, h + di*rowHeight, ITEM_MENU_INNER_SIZE - fontSize*2, fontSize*2);
+              ctx.fillRect(w, 150 + h + di*rowHeight, ITEM_MENU_INNER_SIZE - fontSize*2, fontSize*2);
               ctx.fillStyle = '#111';
-              ctx.fillText(value, w, h + fontSize*2 - fontSize*0.3 + di*rowHeight, ITEM_MENU_INNER_SIZE);
-              ctx.drawImage(linkImg, w + ITEM_MENU_INNER_SIZE - fontSize*2, h + di*rowHeight, fontSize*2, fontSize*2);
+              ctx.fillText(value, w, 150 + h + fontSize*2 - fontSize*0.3 + di*rowHeight, ITEM_MENU_INNER_SIZE);
+              ctx.drawImage(linkImg, w + ITEM_MENU_INNER_SIZE - fontSize*2, 150 + h + di*rowHeight, fontSize*2, fontSize*2);
             }
           }
 
           const numPages = Math.ceil(attributeNames.length / 7);
           ctx.fillStyle = '#CCC';
-          ctx.fillRect(ITEM_MENU_SIZE - 60, ITEM_MENU_SIZE*0.05, 30, ITEM_MENU_SIZE*0.9);
+          ctx.fillRect(canvas.width - 150, 150, 30, canvas.height - 150);
           ctx.fillStyle = '#ff4b4b';
           ctx.fillRect(
-            ITEM_MENU_SIZE - 60, ITEM_MENU_SIZE*0.05 + _snapToPixel(ITEM_MENU_SIZE*0.9, serverPages, menuState.barValue),
-            30, ITEM_MENU_SIZE*0.9 / numPages
+            canvas.width - 150, 150 + _snapToPixel(ITEM_MENU_SIZE*0.9, serverPages, menuState.barValue),
+            30, (canvas.height - 150) / numPages
           );
         };
         const getAttributesAnchors = (attributes, attributeSpecs, fontSize, w, h, menuState, {focusAttribute, render, updateAnchors}) => {
@@ -1128,7 +1128,7 @@ class Inventory {
                         barValue: 0,
                         page: 0,
                       };
-                      renderAttributes(ctx, attributes, attributeSpecs, fontSize, ITEM_MENU_BORDER_SIZE, ITEM_MENU_BORDER_SIZE, itemMenuState);
+                      renderAttributes(canvas, ctx, attributes, attributeSpecs, fontSize, ITEM_MENU_BORDER_SIZE, ITEM_MENU_BORDER_SIZE, itemMenuState);
                     }
                   }
                 }
