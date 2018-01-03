@@ -632,7 +632,7 @@ class Inventory {
             modAnchors = _getModAnchors();
             plane.anchors = _getAnchors();
 
-            // assetsMesh.render();
+            assetsMesh.render();
           }
         };
         world.on('add', _worldAdd);
@@ -833,7 +833,7 @@ class Inventory {
         const zeroQuaternion = new THREE.Quaternion();
         const oneVector = new THREE.Vector3(1, 1, 1);
         const zeroVector = new THREE.Vector3();
-        const pixelSize = 0.013;
+        const pixelSize = 0.01;
 
         const _requestModFileImageData = modSpec => resource.getModFileImageData(modSpec.displayName, 0)
           .then(arrayBuffer => ({
@@ -1938,9 +1938,31 @@ class Inventory {
             ctx.font = `${fontSize*1.6}px Open sans`;
             ctx.fillText('Inventory', 60, fontSize*2 + 35);
 
-            ctx.font = `${fontSize}px Open sans`;
+            ctx.font = `50px Open sans`;
 
-            let i = 0;
+            const assetInstances = assets;
+            ctx.font = `50px Open sans`;
+            /* ctx.strokeStyle = '#EEE';
+            ctx.lineWidth = 10; */
+            for (let i = 0; i < 7; i++) {
+              /* ctx.beginPath();
+              ctx.moveTo(0, 150 + (i+1) * (canvas.height / 8));
+              ctx.lineTo(canvas.width - 200, 150 + (i+1) * (canvas.height / 8));
+              ctx.stroke(); */
+
+              if (i < assetInstances.length) {
+                ctx.drawImage(boxImg, 50, 150 + i * (canvas.height-150)/7 - 20, (canvas.height-150)/7 + 40, (canvas.height-150)/7 + 40);
+
+                const assetInstance = assetInstances[i];
+                // ctx.clearRect(0, 150 + (i+1) * canvas.width/6 - 20 - fontSize, canvas.width, fontSize*2);
+                ctx.fillText(`${assetInstance.name}.${assetInstance.ext}`, 300, 150 + (i+1) * (canvas.height-150)/7 - 75);
+              }
+            }
+
+            ctx.drawImage(arrowUpImg, canvas.width - 200, 150, canvas.width/8 - 20, canvas.width/8 - 20);
+            ctx.drawImage(arrowDownImg, canvas.width - 200, canvas.height - (canvas.width/8 - 20), canvas.width/8 - 20, canvas.width/8 - 20);
+
+            /* let i = 0;
             for (let y = 0; y < 4; y++) {
               for (let x = 0; x < 5; x++) {
                 ctx.drawImage(boxImg, x * canvas.width/6, 150 + y * canvas.width/6, canvas.width/6, canvas.width/6);
@@ -1951,10 +1973,10 @@ class Inventory {
                   ctx.fillText(`${assetSpec.name}.${assetSpec.ext}`, x * canvas.width/6 + canvas.width/6*0.1, 150 + (y+1) * canvas.width/6 - 20);
                 }
               }
-            }
+            } */
 
-            ctx.fillText('Save', 5.25 * canvas.width/6, 150 + 425);
-            ctx.fillText('Remove', 5.25 * canvas.width/6, 150 + 850);
+            /* ctx.fillText('Save', 5.25 * canvas.width/6, 150 + 425);
+            ctx.fillText('Remove', 5.25 * canvas.width/6, 150 + 850); */
 
             texture.needsUpdate = true;
           };
@@ -1977,12 +1999,10 @@ class Inventory {
         planeRight.open = false;
         planeRight.anchors = (() => {
           const result = [];
-          for (let y = 0; y < 4; y++) {
-            for (let x = 0; x < 5; x++) {
-              _pushAnchor(result, x * canvas.width/6, 150 + y * canvas.width/6, canvas.width/6, canvas.width/6, e => {
-                console.log('click', x, y);
-              });
-            }
+          for (let i = 0; i < 7; i++) {
+            _pushAnchor(result, 0, 150 + i * (canvas.height-150)/7, canvas.width - 200, (canvas.height-150)/7, e => {
+              console.log('click', i);
+            });
           }
           return result;
         })();
@@ -2059,11 +2079,8 @@ class Inventory {
                   zeroQuaternion,
                   oneVector
                 ))), */
-            ].concat(
-              assets.map((assetSpec, i) => {
-                const x = i % 5;
-                const y = Math.floor(i / 5);
-
+            ].concat((() => {
+              const _renderAssetMesh = matrix => (assetSpec, i) => {
                 const _requestAssetImageData = () => {
                   const type = _normalizeType(assetSpec.ext);
                   if (type === 'itm') {
@@ -2091,16 +2108,21 @@ class Inventory {
                 return _requestAssetImageData()
                   .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
                     localVector.set(
-                      x * WORLD_WIDTH/6,
-                      WORLD_HEIGHT/2 - 150*WORLD_HEIGHT/HEIGHT - y * WORLD_WIDTH/6 - WORLD_WIDTH/6/2,
-                      0
-                    ).applyQuaternion(localQuaternion.setFromAxisAngle(localVector2.set(0, 1, 0), -Math.PI/4))
-                    .add(localVector2.set(WORLD_WIDTH/2, 0, Math.sqrt(pixelSize * 16)/2)),
+                      -WORLD_WIDTH/2 + (50 + ((canvas.height-150)/7 + 40)/2) * WORLD_WIDTH/WIDTH,
+                      WORLD_HEIGHT/2 - (150 + (i + 0.5) * (canvas.height-150)/7) * WORLD_HEIGHT/HEIGHT,
+                      pixelSize*16/2
+                    )
+                      .applyMatrix4(matrix),
                     zeroQuaternion,
                     oneVector
                   )));
-              })
-            );
+              };
+
+              return wallet.getAssetInstances().filter(assetInstance => !assetInstance.owner).slice(0, 7).map(_renderAssetMesh(planeLeft.matrix))
+                .concat(
+                  assets.slice(0, 7).map(_renderAssetMesh(planeRight.matrix))
+                );
+            })());
 
             /* const promises = (() => {
               if (tab === 'mods' && subtab === 'installed' && localMod) {
