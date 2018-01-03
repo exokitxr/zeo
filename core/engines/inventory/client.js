@@ -1697,6 +1697,21 @@ class Inventory {
         };
         let modAnchors = _getModAnchors();
 
+        let focusState = {};
+        const _setFocus = newFocusState => {
+          const oldFocusState = focusState;
+          focusState = newFocusState;
+
+          if (oldFocusState.type === 'leftPane' || newFocusState.type === 'leftPane') {
+            planeMeshLeft.render();
+            assetsMesh.render();
+          }
+          if (oldFocusState.type === 'rightPane' || newFocusState.type === 'rightPane') {
+            planeMeshRight.render();
+            assetsMesh.render();
+          }
+        };
+
         const _getAnchors = () => {
           const result = tabsAnchors.slice();
           if (tab === 'status') {
@@ -1816,6 +1831,8 @@ class Inventory {
           planeMeshLeft.updateMatrixWorld();
 
           const _render = () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
             ctx.fillStyle = '#FFF';
             // ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -1847,24 +1864,28 @@ class Inventory {
               }
             } */
 
-            const assetInstances = wallet.getAssetInstances();
-            const unownedAssetInstances = assetInstances.filter(assetInstance => !assetInstance.owner);
+            const unownedAssetInstances = wallet.getAssetInstances().filter(assetInstance => !assetInstance.owner);
             ctx.font = `50px Open sans`;
             /* ctx.strokeStyle = '#EEE';
             ctx.lineWidth = 10; */
-            for (let i = 0; i < 7; i++) {
+            for (let i = 0; i < 7 && i < unownedAssetInstances.length; i++) {
+              const assetInstance = unownedAssetInstances[i];
+              if (focusState.type === 'leftPane' && focusState.target.assetId === assetInstance.assetId) {
+                ctx.fillStyle = '#111';
+                ctx.fillRect(0, 150 + i * (canvas.height-150)/7, canvas.width - 200, (canvas.height-150)/7);
+                ctx.fillStyle = '#FFF';
+              } else {
+                ctx.fillStyle = '#111';
+              }
               /* ctx.beginPath();
               ctx.moveTo(0, 150 + (i+1) * (canvas.height / 8));
               ctx.lineTo(canvas.width - 200, 150 + (i+1) * (canvas.height / 8));
               ctx.stroke(); */
 
-              if (i < unownedAssetInstances.length) {
-                ctx.drawImage(boxImg, 50, 150 + i * (canvas.height-150)/7 - 20, (canvas.height-150)/7 + 40, (canvas.height-150)/7 + 40);
+              ctx.drawImage(boxImg, 50, 150 + i * (canvas.height-150)/7 - 20, (canvas.height-150)/7 + 40, (canvas.height-150)/7 + 40);
 
-                const assetInstance = unownedAssetInstances[i];
-                // ctx.clearRect(0, 150 + (i+1) * canvas.width/6 - 20 - fontSize, canvas.width, fontSize*2);
-                ctx.fillText(`${assetInstance.name}.${assetInstance.ext}`, 300, 150 + (i+1) * (canvas.height-150)/7 - 75);
-              }
+              // ctx.clearRect(0, 150 + (i+1) * canvas.width/6 - 20 - fontSize, canvas.width, fontSize*2);
+              ctx.fillText(`${assetInstance.name}.${assetInstance.ext}`, 300, 150 + (i+1) * (canvas.height-150)/7 - 75);
             }
 
             ctx.drawImage(arrowUpImg, canvas.width - 200, 150, canvas.width/8 - 20, canvas.width/8 - 20);
@@ -1895,7 +1916,18 @@ class Inventory {
           const result = [];
           for (let i = 0; i < 7; i++) {
             _pushAnchor(result, 0, 150 + i * (canvas.height-150)/7, canvas.width - 200, (canvas.height-150)/7, e => {
-              console.log('click', i);
+              const target = wallet.getAssetInstances().filter(assetInstance => !assetInstance.owner)[i];
+
+              if (target) {
+                if (focusState.type === 'leftPane' && focusState.target.assetId === target.assetId) {
+                  _setFocus({});
+                } else {
+                  _setFocus({
+                    type: 'leftPane',
+                    target,
+                  });
+                }
+              }
             });
           }
           return result;
@@ -1928,6 +1960,8 @@ class Inventory {
           planeMeshRight.updateMatrixWorld();
 
           const _render = () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
             ctx.fillStyle = '#FFF';
             // ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -1944,19 +1978,25 @@ class Inventory {
             ctx.font = `50px Open sans`;
             /* ctx.strokeStyle = '#EEE';
             ctx.lineWidth = 10; */
-            for (let i = 0; i < 7; i++) {
+            for (let i = 0; i < 7 && assetInstances.length; i++) {
+              const assetInstance = assetInstances[i];
+              if (focusState.type === 'rightPane' && focusState.target.id === assetInstance.id) {
+                ctx.fillStyle = '#111';
+                ctx.fillRect(0, 150 + i * (canvas.height-150)/7, canvas.width - 200, (canvas.height-150)/7);
+                ctx.fillStyle = '#FFF';
+              } else {
+                ctx.fillStyle = '#111';
+              }
+
               /* ctx.beginPath();
               ctx.moveTo(0, 150 + (i+1) * (canvas.height / 8));
               ctx.lineTo(canvas.width - 200, 150 + (i+1) * (canvas.height / 8));
               ctx.stroke(); */
 
-              if (i < assetInstances.length) {
-                ctx.drawImage(boxImg, 50, 150 + i * (canvas.height-150)/7 - 20, (canvas.height-150)/7 + 40, (canvas.height-150)/7 + 40);
+              ctx.drawImage(boxImg, 50, 150 + i * (canvas.height-150)/7 - 20, (canvas.height-150)/7 + 40, (canvas.height-150)/7 + 40);
 
-                const assetInstance = assetInstances[i];
-                // ctx.clearRect(0, 150 + (i+1) * canvas.width/6 - 20 - fontSize, canvas.width, fontSize*2);
-                ctx.fillText(`${assetInstance.name}.${assetInstance.ext}`, 300, 150 + (i+1) * (canvas.height-150)/7 - 75);
-              }
+              // ctx.clearRect(0, 150 + (i+1) * canvas.width/6 - 20 - fontSize, canvas.width, fontSize*2);
+              ctx.fillText(`${assetInstance.name}.${assetInstance.ext}`, 300, 150 + (i+1) * (canvas.height-150)/7 - 75);
             }
 
             ctx.drawImage(arrowUpImg, canvas.width - 200, 150, canvas.width/8 - 20, canvas.width/8 - 20);
@@ -2001,7 +2041,18 @@ class Inventory {
           const result = [];
           for (let i = 0; i < 7; i++) {
             _pushAnchor(result, 0, 150 + i * (canvas.height-150)/7, canvas.width - 200, (canvas.height-150)/7, e => {
-              console.log('click', i);
+              const target = assets[i];
+
+              if (target) {
+                if (focusState.type === 'rightPane' && focusState.target.id === target.id) {
+                  _setFocus({});
+                } else {
+                  _setFocus({
+                    type: 'rightPane',
+                    target,
+                  });
+                }
+              }
             });
           }
           return result;
