@@ -235,6 +235,8 @@ class Inventory {
         '/core/utils/menu-utils',
       ]),
       // _requestImageBitmap('/archae/inventory/img/menu.png'),
+      _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/arrow-up.png'),
+      _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/arrow-down.png'),
       _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/triangle-down.png'),
       _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/link.png'),
       _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/box.png'),
@@ -267,6 +269,8 @@ class Inventory {
         menuUtils,
       ],
       // menuImg,
+      arrowUpImg,
+      arrowDownImg,
       triangleDownImg,
       linkImg,
       boxImg,
@@ -1822,7 +1826,7 @@ class Inventory {
             ctx.font = `${fontSize*1.6}px Open sans`;
             ctx.fillText('Server', 60, fontSize*2 + 35);
 
-            for (let y = 0; y < 4; y++) {
+            /* for (let y = 0; y < 4; y++) {
               for (let x = 0; x < 5; x++) {
                 ctx.drawImage(boxImg, x * canvas.width/6, 150 + y * canvas.width/6, canvas.width/6, canvas.width/6);
               }
@@ -1836,16 +1840,37 @@ class Inventory {
               const assetInstance = assetInstances[i];
 
               if (!assetInstance.owner) {
-                const x = numMenuAssets % 5;
-                const y = Math.floor(numMenuAssets / 5);
                 numMenuAssets++;
 
-                ctx.clearRect(x * canvas.width/6, 150 + (y+1) * canvas.width/6 - 20 - fontSize, canvas.width, fontSize*2);
-                ctx.fillText(`${assetInstance.name}.${assetInstance.ext}`, x * canvas.width/6 + canvas.width/6*0.1, 150 + (y+1) * canvas.width/6 - 20);
+                ctx.clearRect(0, 150 + (i+1) * canvas.width/6 - 20 - fontSize, canvas.width, fontSize*2);
+                ctx.fillText(`${assetInstance.name}.${assetInstance.ext}`, canvas.width/6*0.1, 150 + (i+1) * canvas.width/6 - 20);
+              }
+            } */
+
+            const assetInstances = wallet.getAssetInstances();
+            const unownedAssetInstances = assetInstances.filter(assetInstance => !assetInstance.owner);
+            ctx.font = `50px Open sans`;
+            /* ctx.strokeStyle = '#EEE';
+            ctx.lineWidth = 10; */
+            for (let i = 0; i < 7; i++) {
+              /* ctx.beginPath();
+              ctx.moveTo(0, 150 + (i+1) * (canvas.height / 8));
+              ctx.lineTo(canvas.width - 200, 150 + (i+1) * (canvas.height / 8));
+              ctx.stroke(); */
+
+              if (i < unownedAssetInstances.length) {
+                ctx.drawImage(boxImg, 50, 150 + i * (canvas.height-150)/7 - 20, (canvas.height-150)/7 + 40, (canvas.height-150)/7 + 40);
+
+                const assetInstance = unownedAssetInstances[i];
+                // ctx.clearRect(0, 150 + (i+1) * canvas.width/6 - 20 - fontSize, canvas.width, fontSize*2);
+                ctx.fillText(`${assetInstance.name}.${assetInstance.ext}`, 300, 150 + (i+1) * (canvas.height-150)/7 - 75);
               }
             }
 
-            ctx.fillText('Pack world', 5 * canvas.width/6 + canvas.width/6*0.1, 150 + (0+1) * canvas.width/6 - 20);
+            ctx.drawImage(arrowUpImg, canvas.width - 200, 150, canvas.width/8 - 20, canvas.width/8 - 20);
+            ctx.drawImage(arrowDownImg, canvas.width - 200, canvas.height - (canvas.width/8 - 20), canvas.width/8 - 20, canvas.width/8 - 20);
+
+            // ctx.fillText('Pack world', 5 * canvas.width/6 + canvas.width/6*0.1, 150 + (0+1) * canvas.width/6 - 20);
 
             texture.needsUpdate = true;
           };
@@ -1868,12 +1893,10 @@ class Inventory {
         planeLeft.open = false;
         planeLeft.anchors = (() => {
           const result = [];
-          for (let y = 0; y < 4; y++) {
-            for (let x = 0; x < 5; x++) {
-              _pushAnchor(result, x * canvas.width/6, 150 + y * canvas.width/6, canvas.width/6, canvas.width/6, e => {
-                console.log('click', x, y);
-              });
-            }
+          for (let i = 0; i < 7; i++) {
+            _pushAnchor(result, 0, 150 + i * (canvas.height-150)/7, canvas.width - 200, (canvas.height-150)/7, e => {
+              console.log('click', i);
+            });
           }
           return result;
         })();
@@ -2026,7 +2049,7 @@ class Inventory {
                   zeroQuaternion,
                   oneVector
                 ))),
-              _requestImageData('/archae/plugins/_core_engines_inventory/serve/earth-box.png')
+              /* _requestImageData('/archae/plugins/_core_engines_inventory/serve/earth-box.png')
                 .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
                   localVector.set(
                     -WORLD_WIDTH / 2,
@@ -2035,7 +2058,7 @@ class Inventory {
                   ),
                   zeroQuaternion,
                   oneVector
-                ))),
+                ))), */
             ].concat(
               assets.map((assetSpec, i) => {
                 const x = i % 5;

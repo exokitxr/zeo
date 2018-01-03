@@ -4,6 +4,8 @@
   "version": "0.0.1",
   "client": "client.js",
   "serves": {
+    "arrow-down.png": "lib/img/arrow-down.png",
+    "arrow-up.png": "lib/img/arrow-up.png",
     "triangle-down.png": "lib/img/triangle-down.png",
     "link.png": "lib/img/link.png",
     "x.png": "lib/img/x.png",
