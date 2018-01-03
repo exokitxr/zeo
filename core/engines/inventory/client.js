@@ -235,8 +235,7 @@ class Inventory {
         '/core/utils/menu-utils',
       ]),
       // _requestImageBitmap('/archae/inventory/img/menu.png'),
-      _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/arrow-left.png'),
-      _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/arrow-down.png'),
+      _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/triangle-down.png'),
       _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/link.png'),
       _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/box.png'),
       _requestImageData('/archae/plugins/_core_engines_inventory/serve/file.png'),
@@ -268,8 +267,7 @@ class Inventory {
         menuUtils,
       ],
       // menuImg,
-      arrowLeftImg,
-      arrowDownImg,
+      triangleDownImg,
       linkImg,
       boxImg,
       fileImgData,
@@ -405,7 +403,7 @@ class Inventory {
 
                 ctx.fillStyle = '#111';
                 ctx.fillText(value, w, h + fontSize*2 - fontSize*0.5 + di*rowHeight, ITEM_MENU_INNER_SIZE);
-                ctx.drawImage(arrowDownImg, w + ITEM_MENU_INNER_SIZE - fontSize*2, h + di*rowHeight, fontSize*2, fontSize*2);
+                ctx.drawImage(triangleDownImg, w + ITEM_MENU_INNER_SIZE - fontSize*2, h + di*rowHeight, fontSize*2, fontSize*2);
 
                 ctx.strokeStyle = '#111';
                 ctx.lineWidth = 3;
@@ -1127,7 +1125,7 @@ class Inventory {
                 const {item} = tagMesh;
                 const {attributes} = item;
                 const attributeSpecs = tags.getAttributeSpecsMap(displayName);
-                renderAttributes(ctx, attributes, attributeSpecs, fontSize, canvas.width - 640 - 40, 150*2 + 100 + 40, {}, {arrowDownImg, linkImg}); */
+                renderAttributes(ctx, attributes, attributeSpecs, fontSize, canvas.width - 640 - 40, 150*2 + 100 + 40, {}, {triangleDownImg, linkImg}); */
                 // XXX render pointer to item grab
 
                 // bar
