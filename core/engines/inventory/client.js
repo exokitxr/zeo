@@ -1046,9 +1046,9 @@ class Inventory {
         });
 
         const _renderMenu = () => {
-          // ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-          ctx.fillStyle = '#FFF';
+          // ctx.fillStyle = '#FFF';
           // ctx.fillRect(0, 0, canvas.width, canvas.height);
 
           /* ctx.fillStyle = '#111';
@@ -1063,22 +1063,24 @@ class Inventory {
           ctx.fillStyle = tab === 'files' ? '#4CAF50' : '#FFF';
           ctx.fillText('Files', canvas.width * 2/8 + (canvas.width/8 - ctx.measureText('Files').width)/2, 150 - 60, canvas.width / 8); */
 
-          ctx.fillStyle = '#4CAF50';
-          if (tab === 'status') {
-            ctx.fillRect(canvas.width * 0/8, -10, canvas.width / 8, 10);
+          /* ctx.fillStyle = '#4CAF50';
+          if (tab === 'status') { */
 
+          ctx.fillRect(canvas.width * 0/8, -10, canvas.width / 8, 10);
+
+          ctx.fillStyle = '#EEE';
+          ctx.fillRect(0, 0, canvas.width, 150);
+
+          if (localProfileImg) {
+            ctx.drawImage(localProfileImg, canvas.width * 0.8, 20, 100, 100);
+          } else {
             ctx.fillStyle = '#EEE';
-            ctx.fillRect(0, 0, canvas.width, 150);
+            ctx.fillRect(canvas.width * 0.8, 20, 100, 100);
+          }
+          ctx.fillStyle = '#111';
+          ctx.fillText(bootstrap.getUsername(), canvas.width * 0.8 + 100 + 30, 90);
 
-            if (localProfileImg) {
-              ctx.drawImage(localProfileImg, canvas.width * 0.8, 20, 100, 100);
-            } else {
-              ctx.fillStyle = '#EEE';
-              ctx.fillRect(canvas.width * 0.8, 20, 100, 100);
-            }
-            ctx.fillStyle = '#111';
-            ctx.fillText(bootstrap.getUsername(), canvas.width * 0.8 + 100 + 30, 90);
-
+          if (!focusState.type) {
             ctx.font = `${fontSize*1.6}px Open sans`;
             // ctx.fillText('My VR Server', 60, fontSize*2 + 35);
 
@@ -1096,7 +1098,44 @@ class Inventory {
                 ctx.fillRect(40, 150 + 40 + i*(100 + 40), 100, 100);
               }
             }
-          } else if (tab === 'mods') {
+          } else if (focusState.type === 'leftPane' || focusState.type === 'rightPane') {
+            // ctx.fillText('asset name', 50, 150 + fontSize*1.6);
+
+            const {target} = focusState;
+            const {ext} = target;
+            if (ext === 'itm') {
+              const {json} = target;
+
+              if (json && json.data && json.data.attributes && typeof json.data.path === 'string') {
+                const path = json.data.path;
+                const match = path.match(/^(.+?)\/(.+?)$/);
+
+                if (match) {
+                  const moduleName = match[1];
+                  const itemName = match[2];
+                  const module = remoteMods.find(moduleSpec => moduleSpec.name === moduleName);
+
+                  if (module) {
+                    const item = module.metadata.items.find(itemSpec => itemSpec.type === itemName);
+
+                    if (item) {
+                      const attributes = (json && json.data && json.data.attributes && typeof json.data.attributes === 'object' && !Array.isArray(json.data.attributes)) ?
+                        json.data.attributes
+                        : {};
+                      const {attributes: attributeSpecs} = item;
+                      const itemMenuState = {
+                        focus: null,
+                        barValue: 0,
+                        page: 0,
+                      };
+                      renderAttributes(ctx, attributes, attributeSpecs, fontSize, ITEM_MENU_BORDER_SIZE, ITEM_MENU_BORDER_SIZE, itemMenuState);
+                    }
+                  }
+                }
+              }
+            }
+          }
+          /* } else if (tab === 'mods') {
             ctx.fillRect(canvas.width * 1/8, 150 - 10, canvas.width / 8, 10);
 
             // subheader
@@ -1121,7 +1160,7 @@ class Inventory {
             if (modReadmeImg) {
               if (subtab === 'installed') {
                 // config
-                /* const {displayName} = localMod;
+                const {displayName} = localMod;
                 const tagMesh = world.getTag({
                   type: 'entity',
                   name: displayName,
@@ -1129,7 +1168,7 @@ class Inventory {
                 const {item} = tagMesh;
                 const {attributes} = item;
                 const attributeSpecs = tags.getAttributeSpecsMap(displayName);
-                renderAttributes(ctx, attributes, attributeSpecs, fontSize, canvas.width - 640 - 40, 150*2 + 100 + 40, {}, {triangleDownImg, linkImg}); */
+                renderAttributes(ctx, attributes, attributeSpecs, fontSize, canvas.width - 640 - 40, 150*2 + 100 + 40, {}, {triangleDownImg, linkImg});
                 // XXX render pointer to item grab
 
                 // bar
@@ -1264,7 +1303,7 @@ class Inventory {
                 ctx.fillText(assetSpec.name, canvas.width * 0.05, 150*2 + ((canvas.height - 150*2) * (i + 1)/numFilesPerPage) - 30, canvas.width * 0.9);
               }
             }
-          }
+          } */
           texture.needsUpdate = true;
         };
         // _renderMenu();
@@ -1289,7 +1328,7 @@ class Inventory {
           });
         };
         let onmove = null;
-        const tabsAnchors = [];
+        /* const tabsAnchors = [];
         _pushAnchor(tabsAnchors, canvas.width * 0/8, 0, canvas.width / 8, 150, (e, hoverState) => {
           tab = 'status';
 
@@ -1329,7 +1368,7 @@ class Inventory {
 
           filesAnchors = _getFilesAnchors();
           plane.anchors = _getAnchors();
-        });
+        }); */
 
         const statusAnchors = [];
 
@@ -1702,6 +1741,7 @@ class Inventory {
           const oldFocusState = focusState;
           focusState = newFocusState;
 
+          _renderMenu();
           if (oldFocusState.type === 'leftPane' || newFocusState.type === 'leftPane') {
             planeMeshLeft.render();
             assetsMesh.render();
@@ -1713,7 +1753,8 @@ class Inventory {
         };
 
         const _getAnchors = () => {
-          const result = tabsAnchors.slice();
+          // const result = tabsAnchors.slice();
+          const result = [];
           if (tab === 'status') {
             result.push.apply(result, statusAnchors);
           } else if (tab === 'mods') {
