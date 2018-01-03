@@ -337,6 +337,34 @@ class Wallet {
               _saveItems();
 
               return true;
+            } else if (method === 'replaceAssets') {
+              const {assets: newAssetSpecs} = args;
+
+              // remove old
+              for (let i = 0; i < assetInstances.length; i++) {
+                const assetInstance = assetInstances[i];
+                const {assetId, id} = assetInstance;
+
+                _broadcast(c, JSON.stringify({type: 'removeAsset', args: {assetId}}));
+
+                analytics.removeFile({id});
+              }
+              assetInstances.length = 0;
+
+              // add new
+              for (let i = 0; i < newAssetSpecs.length; i++) {
+                const newAssetSpec = newAssetSpecs[i];
+                const {assetId, id, name, ext, json, file, n, owner, physics, matrix, visible, open} = newAssetSpec;
+                const assetInstance = new AssetInstance(assetId, id, name, ext, json, file, n, owner, physics, matrix, visible, open);
+                assetInstances.push(assetInstance);
+
+                _broadcast(c, JSON.stringify({type: 'addAsset', args: {assetId, id, name, ext, json, file, n, owner, physics, matrix, visible, open}}));
+                analytics.addFile({id});
+              }
+
+              _saveItems();
+
+              return true;
             } else {
               console.warn('no such method:' + JSON.stringify(method));
 
