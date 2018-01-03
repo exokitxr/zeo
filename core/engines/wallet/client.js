@@ -516,9 +516,6 @@ class Wallet {
                     this.physics = physics;
                     this.visible = visible;
                     this.open = open;
-
-                    this.savedPosition = new THREE.Vector3();
-                    this.savedVisible = false;
                   }
 
                   emit(t, e) {
@@ -688,11 +685,6 @@ class Wallet {
                         value,
                       },
                     }));
-                  }
-
-                  saveState() {
-                    this.savedPosition.copy(this.position);
-                    this.savedVisible = this.visible;
                   }
 
                   updateAttribute(name, value) {

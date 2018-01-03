@@ -2188,7 +2188,6 @@ class Inventory {
         menuMesh.add(assetsMesh);
 
         let animation = null;
-        let savedAssetInstances = [];
         const _openMenu = () => {
           const {hmd: hmdStatus} = webvr.getStatus();
           const {worldPosition: hmdPosition, worldRotation: hmdRotation} = hmdStatus;
@@ -2219,18 +2218,6 @@ class Inventory {
           planeMeshLeft.render();
           planeMeshRight.render();
 
-          const assetInstances = wallet.getAssetInstances();
-          for (let i = 0; i < assetInstances.length; i++) {
-            const assetInstance = assetInstances[i];
-
-            if (!assetInstance.owner) {
-              assetInstance.saveState();
-              assetInstance.mesh.submesh.visible = true;
-
-              savedAssetInstances.push(assetInstance);
-            }
-          }
-
           sfx.digi_slide.trigger();
 
           animation = anima.makeAnimation(0, 1, 1000);
@@ -2242,11 +2229,6 @@ class Inventory {
           plane.open = false;
           planeLeft.open = false;
           planeRight.open = false;
-
-          for (let i = 0; i < savedAssetInstances.length; i++) {
-            const savedAssetInstance = savedAssetInstances[i];
-            savedAssetInstance.mesh.submesh.visible = savedAssetInstance.savedVisible;
-          }
 
           sfx.digi_powerdown.trigger();
 
@@ -2549,33 +2531,6 @@ class Inventory {
                   // lensMesh.scale.set(value, value, value);
                   // lensMesh.updateMatrixWorld();
                   // lensMesh.planeMesh.material.uniforms.opacity.value = value;
-
-                  const s = Math.sqrt(Math.pow(WORLD_WIDTH, 2) / 2);
-                  let numMenuAssets = 0;
-                  const assetInstances = wallet.getAssetInstances();
-                  for (let i = 0; i < assetInstances.length; i++) {
-                    const assetInstance = assetInstances[i];
-
-                    if (!assetInstance.owner) {
-                      const x = numMenuAssets % 5;
-                      const y = Math.floor(numMenuAssets / 5);
-                      numMenuAssets++;
-
-                      assetInstance.setStateLocal(
-                        localVector.set(
-                          x * WORLD_WIDTH/6 + WORLD_WIDTH/6/2,
-                          WORLD_HEIGHT/2 - 150*WORLD_HEIGHT/HEIGHT - y * WORLD_WIDTH/6 - WORLD_WIDTH/6/2,
-                          pixelSize * 16/2
-                        )
-                          .applyQuaternion(localQuaternion.setFromAxisAngle(localVector2.set(0, 1, 0), Math.PI/4))
-                          .add(localVector2.set(-WORLD_WIDTH/2 - s, 0, s))
-                          .applyMatrix4(menuMesh.matrixWorld)
-                          .lerp(assetInstance.savedPosition, 1 - value),
-                        zeroQuaternion,
-                        oneVector
-                      );
-                    }
-                  }
 
                   menuMesh.visible = true;
                 } else {
