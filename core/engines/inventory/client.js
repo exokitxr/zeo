@@ -42,6 +42,25 @@ const _normalizeType = ext => {
     return 'dat';
   }
 };
+function _roundedRectanglePath({
+  top,
+  left,
+  width,
+  height,
+  borderRadius,
+}) {
+  const path = new Path2D();
+  path.moveTo(left + borderRadius, top);
+  path.lineTo(left + width - borderRadius, top);
+  path.quadraticCurveTo(left + width, top, left + width, top + borderRadius);
+  path.lineTo(left + width, top + height - borderRadius);
+  path.quadraticCurveTo(left + width, top + height, left + width - borderRadius, top + height);
+  path.lineTo(left + borderRadius, top + height);
+  path.quadraticCurveTo(left, top + height, left, top + height - borderRadius);
+  path.lineTo(left, top + borderRadius);
+  path.quadraticCurveTo(left, top, left + borderRadius, top);
+  return path;
+}
 const isImageType = ext => /^(?:png|jpg|jfif|gif|svg|bmp)$/i.test(ext);
 const isAudioType = ext => ext === 'mp3' || ext === 'ogg' || ext === 'wav';
 const isVideoType = ext => ext === 'webm' || ext === 'mp4' || ext === 'mov';
@@ -239,7 +258,7 @@ class Inventory {
       _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/arrow-down.png'),
       _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/triangle-down.png'),
       _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/link.png'),
-      _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/box.png'),
+      // _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/box.png'),
       _requestImageData('/archae/plugins/_core_engines_inventory/serve/file.png'),
       _requestImageData('/archae/plugins/_core_engines_inventory/serve/image.png'),
       _requestImageData('/archae/plugins/_core_engines_inventory/serve/audio.png'),
@@ -273,7 +292,7 @@ class Inventory {
       arrowDownImg,
       triangleDownImg,
       linkImg,
-      boxImg,
+      // boxImg,
       fileImgData,
       imageImgData,
       audioImgData,
@@ -2000,7 +2019,17 @@ class Inventory {
               ctx.lineTo(canvas.width - 200, 150 + (i+1) * (canvas.height / 8));
               ctx.stroke(); */
 
-              ctx.drawImage(boxImg, 50, 150 + i * (canvas.height-150)/7 - 20, (canvas.height-150)/7 + 40, (canvas.height-150)/7 + 40);
+              const boxPath = _roundedRectanglePath({
+                left: 50,
+                top: 150 + i * (canvas.height-150)/7 + 20,
+                width: (canvas.height-150)/7 - 20,
+                height: (canvas.height-150)/7 - 20 - 20,
+                borderRadius: 20,
+              });
+              ctx.lineWidth = 10;
+              ctx.strokeStyle = '#EEE';
+              ctx.stroke(boxPath);
+              // ctx.drawImage(boxImg, 50, 150 + i * (canvas.height-150)/7 - 20, (canvas.height-150)/7 + 40, (canvas.height-150)/7 + 40);
 
               // ctx.clearRect(0, 150 + (i+1) * canvas.width/6 - 20 - fontSize, canvas.width, fontSize*2);
               ctx.fillText(`${assetInstance.name}.${assetInstance.ext}`, 300, 150 + (i+1) * (canvas.height-150)/7 - 75);
@@ -2111,7 +2140,17 @@ class Inventory {
               ctx.lineTo(canvas.width - 200, 150 + (i+1) * (canvas.height / 8));
               ctx.stroke(); */
 
-              ctx.drawImage(boxImg, 50, 150 + i * (canvas.height-150)/7 - 20, (canvas.height-150)/7 + 40, (canvas.height-150)/7 + 40);
+              const boxPath = _roundedRectanglePath({
+                left: 50,
+                top: 150 + i * (canvas.height-150)/7 + 20,
+                width: (canvas.height-150)/7 - 20,
+                height: (canvas.height-150)/7 - 20 - 20,
+                borderRadius: 20,
+              });
+              ctx.lineWidth = 10;
+              ctx.strokeStyle = '#EEE';
+              ctx.stroke(boxPath);
+              // ctx.drawImage(boxImg, 50, 150 + i * (canvas.height-150)/7 - 20, (canvas.height-150)/7 + 40, (canvas.height-150)/7 + 40);
 
               // ctx.clearRect(0, 150 + (i+1) * canvas.width/6 - 20 - fontSize, canvas.width, fontSize*2);
               ctx.fillText(`${assetInstance.name}.${assetInstance.ext}`, 300, 150 + (i+1) * (canvas.height-150)/7 - 75);
@@ -2277,7 +2316,7 @@ class Inventory {
                 return _requestAssetImageData()
                   .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
                     localVector.set(
-                      -WORLD_WIDTH/2 + (50 + ((canvas.height-150)/7 + 40)/2) * WORLD_WIDTH/WIDTH,
+                      -WORLD_WIDTH/2 + (50 + (canvas.height-150)/7/2) * WORLD_WIDTH/WIDTH,
                       WORLD_HEIGHT/2 - (150 + (i + 0.5) * (canvas.height-150)/7) * WORLD_HEIGHT/HEIGHT,
                       pixelSize*16/2
                     )
