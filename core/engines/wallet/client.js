@@ -851,8 +851,8 @@ class Wallet {
 
                   return assetInstance;
                 };
-                mesh.removeAssetInstance = id => {
-                  const assetInstance = assetInstances.splice(assetInstances.findIndex(assetInstance => assetInstance.id === id), 1)[0];
+                mesh.removeAssetInstance = assetId => {
+                  const assetInstance = assetInstances.splice(assetInstances.findIndex(assetInstance => assetInstance.assetId === assetId), 1)[0];
                   hand.destroyGrabbable(assetInstance);
 
                   const {mesh} = assetInstance;
