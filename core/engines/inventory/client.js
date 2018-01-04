@@ -501,7 +501,7 @@ class Inventory {
             30, (canvas.height - 150) / numPages
           );
         };
-        const getAttributesAnchors = (attributes, attributeSpecs, fontSize, w, h, menuState, {focusAttribute, render, updateAnchors}) => {
+        const getAttributesAnchors = (attributes, attributeSpecs, fontSize, w, h, menuState, {focusAttribute, update}) => {
           const result = [];
 
           const _pushAttributeAnchor = (x, y, w, h, name, type, newValue) => {
@@ -1773,6 +1773,40 @@ class Inventory {
           plane.anchors = _getAnchors();
         };
 
+        class InventoryAssetInstance {
+          constructor(item) {
+            this.item = item;
+          }
+
+          setAttribute(name, value) {
+            const _setAttribute = (attributes, name, value) => {
+              const attributeSpec = attributes[name];
+              if (!attributeSpec) {
+                assetSpec.json.data.attributes[name] = {
+                  value,
+                };
+              } else {
+                attributeSpec.value = value;
+              }
+            };
+
+            _setAttribute(this.item.json.data.attributes, name, value);
+
+            vridApi.get('assets')
+              .then(assets => {
+                assets = assets || [];
+
+                const assetSpec = assets.find(assetSpec => assetSpec.id === this.item.id);
+                _setAttribute(assetSpec.json.data.attributes, name, value);
+
+                return vridApi.set('assets', assets);
+              })
+              .catch(err => {
+                console.warn(err);
+              });
+          }
+        }
+
         const _getAnchors = () => {
           if (focusState.type === 'leftPane' || focusState.type === 'rightPane') {
             const {target} = focusState;
@@ -1800,15 +1834,25 @@ class Inventory {
 
                       return getAttributesAnchors(attributes, attributeSpecs, fontSize, ITEM_MENU_BORDER_SIZE, ITEM_MENU_BORDER_SIZE, itemMenuState, {
                         focusAttribute: ({name: attributeName, type, newValue}) => { // XXX
-                          /* if (type === 'number') {
+                          const grabbable = (() => {
+                            if (focusState.type === 'leftPane') {
+                              return wallet.getAssetInstances().find(assetInstance => assetInstance.assetId === target.assetId);
+                            } else if (focusState.type === 'rightPane') {
+                              return new InventoryAssetInstance(target);
+                            } else {
+                              return null;
+                            }
+                          })();
+                          // console.log('focus attribute', item, grabbable, attributeName, newValue);
+                          if (type === 'number') {
                             grabbable.setAttribute(attributeName, newValue);
-                            grabbable.assetId = _getAssetId();
+                            // grabbable.assetId = _getAssetId();
 
                             itemMenuState.focus = null;
                           } else if (type === 'select') {
                             if (newValue !== undefined) {
                               grabbable.setAttribute(attributeName, newValue);
-                              grabbable.assetId = _getAssetId();
+                              // grabbable.assetId = _getAssetId();
 
                               itemMenuState.focus = null;
                             } else {
@@ -1817,7 +1861,7 @@ class Inventory {
                           } else if (type === 'color') {
                             if (newValue !== undefined) {
                               grabbable.setAttribute(attributeName, newValue);
-                              grabbable.assetId = _getAssetId();
+                              // grabbable.assetId = _getAssetId();
 
                               itemMenuState.focus = null;
                             } else {
@@ -1825,19 +1869,19 @@ class Inventory {
                             }
                           } else if (type === 'checkbox') {
                             grabbable.setAttribute(attributeName, newValue);
-                            grabbable.assetId = _getAssetId();
+                            // grabbable.assetId = _getAssetId();
 
                             itemMenuState.focus = null;
                           } else {
                             itemMenuState.focus = null;
                           }
 
-                          _renderItemMenu();
-                          _updateAttributesAnchors(); */
+                          _renderMenu();
+                          plane.anchors = _getAnchors();
                         },
-                        render: () => {
-                        },
-                        updateAnchors: () => {
+                        update: () => {
+                          _renderMenu();
+                          plane.anchors = _getAnchors();
                         },
                       });
                     }
