@@ -1845,24 +1845,8 @@ class Inventory {
                 }
               }
             }
-          } else {
-            return [];
           }
-
-          /* // const result = tabsAnchors.slice();
-          const result = [];
-          if (tab === 'status') {
-            result.push.apply(result, statusAnchors);
-          } else if (tab === 'mods') {
-            if (!modReadmeImg) {
-              result.push.apply(result, serverAnchors);
-            } else {
-              result.push.apply(result, modAnchors);
-            }
-          } else if (tab === 'files') {
-            result.push.apply(result, filesAnchors);
-          }
-          return result; */
+          return [];
         };
         plane.anchors = _getAnchors();
         menuMesh.add(plane);
