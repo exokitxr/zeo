@@ -2220,7 +2220,11 @@ class Inventory {
               const target = targets[side];
 
               if (target) {
-                console.log('load world'); // XXX
+                const {items} = target.json.data;
+                wallet.replaceAssets(items);
+
+                assets = _quantizeAssets(wallet.getAssets());
+                _setFocus({});
               }
             });
           } else {
