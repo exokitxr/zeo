@@ -497,15 +497,16 @@ class Inventory {
           }
 
           const barSize = 80;
-          const numPages = Math.ceil(attributeNames.length / 7);
+          const numPages = Math.max(Math.ceil(attributeNames.length / 7), 1);
           ctx.fillStyle = '#CCC';
           ctx.fillRect(canvas.width - 150 + (barSize-30)/2, 150 + barSize, 30, canvas.height - 150 - barSize*2);
-          ctx.fillStyle = '#ff4b4b';
-          ctx.fillRect(
-            canvas.width - 150 + (barSize-30)/2, 150 + barSize + _snapToPixel(canvas.height - 150 - barSize*2, numPages, menuState.barValue),
-            30, (canvas.height - 150 - barSize*2) / numPages
-          );
-
+          if (numPages > 1) {
+            ctx.fillStyle = '#ff4b4b';
+            ctx.fillRect(
+              canvas.width - 150 + (barSize-30)/2, 150 + barSize + _snapToPixel(canvas.height - 150 - barSize*2, numPages, menuState.barValue),
+              30, (canvas.height - 150 - barSize*2) / numPages
+            );
+          }
           ctx.drawImage(arrowUpImg, canvas.width - 150, 150, barSize, barSize);
           ctx.drawImage(arrowDownImg, canvas.width - 150, canvas.height - barSize, barSize, barSize);
         };
@@ -928,9 +929,19 @@ class Inventory {
 
         const menuState = {
           open: false,
-          position: new THREE.Vector3(0, DEFAULT_USER_HEIGHT, -1.5),
+          /* position: new THREE.Vector3(0, DEFAULT_USER_HEIGHT, -1.5),
           rotation: new THREE.Quaternion(),
-          scale: new THREE.Vector3(1, 1, 1),
+          scale: new THREE.Vector3(1, 1, 1), */
+          barValue: 0,
+          page: 0,
+        };
+        const planeLeftState = {
+          barValue: 0,
+          page: 0,
+        };
+        const planeRightState = {
+          barValue: 0,
+          page: 0,
         };
 
         const canvas = document.createElement('canvas');
@@ -975,17 +986,17 @@ class Inventory {
         };
 
         /* let tabIndex = 0;
-        let tabType = 'item'; */
+        let tabType = 'item';
         let inventoryPage = 0;
         let localAssets = _getLocalAssets();
         let localAsset = null;
-        //const localTabAssets = _getLocalAssets();
+        const localTabAssets = _getLocalAssets();
         let inventoryPages = localAssets.length > numFilesPerPage ? Math.ceil(localAssets.length / numFilesPerPage) : 0;
         let inventoryBarValue = 0;
-        /* const inventoryIndices = {
+        const inventoryIndices = {
           left: -1,
           right: -1,
-        }; */
+        };
         let serverPage = 0;
         let localMods = _getLocalMods();
         let localMod = null;
@@ -996,7 +1007,7 @@ class Inventory {
         let modPages = 0;
         let serverPages = localMods.length > numModsPerPage ? Math.ceil(localMods.length / numModsPerPage) : 1;
         let serverBarValue = 0;
-        // let serverIndex = -1;
+        let serverIndex = -1; */
         let localImage = null;
 
         const _snapToIndex = (steps, value) => Math.min(Math.floor(steps * value), steps - 1);
@@ -1407,7 +1418,7 @@ class Inventory {
 
           filesAnchors = _getFilesAnchors();
           plane.anchors = _getAnchors();
-        }); */
+        });
 
         const statusAnchors = [];
 
@@ -1674,7 +1685,7 @@ class Inventory {
                 modReadmeImgPromise.cancel();
                 modReadmeImgPromise = null;
               }
-              /* modReadmeImgPromise = _requestModReadme(localMod.name, localMod.version);
+              modReadmeImgPromise = _requestModReadme(localMod.name, localMod.version);
               modReadmeImgPromise.then(img => {
                 modReadmeImg = img;
                 modReadmeImgPromise = null;
@@ -1685,7 +1696,7 @@ class Inventory {
 
                 _renderMenu();
                 plane.anchors = _getAnchors();
-              }); */
+              });
               modBarValue = 0;
               modPage = 0;
               modPages = 0;
@@ -1773,7 +1784,7 @@ class Inventory {
 
           return result;
         };
-        let modAnchors = _getModAnchors();
+        let modAnchors = _getModAnchors(); */
 
         let focusState = {};
         const itemMenuState = {
@@ -2114,8 +2125,18 @@ class Inventory {
             }
 
             const barSize = 80;
+            const numPages = Math.max(Math.ceil(unownedAssetInstances.length / 7), 1);
+            ctx.fillStyle = '#CCC';
+            ctx.fillRect(canvas.width - 150 + (barSize-30)/2, 150 + barSize, 30, canvas.height - 150 - barSize*2);
+            if (numPages > 1) {
+              ctx.fillStyle = '#ff4b4b';
+              ctx.fillRect(
+                canvas.width - 150 + (barSize-30)/2, 150 + barSize + _snapToPixel(canvas.height - 150 - barSize*2, numPages, planeLeftState.barValue),
+                30, (canvas.height - 150 - barSize*2) / numPages
+              );
+            }
             ctx.drawImage(arrowUpImg, canvas.width - 150, 150, barSize, barSize);
-            ctx.drawImage(arrowDownImg, canvas.width - 30, canvas.height - 150 - 30, barSize, barSize);
+            ctx.drawImage(arrowDownImg, canvas.width - 150, canvas.height - barSize, barSize, barSize);
 
             // ctx.fillText('Pack world', 5 * canvas.width/6 + canvas.width/6*0.1, 150 + (0+1) * canvas.width/6 - 20);
 
@@ -2141,6 +2162,7 @@ class Inventory {
         planeLeft.anchors = [];
         planeLeft.updateAnchors = () => {
           const result = [];
+
           for (let i = 0; i < 7; i++) {
             _pushAnchor(result, 0, 150 + i * (canvas.height-150)/7, canvas.width - 200, (canvas.height-150)/7, e => {
               const {side} = e;
@@ -2154,8 +2176,8 @@ class Inventory {
                   if (focusState.type === 'leftPane' && focusState.target.assetId === target.assetId) {
                     _setFocus({});
                   } else {
-                    menuState.barValue = 0;
-                    menuState.page = 0;
+                    planeLeftState.barValue = 0;
+                    planeLeftState.page = 0;
 
                     _setFocus({
                       type: 'leftPane',
@@ -2166,8 +2188,42 @@ class Inventory {
               }
             });
           }
+
+          const barSize = 80;
+          const unownedAssetInstances = wallet.getAssetInstances().filter(assetInstance => !assetInstance.owner);
+          const numPages = Math.ceil(unownedAssetInstances.length / 7);
+          _pushAnchor(result, canvas.width - 150 + (barSize-30)/2, 150 + barSize, 30, canvas.height - 150 - barSize*2, e => { // XXX
+            if (numPages > 0) {
+              const {side} = e;
+
+              onmove = () => {
+                const hoverState = uiTracker.getHoverState(side);
+                planeLeftState.barValue = Math.min(Math.max(hoverState.y - (150 + barSize), 0), canvas.height - 150 - barSize*2) / (canvas.height - 150 - barSize*2);
+                planeLeftState.page = _snapToIndex(numPages, planeLeftState.barValue);
+
+                planeMeshLeft.render();
+                planeLeft.updateAnchors();
+              };
+            }
+          });
+          _pushAnchor(result, canvas.width - 150, 150, barSize, barSize, e => {
+            planeLeftState.page = Math.max(planeLeftState.page - 1, 0);
+            planeLeftState.barValue = planeLeftState.page / (numPages - 1);
+
+            planeMeshLeft.render();
+            planeLeft.updateAnchors();
+          });
+          _pushAnchor(result, canvas.width - 150, canvas.height - barSize, barSize, barSize, e => {
+            planeLeftState.page = Math.min(menuState.page + 1, numPages - 1);
+            planeLeftState.barValue = planeLeftState.page / (numPages - 1);
+
+            planeMeshLeft.render();
+            planeLeft.updateAnchors();
+          });
+
           planeLeft.anchors = result;
         };
+
         planeLeft.updateAnchors();
         menuMesh.add(planeLeft);
         uiTracker.addPlane(planeLeft);
@@ -2263,21 +2319,18 @@ class Inventory {
               }
 
               const barSize = 80;
+              const numPages = Math.max(Math.ceil(assetInstances.length / 7), 1);
+              ctx.fillStyle = '#CCC';
+              ctx.fillRect(canvas.width - 150 + (barSize-30)/2, 150 + barSize, 30, canvas.height - 150 - barSize*2);
+              if (numPages > 1) {
+                ctx.fillStyle = '#ff4b4b';
+                ctx.fillRect(
+                  canvas.width - 150 + (barSize-30)/2, 150 + barSize + _snapToPixel(canvas.height - 150 - barSize*2, numPages, planeRightState.barValue),
+                  30, (canvas.height - 150 - barSize*2) / numPages
+                );
+              }
               ctx.drawImage(arrowUpImg, canvas.width - 150, 150, barSize, barSize);
-              ctx.drawImage(arrowDownImg, canvas.width - 30, canvas.height - 150 - 30, barSize, barSize);
-
-              /* let i = 0;
-              for (let y = 0; y < 4; y++) {
-                for (let x = 0; x < 5; x++) {
-                  ctx.drawImage(boxImg, x * canvas.width/6, 150 + y * canvas.width/6, canvas.width/6, canvas.width/6);
-
-                  const assetSpec = assets[i++];
-                  if (assetSpec) {
-                    ctx.clearRect(x * canvas.width/6, 150 + (y+1) * canvas.width/6 - 20 - fontSize, canvas.width, fontSize*2);
-                    ctx.fillText(`${assetSpec.name}.${assetSpec.ext}`, x * canvas.width/6 + canvas.width/6*0.1, 150 + (y+1) * canvas.width/6 - 20);
-                  }
-                }
-              } */
+              ctx.drawImage(arrowDownImg, canvas.width - 150, canvas.height - barSize, barSize, barSize);
 
               /* ctx.fillText('Save', 5.25 * canvas.width/6, 150 + 425);
               ctx.fillText('Remove', 5.25 * canvas.width/6, 150 + 850); */
@@ -2345,7 +2398,7 @@ class Inventory {
                     if (focusState.type === 'rightPane' && focusState.target.id === target.id) {
                       _setFocus({});
                     } else {
-                      menuState.barValue = 0;
+                      planeRightState.barValue = 0;
                       menuState.page = 0;
 
                       _setFocus({
@@ -2357,6 +2410,38 @@ class Inventory {
                 }
               });
             }
+
+            const barSize = 80;
+            const assetInstances = assets;
+            const numPages = Math.ceil(assetInstances.length / 7);
+            _pushAnchor(result, canvas.width - 150 + (barSize-30)/2, 150 + barSize, 30, canvas.height - 150 - barSize*2, e => { // XXX
+              if (numPages > 0) {
+                const {side} = e;
+
+                onmove = () => {
+                  const hoverState = uiTracker.getHoverState(side);
+                  planeRightState.barValue = Math.min(Math.max(hoverState.y - (150 + barSize), 0), canvas.height - 150 - barSize*2) / (canvas.height - 150 - barSize*2);
+                  menuState.page = _snapToIndex(numPages, planeRightState.barValue);
+
+                  planeMeshRight.render();
+                  planeRight.updateAnchors();
+                };
+              }
+            });
+            _pushAnchor(result, canvas.width - 150, 150, barSize, barSize, e => {
+              planeRightState.page = Math.max(planeRightState.page - 1, 0);
+              planeRightState.barValue = planeRightState.page / (numPages - 1);
+
+              planeMeshRight.render();
+              planeRight.updateAnchors();
+            });
+            _pushAnchor(result, canvas.width - 150, canvas.height - barSize, barSize, barSize, e => {
+              planeRightState.page = Math.min(planeRightState.page + 1, numPages - 1);
+              planeRightState.barValue = planeRightState.page / (numPages - 1);
+
+              planeMeshRight.render();
+              planeRight.updateAnchors();
+            });
           }
           planeRight.anchors = result;
         };
@@ -2609,9 +2694,9 @@ class Inventory {
           menuMesh.updateMatrixWorld();
 
           menuState.open = true;
-          menuState.position.copy(newMenuPosition);
+          /* menuState.position.copy(newMenuPosition);
           menuState.rotation.copy(newMenuRotation);
-          menuState.scale.copy(newMenuScale);
+          menuState.scale.copy(newMenuScale); */
           plane.open = true;
           planeLeft.open = true;
           planeRight.open = true;
@@ -2691,10 +2776,10 @@ class Inventory {
           const distance = assetPosition.distanceTo(gamepad.worldPosition);
           return distance < pixelSize*16/2;
         };
-        const _gripdown = e => {
+        /* const _gripdown = e => {
           const {side} = e;
 
-          /* const _handlePlaneMeshes = () => {
+          const _handlePlaneMeshes = () => {
             const {gamepads} = webvr.getStatus();
             const gamepad = gamepads[side];
 
@@ -2712,7 +2797,7 @@ class Inventory {
               }
             }
             return false;
-          }; */
+          };
           const _handleMod = () => {
             if (localMod && localMod.metadata && localMod.metadata.items && Array.isArray(localMod.metadata.items) && localMod.metadata.items.length > 0 && _isItemHovered(side)) {
               const attributes = (() => {
@@ -2759,9 +2844,9 @@ class Inventory {
             }
           };
 
-          /* _handlePlaneMeshes() || */_handleMod() || _handleFile();
+          _handlePlaneMeshes() || _handleMod() || _handleFile();
         };
-        input.on('gripdown', _gripdown);
+        input.on('gripdown', _gripdown); */
 
         const _grab = e => {
           const targets = focusState.type === 'grab' ? focusState.targets : {
@@ -2812,7 +2897,7 @@ class Inventory {
           input.removeListener('triggerdown', _triggerdown);
           // input.removeListener('triggerup', _triggerup);
           input.removeListener('triggerup', _trigger);
-          input.removeListener('gripdown', _gripdown);
+          // input.removeListener('gripdown', _gripdown);
           hand.removeListener('grab', _grab);
           hand.removeListener('release', _release);
 
