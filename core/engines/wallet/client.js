@@ -689,7 +689,13 @@ class Wallet {
 
                   updateAttribute(name, value) {
                     const {value: oldValue} = this.json.data.attributes[name] || {};
-                    this.json.data.attributes[name].value = value;
+                    if (this.json.data.attributes[name]) {
+                      this.json.data.attributes[name].value = value;
+                    } else {
+                      this.json.data.attributes[name] = {
+                        value,
+                      };
+                    }
 
                     const {json: {data: {path}}} = this;
                     const itemEntry = itemApis[path];
