@@ -3101,7 +3101,7 @@ const _arrayify = (array, numElements) => {
   return result;
 };
 const _makeId = () => Math.random().toString(36).substring(7);
-const _makeTagName = s => {
+/* const _makeTagName = s => {
   s = s
     .toLowerCase()
     .replace(/[^a-z0-9-]/g, '-')
@@ -3114,7 +3114,7 @@ const _makeTagName = s => {
     s = 'e-' + s;
   }
   return s;
-};
+}; */
 const _roundToDecimals = (value, decimals) => Number(Math.round(value+'e'+decimals)+'e-'+decimals);
 const _debounce = fn => {
   let running = false;
