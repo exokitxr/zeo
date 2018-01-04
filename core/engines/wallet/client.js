@@ -1310,11 +1310,11 @@ class Wallet {
                   return walletState.assets;
                 }
 
-                selectAsset(side, asset) {
+                /* selectAsset(side, asset) {
                   walletState.selectedAsset[side] = asset;
                 }
 
-                /* getEquipments() {
+                getEquipments() {
                   return walletState.equipments;
                 } */
 
