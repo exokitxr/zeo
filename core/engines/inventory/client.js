@@ -498,10 +498,10 @@ class Inventory {
 
           const numPages = Math.ceil(attributeNames.length / 7);
           ctx.fillStyle = '#CCC';
-          ctx.fillRect(canvas.width - 150, y + h, 30, canvas.height - y);
+          ctx.fillRect(canvas.width - 150, y, 30, canvas.height - y);
           ctx.fillStyle = '#ff4b4b';
           ctx.fillRect(
-            canvas.width - 150, y + _snapToPixel(canvas.height - y, serverPages, menuState.barValue),
+            canvas.width - 150, y + _snapToPixel(canvas.height - y, numPages, menuState.barValue),
             30, (canvas.height - y) / numPages
           );
         };
@@ -585,7 +585,7 @@ class Inventory {
           }
 
           const numPages = Math.ceil(attributeNames.length / 7);
-          _pushAnchor(result, canvas.width - y, y, 30, canvas.height - y, e => {
+          _pushAnchor(result, canvas.width - 150, y, 30, canvas.height - y, e => {
             if (numPages > 0) {
               const {side} = e;
 
@@ -594,8 +594,8 @@ class Inventory {
                 menuState.barValue = Math.min(Math.max(hoverState.y - y, 0), canvas.height - y) / (canvas.height - y);
                 menuState.page = _snapToIndex(numPages, menuState.barValue);
 
-                render();
-                updateAnchors();
+                _renderMenu();
+                plane.anchors = _getAnchors();
               };
             }
           });
@@ -2094,8 +2094,9 @@ class Inventory {
               ctx.fillText(`${assetInstance.name}.${assetInstance.ext}`, 300, 150 + (i+1) * (canvas.height-150)/7 - 75);
             }
 
-            ctx.drawImage(arrowUpImg, canvas.width - 200, 150, canvas.width/8 - 20, canvas.width/8 - 20);
-            ctx.drawImage(arrowDownImg, canvas.width - 200, canvas.height - (canvas.width/8 - 20), canvas.width/8 - 20, canvas.width/8 - 20);
+            const barSize = 80;
+            ctx.drawImage(arrowUpImg, canvas.width - 150, 150, barSize, barSize);
+            ctx.drawImage(arrowDownImg, canvas.width - 150, canvas.height - 150 - 30, barSize, barSize);
 
             // ctx.fillText('Pack world', 5 * canvas.width/6 + canvas.width/6*0.1, 150 + (0+1) * canvas.width/6 - 20);
 
@@ -2134,6 +2135,9 @@ class Inventory {
                   if (focusState.type === 'leftPane' && focusState.target.assetId === target.assetId) {
                     _setFocus({});
                   } else {
+                    menuState.barValue = 0;
+                    menuState.page = 0;
+
                     _setFocus({
                       type: 'leftPane',
                       target,
@@ -2239,8 +2243,9 @@ class Inventory {
                 ctx.fillText(`${assetInstance.name}.${assetInstance.ext}`, 300, 150 + (i+1) * (canvas.height-150)/7 - 75);
               }
 
-              ctx.drawImage(arrowUpImg, canvas.width - 200, 150, canvas.width/8 - 20, canvas.width/8 - 20);
-              ctx.drawImage(arrowDownImg, canvas.width - 200, canvas.height - (canvas.width/8 - 20), canvas.width/8 - 20, canvas.width/8 - 20);
+              const barSize = 80;
+              ctx.drawImage(arrowUpImg, canvas.width - 150, 150, barSize, barSize);
+              ctx.drawImage(arrowDownImg, canvas.width - 150, canvas.height - 150 - 30, barSize, barSize);
 
               /* let i = 0;
               for (let y = 0; y < 4; y++) {
@@ -2321,6 +2326,9 @@ class Inventory {
                     if (focusState.type === 'rightPane' && focusState.target.id === target.id) {
                       _setFocus({});
                     } else {
+                      menuState.barValue = 0;
+                      menuState.page = 0;
+
                       _setFocus({
                         type: 'rightPane',
                         target,
