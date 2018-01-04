@@ -2328,7 +2328,7 @@ class Inventory {
                   ext,
                   json: {
                     data: {
-                      items: wallet.getAssetInstances().map(({
+                      items: wallet.getAssetInstances().filter(assetInstance => !assetInstance.owner).map(({
                         assetId,
                         id,
                         name,
