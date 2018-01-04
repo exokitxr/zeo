@@ -261,7 +261,13 @@ class Wallet {
 
               if (assetInstance && assetInstance.json && assetInstance.json.data && typeof assetInstance.json.data === 'object') {
                 if (value !== null) {
-                  assetInstance.json.data.attributes[name].value = value;
+                  if (assetInstance.json.data.attributes[name]) {
+                    assetInstance.json.data.attributes[name].value = value;
+                  } else {
+                    assetInstance.json.data.attributes[name] = {
+                      value,
+                    };
+                  }
                 } else {
                   delete assetInstance.json.data.attributes[name];
                 }
