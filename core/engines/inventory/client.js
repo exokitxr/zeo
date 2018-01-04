@@ -2156,6 +2156,21 @@ class Inventory {
             ctx.drawImage(arrowUpImg, canvas.width - 150, 150, barSize, barSize);
             ctx.drawImage(arrowDownImg, canvas.width - 150, canvas.height - barSize, barSize, barSize);
 
+            const boxPath = _roundedRectanglePath({
+              left: canvas.width - 450,
+              top: 35,
+              width: 300 - 30,
+              height: 150 - 35*2,
+              borderRadius: (150 - 35*2)/2 + 4,
+            });
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = '#111';
+            ctx.stroke(boxPath);
+
+            ctx.fillStyle = '#111';
+            ctx.font = `${fontSize}px Open sans`;
+            ctx.fillText('Save world', canvas.width - 450 + (300 - 30)/2 - ctx.measureText('Save world').width/2, 150/2 + fontSize/2*0.9);
+
             // ctx.fillText('Pack world', 5 * canvas.width/6 + canvas.width/6*0.1, 150 + (0+1) * canvas.width/6 - 20);
 
             texture.needsUpdate = true;
@@ -2258,6 +2273,84 @@ class Inventory {
               planeLeft.updateAnchors();
               assetsMesh.render();
             }
+          });
+
+          _pushAnchor(result, canvas.width - 450, 35, 300 - 30, 150 - 35*2, e => {
+            Promise.all([
+              vrid.get('name'),
+              vrid.get('assets'),
+              fetch('archae/config/config.json', {
+                credentials: 'include',
+              })
+                .then(res => res.json()),
+            ])
+              .then(([
+                username,
+                localAssets,
+                serverConfig,
+              ]) => {
+                assets = assets || [];
+
+                const {name} = serverConfig;
+                const ext = 'wld';
+                const assetSpec = {
+                  id: _makeId(),
+                  name,
+                  ext,
+                  json: {
+                    data: {
+                      items: wallet.getAssetInstances().map(({
+                        assetId,
+                        id,
+                        name,
+                        ext,
+                        json = null,
+                        file = null,
+                        owner,
+                        physics,
+                        visible,
+                        open,
+                        position,
+                        rotation,
+                        scale,
+                      }) => ({
+                        assetId,
+                        id,
+                        name,
+                        ext,
+                        json,
+                        file,
+                        owner,
+                        physics,
+                        visible,
+                        open,
+                        matrix: position.toArray().concat(rotation.toArray()).concat(scale.toArray()),
+                      })),
+                    },
+                  },
+                  owner: username,
+                  timestamp: Date.now(),
+                };
+                assets.push(assetSpec);
+
+                return vrid.set('assets', assets)
+                  .then(() => assetSpec);
+              })
+              .then(assetSpec => {
+                sfx.drop.trigger();
+
+                planeMeshRight.render();
+                planeRight.updateAnchors();
+                assetsMesh.render();
+
+                const newNotification = notification.addNotification(`Saved world to "${assetSpec.name}.${assetSpec.ext}"`);
+                setTimeout(() => {
+                  notification.removeNotification(newNotification);
+                }, 3000);
+              })
+              .catch(err => {
+                console.warn(err);
+              });
           });
 
           planeLeft.anchors = result;
