@@ -256,6 +256,7 @@ class Inventory {
       // _requestImageBitmap('/archae/inventory/img/menu.png'),
       _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/arrow-up.png'),
       _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/arrow-down.png'),
+      _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/chevron-left.png'),
       _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/triangle-down.png'),
       _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/link.png'),
       // _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/box.png'),
@@ -290,6 +291,7 @@ class Inventory {
       // menuImg,
       arrowUpImg,
       arrowDownImg,
+      chevronLeftImg,
       triangleDownImg,
       linkImg,
       // boxImg,
@@ -1118,9 +1120,12 @@ class Inventory {
               }
             }
           } else if (focusState.type === 'leftPane' || focusState.type === 'rightPane') {
-            // ctx.fillText('asset name', 50, 150 + fontSize*1.6);
-
             const {target} = focusState;
+
+            ctx.drawImage(chevronLeftImg, ITEM_MENU_BORDER_SIZE, 150, fontSize*2 + ITEM_MENU_BORDER_SIZE, fontSize*2 + ITEM_MENU_BORDER_SIZE);
+            ctx.fillStyle = '#111';
+            ctx.fillText(`${target.name}.${target.ext}`, ITEM_MENU_BORDER_SIZE + fontSize*2 + ITEM_MENU_BORDER_SIZE, 150 + fontSize*2 + ITEM_MENU_BORDER_SIZE - 40);
+
             const {ext} = target;
             if (ext === 'itm') {
               const {json} = target;
