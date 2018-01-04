@@ -2091,16 +2091,22 @@ class Inventory {
           const result = [];
           for (let i = 0; i < 7; i++) {
             _pushAnchor(result, 0, 150 + i * (canvas.height-150)/7, canvas.width - 200, (canvas.height-150)/7, e => {
+              const {side} = e;
               const target = wallet.getAssetInstances().filter(assetInstance => !assetInstance.owner)[i];
 
-              if (target) {
-                if (focusState.type === 'leftPane' && focusState.target.assetId === target.assetId) {
-                  _setFocus({});
-                } else {
-                  _setFocus({
-                    type: 'leftPane',
-                    target,
-                  });
+              if (webvr.getStatus().gamepads[side].buttons.grip.pressed) {
+                const grabbable = wallet.getAssetInstances().find(assetInstance => assetInstance.assetId === target.assetId);
+                grabbable.grab(side);
+              } else {
+                if (target) {
+                  if (focusState.type === 'leftPane' && focusState.target.assetId === target.assetId) {
+                    _setFocus({});
+                  } else {
+                    _setFocus({
+                      type: 'leftPane',
+                      target,
+                    });
+                  }
                 }
               }
             });
@@ -2226,16 +2232,21 @@ class Inventory {
           const result = [];
           for (let i = 0; i < 7; i++) {
             _pushAnchor(result, 0, 150 + i * (canvas.height-150)/7, canvas.width - 200, (canvas.height-150)/7, e => {
+              const {side} = e;
               const target = assets[i];
 
-              if (target) {
-                if (focusState.type === 'rightPane' && focusState.target.id === target.id) {
-                  _setFocus({});
-                } else {
-                  _setFocus({
-                    type: 'rightPane',
-                    target,
-                  });
+              if (webvr.getStatus().gamepads[side].buttons.grip.pressed) {
+                wallet.pullItem(target, side);
+              } else {
+                if (target) {
+                  if (focusState.type === 'rightPane' && focusState.target.id === target.id) {
+                    _setFocus({});
+                  } else {
+                    _setFocus({
+                      type: 'rightPane',
+                      target,
+                    });
+                  }
                 }
               }
             });
