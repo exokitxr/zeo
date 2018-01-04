@@ -2285,7 +2285,7 @@ class Inventory {
           const _renderAssets = _debounce(next => {
             const s = Math.sqrt(Math.pow(WORLD_WIDTH, 2) / 2);
             const promises = [
-              _requestImageData('/archae/plugins/_core_engines_inventory/serve/up.png')
+              /* _requestImageData('/archae/plugins/_core_engines_inventory/serve/up.png')
                 .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
                   localVector.set(
                     WORLD_WIDTH / 2 + s - pixelSize * 16,
@@ -2305,7 +2305,7 @@ class Inventory {
                   zeroQuaternion,
                   oneVector
                 ))),
-              /* _requestImageData('/archae/plugins/_core_engines_inventory/serve/earth-box.png')
+              _requestImageData('/archae/plugins/_core_engines_inventory/serve/earth-box.png')
                 .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
                   localVector.set(
                     -WORLD_WIDTH / 2,
