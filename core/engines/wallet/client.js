@@ -1194,7 +1194,7 @@ class Wallet {
                   return assetsMesh.getAssetInstance(id);
                 }
 
-                makeItem(itemSpec) {
+                makeItem(itemSpec, {local = false} = {}) {
                   const {
                     assetId,
                     id,
@@ -1236,7 +1236,7 @@ class Wallet {
                   _bindAssetInstancePhysics(assetInstance);
                   // _bindAssetInstanceMenu(assetInstance);
 
-                  connection && !bootstrap.isSpectating() && connection.send(JSON.stringify({
+                  !local && connection && !bootstrap.isSpectating() && connection.send(JSON.stringify({
                     method: 'addAsset',
                     args: {
                       assetId,
@@ -1257,14 +1257,14 @@ class Wallet {
                   return assetInstance;
                 }
 
-                destroyItem(itemSpec) {
+                destroyItem(itemSpec, {local = false} = {}) {
                   const {assetId} = itemSpec;
                   const assetInstance = assetsMesh.getAssetInstance(assetId);
                   _unbindAssetInstance(assetInstance);
 
                   assetsMesh.removeAssetInstance(assetId);
 
-                  connection && !bootstrap.isSpectating() && connection.send(JSON.stringify({
+                  !local && connection && !bootstrap.isSpectating() && connection.send(JSON.stringify({
                     method: 'removeAsset',
                     args: {
                       assetId,
@@ -1308,6 +1308,53 @@ class Wallet {
 
                 getAssets() {
                   return walletState.assets;
+                }
+
+                replaceAssets(assets) {
+                  const oldAssetInstances = assetsMesh.getAssetInstances().slice();
+                  for (let i = 0; i < oldAssetInstances.length; i++) {
+                    const oldAssetInstance = oldAssetInstances[i];
+
+                    if (!oldAssetInstance.owner) {
+                      this.destroyItem(oldAssetInstance, {local: true});
+                    }
+                  }
+
+                  for (let i = 0; i < assets.length; i++) {
+                    const {
+                      assetId,
+                      id,
+                      name,
+                      ext,
+                      json,
+                      file,
+                      matrix: position,
+                      owner,
+                      physics,
+                      visible,
+                      open,
+                    } = assets[i];
+                    this.makeItem({
+                      assetId,
+                      id,
+                      name,
+                      ext,
+                      json,
+                      file,
+                      position,
+                      owner,
+                      physics,
+                      visible,
+                      open,
+                    }, {local: true});
+                  }
+
+                  connection && !bootstrap.isSpectating() && connection.send(JSON.stringify({
+                    method: 'replaceAssets',
+                    args: {
+                      assets,
+                    },
+                  }));
                 }
 
                 /* selectAsset(side, asset) {
