@@ -371,7 +371,7 @@ class Inventory {
 
         const rowHeight = 100;
         const localColor = new THREE.Color();
-        const renderAttributes = (canvas, ctx, attributes, attributeSpecs, fontSize, w, h, menuState) => {
+        const renderAttributes = (canvas, ctx, attributes, attributeSpecs, fontSize, x, y, w, h, menuState) => {
           ctx.font = `${fontSize}px Open sans`;
 
           const attributeNames = Object.keys(attributeSpecs);
@@ -390,19 +390,19 @@ class Inventory {
 
             if (type === 'matrix') {
               ctx.fillStyle = '#EEE';
-              ctx.fillRect(w, 150 + h + i*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2);
+              ctx.fillRect(x, y + h + i*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2);
               ctx.fillStyle = '#111';
-              ctx.fillText(value.join(','), w, 150 + h + fontSize*2 - fontSize*0.3 + di*rowHeight, ITEM_MENU_INNER_SIZE);
+              ctx.fillText(value.join(','), x, y + h + fontSize*2 - fontSize*0.3 + di*rowHeight, ITEM_MENU_INNER_SIZE);
             } else if (type === 'vector') {
               ctx.fillStyle = '#EEE';
-              ctx.fillRect(w, 150 + h + i*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2);
+              ctx.fillRect(x, y + h + i*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2);
               ctx.fillStyle = '#111';
-              ctx.fillText(value.join(','), w, 150 + h + fontSize*2 - fontSize*0.3 + di*rowHeight, ITEM_MENU_INNER_SIZE);
+              ctx.fillText(value.join(','), x, y + h + fontSize*2 - fontSize*0.3 + di*rowHeight, ITEM_MENU_INNER_SIZE);
             } else if (type === 'text') {
               ctx.fillStyle = '#EEE';
-              ctx.fillRect(w, 150 + h + i*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2);
+              ctx.fillRect(x, y + h + i*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2);
               ctx.fillStyle = '#111';
-              ctx.fillText(value, w, 150 + h + fontSize*2 - fontSize*0.3 + di*rowHeight, ITEM_MENU_INNER_SIZE);
+              ctx.fillText(value, x, y + h + fontSize*2 - fontSize*0.3 + di*rowHeight, ITEM_MENU_INNER_SIZE);
             } else if (type === 'number') {
               const {min, max} = attributeSpec;
 
@@ -416,92 +416,92 @@ class Inventory {
               const factor = (value - min) / (max - min);
 
               ctx.fillStyle = '#CCC';
-              ctx.fillRect(w, 150 + h + di*rowHeight, ITEM_MENU_INNER_SIZE, 5);
+              ctx.fillRect(x, y + h + di*rowHeight, ITEM_MENU_INNER_SIZE, 5);
               ctx.fillStyle = '#ff4b4b';
-              ctx.fillRect(w + (factor * ITEM_MENU_INNER_SIZE), 150 + h - 25 + di*rowHeight, 5, 25 + 5 + 25);
+              ctx.fillRect(x + (factor * ITEM_MENU_INNER_SIZE), y + h - 25 + di*rowHeight, 5, 25 + 5 + 25);
             } else if (type === 'select') {
               if (menuState.focus !== attributeName) {
                 ctx.fillStyle = '#FFF';
-                ctx.fillRect(w, 150 + h + i*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2);
+                ctx.fillRect(x, y + h + i*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2);
 
                 ctx.fillStyle = '#111';
-                ctx.fillText(value, w, 150 + h + fontSize*2 - fontSize*0.5 + di*rowHeight, ITEM_MENU_INNER_SIZE);
-                ctx.drawImage(triangleDownImg, w + ITEM_MENU_INNER_SIZE - fontSize*2, 150 + h + di*rowHeight, fontSize*2, fontSize*2);
+                ctx.fillText(value, x, y + h + fontSize*2 - fontSize*0.5 + di*rowHeight, ITEM_MENU_INNER_SIZE);
+                ctx.drawImage(triangleDownImg, w + ITEM_MENU_INNER_SIZE - fontSize*2, y + h + di*rowHeight, fontSize*2, fontSize*2);
 
                 ctx.strokeStyle = '#111';
                 ctx.lineWidth = 3;
-                ctx.strokeRect(w, 150 + h + di*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2);
+                ctx.strokeRect(x, y + h + di*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2);
               } else {
                 const {options} = attributeSpec;
 
                 ctx.fillStyle = '#FFF';
-                ctx.fillRect(w, 150 + h + di*rowHeight, ITEM_MENU_INNER_SIZE, Math.max(options.length, 1) * fontSize*2);
+                ctx.fillRect(x, y + h + di*rowHeight, ITEM_MENU_INNER_SIZE, Math.max(options.length, 1) * fontSize*2);
 
                 for (let j = 0; j < options.length; j++) {
                   const option = options[j];
 
                   if (value === option) {
                     ctx.fillStyle = '#EEE';
-                    ctx.fillRect(w, 150 + h + di*rowHeight + j*fontSize*2, ITEM_MENU_INNER_SIZE, fontSize*2);
+                    ctx.fillRect(x, y + h + di*rowHeight + j*fontSize*2, ITEM_MENU_INNER_SIZE, fontSize*2);
                   }
 
                   ctx.fillStyle = '#111';
-                  ctx.fillText(option, w, 150 + h + fontSize*2 - fontSize*0.5 + di*rowHeight + j*fontSize*2, ITEM_MENU_INNER_SIZE);
+                  ctx.fillText(option, x, y + h + fontSize*2 - fontSize*0.5 + di*rowHeight + j*fontSize*2, ITEM_MENU_INNER_SIZE);
                 }
 
                 ctx.strokeStyle = '#111';
                 ctx.lineWidth = 3;
-                ctx.strokeRect(w, 150 + h + di*rowHeight, ITEM_MENU_INNER_SIZE, Math.max(options.length, 1) * fontSize*2);
+                ctx.strokeRect(x, y + h + di*rowHeight, ITEM_MENU_INNER_SIZE, Math.max(options.length, 1) * fontSize*2);
               }
             } else if (type === 'color') {
               ctx.strokeStyle = '#111';
               ctx.lineWidth = 3;
-              ctx.strokeRect(w, 150 + h + di*rowHeight, fontSize*2, fontSize*2);
+              ctx.strokeRect(x, y + h + di*rowHeight, fontSize*2, fontSize*2);
               ctx.fillStyle = value;
-              ctx.fillRect(w + 5, 150 + h + 5 + di*rowHeight, fontSize*2 - 5*2, fontSize*2 - 5*2);
+              ctx.fillRect(x + 5, y + h + 5 + di*rowHeight, fontSize*2 - 5*2, fontSize*2 - 5*2);
               ctx.fillStyle = '#EEE';
-              ctx.fillRect(w + fontSize*2, 150 + h + di*rowHeight, ITEM_MENU_INNER_SIZE - fontSize*2, fontSize*2);
+              ctx.fillRect(x + fontSize*2, y + h + di*rowHeight, ITEM_MENU_INNER_SIZE - fontSize*2, fontSize*2);
               ctx.fillStyle = '#111';
-              ctx.fillText(value, w + fontSize*2, 150 + h + fontSize*2 - fontSize*0.3 + di*rowHeight, ITEM_MENU_INNER_SIZE);
+              ctx.fillText(value, x + fontSize*2, y + h + fontSize*2 - fontSize*0.3 + di*rowHeight, ITEM_MENU_INNER_SIZE);
 
               if (menuState.focus === attributeName) {
-                ctx.drawImage(colorWheelImg, w, 150 + h + di*rowHeight, 256, 256);
+                ctx.drawImage(colorWheelImg, x, y + h + di*rowHeight, 256, 256);
               }
             } else if (type === 'checkbox') {
               if (value) {
                 ctx.strokeStyle = '#111';
                 ctx.lineWidth = 3;
-                ctx.strokeRect(w, 150 + h + di*rowHeight, 60, 30);
+                ctx.strokeRect(x, y + h + di*rowHeight, 60, 30);
 
                 ctx.fillStyle = '#111';
-                ctx.fillRect(w + 30, 150 + h + 5 + di*rowHeight, (60 - 5*2)/2, 30 - 5*2);
+                ctx.fillRect(x + 30, y + h + 5 + di*rowHeight, (60 - 5*2)/2, 30 - 5*2);
               } else {
                 ctx.strokeStyle = '#CCC';
                 ctx.lineWidth = 3;
-                ctx.strokeRect(w, 150 + h + di*rowHeight, 60, 30);
+                ctx.strokeRect(x, y + h + di*rowHeight, 60, 30);
 
                 ctx.fillStyle = '#CCC';
-                ctx.fillRect(w + 5, 150 + h + 5 + di*rowHeight, (60 - 5*2)/2, 30 - 5*2);
+                ctx.fillRect(x + 5, y + h + 5 + di*rowHeight, (60 - 5*2)/2, 30 - 5*2);
               }
             } else if (type === 'file') {
               ctx.fillStyle = '#EEE';
-              ctx.fillRect(w, 150 + h + di*rowHeight, ITEM_MENU_INNER_SIZE - fontSize*2, fontSize*2);
+              ctx.fillRect(x, y + h + di*rowHeight, ITEM_MENU_INNER_SIZE - fontSize*2, fontSize*2);
               ctx.fillStyle = '#111';
-              ctx.fillText(value, w, 150 + h + fontSize*2 - fontSize*0.3 + di*rowHeight, ITEM_MENU_INNER_SIZE);
-              ctx.drawImage(linkImg, w + ITEM_MENU_INNER_SIZE - fontSize*2, 150 + h + di*rowHeight, fontSize*2, fontSize*2);
+              ctx.fillText(value, x, y + h + fontSize*2 - fontSize*0.3 + di*rowHeight, ITEM_MENU_INNER_SIZE);
+              ctx.drawImage(linkImg, x + ITEM_MENU_INNER_SIZE - fontSize*2, y + h + di*rowHeight, fontSize*2, fontSize*2);
             }
           }
 
           const numPages = Math.ceil(attributeNames.length / 7);
           ctx.fillStyle = '#CCC';
-          ctx.fillRect(canvas.width - 150, 150, 30, canvas.height - 150);
+          ctx.fillRect(canvas.width - 150, y + h, 30, canvas.height - y);
           ctx.fillStyle = '#ff4b4b';
           ctx.fillRect(
-            canvas.width - 150, 150 + _snapToPixel(ITEM_MENU_SIZE*0.9, serverPages, menuState.barValue),
-            30, (canvas.height - 150) / numPages
+            canvas.width - 150, y + _snapToPixel(canvas.height - y, serverPages, menuState.barValue),
+            30, (canvas.height - y) / numPages
           );
         };
-        const getAttributesAnchors = (attributes, attributeSpecs, fontSize, w, h, menuState, {focusAttribute, update}) => {
+        const getAttributesAnchors = (attributes, attributeSpecs, fontSize, x, y, w, h, menuState, {focusAttribute, update}) => {
           const result = [];
 
           const _pushAttributeAnchor = (x, y, w, h, name, type, newValue) => {
@@ -552,44 +552,44 @@ class Inventory {
             const di = i - menuState.page * 7;
 
             if (type === 'matrix') {
-              _pushAttributeAnchor(w, 150 + h + di*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2, attributeName, type);
+              _pushAttributeAnchor(x, y + h + di*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2, attributeName, type);
             } else if (type === 'vector') {
-              _pushAttributeAnchor(w, 150 + h + di*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2, attributeName, type);
+              _pushAttributeAnchor(x, y + h + di*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2, attributeName, type);
             } else if (type === 'text') {
-              _pushAttributeAnchor(w, 150 + h + di*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2, attributeName, type);
+              _pushAttributeAnchor(x, y + h + di*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2, attributeName, type);
             } else if (type === 'number') {
-              _pushAttributeAnchor(w, 150 + h - 25 + di*rowHeight, ITEM_MENU_INNER_SIZE, 25 + 5 + 25, attributeName, type);
+              _pushAttributeAnchor(x, y + h - 25 + di*rowHeight, ITEM_MENU_INNER_SIZE, 25 + 5 + 25, attributeName, type);
             } else if (type === 'select') {
               if (menuState.focus !== attributeName) {
-                _pushAttributeAnchor(w, 150 + h + di*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2, attributeName, type);
+                _pushAttributeAnchor(x, y + h + di*rowHeight, ITEM_MENU_INNER_SIZE, fontSize*2, attributeName, type);
               } else {
                 const {options} = attributeSpec;
                 for (let j = 0; j < options.length; j++) {
-                  _pushAttributeAnchor(w, 150 + h + di*rowHeight + j*fontSize*2, ITEM_MENU_INNER_SIZE, fontSize*2, attributeName, type, options[j]);
+                  _pushAttributeAnchor(x, y + h + di*rowHeight + j*fontSize*2, ITEM_MENU_INNER_SIZE, fontSize*2, attributeName, type, options[j]);
                 }
               }
             } else if (type === 'color') {
               if (menuState.focus === attributeName) {
-                _pushAttributeAnchor(w, 150 + h + di*rowHeight, 256, 256, attributeName, type, (fx, fy) => '#' + localColor.setHex(colorWheelImg.getColor(fx, fy)).getHexString());
+                _pushAttributeAnchor(x, y + h + di*rowHeight, 256, 256, attributeName, type, (fx, fy) => '#' + localColor.setHex(colorWheelImg.getColor(fx, fy)).getHexString());
               }
 
-              _pushAttributeAnchor(w, 150 + h + di*rowHeight, fontSize*2, fontSize*2, attributeName, type);
-              _pushAttributeAnchor(w + fontSize*2, 150 + h + di*rowHeight, ITEM_MENU_INNER_SIZE - fontSize*2, fontSize*2, attributeName, type);
+              _pushAttributeAnchor(x, y + h + di*rowHeight, fontSize*2, fontSize*2, attributeName, type);
+              _pushAttributeAnchor(x + fontSize*2, y + h + di*rowHeight, ITEM_MENU_INNER_SIZE - fontSize*2, fontSize*2, attributeName, type);
             } else if (type === 'checkbox') {
-              _pushAttributeAnchor(w, 150 + h + di*rowHeight, ITEM_MENU_INNER_SIZE, 30, attributeName, type, !value);
+              _pushAttributeAnchor(x, y + h + di*rowHeight, ITEM_MENU_INNER_SIZE, 30, attributeName, type, !value);
             } else if (type === 'file') {
-              _pushAttributeAnchor(w, 150 + h + di*rowHeight, ITEM_MENU_INNER_SIZE - fontSize*2, fontSize*2, attributeName, type);
+              _pushAttributeAnchor(x, y + h + di*rowHeight, ITEM_MENU_INNER_SIZE - fontSize*2, fontSize*2, attributeName, type);
             }
           }
 
           const numPages = Math.ceil(attributeNames.length / 7);
-          _pushAnchor(result, canvas.width - 150, 150, 30, canvas.height - 150, e => {
+          _pushAnchor(result, canvas.width - y, y, 30, canvas.height - y, e => {
             if (numPages > 0) {
               const {side} = e;
 
               onmove = () => {
                 const hoverState = uiTracker.getHoverState(side);
-                menuState.barValue = Math.min(Math.max(hoverState.y - 150, 0), canvas.height - 150) / (canvas.height - 150);
+                menuState.barValue = Math.min(Math.max(hoverState.y - y, 0), canvas.height - y) / (canvas.height - y);
                 menuState.page = _snapToIndex(numPages, menuState.barValue);
 
                 render();
@@ -1142,7 +1142,7 @@ class Inventory {
                         json.data.attributes
                         : {};
                       const {attributes: attributeSpecs} = item;
-                      renderAttributes(canvas, ctx, attributes, attributeSpecs, fontSize, ITEM_MENU_BORDER_SIZE, ITEM_MENU_BORDER_SIZE, itemMenuState);
+                      renderAttributes(canvas, ctx, attributes, attributeSpecs, fontSize, ITEM_MENU_BORDER_SIZE, 150 + fontSize*2, ITEM_MENU_BORDER_SIZE, ITEM_MENU_BORDER_SIZE, itemMenuState);
                       plane.anchors = _getAnchors();
                     }
                   }
@@ -1832,7 +1832,7 @@ class Inventory {
                         : {};
                       const {attributes: attributeSpecs} = item;
 
-                      return getAttributesAnchors(attributes, attributeSpecs, fontSize, ITEM_MENU_BORDER_SIZE, ITEM_MENU_BORDER_SIZE, itemMenuState, {
+                      return getAttributesAnchors(attributes, attributeSpecs, fontSize, ITEM_MENU_BORDER_SIZE, 150 + fontSize*2, ITEM_MENU_BORDER_SIZE, ITEM_MENU_BORDER_SIZE, itemMenuState, {
                         focusAttribute: ({name: attributeName, type, newValue}) => { // XXX
                           const grabbable = (() => {
                             if (focusState.type === 'leftPane') {
