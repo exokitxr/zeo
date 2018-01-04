@@ -1782,7 +1782,7 @@ class Inventory {
             const _setAttribute = (attributes, name, value) => {
               const attributeSpec = attributes[name];
               if (!attributeSpec) {
-                assetSpec.json.data.attributes[name] = {
+                attributeSpec.json.data.attributes[name] = {
                   value,
                 };
               } else {
