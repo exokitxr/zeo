@@ -1763,18 +1763,12 @@ class Inventory {
           page: 0,
         };
         const _setFocus = newFocusState => {
-          const oldFocusState = focusState;
           focusState = newFocusState;
 
           _renderMenu();
-          if (oldFocusState.type === 'leftPane' || newFocusState.type === 'leftPane') {
-            planeMeshLeft.render();
-            assetsMesh.render();
-          }
-          if (oldFocusState.type === 'rightPane' || newFocusState.type === 'rightPane') {
-            planeMeshRight.render();
-            assetsMesh.render();
-          }
+          planeMeshLeft.render();
+          planeMeshRight.render();
+          assetsMesh.render();
           plane.anchors = _getAnchors();
         };
 
@@ -2178,7 +2172,7 @@ class Inventory {
           const _render = () => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            ctx.fillStyle = '#FFF';
+            // ctx.fillStyle = '#FFF';
             // ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             ctx.fillStyle = '#EEE';
@@ -2188,61 +2182,78 @@ class Inventory {
             ctx.font = `${fontSize*1.6}px Open sans`;
             ctx.fillText('Inventory', 60, fontSize*2 + 35);
 
-            ctx.font = `50px Open sans`;
-
-            const assetInstances = assets;
-            ctx.font = `50px Open sans`;
-            /* ctx.strokeStyle = '#EEE';
-            ctx.lineWidth = 10; */
-            for (let i = 0; i < 7 && assetInstances.length; i++) {
-              const assetInstance = assetInstances[i];
-              if (focusState.type === 'rightPane' && focusState.target.id === assetInstance.id) {
-                ctx.fillStyle = '#111';
-                ctx.fillRect(0, 150 + i * (canvas.height-150)/7, canvas.width - 200, (canvas.height-150)/7);
-                ctx.fillStyle = '#FFF';
-              } else {
-                ctx.fillStyle = '#111';
-              }
-
-              /* ctx.beginPath();
-              ctx.moveTo(0, 150 + (i+1) * (canvas.height / 8));
-              ctx.lineTo(canvas.width - 200, 150 + (i+1) * (canvas.height / 8));
-              ctx.stroke(); */
-
+            if (focusState.type === 'grab') {
               const boxPath = _roundedRectanglePath({
                 left: 50,
-                top: 150 + i * (canvas.height-150)/7 + 20,
-                width: (canvas.height-150)/7 - 20,
-                height: (canvas.height-150)/7 - 20 - 20,
+                top: 150 + 50,
+                width: canvas.width - 50*2,
+                height: canvas.height - 150 - 50*2,
                 borderRadius: 20,
               });
               ctx.lineWidth = 10;
               ctx.strokeStyle = '#EEE';
               ctx.stroke(boxPath);
-              // ctx.drawImage(boxImg, 50, 150 + i * (canvas.height-150)/7 - 20, (canvas.height-150)/7 + 40, (canvas.height-150)/7 + 40);
 
-              // ctx.clearRect(0, 150 + (i+1) * canvas.width/6 - 20 - fontSize, canvas.width, fontSize*2);
-              ctx.fillText(`${assetInstance.name}.${assetInstance.ext}`, 300, 150 + (i+1) * (canvas.height-150)/7 - 75);
-            }
+              ctx.font = `100px Open sans`;
 
-            ctx.drawImage(arrowUpImg, canvas.width - 200, 150, canvas.width/8 - 20, canvas.width/8 - 20);
-            ctx.drawImage(arrowDownImg, canvas.width - 200, canvas.height - (canvas.width/8 - 20), canvas.width/8 - 20, canvas.width/8 - 20);
+              ctx.fillText('Drop zone', canvas.width/2 - ctx.measureText('Drop zone').width/2, canvas.height/2 + 100/2);
+            } else {
+              ctx.font = `50px Open sans`;
 
-            /* let i = 0;
-            for (let y = 0; y < 4; y++) {
-              for (let x = 0; x < 5; x++) {
-                ctx.drawImage(boxImg, x * canvas.width/6, 150 + y * canvas.width/6, canvas.width/6, canvas.width/6);
-
-                const assetSpec = assets[i++];
-                if (assetSpec) {
-                  ctx.clearRect(x * canvas.width/6, 150 + (y+1) * canvas.width/6 - 20 - fontSize, canvas.width, fontSize*2);
-                  ctx.fillText(`${assetSpec.name}.${assetSpec.ext}`, x * canvas.width/6 + canvas.width/6*0.1, 150 + (y+1) * canvas.width/6 - 20);
+              const assetInstances = assets;
+              ctx.font = `50px Open sans`;
+              /* ctx.strokeStyle = '#EEE';
+              ctx.lineWidth = 10; */
+              for (let i = 0; i < 7 && assetInstances.length; i++) {
+                const assetInstance = assetInstances[i];
+                if (focusState.type === 'rightPane' && focusState.target.id === assetInstance.id) {
+                  ctx.fillStyle = '#111';
+                  ctx.fillRect(0, 150 + i * (canvas.height-150)/7, canvas.width - 200, (canvas.height-150)/7);
+                  ctx.fillStyle = '#FFF';
+                } else {
+                  ctx.fillStyle = '#111';
                 }
-              }
-            } */
 
-            /* ctx.fillText('Save', 5.25 * canvas.width/6, 150 + 425);
-            ctx.fillText('Remove', 5.25 * canvas.width/6, 150 + 850); */
+                /* ctx.beginPath();
+                ctx.moveTo(0, 150 + (i+1) * (canvas.height / 8));
+                ctx.lineTo(canvas.width - 200, 150 + (i+1) * (canvas.height / 8));
+                ctx.stroke(); */
+
+                const boxPath = _roundedRectanglePath({
+                  left: 50,
+                  top: 150 + i * (canvas.height-150)/7 + 20,
+                  width: (canvas.height-150)/7 - 20,
+                  height: (canvas.height-150)/7 - 20 - 20,
+                  borderRadius: 20,
+                });
+                ctx.lineWidth = 10;
+                ctx.strokeStyle = '#EEE';
+                ctx.stroke(boxPath);
+                // ctx.drawImage(boxImg, 50, 150 + i * (canvas.height-150)/7 - 20, (canvas.height-150)/7 + 40, (canvas.height-150)/7 + 40);
+
+                // ctx.clearRect(0, 150 + (i+1) * canvas.width/6 - 20 - fontSize, canvas.width, fontSize*2);
+                ctx.fillText(`${assetInstance.name}.${assetInstance.ext}`, 300, 150 + (i+1) * (canvas.height-150)/7 - 75);
+              }
+
+              ctx.drawImage(arrowUpImg, canvas.width - 200, 150, canvas.width/8 - 20, canvas.width/8 - 20);
+              ctx.drawImage(arrowDownImg, canvas.width - 200, canvas.height - (canvas.width/8 - 20), canvas.width/8 - 20, canvas.width/8 - 20);
+
+              /* let i = 0;
+              for (let y = 0; y < 4; y++) {
+                for (let x = 0; x < 5; x++) {
+                  ctx.drawImage(boxImg, x * canvas.width/6, 150 + y * canvas.width/6, canvas.width/6, canvas.width/6);
+
+                  const assetSpec = assets[i++];
+                  if (assetSpec) {
+                    ctx.clearRect(x * canvas.width/6, 150 + (y+1) * canvas.width/6 - 20 - fontSize, canvas.width, fontSize*2);
+                    ctx.fillText(`${assetSpec.name}.${assetSpec.ext}`, x * canvas.width/6 + canvas.width/6*0.1, 150 + (y+1) * canvas.width/6 - 20);
+                  }
+                }
+              } */
+
+              /* ctx.fillText('Save', 5.25 * canvas.width/6, 150 + 425);
+              ctx.fillText('Remove', 5.25 * canvas.width/6, 150 + 850); */
+            }
 
             texture.needsUpdate = true;
           };
@@ -2405,7 +2416,10 @@ class Inventory {
 
               return wallet.getAssetInstances().filter(assetInstance => !assetInstance.owner).slice(0, 7).map(_renderAssetMesh(planeLeft.matrix))
                 .concat(
-                  assets.slice(0, 7).map(_renderAssetMesh(planeRight.matrix))
+                  focusState.type === 'grab' ?
+                    []
+                  :
+                    assets.slice(0, 7).map(_renderAssetMesh(planeRight.matrix))
                 );
             })());
 
@@ -2690,68 +2704,17 @@ class Inventory {
         };
         input.on('gripdown', _gripdown);
 
-        /* const _grab = e => {
-          if (menuState.open) {
-            assetsMesh.render();
-          }
+        const _grab = e => {
+          _setFocus({
+            type: 'grab',
+            target: e.grabbable,
+          });
         };
         hand.on('grab', _grab);
         const _release = e => {
-          if (menuState.open) {
-            const {side, grabbable} = e;
-
-            const addPosition = localVector.copy(zeroVector)
-              .applyMatrix4(
-                localMatrix.compose(
-                  localVector2.set(
-                    WORLD_WIDTH / 2 - pixelSize * 16 - pixelSize * 16*1.5,
-                    -WORLD_HEIGHT / 2 + pixelSize * 16,
-                    pixelSize * 16/2
-                  ),
-                  zeroQuaternion,
-                  oneVector
-                ).premultiply(assetsMesh.matrixWorld)
-              );
-            const addDistance = grabbable.position.distanceTo(addPosition);
-
-            if (addDistance < pixelSize*16/2) {
-              wallet.storeItem(grabbable);
-
-              e.stopImmediatePropagation();
-            } else {
-              const removePosition = localVector.copy(zeroVector)
-                .applyMatrix4(
-                  localMatrix.compose(
-                    localVector2.set(
-                      WORLD_WIDTH / 2 - pixelSize * 16,
-                      -WORLD_HEIGHT / 2 + pixelSize * 16,
-                      pixelSize * 16/2
-                    ),
-                    zeroQuaternion,
-                    oneVector
-                  ).premultiply(assetsMesh.matrixWorld)
-                );
-              const removeDistance = grabbable.position.distanceTo(removePosition);
-
-              if (removeDistance < pixelSize*16/2) {
-                wallet.destroyItem(grabbable);
-
-                const {name, ext} = grabbable;
-                const newNotification = notification.addNotification(`Discarded ${name}.${ext}.`);
-                setTimeout(() => {
-                  notification.removeNotification(newNotification);
-                }, 3000);
-
-                sfx.click_tock_drop.trigger();
-
-                e.stopImmediatePropagation();
-              }
-            }
-
-            assetsMesh.render();
-          }
+          _setFocus({});
         };
-        hand.on('release', _release); */
+        hand.on('release', _release);
 
         cleanups.push(() => {
           scene.remove(menuMesh);
@@ -2773,8 +2736,8 @@ class Inventory {
           // input.removeListener('triggerup', _triggerup);
           input.removeListener('triggerup', _trigger);
           input.removeListener('gripdown', _gripdown);
-          /* hand.removeListener('grab', _grab);
-          hand.removeListener('release', _release); */
+          hand.removeListener('grab', _grab);
+          hand.removeListener('release', _release);
 
           scene.onRenderEye = null;
           scene.onBeforeRenderEye = null;
