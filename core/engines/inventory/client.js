@@ -598,26 +598,41 @@ class Inventory {
               onmove = () => {
                 const hoverState = uiTracker.getHoverState(side);
                 menuState.barValue = Math.min(Math.max(hoverState.y - (150 + barSize), 0), canvas.height - 150 - barSize*2) / (canvas.height - 150 - barSize*2);
-                menuState.page = _snapToIndex(numPages, menuState.barValue);
+                const {page: oldPage} = menuState;
+                const newPage = _snapToIndex(numPages, menuState.barValue);
 
-                _renderMenu();
-                plane.anchors = _getAnchors();
+                if (newPage !== oldPage) {
+                  menuState.page = newPage;
+
+                  _renderMenu();
+                  plane.anchors = _getAnchors();
+                }
               };
             }
           });
           _pushAnchor(result, canvas.width - 150, 150, barSize, barSize, e => {
-            menuState.page = Math.max(menuState.page - 1, 0);
-            menuState.barValue = menuState.page / (numPages - 1);
+            const {page: oldPage} = menuState;
+            const newPage = Math.max(menuState.page - 1, 0);
 
-            _renderMenu();
-            plane.anchors = _getAnchors();
+            if (newPage !== oldPage) {
+              menuState.page = newPage;
+              menuState.barValue = menuState.page / (numPages - 1);
+
+              _renderMenu();
+              plane.anchors = _getAnchors();
+            }
           });
           _pushAnchor(result, canvas.width - 150, canvas.height - barSize, barSize, barSize, e => {
-            menuState.page = Math.min(menuState.page + 1, numPages - 1);
-            menuState.barValue = menuState.page / (numPages - 1);
+            const {page: oldPage} = menuState;
+            const newPage = Math.min(menuState.page + 1, numPages - 1);
 
-            _renderMenu();
-            plane.anchors = _getAnchors();
+            if (newPage !== oldPage) {
+              menuState.page = newPage;
+              menuState.barValue = menuState.page / (numPages - 1);
+
+              _renderMenu();
+              plane.anchors = _getAnchors();
+            }
           });
         };
 
@@ -672,6 +687,7 @@ class Inventory {
             plane.anchors = _getAnchors(); */
 
             planeMeshLeft.render();
+            planeLeft.updateAnchors();
             assetsMesh.render();
           }
         };
@@ -1894,7 +1910,7 @@ class Inventory {
                       const {attributes: attributeSpecs} = item;
 
                       getAttributesAnchors(result, attributes, attributeSpecs, fontSize, ITEM_MENU_BORDER_SIZE, 150 + fontSize*2, ITEM_MENU_BORDER_SIZE, ITEM_MENU_BORDER_SIZE, itemMenuState, {
-                        focusAttribute: ({name: attributeName, type, newValue}) => { // XXX
+                        focusAttribute: ({name: attributeName, type, newValue}) => {
                           const grabbable = (() => {
                             if (focusState.type === 'leftPane') {
                               return wallet.getAssetInstances().find(assetInstance => assetInstance.assetId === target.assetId);
@@ -2094,11 +2110,13 @@ class Inventory {
             ctx.font = `50px Open sans`;
             /* ctx.strokeStyle = '#EEE';
             ctx.lineWidth = 10; */
-            for (let i = 0; i < 7 && i < unownedAssetInstances.length; i++) {
+            const startI = planeLeftState.page * 7;
+            for (let i = startI; i < unownedAssetInstances.length; i++) {
               const assetInstance = unownedAssetInstances[i];
+              const di = i - startI;
               if (focusState.type === 'leftPane' && focusState.target.assetId === assetInstance.assetId) {
                 ctx.fillStyle = '#111';
-                ctx.fillRect(0, 150 + i * (canvas.height-150)/7, canvas.width - 200, (canvas.height-150)/7);
+                ctx.fillRect(0, 150 + di * (canvas.height-150)/7, canvas.width - 200, (canvas.height-150)/7);
                 ctx.fillStyle = '#FFF';
               } else {
                 ctx.fillStyle = '#111';
@@ -2110,7 +2128,7 @@ class Inventory {
 
               const boxPath = _roundedRectanglePath({
                 left: 50,
-                top: 150 + i * (canvas.height-150)/7 + 20,
+                top: 150 + di * (canvas.height-150)/7 + 20,
                 width: (canvas.height-150)/7 - 20,
                 height: (canvas.height-150)/7 - 20 - 20,
                 borderRadius: 20,
@@ -2121,7 +2139,7 @@ class Inventory {
               // ctx.drawImage(boxImg, 50, 150 + i * (canvas.height-150)/7 - 20, (canvas.height-150)/7 + 40, (canvas.height-150)/7 + 40);
 
               // ctx.clearRect(0, 150 + (i+1) * canvas.width/6 - 20 - fontSize, canvas.width, fontSize*2);
-              ctx.fillText(`${assetInstance.name}.${assetInstance.ext}`, 300, 150 + (i+1) * (canvas.height-150)/7 - 75);
+              ctx.fillText(`${assetInstance.name}.${assetInstance.ext}`, 300, 150 + (di+1) * (canvas.height-150)/7 - 75);
             }
 
             const barSize = 80;
@@ -2163,10 +2181,14 @@ class Inventory {
         planeLeft.updateAnchors = () => {
           const result = [];
 
-          for (let i = 0; i < 7; i++) {
-            _pushAnchor(result, 0, 150 + i * (canvas.height-150)/7, canvas.width - 200, (canvas.height-150)/7, e => {
+          const unownedAssetInstances = wallet.getAssetInstances().filter(assetInstance => !assetInstance.owner);
+          const startI = planeLeftState.page * 7;
+          for (let i = startI; i < unownedAssetInstances.length; i++) {
+            const di = i - startI;
+
+            _pushAnchor(result, 0, 150 + di * (canvas.height-150)/7, canvas.width - 200, (canvas.height-150)/7, e => {
               const {side} = e;
-              const target = wallet.getAssetInstances().filter(assetInstance => !assetInstance.owner)[i];
+              const target = unownedAssetInstances[i];
 
               if (webvr.getStatus().gamepads[side].buttons.grip.pressed) {
                 const grabbable = wallet.getAssetInstances().find(assetInstance => assetInstance.assetId === target.assetId);
@@ -2176,8 +2198,8 @@ class Inventory {
                   if (focusState.type === 'leftPane' && focusState.target.assetId === target.assetId) {
                     _setFocus({});
                   } else {
-                    planeLeftState.barValue = 0;
-                    planeLeftState.page = 0;
+                    menuState.barValue = 0;
+                    menuState.page = 0;
 
                     _setFocus({
                       type: 'leftPane',
@@ -2190,35 +2212,52 @@ class Inventory {
           }
 
           const barSize = 80;
-          const unownedAssetInstances = wallet.getAssetInstances().filter(assetInstance => !assetInstance.owner);
           const numPages = Math.ceil(unownedAssetInstances.length / 7);
-          _pushAnchor(result, canvas.width - 150 + (barSize-30)/2, 150 + barSize, 30, canvas.height - 150 - barSize*2, e => { // XXX
+          _pushAnchor(result, canvas.width - 150 + (barSize-30)/2, 150 + barSize, 30, canvas.height - 150 - barSize*2, e => {
             if (numPages > 0) {
               const {side} = e;
 
               onmove = () => {
                 const hoverState = uiTracker.getHoverState(side);
                 planeLeftState.barValue = Math.min(Math.max(hoverState.y - (150 + barSize), 0), canvas.height - 150 - barSize*2) / (canvas.height - 150 - barSize*2);
-                planeLeftState.page = _snapToIndex(numPages, planeLeftState.barValue);
+                const {page: oldPage} = planeLeftState;
+                const newPage = _snapToIndex(numPages, planeLeftState.barValue);
 
-                planeMeshLeft.render();
-                planeLeft.updateAnchors();
+                if (newPage !== oldPage) {
+                  planeLeftState.page = newPage;
+
+                  planeMeshLeft.render();
+                  planeLeft.updateAnchors();
+                  assetsMesh.render();
+                }
               };
             }
           });
           _pushAnchor(result, canvas.width - 150, 150, barSize, barSize, e => {
-            planeLeftState.page = Math.max(planeLeftState.page - 1, 0);
-            planeLeftState.barValue = planeLeftState.page / (numPages - 1);
+            const {page: oldPage} = planeLeftState;
+            const newPage = Math.max(planeLeftState.page - 1, 0);
 
-            planeMeshLeft.render();
-            planeLeft.updateAnchors();
+            if (newPage !== oldPage) {
+              planeLeftState.page = newPage;
+              planeLeftState.barValue = planeLeftState.page / (numPages - 1);
+
+              planeMeshLeft.render();
+              planeLeft.updateAnchors();
+              assetsMesh.render();
+            }
           });
           _pushAnchor(result, canvas.width - 150, canvas.height - barSize, barSize, barSize, e => {
-            planeLeftState.page = Math.min(menuState.page + 1, numPages - 1);
-            planeLeftState.barValue = planeLeftState.page / (numPages - 1);
+            const {page: oldPage} = planeLeftState;
+            const newPage = Math.min(planeLeftState.page + 1, numPages - 1);
 
-            planeMeshLeft.render();
-            planeLeft.updateAnchors();
+            if (newPage !== oldPage) {
+              planeLeftState.page = newPage;
+              planeLeftState.barValue = planeLeftState.page / (numPages - 1);
+
+              planeMeshLeft.render();
+              planeLeft.updateAnchors();
+              assetsMesh.render();
+            }
           });
 
           planeLeft.anchors = result;
@@ -2287,11 +2326,13 @@ class Inventory {
               ctx.font = `50px Open sans`;
               /* ctx.strokeStyle = '#EEE';
               ctx.lineWidth = 10; */
-              for (let i = 0; i < 7 && assetInstances.length; i++) {
+              const startI = planeRightState.page * 7;
+              for (let i = startI; i < assetInstances.length; i++) {
                 const assetInstance = assetInstances[i];
+                const di = i - startI;
                 if (focusState.type === 'rightPane' && focusState.target.id === assetInstance.id) {
                   ctx.fillStyle = '#111';
-                  ctx.fillRect(0, 150 + i * (canvas.height-150)/7, canvas.width - 200, (canvas.height-150)/7);
+                  ctx.fillRect(0, 150 + di * (canvas.height-150)/7, canvas.width - 200, (canvas.height-150)/7);
                   ctx.fillStyle = '#FFF';
                 } else {
                   ctx.fillStyle = '#111';
@@ -2304,7 +2345,7 @@ class Inventory {
 
                 const boxPath = _roundedRectanglePath({
                   left: 50,
-                  top: 150 + i * (canvas.height-150)/7 + 20,
+                  top: 150 + di * (canvas.height-150)/7 + 20,
                   width: (canvas.height-150)/7 - 20,
                   height: (canvas.height-150)/7 - 20 - 20,
                   borderRadius: 20,
@@ -2315,7 +2356,7 @@ class Inventory {
                 // ctx.drawImage(boxImg, 50, 150 + i * (canvas.height-150)/7 - 20, (canvas.height-150)/7 + 40, (canvas.height-150)/7 + 40);
 
                 // ctx.clearRect(0, 150 + (i+1) * canvas.width/6 - 20 - fontSize, canvas.width, fontSize*2);
-                ctx.fillText(`${assetInstance.name}.${assetInstance.ext}`, 300, 150 + (i+1) * (canvas.height-150)/7 - 75);
+                ctx.fillText(`${assetInstance.name}.${assetInstance.ext}`, 300, 150 + (di+1) * (canvas.height-150)/7 - 75);
               }
 
               const barSize = 80;
@@ -2358,6 +2399,7 @@ class Inventory {
         planeRight.anchors = [];
         planeRight.updateAnchors = () => {
           const result = [];
+
           if (focusState.type === 'grab') {
             _pushAnchor(result, 50, 150 + 50, canvas.width - 50*2, canvas.height - 150 - 50*2, e => {
               const {side} = e;
@@ -2383,22 +2425,26 @@ class Inventory {
               }
             });
           } else {
-            for (let i = 0; i < 7; i++) {
-              _pushAnchor(result, 0, 150 + i * (canvas.height-150)/7, canvas.width - 200, (canvas.height-150)/7, e => {
+            const assetInstances = assets;
+            const startI = planeRightState.page * 7;
+            for (let i = startI; i < assetInstances.length; i++) {
+              const di = i - startI;
+
+              _pushAnchor(result, 0, 150 + di * (canvas.height-150)/7, canvas.width - 200, (canvas.height-150)/7, e => {
                 const {side} = e;
                 const target = assets[i];
 
                 if (webvr.getStatus().gamepads[side].buttons.grip.pressed) {
                   wallet.pullItem(target, side);
 
-                  planeMeshLeft.render();
+                  planeMeshRight.render();
                   assetsMesh.render();
                 } else {
                   if (target) {
                     if (focusState.type === 'rightPane' && focusState.target.id === target.id) {
                       _setFocus({});
                     } else {
-                      planeRightState.barValue = 0;
+                      menuState.barValue = 0;
                       menuState.page = 0;
 
                       _setFocus({
@@ -2412,37 +2458,55 @@ class Inventory {
             }
 
             const barSize = 80;
-            const assetInstances = assets;
             const numPages = Math.ceil(assetInstances.length / 7);
-            _pushAnchor(result, canvas.width - 150 + (barSize-30)/2, 150 + barSize, 30, canvas.height - 150 - barSize*2, e => { // XXX
+            _pushAnchor(result, canvas.width - 150 + (barSize-30)/2, 150 + barSize, 30, canvas.height - 150 - barSize*2, e => {
               if (numPages > 0) {
                 const {side} = e;
 
                 onmove = () => {
                   const hoverState = uiTracker.getHoverState(side);
                   planeRightState.barValue = Math.min(Math.max(hoverState.y - (150 + barSize), 0), canvas.height - 150 - barSize*2) / (canvas.height - 150 - barSize*2);
-                  menuState.page = _snapToIndex(numPages, planeRightState.barValue);
+                  const {page: oldPage} = planeRightState;
+                  const newPage = _snapToIndex(numPages, planeRightState.barValue);
 
-                  planeMeshRight.render();
-                  planeRight.updateAnchors();
+                  if (newPage !== oldPage) {
+                    planeRightState.page = newPage;
+
+                    planeMeshRight.render();
+                    planeRight.updateAnchors();
+                    assetsMesh.render();
+                  }
                 };
               }
             });
             _pushAnchor(result, canvas.width - 150, 150, barSize, barSize, e => {
-              planeRightState.page = Math.max(planeRightState.page - 1, 0);
-              planeRightState.barValue = planeRightState.page / (numPages - 1);
+              const {page: oldPage} = planeRightState;
+              const newPage = Math.max(planeRightState.page - 1, 0);
 
-              planeMeshRight.render();
-              planeRight.updateAnchors();
+              if (newPage !== oldPage) {
+                planeRightState.page = newPage;
+                planeRightState.barValue = planeRightState.page / (numPages - 1);
+
+                planeMeshRight.render();
+                planeRight.updateAnchors();
+                assetsMesh.render();
+              }
             });
             _pushAnchor(result, canvas.width - 150, canvas.height - barSize, barSize, barSize, e => {
-              planeRightState.page = Math.min(planeRightState.page + 1, numPages - 1);
-              planeRightState.barValue = planeRightState.page / (numPages - 1);
+              const {page: oldPage} = planeRightState;
+              const newPage = Math.min(planeRightState.page + 1, numPages - 1);
 
-              planeMeshRight.render();
-              planeRight.updateAnchors();
+              if (newPage !== oldPage) {
+                planeRightState.page = newPage;
+                planeRightState.barValue = planeRightState.page / (numPages - 1);
+
+                planeMeshRight.render();
+                planeRight.updateAnchors();
+                assetsMesh.render();
+              }
             });
           }
+
           planeRight.anchors = result;
         };
         planeRight.updateAnchors();
@@ -2558,12 +2622,17 @@ class Inventory {
                   )));
               };
 
-              return wallet.getAssetInstances().filter(assetInstance => !assetInstance.owner).slice(0, 7).map(_renderAssetMesh(planeLeft.matrix))
+              return wallet.getAssetInstances()
+                .filter(assetInstance => !assetInstance.owner)
+                .slice(planeLeftState.page * 7, (planeLeftState.page+1) * 7)
+                .map(_renderAssetMesh(planeLeft.matrix))
                 .concat(
                   focusState.type === 'grab' ?
                     []
                   :
-                    assets.slice(0, 7).map(_renderAssetMesh(planeRight.matrix))
+                    assets
+                      .slice(planeRightState.page * 7, (planeRightState.page+1) * 7)
+                      .map(_renderAssetMesh(planeRight.matrix))
                 );
             })());
 
@@ -2702,7 +2771,9 @@ class Inventory {
           planeRight.open = true;
 
           planeMeshLeft.render();
+          planeLeft.updateAnchors();
           planeMeshRight.render();
+          planeRight.updateAnchors();
 
           sfx.digi_slide.trigger();
 
