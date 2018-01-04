@@ -2106,55 +2106,72 @@ class Inventory {
               }
             } */
 
-            const unownedAssetInstances = wallet.getAssetInstances().filter(assetInstance => !assetInstance.owner);
-            ctx.font = `50px Open sans`;
-            /* ctx.strokeStyle = '#EEE';
-            ctx.lineWidth = 10; */
-            const startI = planeLeftState.page * 7;
-            for (let i = startI; i < unownedAssetInstances.length; i++) {
-              const assetInstance = unownedAssetInstances[i];
-              const di = i - startI;
-              if (focusState.type === 'leftPane' && focusState.target.assetId === assetInstance.assetId) {
-                ctx.fillStyle = '#111';
-                ctx.fillRect(0, 150 + di * (canvas.height-150)/7, canvas.width - 200, (canvas.height-150)/7);
-                ctx.fillStyle = '#FFF';
-              } else {
-                ctx.fillStyle = '#111';
-              }
-              /* ctx.beginPath();
-              ctx.moveTo(0, 150 + (i+1) * (canvas.height / 8));
-              ctx.lineTo(canvas.width - 200, 150 + (i+1) * (canvas.height / 8));
-              ctx.stroke(); */
-
+            if (focusState.type === 'grab' && SIDES.some(side => focusState.targets[side] && focusState.targets[side].ext === 'wld')) {
               const boxPath = _roundedRectanglePath({
                 left: 50,
-                top: 150 + di * (canvas.height-150)/7 + 20,
-                width: (canvas.height-150)/7 - 20,
-                height: (canvas.height-150)/7 - 20 - 20,
+                top: 150 + 50,
+                width: canvas.width - 50*2,
+                height: canvas.height - 150 - 50*2,
                 borderRadius: 20,
               });
               ctx.lineWidth = 10;
               ctx.strokeStyle = '#EEE';
               ctx.stroke(boxPath);
-              // ctx.drawImage(boxImg, 50, 150 + i * (canvas.height-150)/7 - 20, (canvas.height-150)/7 + 40, (canvas.height-150)/7 + 40);
 
-              // ctx.clearRect(0, 150 + (i+1) * canvas.width/6 - 20 - fontSize, canvas.width, fontSize*2);
-              ctx.fillText(`${assetInstance.name}.${assetInstance.ext}`, 300, 150 + (di+1) * (canvas.height-150)/7 - 75);
-            }
+              ctx.font = `100px Open sans`;
 
-            const barSize = 80;
-            const numPages = Math.max(Math.ceil(unownedAssetInstances.length / 7), 1);
-            ctx.fillStyle = '#CCC';
-            ctx.fillRect(canvas.width - 150 + (barSize-30)/2, 150 + barSize, 30, canvas.height - 150 - barSize*2);
-            if (numPages > 1) {
-              ctx.fillStyle = '#ff4b4b';
-              ctx.fillRect(
-                canvas.width - 150 + (barSize-30)/2, 150 + barSize + _snapToPixel(canvas.height - 150 - barSize*2, numPages, planeLeftState.barValue),
-                30, (canvas.height - 150 - barSize*2) / numPages
-              );
+              ctx.fillText('Load world', canvas.width/2 - ctx.measureText('Load world').width/2, canvas.height/2 + 100/2);
+            } else {
+              const unownedAssetInstances = wallet.getAssetInstances().filter(assetInstance => !assetInstance.owner);
+              ctx.font = `50px Open sans`;
+              /* ctx.strokeStyle = '#EEE';
+              ctx.lineWidth = 10; */
+              const startI = planeLeftState.page * 7;
+              for (let i = startI; i < unownedAssetInstances.length; i++) {
+                const assetInstance = unownedAssetInstances[i];
+                const di = i - startI;
+                if (focusState.type === 'leftPane' && focusState.target.assetId === assetInstance.assetId) {
+                  ctx.fillStyle = '#111';
+                  ctx.fillRect(0, 150 + di * (canvas.height-150)/7, canvas.width - 200, (canvas.height-150)/7);
+                  ctx.fillStyle = '#FFF';
+                } else {
+                  ctx.fillStyle = '#111';
+                }
+                /* ctx.beginPath();
+                ctx.moveTo(0, 150 + (i+1) * (canvas.height / 8));
+                ctx.lineTo(canvas.width - 200, 150 + (i+1) * (canvas.height / 8));
+                ctx.stroke(); */
+
+                const boxPath = _roundedRectanglePath({
+                  left: 50,
+                  top: 150 + di * (canvas.height-150)/7 + 20,
+                  width: (canvas.height-150)/7 - 20,
+                  height: (canvas.height-150)/7 - 20 - 20,
+                  borderRadius: 20,
+                });
+                ctx.lineWidth = 10;
+                ctx.strokeStyle = '#EEE';
+                ctx.stroke(boxPath);
+                // ctx.drawImage(boxImg, 50, 150 + i * (canvas.height-150)/7 - 20, (canvas.height-150)/7 + 40, (canvas.height-150)/7 + 40);
+
+                // ctx.clearRect(0, 150 + (i+1) * canvas.width/6 - 20 - fontSize, canvas.width, fontSize*2);
+                ctx.fillText(`${assetInstance.name}.${assetInstance.ext}`, 300, 150 + (di+1) * (canvas.height-150)/7 - 75);
+              }
+
+              const barSize = 80;
+              const numPages = Math.max(Math.ceil(unownedAssetInstances.length / 7), 1);
+              ctx.fillStyle = '#CCC';
+              ctx.fillRect(canvas.width - 150 + (barSize-30)/2, 150 + barSize, 30, canvas.height - 150 - barSize*2);
+              if (numPages > 1) {
+                ctx.fillStyle = '#ff4b4b';
+                ctx.fillRect(
+                  canvas.width - 150 + (barSize-30)/2, 150 + barSize + _snapToPixel(canvas.height - 150 - barSize*2, numPages, planeLeftState.barValue),
+                  30, (canvas.height - 150 - barSize*2) / numPages
+                );
+              }
+              ctx.drawImage(arrowUpImg, canvas.width - 150, 150, barSize, barSize);
+              ctx.drawImage(arrowDownImg, canvas.width - 150, canvas.height - barSize, barSize, barSize);
             }
-            ctx.drawImage(arrowUpImg, canvas.width - 150, 150, barSize, barSize);
-            ctx.drawImage(arrowDownImg, canvas.width - 150, canvas.height - barSize, barSize, barSize);
 
             const boxPath = _roundedRectanglePath({
               left: canvas.width - 450,
@@ -2196,84 +2213,96 @@ class Inventory {
         planeLeft.updateAnchors = () => {
           const result = [];
 
-          const unownedAssetInstances = wallet.getAssetInstances().filter(assetInstance => !assetInstance.owner);
-          const startI = planeLeftState.page * 7;
-          for (let i = startI; i < unownedAssetInstances.length; i++) {
-            const di = i - startI;
-
-            _pushAnchor(result, 0, 150 + di * (canvas.height-150)/7, canvas.width - 200, (canvas.height-150)/7, e => {
+          if (focusState.type === 'grab' && SIDES.some(side => focusState.targets[side] && focusState.targets[side].ext === 'wld')) {
+            _pushAnchor(result, 50, 150 + 50, canvas.width - 50*2, canvas.height - 150 - 50*2, e => {
               const {side} = e;
-              const target = unownedAssetInstances[i];
+              const {targets} = focusState;
+              const target = targets[side];
 
-              if (webvr.getStatus().gamepads[side].buttons.grip.pressed) {
-                const grabbable = wallet.getAssetInstances().find(assetInstance => assetInstance.assetId === target.assetId);
-                grabbable.grab(side);
-              } else {
-                if (target) {
-                  if (focusState.type === 'leftPane' && focusState.target.assetId === target.assetId) {
-                    _setFocus({});
-                  } else {
-                    menuState.barValue = 0;
-                    menuState.page = 0;
+              if (target) {
+                console.log('load world'); // XXX
+              }
+            });
+          } else {
+            const unownedAssetInstances = wallet.getAssetInstances().filter(assetInstance => !assetInstance.owner);
+            const startI = planeLeftState.page * 7;
+            for (let i = startI; i < unownedAssetInstances.length; i++) {
+              const di = i - startI;
 
-                    _setFocus({
-                      type: 'leftPane',
-                      target,
-                    });
+              _pushAnchor(result, 0, 150 + di * (canvas.height-150)/7, canvas.width - 200, (canvas.height-150)/7, e => {
+                const {side} = e;
+                const target = unownedAssetInstances[i];
+
+                if (webvr.getStatus().gamepads[side].buttons.grip.pressed) {
+                  const grabbable = wallet.getAssetInstances().find(assetInstance => assetInstance.assetId === target.assetId);
+                  grabbable.grab(side);
+                } else {
+                  if (target) {
+                    if (focusState.type === 'leftPane' && focusState.target.assetId === target.assetId) {
+                      _setFocus({});
+                    } else {
+                      menuState.barValue = 0;
+                      menuState.page = 0;
+
+                      _setFocus({
+                        type: 'leftPane',
+                        target,
+                      });
+                    }
                   }
                 }
+              });
+            }
+
+            const barSize = 80;
+            const numPages = Math.ceil(unownedAssetInstances.length / 7);
+            _pushAnchor(result, canvas.width - 150 + (barSize-30)/2, 150 + barSize, 30, canvas.height - 150 - barSize*2, e => {
+              if (numPages > 0) {
+                const {side} = e;
+
+                onmove = () => {
+                  const hoverState = uiTracker.getHoverState(side);
+                  planeLeftState.barValue = Math.min(Math.max(hoverState.y - (150 + barSize), 0), canvas.height - 150 - barSize*2) / (canvas.height - 150 - barSize*2);
+                  const {page: oldPage} = planeLeftState;
+                  const newPage = _snapToIndex(numPages, planeLeftState.barValue);
+
+                  if (newPage !== oldPage) {
+                    planeLeftState.page = newPage;
+
+                    planeMeshLeft.render();
+                    planeLeft.updateAnchors();
+                    assetsMesh.render();
+                  }
+                };
+              }
+            });
+            _pushAnchor(result, canvas.width - 150, 150, barSize, barSize, e => {
+              const {page: oldPage} = planeLeftState;
+              const newPage = Math.max(planeLeftState.page - 1, 0);
+
+              if (newPage !== oldPage) {
+                planeLeftState.page = newPage;
+                planeLeftState.barValue = planeLeftState.page / (numPages - 1);
+
+                planeMeshLeft.render();
+                planeLeft.updateAnchors();
+                assetsMesh.render();
+              }
+            });
+            _pushAnchor(result, canvas.width - 150, canvas.height - barSize, barSize, barSize, e => {
+              const {page: oldPage} = planeLeftState;
+              const newPage = Math.min(planeLeftState.page + 1, numPages - 1);
+
+              if (newPage !== oldPage) {
+                planeLeftState.page = newPage;
+                planeLeftState.barValue = planeLeftState.page / (numPages - 1);
+
+                planeMeshLeft.render();
+                planeLeft.updateAnchors();
+                assetsMesh.render();
               }
             });
           }
-
-          const barSize = 80;
-          const numPages = Math.ceil(unownedAssetInstances.length / 7);
-          _pushAnchor(result, canvas.width - 150 + (barSize-30)/2, 150 + barSize, 30, canvas.height - 150 - barSize*2, e => {
-            if (numPages > 0) {
-              const {side} = e;
-
-              onmove = () => {
-                const hoverState = uiTracker.getHoverState(side);
-                planeLeftState.barValue = Math.min(Math.max(hoverState.y - (150 + barSize), 0), canvas.height - 150 - barSize*2) / (canvas.height - 150 - barSize*2);
-                const {page: oldPage} = planeLeftState;
-                const newPage = _snapToIndex(numPages, planeLeftState.barValue);
-
-                if (newPage !== oldPage) {
-                  planeLeftState.page = newPage;
-
-                  planeMeshLeft.render();
-                  planeLeft.updateAnchors();
-                  assetsMesh.render();
-                }
-              };
-            }
-          });
-          _pushAnchor(result, canvas.width - 150, 150, barSize, barSize, e => {
-            const {page: oldPage} = planeLeftState;
-            const newPage = Math.max(planeLeftState.page - 1, 0);
-
-            if (newPage !== oldPage) {
-              planeLeftState.page = newPage;
-              planeLeftState.barValue = planeLeftState.page / (numPages - 1);
-
-              planeMeshLeft.render();
-              planeLeft.updateAnchors();
-              assetsMesh.render();
-            }
-          });
-          _pushAnchor(result, canvas.width - 150, canvas.height - barSize, barSize, barSize, e => {
-            const {page: oldPage} = planeLeftState;
-            const newPage = Math.min(planeLeftState.page + 1, numPages - 1);
-
-            if (newPage !== oldPage) {
-              planeLeftState.page = newPage;
-              planeLeftState.barValue = planeLeftState.page / (numPages - 1);
-
-              planeMeshLeft.render();
-              planeLeft.updateAnchors();
-              assetsMesh.render();
-            }
-          });
 
           _pushAnchor(result, canvas.width - 450, 35, 300 - 30, 150 - 35*2, e => {
             Promise.all([
@@ -2715,18 +2744,23 @@ class Inventory {
                   )));
               };
 
-              return wallet.getAssetInstances()
-                .filter(assetInstance => !assetInstance.owner)
-                .slice(planeLeftState.page * 7, (planeLeftState.page+1) * 7)
-                .map(_renderAssetMesh(planeLeft.matrix))
-                .concat(
-                  focusState.type === 'grab' ?
+              return (
+                (focusState.type === 'grab' && SIDES.some(side => focusState.targets[side] && focusState.targets[side].ext === 'wld')) ?
                     []
                   :
-                    assets
-                      .slice(planeRightState.page * 7, (planeRightState.page+1) * 7)
-                      .map(_renderAssetMesh(planeRight.matrix))
-                );
+                    wallet.getAssetInstances()
+                      .filter(assetInstance => !assetInstance.owner)
+                      .slice(planeLeftState.page * 7, (planeLeftState.page+1) * 7)
+                      .map(_renderAssetMesh(planeLeft.matrix))
+                )
+                  .concat(
+                    focusState.type === 'grab' ?
+                      []
+                    :
+                      assets
+                        .slice(planeRightState.page * 7, (planeRightState.page+1) * 7)
+                        .map(_renderAssetMesh(planeRight.matrix))
+                  );
             })());
 
             /* const promises = (() => {
