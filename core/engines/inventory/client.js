@@ -496,14 +496,18 @@ class Inventory {
             }
           }
 
+          const barSize = 80;
           const numPages = Math.ceil(attributeNames.length / 7);
           ctx.fillStyle = '#CCC';
-          ctx.fillRect(canvas.width - 150, y, 30, canvas.height - y);
+          ctx.fillRect(canvas.width - 150 + (barSize-30)/2, 150 + barSize, 30, canvas.height - 150 - barSize*2);
           ctx.fillStyle = '#ff4b4b';
           ctx.fillRect(
-            canvas.width - 150, y + _snapToPixel(canvas.height - y, numPages, menuState.barValue),
-            30, (canvas.height - y) / numPages
+            canvas.width - 150 + (barSize-30)/2, 150 + barSize + _snapToPixel(canvas.height - 150 - barSize*2, numPages, menuState.barValue),
+            30, (canvas.height - 150 - barSize*2) / numPages
           );
+
+          ctx.drawImage(arrowUpImg, canvas.width - 150, 150, barSize, barSize);
+          ctx.drawImage(arrowDownImg, canvas.width - 150, canvas.height - barSize, barSize, barSize);
         };
         const getAttributesAnchors = (result, attributes, attributeSpecs, fontSize, x, y, w, h, menuState, {focusAttribute, update}) => {
           const _pushAttributeAnchor = (x, y, w, h, name, type, newValue) => {
@@ -584,20 +588,35 @@ class Inventory {
             }
           }
 
+          const barSize = 80;
           const numPages = Math.ceil(attributeNames.length / 7);
-          _pushAnchor(result, canvas.width - 150, y, 30, canvas.height - y, e => {
+          _pushAnchor(result, canvas.width - 150 + (barSize-30)/2, 150 + barSize, 30, canvas.height - 150 - barSize*2, e => {
             if (numPages > 0) {
               const {side} = e;
 
               onmove = () => {
                 const hoverState = uiTracker.getHoverState(side);
-                menuState.barValue = Math.min(Math.max(hoverState.y - y, 0), canvas.height - y) / (canvas.height - y);
+                menuState.barValue = Math.min(Math.max(hoverState.y - (150 + barSize), 0), canvas.height - 150 - barSize*2) / (canvas.height - 150 - barSize*2);
                 menuState.page = _snapToIndex(numPages, menuState.barValue);
 
                 _renderMenu();
                 plane.anchors = _getAnchors();
               };
             }
+          });
+          _pushAnchor(result, canvas.width - 150, 150, barSize, barSize, e => {
+            menuState.page = Math.max(menuState.page - 1, 0);
+            menuState.barValue = menuState.page / (numPages - 1);
+
+            _renderMenu();
+            plane.anchors = _getAnchors();
+          });
+          _pushAnchor(result, canvas.width - 150, canvas.height - barSize, barSize, barSize, e => {
+            menuState.page = Math.min(menuState.page + 1, numPages - 1);
+            menuState.barValue = menuState.page / (numPages - 1);
+
+            _renderMenu();
+            plane.anchors = _getAnchors();
           });
         };
 
@@ -2096,7 +2115,7 @@ class Inventory {
 
             const barSize = 80;
             ctx.drawImage(arrowUpImg, canvas.width - 150, 150, barSize, barSize);
-            ctx.drawImage(arrowDownImg, canvas.width - 150, canvas.height - 150 - 30, barSize, barSize);
+            ctx.drawImage(arrowDownImg, canvas.width - 30, canvas.height - 150 - 30, barSize, barSize);
 
             // ctx.fillText('Pack world', 5 * canvas.width/6 + canvas.width/6*0.1, 150 + (0+1) * canvas.width/6 - 20);
 
@@ -2245,7 +2264,7 @@ class Inventory {
 
               const barSize = 80;
               ctx.drawImage(arrowUpImg, canvas.width - 150, 150, barSize, barSize);
-              ctx.drawImage(arrowDownImg, canvas.width - 150, canvas.height - 150 - 30, barSize, barSize);
+              ctx.drawImage(arrowDownImg, canvas.width - 30, canvas.height - 150 - 30, barSize, barSize);
 
               /* let i = 0;
               for (let y = 0; y < 4; y++) {
