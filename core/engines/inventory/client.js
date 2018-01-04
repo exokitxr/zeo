@@ -667,7 +667,7 @@ class Inventory {
         };
         wallet.on('assets', _walletAssets);
 
-        let planeMeshes = {};
+        /* let planeMeshes = {};
         let numPlaneMeshCloses = 0;
         const _gcPlaneMeshes = () => {
           if (++numPlaneMeshCloses >= 10) {
@@ -832,18 +832,18 @@ class Inventory {
         const _menudown = e => {
           const grabbable = hand.getGrabbedGrabbable(e.side);
 
-          if (grabbable && grabbable.ext === 'itm') {
+          if (grabbable) {
             grabbable.release();
             grabbable.setOpen(true);
             grabbable.hide();
-            grabbable.disablePhysics();
+            grabbable.disablePhysics(); *
 
             e.stopImmediatePropagation();
           }
         };
         input.on('menudown', _menudown, {
           priority: 1,
-        });
+        }); */
 
         const localVector = new THREE.Vector3();
         const localVector2 = new THREE.Vector3();
@@ -2263,7 +2263,7 @@ class Inventory {
           scene.add(boxMeshes[side]);
         }
 
-        (() => {
+        /* (() => {
           const assetInstances = wallet.getAssetInstances();
           for (let i = 0; i < assetInstances.length; i++) {
             const assetInstance = assetInstances[i];
@@ -2271,7 +2271,7 @@ class Inventory {
               _walletMenuOpen(assetInstance);
             }
           }
-        })();
+        })(); */
 
         const assetsMesh = (() => {
           const geometry = (() => {
@@ -2583,7 +2583,7 @@ class Inventory {
         const _gripdown = e => {
           const {side} = e;
 
-          const _handlePlaneMeshes = () => {
+          /* const _handlePlaneMeshes = () => {
             const {gamepads} = webvr.getStatus();
             const gamepad = gamepads[side];
 
@@ -2601,7 +2601,7 @@ class Inventory {
               }
             }
             return false;
-          };
+          }; */
           const _handleMod = () => {
             if (localMod && localMod.metadata && localMod.metadata.items && Array.isArray(localMod.metadata.items) && localMod.metadata.items.length > 0 && _isItemHovered(side)) {
               const attributes = (() => {
@@ -2648,7 +2648,7 @@ class Inventory {
             }
           };
 
-          _handlePlaneMeshes() || _handleMod() || _handleFile();
+          /* _handlePlaneMeshes() || */_handleMod() || _handleFile();
         };
         input.on('gripdown', _gripdown);
 
@@ -2726,10 +2726,10 @@ class Inventory {
 
           world.removeListener('add', _worldAdd);
           wallet.removeListener('assets', _walletAssets);
-          wallet.removeListener('menuopen', _walletMenuOpen);
-          wallet.removeListener('menuclose', _walletMenuClose);
+          /* wallet.removeListener('menuopen', _walletMenuOpen);
+          wallet.removeListener('menuclose', _walletMenuClose); */
 
-          input.removeListener('menudown', _menudown);
+          // input.removeListener('menudown', _menudown);
           input.removeListener('menudown', _menudown2);
           input.removeListener('triggerdown', _triggerdown);
           // input.removeListener('triggerup', _triggerup);
@@ -2777,7 +2777,7 @@ class Inventory {
               controllerMeshes: rend.getAuxObject('controllerMeshes'),
             });
 
-            const {gamepads} = webvr.getStatus();
+            /* const {gamepads} = webvr.getStatus();
             const {boxMeshes} = uiTracker;
             for (let i = 0; i < SIDES.length; i++) {
               const side = SIDES[i];
@@ -2796,7 +2796,7 @@ class Inventory {
                   break;
                 }
               }
-            }
+            } */
           };
           const _updateAnimation = () => {
             if (animation) {

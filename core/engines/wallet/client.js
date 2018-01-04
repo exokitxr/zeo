@@ -252,7 +252,7 @@ class Wallet {
                 );
                 _bindAssetInstance(assetInstance);
                 _bindAssetInstancePhysics(assetInstance);
-                _bindAssetInstanceMenu(assetInstance);
+                // _bindAssetInstanceMenu(assetInstance);
               };
 
               const connection = (() => {
@@ -1000,7 +1000,7 @@ class Wallet {
                   assetInstance.emit('update');
                 }
               };
-              const _bindAssetInstanceMenu = assetInstance => {
+              /* const _bindAssetInstanceMenu = assetInstance => {
                 if (assetInstance.open) {
                   walletApi.emit('menuopen', assetInstance);
                 }
@@ -1008,7 +1008,7 @@ class Wallet {
                 assetInstance.on('setOpen', open => {
                   walletApi.emit(open ? 'menuopen' : 'menuclose', assetInstance);
                 });
-              };
+              }; */
 
               const _pullItem = (assetSpec, side) => {
                 const {id, name, ext, json = null, file = null} = assetSpec;
@@ -1228,7 +1228,7 @@ class Wallet {
                   );
                   _bindAssetInstance(assetInstance);
                   _bindAssetInstancePhysics(assetInstance);
-                  _bindAssetInstanceMenu(assetInstance);
+                  // _bindAssetInstanceMenu(assetInstance);
 
                   connection && !bootstrap.isSpectating() && connection.send(JSON.stringify({
                     method: 'addAsset',
