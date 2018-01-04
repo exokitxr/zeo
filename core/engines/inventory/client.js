@@ -1767,7 +1767,9 @@ class Inventory {
 
           _renderMenu();
           planeMeshLeft.render();
+          planeLeft.updateAnchors();
           planeMeshRight.render();
+          planeRight.updateAnchors();
           assetsMesh.render();
           plane.anchors = _getAnchors();
         };
@@ -2116,7 +2118,8 @@ class Inventory {
         planeLeft.worldWidth = WORLD_WIDTH;
         planeLeft.worldHeight = WORLD_HEIGHT;
         planeLeft.open = false;
-        planeLeft.anchors = (() => {
+        planeLeft.anchors = [];
+        planeLeft.updateAnchors = () => {
           const result = [];
           for (let i = 0; i < 7; i++) {
             _pushAnchor(result, 0, 150 + i * (canvas.height-150)/7, canvas.width - 200, (canvas.height-150)/7, e => {
@@ -2140,8 +2143,9 @@ class Inventory {
               }
             });
           }
-          return result;
-        })();
+          planeLeft.anchors = result;
+        };
+        planeLeft.updateAnchors();
         menuMesh.add(planeLeft);
         uiTracker.addPlane(planeLeft);
 
@@ -2274,34 +2278,62 @@ class Inventory {
         planeRight.worldWidth = WORLD_WIDTH;
         planeRight.worldHeight = WORLD_HEIGHT;
         planeRight.open = false;
-        planeRight.anchors = (() => {
+        planeRight.anchors = [];
+        planeRight.updateAnchors = () => {
           const result = [];
-          for (let i = 0; i < 7; i++) {
-            _pushAnchor(result, 0, 150 + i * (canvas.height-150)/7, canvas.width - 200, (canvas.height-150)/7, e => {
+          if (focusState.type === 'grab') {
+            _pushAnchor(result, 50, 150 + 50, canvas.width - 50*2, canvas.height - 150 - 50*2, e => {
               const {side} = e;
-              const target = assets[i];
+              const {targets} = focusState;
+              const target = targets[side];
 
-              if (webvr.getStatus().gamepads[side].buttons.grip.pressed) {
-                wallet.pullItem(target, side);
+              if (target) {
+                wallet.storeItem(target);
 
-                planeMeshLeft.render();
-                assetsMesh.render();
-              } else {
-                if (target) {
-                  if (focusState.type === 'rightPane' && focusState.target.id === target.id) {
-                    _setFocus({});
-                  } else {
-                    _setFocus({
-                      type: 'rightPane',
-                      target,
-                    });
-                  }
+                const targets = {
+                  left: focusState.targets.left,
+                  right: focusState.targets.right,
+                };
+                targets[e.side] = null;
+                if (targets.left || targets.right) {
+                  _setFocus({
+                    type: 'grab',
+                    targets,
+                  });
+                } else {
+                  _setFocus({});
                 }
               }
             });
+          } else {
+            for (let i = 0; i < 7; i++) {
+              _pushAnchor(result, 0, 150 + i * (canvas.height-150)/7, canvas.width - 200, (canvas.height-150)/7, e => {
+                const {side} = e;
+                const target = assets[i];
+
+                if (webvr.getStatus().gamepads[side].buttons.grip.pressed) {
+                  wallet.pullItem(target, side);
+
+                  planeMeshLeft.render();
+                  assetsMesh.render();
+                } else {
+                  if (target) {
+                    if (focusState.type === 'rightPane' && focusState.target.id === target.id) {
+                      _setFocus({});
+                    } else {
+                      _setFocus({
+                        type: 'rightPane',
+                        target,
+                      });
+                    }
+                  }
+                }
+              });
+            }
           }
-          return result;
-        })();
+          planeRight.anchors = result;
+        };
+        planeRight.updateAnchors();
         menuMesh.add(planeRight);
         uiTracker.addPlane(planeRight);
 
@@ -2705,14 +2737,32 @@ class Inventory {
         input.on('gripdown', _gripdown);
 
         const _grab = e => {
+          const targets = focusState.type === 'grab' ? focusState.targets : {
+            left: null,
+            right: null,
+          };
+          targets[e.side] = e.grabbable;
+
           _setFocus({
             type: 'grab',
-            target: e.grabbable,
+            targets,
           });
         };
         hand.on('grab', _grab);
         const _release = e => {
-          _setFocus({});
+          const targets = {
+            left: focusState.targets.left,
+            right: focusState.targets.right,
+          };
+          targets[e.side] = null;
+          if (targets.left || targets.right) {
+            _setFocus({
+              type: 'grab',
+              targets,
+            });
+          } else {
+            _setFocus({});
+          }
         };
         hand.on('release', _release);
 
