@@ -257,6 +257,7 @@ class Inventory {
       _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/arrow-up.png'),
       _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/arrow-down.png'),
       _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/chevron-left.png'),
+      _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/close.png'),
       _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/triangle-down.png'),
       _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/link.png'),
       // _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/box.png'),
@@ -292,6 +293,7 @@ class Inventory {
       arrowUpImg,
       arrowDownImg,
       chevronLeftImg,
+      closeImg,
       triangleDownImg,
       linkImg,
       // boxImg,
@@ -503,9 +505,7 @@ class Inventory {
             30, (canvas.height - y) / numPages
           );
         };
-        const getAttributesAnchors = (attributes, attributeSpecs, fontSize, x, y, w, h, menuState, {focusAttribute, update}) => {
-          const result = [];
-
+        const getAttributesAnchors = (result, attributes, attributeSpecs, fontSize, x, y, w, h, menuState, {focusAttribute, update}) => {
           const _pushAttributeAnchor = (x, y, w, h, name, type, newValue) => {
             _pushAnchor(result, x, y, w, h, (e, hoverState) => {
               if (type === 'number') {
@@ -599,8 +599,6 @@ class Inventory {
               };
             }
           });
-
-          return result;
         };
 
         const _updateInstalled = () => {
@@ -638,7 +636,7 @@ class Inventory {
           const {item} = tagMesh;
           if (item.type === 'entity') {
             // mods.push(item);
-            localMods = _getLocalMods();
+            /* localMods = _getLocalMods();
             serverAnchors = _getServerAnchors();
             modAnchors = _getModAnchors();
             serverBarValue = 0;
@@ -651,8 +649,9 @@ class Inventory {
 
             serverAnchors = _getServerAnchors();
             modAnchors = _getModAnchors();
-            plane.anchors = _getAnchors();
+            plane.anchors = _getAnchors(); */
 
+            planeMeshLeft.render();
             assetsMesh.render();
           }
         };
@@ -1125,6 +1124,7 @@ class Inventory {
             ctx.drawImage(chevronLeftImg, ITEM_MENU_BORDER_SIZE, 150, fontSize*2 + ITEM_MENU_BORDER_SIZE, fontSize*2 + ITEM_MENU_BORDER_SIZE);
             ctx.fillStyle = '#111';
             ctx.fillText(`${target.name}.${target.ext}`, ITEM_MENU_BORDER_SIZE + fontSize*2 + ITEM_MENU_BORDER_SIZE, 150 + fontSize*2 + ITEM_MENU_BORDER_SIZE - 40);
+            ctx.drawImage(closeImg, ITEM_MENU_INNER_SIZE - fontSize*2, 150, fontSize*2 + ITEM_MENU_BORDER_SIZE, fontSize*2 + ITEM_MENU_BORDER_SIZE);
 
             const {ext} = target;
             if (ext === 'itm') {
@@ -1813,7 +1813,37 @@ class Inventory {
         }
 
         const _getAnchors = () => {
+          const result = [];
+
           if (focusState.type === 'leftPane' || focusState.type === 'rightPane') {
+            _pushAnchor(result, ITEM_MENU_BORDER_SIZE, 150, fontSize*2 + ITEM_MENU_BORDER_SIZE, fontSize*2 + ITEM_MENU_BORDER_SIZE, (e, hoverState) => {
+              _setFocus({});
+            });
+            _pushAnchor(result, ITEM_MENU_INNER_SIZE - fontSize*2, 150, fontSize*2 + ITEM_MENU_BORDER_SIZE, fontSize*2 + ITEM_MENU_BORDER_SIZE, (e, hoverState) => {
+              if (focusState.type === 'leftPane') {
+                wallet.destroyItem(focusState.target);
+
+                _setFocus({});
+              } else if (focusState.type === 'rightPane') {
+                const {target} = focusState;
+
+                assets.splice(assets.findIndex(assetSpec => assetSpec.id === target.id), 1);
+
+                vridApi.get('assets')
+                  .then(assets => {
+                    assets = assets || [];
+                    assets.splice(assets.findIndex(assetSpec => assetSpec.id === target.id), 1);
+
+                    return vridApi.set('assets', assets);
+                  })
+                  .catch(err => {
+                    console.warn(err);
+                  });
+
+                _setFocus({});
+              }
+            });
+
             const {target} = focusState;
             const {ext} = target;
             if (ext === 'itm') {
@@ -1837,7 +1867,7 @@ class Inventory {
                         : {};
                       const {attributes: attributeSpecs} = item;
 
-                      return getAttributesAnchors(attributes, attributeSpecs, fontSize, ITEM_MENU_BORDER_SIZE, 150 + fontSize*2, ITEM_MENU_BORDER_SIZE, ITEM_MENU_BORDER_SIZE, itemMenuState, {
+                      getAttributesAnchors(result, attributes, attributeSpecs, fontSize, ITEM_MENU_BORDER_SIZE, 150 + fontSize*2, ITEM_MENU_BORDER_SIZE, ITEM_MENU_BORDER_SIZE, itemMenuState, {
                         focusAttribute: ({name: attributeName, type, newValue}) => { // XXX
                           const grabbable = (() => {
                             if (focusState.type === 'leftPane') {
@@ -1895,7 +1925,7 @@ class Inventory {
               }
             }
           }
-          return [];
+          return result;
         };
         plane.anchors = _getAnchors();
         menuMesh.add(plane);
@@ -2242,6 +2272,9 @@ class Inventory {
 
               if (webvr.getStatus().gamepads[side].buttons.grip.pressed) {
                 wallet.pullItem(target, side);
+
+                planeMeshLeft.render();
+                assetsMesh.render();
               } else {
                 if (target) {
                   if (focusState.type === 'rightPane' && focusState.target.id === target.id) {
@@ -2657,7 +2690,7 @@ class Inventory {
         };
         input.on('gripdown', _gripdown);
 
-        const _grab = e => {
+        /* const _grab = e => {
           if (menuState.open) {
             assetsMesh.render();
           }
@@ -2718,7 +2751,7 @@ class Inventory {
             assetsMesh.render();
           }
         };
-        hand.on('release', _release);
+        hand.on('release', _release); */
 
         cleanups.push(() => {
           scene.remove(menuMesh);
@@ -2740,8 +2773,8 @@ class Inventory {
           // input.removeListener('triggerup', _triggerup);
           input.removeListener('triggerup', _trigger);
           input.removeListener('gripdown', _gripdown);
-          hand.removeListener('grab', _grab);
-          hand.removeListener('release', _release);
+          /* hand.removeListener('grab', _grab);
+          hand.removeListener('release', _release); */
 
           scene.onRenderEye = null;
           scene.onBeforeRenderEye = null;
