@@ -585,7 +585,7 @@ class Fs {
                   timestamp: Date.now(),
                 };
                 files.push(fileSpec);
-                return vrid.set('files', files)
+                return vrid.set('assets', files)
                   .then(() => new StorageFile(fileSpec.id, fileSpec.name, fileSpec.ext));
               });
           }
