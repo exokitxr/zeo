@@ -129,6 +129,30 @@ class Inventory {
       live = false;
     });
 
+    const _resJson = res => {
+      if (res.status >= 200 && res.status < 300) {
+        return res.json();
+      } else if (res.status === 404) {
+        return Promise.resolve(null);
+      } else {
+        return Promise.reject({
+          status: res.status,
+          stack: 'API returned invalid status code: ' + res.status,
+        });
+      }
+    };
+    const _resArrayBuffer = res => {
+      if (res.status >= 200 && res.status < 300) {
+        return res.arrayBuffer();
+      } else if (res.status === 404) {
+        return Promise.resolve(null);
+      } else {
+        return Promise.reject({
+          status: res.status,
+          stack: 'API returned invalid status code: ' + res.status,
+        });
+      }
+    };
     const _requestImage = src => new Promise((accept, reject) => {
       const img = new Image();
       img.crossOrigin = 'Anonymous';
@@ -178,45 +202,6 @@ class Inventory {
         return imageDataCtx.getImageData(0, 0, width, height);
       });
     const _cloneImageData = imageData => new ImageData(imageData.data.slice(), imageData.width, imageData.height);
-    /* const _requestModReadme = (name, version) => {
-      let live = true;
-      const result = new Promise((accept, reject) => {
-        _requestImageBitmap(`https://try.zeovr.io/readme/${name}/${version}`)
-          .then(img => {
-            if (live) {
-              accept(img);
-            }
-          }, reject)
-      });
-      result.cancel = () => {
-        live = false;
-      };
-      return result;
-    }; */
-    const _resJson = res => {
-      if (res.status >= 200 && res.status < 300) {
-        return res.json();
-      } else if (res.status === 404) {
-        return Promise.resolve(null);
-      } else {
-        return Promise.reject({
-          status: res.status,
-          stack: 'API returned invalid status code: ' + res.status,
-        });
-      }
-    };
-    const _resArrayBuffer = res => {
-      if (res.status >= 200 && res.status < 300) {
-        return res.arrayBuffer();
-      } else if (res.status === 404) {
-        return Promise.resolve(null);
-      } else {
-        return Promise.reject({
-          status: res.status,
-          stack: 'API returned invalid status code: ' + res.status,
-        });
-      }
-    };
 
     let remoteMods = [];
     const _requestRemoteMods = () => {
