@@ -2,9 +2,7 @@
  * @author arodic / https://github.com/arodic
  */
 
-module.exports = THREE => {
-
-	'use strict';
+module.exports = ({THREE}) => {
 
 	var GizmoMaterial = function ( parameters ) {
 

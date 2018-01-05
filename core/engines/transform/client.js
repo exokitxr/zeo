@@ -43,7 +43,7 @@ class Transform {
         if (live) {
           const {THREE, scene} = three;
 
-          const THREETransformControls = TransformControls(THREE);
+          const THREETransformControls = TransformControls({THREE});
           const {
             THREETransformGizmoTranslate,
             THREETransformGizmoRotate,
