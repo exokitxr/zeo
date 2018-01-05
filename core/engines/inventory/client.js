@@ -267,6 +267,7 @@ class Inventory {
       _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/close.png'),
       _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/triangle-down.png'),
       _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/link.png'),
+      _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/target.png'),
       // _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/box.png'),
       _requestImageData('/archae/plugins/_core_engines_inventory/serve/file.png'),
       _requestImageData('/archae/plugins/_core_engines_inventory/serve/image.png'),
@@ -303,6 +304,7 @@ class Inventory {
       closeImg,
       triangleDownImg,
       linkImg,
+      targetImg,
       // boxImg,
       fileImgData,
       imageImgData,
@@ -1199,22 +1201,23 @@ class Inventory {
                 }
               }
             } else if (_normalizeType(ext) === 'med') {
-              const {open} = target;
+              ctx.drawImage(targetImg, ITEM_MENU_BORDER_SIZE, 150 + fontSize*2 + ITEM_MENU_BORDER_SIZE, 60, 60);
 
+              const {open} = target;
               if (open) {
                 ctx.strokeStyle = '#111';
                 ctx.lineWidth = 3;
-                ctx.strokeRect(ITEM_MENU_BORDER_SIZE, 150 + fontSize*2 + ITEM_MENU_BORDER_SIZE, 60, 30);
+                ctx.strokeRect(ITEM_MENU_BORDER_SIZE, 150 + fontSize*2 + ITEM_MENU_BORDER_SIZE + 60 + 15, 60, 30);
 
                 ctx.fillStyle = '#111';
-                ctx.fillRect(ITEM_MENU_BORDER_SIZE + 30, 150 + fontSize*2 + ITEM_MENU_BORDER_SIZE + 5, (60 - 5*2)/2, 30 - 5*2);
+                ctx.fillRect(ITEM_MENU_BORDER_SIZE + 30, 150 + fontSize*2 + ITEM_MENU_BORDER_SIZE + 60 + 20, (60 - 5*2)/2, 30 - 5*2);
               } else {
                 ctx.strokeStyle = '#CCC';
                 ctx.lineWidth = 3;
-                ctx.strokeRect(ITEM_MENU_BORDER_SIZE, 150 + fontSize*2 + ITEM_MENU_BORDER_SIZE, 60, 30);
+                ctx.strokeRect(ITEM_MENU_BORDER_SIZE, 150 + fontSize*2 + ITEM_MENU_BORDER_SIZE + 60 + 15, 60, 30);
 
                 ctx.fillStyle = '#CCC';
-                ctx.fillRect(ITEM_MENU_BORDER_SIZE + 5, 150 + fontSize*2 + ITEM_MENU_BORDER_SIZE + 5, (60 - 5*2)/2, 30 - 5*2);
+                ctx.fillRect(ITEM_MENU_BORDER_SIZE + 5, 150 + fontSize*2 + ITEM_MENU_BORDER_SIZE + 60 + 20, (60 - 5*2)/2, 30 - 5*2);
               }
             }
           }
@@ -1402,7 +1405,11 @@ class Inventory {
                 }
               }
             } else if (_normalizeType(ext) === 'med' && focusState.type === 'leftPane') {
-              _pushAnchor(result, ITEM_MENU_BORDER_SIZE, 150 + fontSize*2 + ITEM_MENU_BORDER_SIZE, ITEM_MENU_INNER_SIZE, 30, (e, hoverState) => {
+              _pushAnchor(result, ITEM_MENU_BORDER_SIZE, 150 + fontSize*2 + ITEM_MENU_BORDER_SIZE, ITEM_MENU_INNER_SIZE, 60, (e, hoverState) => {
+                console.log('target'); // XXX
+              });
+
+              _pushAnchor(result, ITEM_MENU_BORDER_SIZE, 150 + fontSize*2 + ITEM_MENU_BORDER_SIZE + 60, ITEM_MENU_INNER_SIZE, 60, (e, hoverState) => {
                 const grabbable = wallet.getAssetInstances().find(assetInstance => assetInstance.assetId === target.assetId);
 
                 if (grabbable.isGrabbed()) {
