@@ -2171,10 +2171,20 @@ class Inventory {
 
         const _triggerdown = e => {
           const {side} = e;
-          const hoverState = uiTracker.getHoverState(side);
-          const {anchor} = hoverState;
-          if (anchor) {
-            anchor.triggerdown(e, hoverState);
+
+          if (menuState.open) {
+            const hoverState = uiTracker.getHoverState(side);
+            const {anchor} = hoverState;
+            if (anchor) {
+              anchor.triggerdown(e, hoverState);
+            }
+          } else {
+            const grabbable = hand.getGrabbedGrabbable(side);
+            const {ext} = grabbable;
+
+            if (_normalizeType(ext) === 'med') {
+              grabbable.setOpen(true);
+            }
           }
         };
         input.on('triggerdown', _triggerdown);
