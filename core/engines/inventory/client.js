@@ -1,5 +1,6 @@
 // const EffectComposer = require('./lib/three-extra/postprocessing/EffectComposer');
 // const BlurShader = require('./lib/three-extra/shaders/BlurShader');
+const threeModelLib = require('three-model');
 const {
   WIDTH,
   HEIGHT,
@@ -346,6 +347,7 @@ class Inventory {
         // const THREEEffectComposer = EffectComposer(THREE);
         // const {THREERenderPass, THREEShaderPass} = THREEEffectComposer;
         // const THREEBlurShader = BlurShader(THREE);
+        const threeModel = threeModelLib({THREE});
 
         const colorWheelImg = menuUtils.getColorWheelImg();
 
@@ -736,14 +738,30 @@ class Inventory {
         };
         wallet.on('assets', _walletAssets);
 
+        let planeMeshes = {};
+        let numPlaneMeshCloses = 0;
+        const _gcPlaneMeshes = () => {
+          if (++numPlaneMeshCloses >= 10) {
+            const newPlaneMeshes = {};
+            for (const id in planeMeshes) {
+              const planeMesh = planeMeshes[id]
+
+              if (planeMesh) {
+                planeMeshes[id] = planeMesh;
+              }
+            }
+            planeMeshes = newPlaneMeshes;
+            numPlaneMeshCloses = 0;
+          }
+        };
         const _openAssetInstance = grabbable => {
-          const {ext} = grabbable;
+          const file = grabbable.getFile();
 
-          // if (_normalizeType(ext) === 'med') {
-          if (isImageType(ext)) {
-            const file = grabbable.getFile();
+          if (file !== null) {
+            const {assetId, ext, position, rotation, scale} = grabbable;
 
-            if (file !== null) {
+            // if (_normalizeType(ext) === 'med') {
+            if (isImageType(ext)) {
               const canvas = document.createElement('canvas');
               const size = 1024;
               canvas.width = size;
@@ -775,7 +793,6 @@ class Inventory {
                 });
 
               const planeMesh = _makePlaneMesh(1, 1, texture);
-              const {position, rotation, scale} = grabbable;
               planeMesh.position.copy(position);
               planeMesh.quaternion.copy(rotation);
               planeMesh.scale.copy(scale);
@@ -783,8 +800,28 @@ class Inventory {
 
               scene.add(planeMesh);
 
-              const {assetId} = grabbable;
               planeMeshes[assetId] = planeMesh;
+            } else if (isModelType(ext)) {
+              threeModel.requestModel({
+                source: {
+                  url: file.getUrl(),
+                },
+                type: ext,
+                credentials: file.local ? 'include' : null,
+              })
+                .then(modelMesh => {
+                  modelMesh.position.copy(position);
+                  modelMesh.quaternion.copy(rotation);
+                  modelMesh.scale.copy(scale);
+                  modelMesh.updateMatrixWorld();
+
+                  scene.add(modelMesh);
+
+                  planeMeshes[assetId] = modelMesh;
+                })
+                .catch(err => {
+                  console.warn(err);
+                });
             }
           }
         };
