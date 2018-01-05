@@ -2373,25 +2373,6 @@ class Inventory {
           priority: -1,
         });
 
-        const _isItemHovered = side => {
-          const assetPosition = localVector.copy(zeroVector)
-            .applyMatrix4(
-              localMatrix.compose(
-                localVector2.set(
-                  WORLD_WIDTH / 2 - pixelSize * 16 - pixelSize * 16*0.75,
-                  -WORLD_HEIGHT / 2 + pixelSize * 16,
-                  pixelSize * 16/2
-                ),
-                zeroQuaternion,
-                oneVector
-              ).premultiply(assetsMesh.matrixWorld)
-            );
-          const {gamepads} = webvr.getStatus();
-          const gamepad = gamepads[side];
-          const distance = assetPosition.distanceTo(gamepad.worldPosition);
-          return distance < pixelSize*16/2;
-        };
-
         const _grab = e => {
           const targets = focusState.type === 'grab' ? focusState.targets : {
             left: null,
