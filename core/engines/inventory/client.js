@@ -1682,7 +1682,7 @@ class Inventory {
             ])
               .then(([
                 username,
-                localAssets,
+                assets,
                 serverConfig,
               ]) => {
                 assets = assets || [];
