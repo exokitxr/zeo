@@ -372,7 +372,8 @@ class Transform {
           input.on('triggerup', _triggerup);
 
           const _update = () => {
-            SIDES.forEach(side => {
+            for (let s = 0; s < SIDES.length; s++) {
+              const side = SIDES[s];
               const dragState = dragStates[side];
               const {src} = dragState;
               const {gamepads} = webvr.getStatus();
@@ -558,7 +559,7 @@ class Transform {
                   }
                 }
               }
-            });
+            }
           };
           rend.on('update', _update);
 
