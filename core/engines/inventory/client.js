@@ -880,21 +880,16 @@ class Inventory {
         };
         wallet.on('menuopen', _openAssetInstance);
         const _closeAssetInstance = grabbable => {
-          for (const assetId in planeMeshes) {
-            const planeMesh = planeMeshes[assetId];
-            if (planeMesh.grabbable === grabbable) {
-              const {plane} = planeMesh;
+          const {assetId} = grabbable;
+          const planeMesh = planeMeshes[assetId];
 
-              uiTracker.removePlane(plane);
+          if (planeMesh) {
+            scene.remove(planeMesh);
 
-              scene.remove(planeMesh);
-              planeMesh.destroy();
-              planeMeshes[assetId] = null;
+            planeMesh.destroy();
 
-              _gcPlaneMeshes();
-
-              break;
-            }
+            planeMeshes[assetId] = null;
+            _gcPlaneMeshes();
           }
         };
         wallet.on('menuclose', _closeAssetInstance);
