@@ -60,7 +60,7 @@ class DirectionalLight {
           const material = new THREE.MeshPhongMaterial({
             color: 0xFFEB3B,
             shininess: 10,
-            shading: THREE.FlatShading,
+            flatShading: true,
           });
 
           return new THREE.Mesh(geometry, material);
