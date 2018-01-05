@@ -25,6 +25,7 @@ class Transform {
     });
 
     return archae.requestPlugins([
+      '/core/engines/bootstrap',
       '/core/engines/three',
       '/core/engines/input',
       '/core/engines/webvr',
@@ -32,6 +33,7 @@ class Transform {
       '/core/utils/geometry-utils',
     ])
       .then(([
+        bootstrap,
         three,
         input,
         webvr,
@@ -407,14 +409,28 @@ class Transform {
           };
           input.on('triggerup', _triggerup);
 
+          const _getActiveSides = () => {
+            if (bootstrap.getVrMode() === 'hmd') {
+              return SIDES;
+            } else {
+              const mode = webvr.getMode();
+              if (mode !== 'center') {
+                return [mode];
+              } else {
+                return SIDES;
+              }
+            }
+          };
           const _update = () => {
             const _updateHover = () => {
+              const sides = _getActiveSides();
+
               for (let s = 0; s < SIDES.length; s++) {
                 const side = SIDES[s];
                 const hoverState = hoverStates[side];
                 const {boxAnchor: oldBoxAnchor} = hoverState;
                 const intersection = _intersectBoxAnchor(side);
-                const newBoxAnchor = intersection && intersection.boxAnchor;
+                const newBoxAnchor = sides.includes(side) ? (intersection && intersection.boxAnchor) : null;
 
                 if (newBoxAnchor !== oldBoxAnchor) {
                   const {transformGizmo: oldTransformGizmo} = hoverState;
