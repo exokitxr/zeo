@@ -380,11 +380,14 @@ class Inventory {
             }
           });
 
-          const boundingSphere = _getBoundingBox(o).getBoundingSphere();
+          const boundingBox = _getBoundingBox(o);
+          const boundingSphere = boundingBox.getBoundingSphere();
           if (o.geometry) {
+            o.geometry.boundingBox = boundingBox;
             o.geometry.boundingSphere = boundingSphere;
           } else {
             o.geometry = {
+              boundingBox,
               boundingSphere,
             };
           }
@@ -856,6 +859,13 @@ class Inventory {
               })
                 .then(modelMeshInner => {
                   _computeBoundingSphere(modelMeshInner);
+
+                  const {boundingBox} = modelMeshInner.geometry;
+                  const sizeVector = boundingBox.getSize();
+                  const size = Math.max(sizeVector.x, sizeVector.y, sizeVector.z);
+                  modelMeshInner.scale.divideScalar(size);
+                  modelMeshInner.updateMatrix();
+                  modelMeshInner.updateMatrixWorld();
 
                   const modelMesh = new THREE.Object3D();
                   modelMesh.add(modelMeshInner);
