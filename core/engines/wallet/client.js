@@ -687,6 +687,20 @@ class Wallet {
                     }));
                   }
 
+                  getFile() {
+                    const {file} = this;
+
+                    if (file) {
+                      if (file.local) {
+                        return fs.makeServerFile(file.id, `${file.name}.${file.ext}`);
+                      } else {
+                        return fs.makeStorageFile(file.id, file.name, file.ext);
+                      }
+                    } else {
+                      return null;
+                    }
+                  }
+
                   updateAttribute(name, value) {
                     const {value: oldValue} = this.json.data.attributes[name] || {};
                     if (this.json.data.attributes[name]) {
