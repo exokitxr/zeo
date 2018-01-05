@@ -528,6 +528,7 @@ class Fs {
             return `/archae/fs/hash/${this.n}`;
           }
         }
+        ServerFile.prototype.local = true;
         class StorageFile extends FsFile {
           constructor(id, name, ext) {
             super();
