@@ -693,11 +693,11 @@ class Inventory {
         world.on('add', _worldAdd);
         const _walletAssets = newAssets => {
           assets = _quantizeAssets(newAssets);
-          localAssets = _getLocalAssets();
+          /* localAssets = _getLocalAssets();
           localAsset = null;
           inventoryPage = 0;
           inventoryPages = localAssets.length > numFilesPerPage ? Math.ceil(localAssets.length / numFilesPerPage) : 0;
-          inventoryBarValue = 0;
+          inventoryBarValue = 0; */
 
           _renderMenu();
         };
