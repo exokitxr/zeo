@@ -273,8 +273,7 @@ class Transform {
 
             const _updateBoxTargets = () => {
               for (let i = 0; i < boxAnchors.length; i++) {
-                const boxAnchor = boxAnchors[i];
-                boxAnchor.onupdate();
+                boxAnchors[i].onupdate();
               }
             };
             transformGizmo.updateBoxTargets = _updateBoxTargets;
