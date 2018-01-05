@@ -21,6 +21,6 @@
     "earth-box.png": "lib/img/earth-box.png"
   },
   "dependencies": {
-    "three-model": "0.0.4"
+    "three-model": "0.0.5"
   }
 }

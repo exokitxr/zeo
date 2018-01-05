@@ -865,7 +865,7 @@ class Inventory {
                   modelMesh.updateMatrixWorld();
 
                   modelMesh.destroy = () => {
-                    // modelMeshInner.destroy(); // XXX
+                    modelMeshInner.destroy();
                   };
 
                   scene.add(modelMesh);
