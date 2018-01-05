@@ -526,14 +526,12 @@ class Fs {
           }
 
           requestStorageFiles() {
-            return vrid.get('files')
-              .then(files =>
-                (files || []).map(file => new StorageFile(file.id, file.name, file.ext))
-              );
+            return vrid.get('assets')
+              .then(files => (files || []).map(file => new StorageFile(file.id, file.name, file.ext)))
           }
 
           requestMakeStorageFile(name, ext) {
-            return vrid.get('files')
+            return vrid.get('assets')
               .then(files => {
                 files = files || [];
 
