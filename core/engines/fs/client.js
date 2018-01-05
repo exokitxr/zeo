@@ -558,6 +558,10 @@ class Fs {
             return new ServerFile(id, name);
           }
 
+          makeStorageFile(id, name, ext) {
+            return new StorageFile(id, name, ext);
+          }
+
           requestStorageFiles() {
             return vrid.get('assets')
               .then(files => (files || []).map(file => new StorageFile(file.id, file.name, file.ext)))
