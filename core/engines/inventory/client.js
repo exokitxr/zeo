@@ -2319,7 +2319,7 @@ class Inventory {
 
           animation = anima.makeAnimation(1, 0, 1000);
         };
-        const _menudown2 = () => {
+        const _menudown = () => {
           const {open} = menuState;
 
           if (open) {
@@ -2328,7 +2328,7 @@ class Inventory {
             _openMenu();
           }
         };
-        input.on('menudown', _menudown2);
+        input.on('menudown', _menudown);
 
         const _triggerdown = e => {
           const {side} = e;
@@ -2438,7 +2438,7 @@ class Inventory {
           wallet.removeListener('menuopen', _openAssetInstance);
           wallet.removeListener('menuclose', _closeAssetInstance);
 
-          input.removeListener('menudown', _menudown2);
+          input.removeListener('menudown', _menudown);
           input.removeListener('triggerdown', _triggerdown);
           input.removeListener('triggerup', _trigger);
           hand.removeListener('grab', _grab);
