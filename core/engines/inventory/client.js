@@ -2430,6 +2430,18 @@ class Inventory {
           scene.onAfterRenderEye = null;
         });
 
+        const _getActiveSides = () => {
+          if (bootstrap.getVrMode() === 'hmd') {
+            return SIDES;
+          } else {
+            const mode = webvr.getMode();
+            if (mode !== 'center') {
+              return [mode];
+            } else {
+              return SIDES;
+            }
+          }
+        };
         rend.on('update', () => {
           const _updateMove = () => {
             if (onmove) {
@@ -2446,21 +2458,7 @@ class Inventory {
           const _updateUiTracker = () => {
             uiTracker.update({
               pose: webvr.getStatus(),
-              sides: (() => {
-                const vrMode = bootstrap.getVrMode();
-
-                if (vrMode === 'hmd') {
-                  return SIDES;
-                } else {
-                  const mode = webvr.getMode();
-
-                  if (mode !== 'center') {
-                    return [mode];
-                  } else {
-                    return SIDES;
-                  }
-                }
-              })(),
+              sides: _getActiveSides(),
               controllerMeshes: rend.getAuxObject('controllerMeshes'),
             });
           };
