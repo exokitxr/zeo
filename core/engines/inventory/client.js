@@ -1198,6 +1198,24 @@ class Inventory {
                   }
                 }
               }
+            } else if (_normalizeType(ext) === 'med') {
+              const {open} = target;
+
+              if (open) {
+                ctx.strokeStyle = '#111';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(ITEM_MENU_BORDER_SIZE, 150 + fontSize*2 + ITEM_MENU_BORDER_SIZE, 60, 30);
+
+                ctx.fillStyle = '#111';
+                ctx.fillRect(ITEM_MENU_BORDER_SIZE + 30, 150 + fontSize*2 + ITEM_MENU_BORDER_SIZE + 5, (60 - 5*2)/2, 30 - 5*2);
+              } else {
+                ctx.strokeStyle = '#CCC';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(ITEM_MENU_BORDER_SIZE, 150 + fontSize*2 + ITEM_MENU_BORDER_SIZE, 60, 30);
+
+                ctx.fillStyle = '#CCC';
+                ctx.fillRect(ITEM_MENU_BORDER_SIZE + 5, 150 + fontSize*2 + ITEM_MENU_BORDER_SIZE + 5, (60 - 5*2)/2, 30 - 5*2);
+              }
             }
           }
           texture.needsUpdate = true;
@@ -1383,6 +1401,25 @@ class Inventory {
                   }
                 }
               }
+            } else if (_normalizeType(ext) === 'med' && focusState.type === 'leftPane') {
+              _pushAnchor(result, ITEM_MENU_BORDER_SIZE, 150 + fontSize*2 + ITEM_MENU_BORDER_SIZE, ITEM_MENU_INNER_SIZE, 30, (e, hoverState) => {
+                const grabbable = wallet.getAssetInstances().find(assetInstance => assetInstance.assetId === target.assetId);
+
+                if (grabbable.isGrabbed()) {
+                  grabbable.release();
+                }
+                if (grabbable.open) {
+                  grabbable.setOpen(false);
+                  grabbable.show();
+                  grabbable.enablePhysics();
+                } else {
+                  grabbable.setOpen(true);
+                  grabbable.hide();
+                  grabbable.disablePhysics();
+                }
+
+                _renderMenu();
+              });
             }
           }
           return result;
