@@ -1422,15 +1422,24 @@ class Inventory {
                   const grabbable = wallet.getAssetInstances().find(assetInstance => assetInstance.assetId === target.assetId);
 
                   const {position, rotation, scale} = grabbable;
-                  const transformGizmo = transform.makeTransformGizmo({ // XXX
+                  const transformGizmo = transform.makeTransformGizmo({
                     position,
                     rotation,
                     scale,
-                    onpreview: () => {
-                      console.log('preview'); // XXX
-                    },
+                    /* onpreview: () => {
+                    }, */
                     onupdate: () => {
-                      console.log('update'); // XXX
+                      const {position, rotation, scale} = transformGizmo.getProperties();
+                      grabbable.setState(position, rotation, scale);
+
+                      const {assetId} = grabbable;
+                      const planeMesh = planeMeshes[assetId];
+                      if (planeMesh) {
+                        planeMesh.position.copy(position);
+                        planeMesh.quaternion.copy(rotation);
+                        planeMesh.scale.copy(scale);
+                        planeMesh.updateMatrixWorld();
+                      }
                     },
                   });
                   scene.add(transformGizmo);
