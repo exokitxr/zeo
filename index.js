@@ -6,8 +6,6 @@ const http = require('http');
 const child_process = require('child_process');
 
 const archae = require('archae');
-const rimraf = require('rimraf');
-const requireRelative = require('require-relative');
 
 const args = process.argv.slice(2);
 const _findArg = name => {
