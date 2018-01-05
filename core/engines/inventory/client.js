@@ -268,6 +268,7 @@ class Inventory {
       _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/triangle-down.png'),
       _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/link.png'),
       _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/target.png'),
+      _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/target-white.png'),
       // _requestImageBitmap('/archae/plugins/_core_engines_inventory/serve/box.png'),
       _requestImageData('/archae/plugins/_core_engines_inventory/serve/file.png'),
       _requestImageData('/archae/plugins/_core_engines_inventory/serve/image.png'),
@@ -305,6 +306,7 @@ class Inventory {
       triangleDownImg,
       linkImg,
       targetImg,
+      targetWhiteImg,
       // boxImg,
       fileImgData,
       imageImgData,
@@ -1201,7 +1203,13 @@ class Inventory {
                 }
               }
             } else if (_normalizeType(ext) === 'med') {
-              ctx.drawImage(targetImg, ITEM_MENU_BORDER_SIZE, 150 + fontSize*2 + ITEM_MENU_BORDER_SIZE, 60, 60);
+              if (!focusState.transform) {
+                ctx.drawImage(targetImg, ITEM_MENU_BORDER_SIZE, 150 + fontSize*2 + ITEM_MENU_BORDER_SIZE, 60, 60);
+              } else {
+                ctx.fillStyle = '#111';
+                ctx.fillRect(ITEM_MENU_BORDER_SIZE, 150 + fontSize*2 + ITEM_MENU_BORDER_SIZE, ITEM_MENU_INNER_SIZE, 60);
+                ctx.drawImage(targetWhiteImg, ITEM_MENU_BORDER_SIZE, 150 + fontSize*2 + ITEM_MENU_BORDER_SIZE, 60, 60);
+              }
 
               const {open} = target;
               if (open) {
@@ -1406,7 +1414,14 @@ class Inventory {
               }
             } else if (_normalizeType(ext) === 'med' && focusState.type === 'leftPane') {
               _pushAnchor(result, ITEM_MENU_BORDER_SIZE, 150 + fontSize*2 + ITEM_MENU_BORDER_SIZE, ITEM_MENU_INNER_SIZE, 60, (e, hoverState) => {
-                console.log('target'); // XXX
+                const newFocusState = _clone(focusState);
+                newFocusState.transform = !newFocusState.transform;
+                _setFocus(newFocusState);
+
+                // XXX
+                if (newFocusState.transform) {
+                } else {
+                }
               });
 
               _pushAnchor(result, ITEM_MENU_BORDER_SIZE, 150 + fontSize*2 + ITEM_MENU_BORDER_SIZE + 60, ITEM_MENU_INNER_SIZE, 60, (e, hoverState) => {
@@ -1683,6 +1698,7 @@ class Inventory {
                       _setFocus({
                         type: 'leftPane',
                         target,
+                        transform: false,
                       });
                     }
                   }
