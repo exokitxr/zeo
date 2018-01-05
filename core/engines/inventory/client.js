@@ -1,6 +1,6 @@
-const EffectComposer = require('./lib/three-extra/postprocessing/EffectComposer');
-const BlurShader = require('./lib/three-extra/shaders/BlurShader');
-const htmlTagNames = require('html-tag-names');
+// const EffectComposer = require('./lib/three-extra/postprocessing/EffectComposer');
+// const BlurShader = require('./lib/three-extra/shaders/BlurShader');
+// const htmlTagNames = require('html-tag-names');
 const {
   WIDTH,
   HEIGHT,
@@ -248,7 +248,7 @@ class Inventory {
         '/core/engines/notification',
         '/core/engines/anima',
         '/core/utils/js-utils',
-        '/core/utils/hash-utils',
+        // '/core/utils/hash-utils',
         '/core/utils/vrid-utils',
         '/core/utils/sprite-utils',
         '/core/utils/menu-utils',
@@ -284,7 +284,7 @@ class Inventory {
         notification,
         anima,
         jsUtils,
-        hashUtils,
+        // hashUtils,
         vridUtils,
         spriteUtils,
         menuUtils,
@@ -308,12 +308,12 @@ class Inventory {
         const {THREE, scene, camera, renderer} = three;
         const {materials: {assets: assetsMaterial}, sfx} = resource;
         const {base64} = jsUtils;
-        const {murmur} = hashUtils;
+        // const {murmur} = hashUtils;
         const {vridApi} = vridUtils;
 
-        const THREEEffectComposer = EffectComposer(THREE);
-        const {THREERenderPass, THREEShaderPass} = THREEEffectComposer;
-        const THREEBlurShader = BlurShader(THREE);
+        // const THREEEffectComposer = EffectComposer(THREE);
+        // const {THREERenderPass, THREEShaderPass} = THREEEffectComposer;
+        // const THREEBlurShader = BlurShader(THREE);
 
         const colorWheelImg = menuUtils.getColorWheelImg();
 
@@ -3219,15 +3219,6 @@ const _clone = o => {
   const result = {};
   for (const k in o) {
     result[k] = o[k];
-  }
-  return result;
-};
-const _arrayify = (array, numElements) => {
-  array = array || [];
-
-  const result = Array(numElements);
-  for (let i = 0; i < numElements; i++) {
-    result[i] = array[i] || null;
   }
   return result;
 };
