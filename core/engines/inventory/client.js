@@ -1,6 +1,5 @@
 // const EffectComposer = require('./lib/three-extra/postprocessing/EffectComposer');
 // const BlurShader = require('./lib/three-extra/shaders/BlurShader');
-// const htmlTagNames = require('html-tag-names');
 const {
   WIDTH,
   HEIGHT,
@@ -1114,24 +1113,6 @@ class Inventory {
         const _renderMenu = () => {
           ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-          // ctx.fillStyle = '#FFF';
-          // ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-          /* ctx.fillStyle = '#111';
-          ctx.fillRect(0, 0, canvas.width, 150);
-
-          ctx.font = `${fontSize}px Open sans`;
-          // ctx.textBaseline = 'bottom';
-          ctx.fillStyle = tab === 'status' ? '#4CAF50' : '#FFF';
-          ctx.fillText('Status', canvas.width * 0/8 + (canvas.width/8 - ctx.measureText('Status').width)/2, 150 - 60, canvas.width / 8);
-          ctx.fillStyle = tab === 'mods' ? '#4CAF50' : '#FFF';
-          ctx.fillText('Mods', canvas.width * 1/8 + (canvas.width/8 - ctx.measureText('Mods').width)/2, 150 - 60, canvas.width / 8);
-          ctx.fillStyle = tab === 'files' ? '#4CAF50' : '#FFF';
-          ctx.fillText('Files', canvas.width * 2/8 + (canvas.width/8 - ctx.measureText('Files').width)/2, 150 - 60, canvas.width / 8); */
-
-          /* ctx.fillStyle = '#4CAF50';
-          if (tab === 'status') { */
-
           ctx.fillRect(canvas.width * 0/8, -10, canvas.width / 8, 10);
 
           ctx.fillStyle = '#EEE';
@@ -1147,9 +1128,6 @@ class Inventory {
           ctx.fillText(bootstrap.getUsername(), canvas.width * 0.8 + 100 + 30, 90);
 
           if (!focusState.type) {
-            ctx.font = `${fontSize*1.6}px Open sans`;
-            // ctx.fillText('My VR Server', 60, fontSize*2 + 35);
-
             ctx.font = `${fontSize}px Open sans`;
             for (let i = 0; i < remoteProfiles.length; i++) {
               const {username: remoteUsername, profileImg: remoteProfileImg} = remoteProfiles[i];
@@ -1201,178 +1179,8 @@ class Inventory {
               }
             }
           }
-          /* } else if (tab === 'mods') {
-            ctx.fillRect(canvas.width * 1/8, 150 - 10, canvas.width / 8, 10);
-
-            // subheader
-            ctx.fillStyle = '#EEE';
-            ctx.fillRect(0, 150, canvas.width, 150);
-            ctx.fillStyle = '#4CAF50';
-            if (subtab === 'installed') {
-              ctx.fillRect(canvas.width * 0/8, 150*2 - 10, canvas.width / 8, 10);
-            } else if (subtab === 'store') {
-              ctx.fillRect(canvas.width * 1/8, 150*2 - 10, canvas.width / 8, 10);
-            } else if (subtab === 'local') {
-              ctx.fillRect(canvas.width * 2/8, 150*2 - 10, canvas.width / 8, 10);
-            }
-
-            ctx.fillStyle = subtab === 'installed' ? '#4CAF50' : '#111';
-            ctx.fillText('Installed', canvas.width * 0/8 + (canvas.width/8 - ctx.measureText('Installed').width)/2, 150*2 - 60, canvas.width / 8);
-            ctx.fillStyle = subtab === 'store' ? '#4CAF50' : '#111';
-            ctx.fillText('Store', canvas.width * 1/8 + (canvas.width/8 - ctx.measureText('Store').width)/2, 150*2 - 60, canvas.width / 8);
-            ctx.fillStyle = subtab === 'local' ? '#4CAF50' : '#111';
-            ctx.fillText('Local', canvas.width * 2/8 + (canvas.width/8 - ctx.measureText('Local').width)/2, 150*2 - 60, canvas.width / 8);
-
-            if (modReadmeImg) {
-              if (subtab === 'installed') {
-                // config
-                const {displayName} = localMod;
-                const tagMesh = world.getTag({
-                  type: 'entity',
-                  name: displayName,
-                });
-                const {item} = tagMesh;
-                const {attributes} = item;
-                const attributeSpecs = tags.getAttributeSpecsMap(displayName);
-                renderAttributes(ctx, attributes, attributeSpecs, fontSize, canvas.width - 640 - 40, 150*2 + 100 + 40, {}, {triangleDownImg, linkImg});
-                // XXX render pointer to item grab
-
-                // bar
-                ctx.fillStyle = '#CCC';
-                ctx.fillRect(canvas.width - 60, 150*2 + 100 + (canvas.height - 150*2 - 100) * 0.05, 30, (canvas.height - 150*2 - 100) * 0.9);
-                ctx.fillStyle = '#ff4b4b';
-                ctx.fillRect(canvas.width - 60, 150*2 + 100 + (canvas.height - 150*2 - 100) * 0.05 + _snapToPixel((canvas.height - 150*2 - 100) * 0.9, modPages, modBarValue), 30, (canvas.height - 150*2) * 0.9 / modPages);
-              } else {
-                // img
-                ctx.drawImage(
-                  modReadmeImg,
-                  0, (modPages > 1 ? (modPage / (modPages - 1)) : 0) * (canvas.height - 150*2 - 100), 640, canvas.height - 150*2,
-                  canvas.width - 640 - 40, 150*2 + 100, 640, canvas.height - 150*2 - 100
-                );
-
-                // bar
-                ctx.fillStyle = '#CCC';
-                ctx.fillRect(canvas.width - 60, 150*2 + 100 + (canvas.height - 150*2 - 100) * 0.05, 30, (canvas.height - 150*2 - 100) * 0.9);
-                ctx.fillStyle = '#ff4b4b';
-                ctx.fillRect(canvas.width - 60, 150*2 + 100 + (canvas.height - 150*2 - 100) * 0.05 + _snapToPixel((canvas.height - 150*2 - 100) * 0.9, modPages, modBarValue), 30, (canvas.height - 150*2) * 0.9 / modPages);
-              }
-            } else {
-              // placeholder
-              ctx.fillStyle = '#EEE';
-              ctx.fillRect(canvas.width - 640 - 40, 150*2 + 100, 640, canvas.height - 150*2);
-            }
-
-            // installer
-            if (localMod) {
-              if (localMod.installed) {
-                ctx.fillStyle = '#ff4b4b';
-                ctx.fillRect(canvas.width - 640 - 40, 150*2, 640 + 40, 100);
-                ctx.fillStyle = '#FFF';
-                ctx.fillText('Running', canvas.width - 640 - 40 + (640 + 40 - ctx.measureText('Running').width)/2, 150*2 + 100 - 30);
-              } else {
-                ctx.fillStyle = '#4CAF50';
-                ctx.fillRect(canvas.width - 640 - 40, 150*2, 640 + 60, 100);
-                ctx.fillStyle = '#FFF';
-                ctx.fillText('Install', canvas.width - 640 - 40 + (640 + 40 - ctx.measureText('Install').width)/2, 150*2 + 100 - 30);
-              }
-            }
-
-            // bar
-            ctx.fillStyle = '#CCC';
-            ctx.fillRect(canvas.width - 640 - 40 - 60, 150*2 + (canvas.height - 150*2) * 0.05, 30, (canvas.height - 150*2) * 0.9);
-            ctx.fillStyle = '#ff4b4b';
-            ctx.fillRect(canvas.width - 640 - 40 - 60, 150*2 + (canvas.height - 150*2) * 0.05 + _snapToPixel((canvas.height - 150*2) * 0.9, serverPages, serverBarValue), 30, (canvas.height - 150*2) * 0.9 / serverPages);
-
-            // files
-            const l = Math.min(localMods.length - serverPage * numModsPerPage, numModsPerPage);
-            for (let i = 0; i < l; i++) {
-              const modSpec = localMods[serverPage * numModsPerPage + i];
-
-              if (localMod === modSpec) {
-                ctx.fillStyle = '#2196F3';
-                ctx.fillRect(0, 150*2 + ((canvas.height - 150*2) * i/numModsPerPage), canvas.width - 640 - 40 - 60, (canvas.height - 150*2) / numModsPerPage);
-                ctx.fillStyle = '#FFF';
-                ctx.fillText(modSpec.displayName, canvas.width * 0.05, 150*2 + ((canvas.height - 150*2) * (i + 1)/numFilesPerPage) - 30, canvas.width * 0.9);
-              } else {
-                ctx.fillStyle = '#111';
-                ctx.fillText(modSpec.displayName, canvas.width * 0.05, 150*2 + ((canvas.height - 150*2) * (i + 1)/numFilesPerPage) - 30, canvas.width * 0.9);
-              }
-            }
-          } else if (tab === 'files') {
-            ctx.fillRect(canvas.width * 2/8, 150 - 10, canvas.width / 8, 10);
-
-            // subheader
-            ctx.fillStyle = '#EEE';
-            ctx.fillRect(0, 150, canvas.width, 150);
-            ctx.fillStyle = '#4CAF50';
-            if (subtab === 'itm') {
-              ctx.fillRect(canvas.width * 0/8, 150*2 - 10, canvas.width / 8, 10);
-            } else if (subtab === 'med') {
-              ctx.fillRect(canvas.width * 1/8, 150*2 - 10, canvas.width / 8, 10);
-            } else if (subtab === 'dat') {
-              ctx.fillRect(canvas.width * 2/8, 150*2 - 10, canvas.width / 8, 10);
-            } else if (subtab === 'pls') {
-              ctx.fillRect(canvas.width * 3/8, 150*2 - 10, canvas.width / 8, 10);
-            }
-
-            ctx.fillStyle = subtab === 'itm' ? '#4CAF50' : '#111';
-            ctx.fillText('Items', canvas.width * 0/8 + (canvas.width/8 - ctx.measureText('Items').width)/2, 150*2 - 60, canvas.width / 8);
-            ctx.fillStyle = subtab === 'med' ? '#4CAF50' : '#111';
-            ctx.fillText('Media', canvas.width * 1/8 + (canvas.width/8 - ctx.measureText('Media').width)/2, 150*2 - 60, canvas.width / 8);
-            ctx.fillStyle = subtab === 'dat' ? '#4CAF50' : '#111';
-            ctx.fillText('Data', canvas.width * 2/8 + (canvas.width/8 - ctx.measureText('Data').width)/2, 150*2 - 60, canvas.width / 8);
-            ctx.fillStyle = subtab === 'pls' ? '#4CAF50' : '#111';
-            ctx.fillText('Playlists', canvas.width * 3/8 + (canvas.width/8 - ctx.measureText('Playlists').width)/2, 150*2 - 60, canvas.width / 8);
-
-            // installer
-            if (localAsset) {
-              if (localAsset.ext === 'pls') {
-                const allInstalled = localAsset.playlist.every(playlistEntry => {
-                  const {name} = playlistEntry;
-                  return world.getTag({
-                    type: 'entity',
-                    name,
-                  });
-                });
-                if (allInstalled) {
-                  ctx.fillStyle = '#ff4b4b';
-                  ctx.fillRect(canvas.width - 640 - 40, 150*2, 640 + 40, 100);
-                  ctx.fillStyle = '#FFF';
-                  ctx.fillText('Uninstall playlist', canvas.width - 640 - 40 + (640 + 40 - ctx.measureText('Uninstall playlist').width)/2, 150*2 + 100 - 30);
-                } else {
-                  ctx.fillStyle = '#4CAF50';
-                  ctx.fillRect(canvas.width - 640 - 40, 150*2, 640 + 60, 100);
-                  ctx.fillStyle = '#FFF';
-                  ctx.fillText('Install playlist', canvas.width - 640 - 40 + (640 + 40 - ctx.measureText('Install playlist').width)/2, 150*2 + 100 - 30);
-                }
-              }
-            }
-
-            // bar
-            ctx.fillStyle = '#CCC';
-            ctx.fillRect(canvas.width - 60, 150*2 + 100 + (canvas.height - 150*2 - 100) * 0.05, 30, (canvas.height - 150*2 - 100) * 0.9);
-            ctx.fillStyle = '#ff4b4b';
-            ctx.fillRect(canvas.width - 60, 150*2 + 100 + (canvas.height - 150*2 - 100) * 0.05 + _snapToPixel((canvas.height - 150*2 - 100) * 0.9, inventoryPages, inventoryBarValue), 30, (canvas.height - 150*2 - 100) * 0.9 / inventoryPages);
-
-            // files
-            const l = Math.min(localAssets.length - inventoryPage * numFilesPerPage, numFilesPerPage);
-            for (let i = 0; i < l; i++) {
-              const assetSpec = localAssets[inventoryPage * numFilesPerPage + i];
-
-              if (localAsset === assetSpec) {
-                ctx.fillStyle = '#2196F3';
-                ctx.fillRect(0, 150*2 + ((canvas.height - 150*2) * i/numModsPerPage), canvas.width - 640 - 40 - 60, (canvas.height - 150*2) / numModsPerPage);
-                ctx.fillStyle = '#FFF';
-                ctx.fillText(assetSpec.name, canvas.width * 0.05, 150*2 + ((canvas.height - 150*2) * (i + 1)/numFilesPerPage) - 30, canvas.width * 0.9);
-              } else {
-                ctx.fillStyle = '#111';
-                ctx.fillText(assetSpec.name, canvas.width * 0.05, 150*2 + ((canvas.height - 150*2) * (i + 1)/numFilesPerPage) - 30, canvas.width * 0.9);
-              }
-            }
-          } */
           texture.needsUpdate = true;
         };
-        // _renderMenu();
 
         const menuMesh = new THREE.Object3D();
         menuMesh.visible = false;
@@ -1394,413 +1202,6 @@ class Inventory {
           });
         };
         let onmove = null;
-        /* const tabsAnchors = [];
-        _pushAnchor(tabsAnchors, canvas.width * 0/8, 0, canvas.width / 8, 150, (e, hoverState) => {
-          tab = 'status';
-
-          _renderMenu();
-          assetsMesh.render();
-
-          plane.anchors = _getAnchors();
-        });
-        _pushAnchor(tabsAnchors, canvas.width * 1/8, 0, canvas.width / 8, 150, (e, hoverState) => {
-          tab = 'mods';
-          subtab = 'installed';
-
-          localMods = _getLocalMods();
-          serverBarValue = 0;
-          serverPage = 0;
-          serverPages = localMods.length > numModsPerPage ? Math.ceil(localMods.length / numModsPerPage) : 0;
-
-          _renderMenu();
-          assetsMesh.render();
-
-          serverAnchors = _getServerAnchors();
-          modAnchors = _getModAnchors();
-          plane.anchors = _getAnchors();
-        });
-        _pushAnchor(tabsAnchors, canvas.width * 2/8, 0, canvas.width / 8, 150, (e, hoverState) => {
-          tab = 'files';
-          subtab = 'itm';
-
-          localAssets = _getLocalAssets();
-          localAsset = null;
-          inventoryBarValue = 0;
-          inventoryPage = 0;
-          inventoryPages = localAssets.length > numFilesPerPage ? Math.ceil(localAssets.length / numFilesPerPage) : 0;
-
-          _renderMenu();
-          assetsMesh.render();
-
-          filesAnchors = _getFilesAnchors();
-          plane.anchors = _getAnchors();
-        });
-
-        const statusAnchors = [];
-
-        const _getFilesAnchors = () => {
-          const result = [];
-          _pushAnchor(result, canvas.width - 60, 150*2 + 100 + (canvas.height - 150*2 - 100) * 0.05, 30, (canvas.height - 150*2 - 100) * 0.9, (e, hoverState) => {
-            if (inventoryPages > 0) {
-              const {side} = e;
-
-              onmove = () => {
-                const hoverState = uiTracker.getHoverState(side);
-                inventoryBarValue = Math.min(Math.max(hoverState.y - (150*2 + 100 + (canvas.height - 150*2 - 100) * 0.05), 0), (canvas.height - 150*2 - 100) * 0.9) / ((canvas.height - 150*2 - 100) * 0.9);
-                inventoryPage = _snapToIndex(inventoryPages, inventoryBarValue);
-                localAssets = _getLocalAssets();
-                localAsset = null;
-
-                _renderMenu();
-
-                filesAnchors = _getFilesAnchors();
-                plane.anchors = _getAnchors();
-              };
-            }
-          });
-          _pushAnchor(result, canvas.width * 0/8, 150, canvas.width / 8, 150, (e, hoverState) => {
-            subtab = 'itm';
-
-            localAssets = _getLocalAssets();
-            localAsset = null;
-            inventoryBarValue = 0;
-            inventoryPage = 0;
-            inventoryPages = localAssets.length > numFilesPerPage ? Math.ceil(localAssets.length / numFilesPerPage) : 0;
-
-            _renderMenu();
-            assetsMesh.render();
-
-            filesAnchors = _getFilesAnchors();
-            plane.anchors = _getAnchors();
-          });
-          _pushAnchor(result, canvas.width * 1/8, 150, canvas.width / 8, 150, (e, hoverState) => {
-            subtab = 'med';
-
-            localAssets = _getLocalAssets();
-            localAsset = null;
-            inventoryBarValue = 0;
-            inventoryPage = 0;
-            inventoryPages = localAssets.length > numFilesPerPage ? Math.ceil(localAssets.length / numFilesPerPage) : 0;
-
-            _renderMenu();
-            assetsMesh.render();
-
-            filesAnchors = _getFilesAnchors();
-            plane.anchors = _getAnchors();
-          });
-          _pushAnchor(result, canvas.width * 2/8, 150, canvas.width / 8, 150, (e, hoverState) => {
-            subtab = 'dat';
-
-            localAssets = _getLocalAssets();
-            localAsset = null;
-            inventoryBarValue = 0;
-            inventoryPage = 0;
-            inventoryPages = localAssets.length > numFilesPerPage ? Math.ceil(localAssets.length / numFilesPerPage) : 0;
-
-            _renderMenu();
-            assetsMesh.render();
-
-            filesAnchors = _getFilesAnchors();
-            plane.anchors = _getAnchors();
-          });
-          _pushAnchor(result, canvas.width * 3/8, 150, canvas.width / 8, 150, (e, hoverState) => {
-            subtab = 'pls';
-
-            localAssets = _getLocalAssets();
-            localAsset = null;
-            inventoryBarValue = 0;
-            inventoryPage = 0;
-            inventoryPages = localAssets.length > numFilesPerPage ? Math.ceil(localAssets.length / numFilesPerPage) : 0;
-
-            _renderMenu();
-            assetsMesh.render();
-
-            filesAnchors = _getFilesAnchors();
-            plane.anchors = _getAnchors();
-          });
-          const l = Math.min(localAssets.length - inventoryPage * numFilesPerPage, numFilesPerPage);
-          for (let i = 0; i < l; i++) {
-            _pushAnchor(result, 0, 150*2 + ((canvas.height - 150*2) * i/numFilesPerPage), canvas.width - 640 - 40 - 60, (canvas.height - 150*2) / numFilesPerPage, (e, hoverState) => {
-              localAsset = localAssets[inventoryPage * numFilesPerPage + i];
-
-              _renderMenu();
-              assetsMesh.render();
-
-              filesAnchors = _getFilesAnchors();
-              plane.anchors = _getAnchors();
-            });
-          }
-          if (localAsset) {
-            if (localAsset.ext === 'pls') {
-              _pushAnchor(result, canvas.width - 640 - 40, 150*2, 640 + 40, 100, (e, hoverState) => {
-                const allInstalled = localAsset.playlist.every(playlistEntry => {
-                  const {name} = playlistEntry;
-                  return world.getTag({
-                    type: 'entity',
-                    name,
-                  });
-                });
-                if (allInstalled) {
-                  for (let i = 0; i < localAsset.playlist.length; i++) {
-                    const {name} = localAsset.playlist[i];
-                    const tagMesh = world.getTag({
-                      type: 'entity',
-                      name,
-                    });
-                    const {item} = tagMesh;
-                    const {id} = item;
-
-                    world.removeTag(id);
-                  }
-
-                  localMod = null;
-                  modReadmeImg = null;
-                  if (modReadmeImgPromise) {
-                    modReadmeImgPromise.cancel();
-                    modReadmeImgPromise = null;
-                  }
-                  modBarValue = 0;
-                  modPage = 0;
-                  modPages = 0;
-                } else {
-                  for (let i = 0; i < localAsset.playlist.length; i++) {
-                    const {name, displayName, version} = localAsset.playlist[i];
-                    if (!world.getTag({
-                      type: 'entity',
-                      name,
-                    })) {
-                      const itemSpec = {
-                        type: 'entity',
-                        id: _makeId(),
-                        name: displayName,
-                        displayName,
-                        version,
-                        module: displayName,
-                        tagName: _makeTagName(name),
-                        attributes: {},
-                        metadata: {},
-                      };
-                      world.addTag(itemSpec);
-
-                      localMod = null;
-                      modReadmeImg = null;
-                      if (modReadmeImgPromise) {
-                        modReadmeImgPromise.cancel();
-                        modReadmeImgPromise = null;
-                      }
-                      modBarValue = 0;
-                      modPage = 0;
-                      modPages = 0;
-                    }
-                  }
-                }
-
-                _renderMenu();
-              });
-            }
-          }
-          return result;
-        };
-        let filesAnchors = _getFilesAnchors();
-
-        const _getServerAnchors = () => {
-          const result = [];
-          _pushAnchor(result, canvas.width - 640 - 40 - 60, 150*2 + (canvas.height - 150*2) * 0.05, 30, (canvas.height - 150*2) * 0.9, (e, hoverState) => {
-            if (serverPages > 0) {
-              const {side} = e;
-
-              onmove = () => {
-                const hoverState = uiTracker.getHoverState(side);
-                serverBarValue = Math.min(Math.max(hoverState.y - (150*2 + (canvas.height - 150*2) * 0.05), 0), (canvas.height - 150*2) * 0.9) / ((canvas.height - 150*2) * 0.9);
-                serverPage = _snapToIndex(serverPages, serverBarValue);
-                localMods = _getLocalMods();
-
-                _renderMenu();
-
-                serverAnchors = _getServerAnchors();
-                modAnchors = _getModAnchors();
-                plane.anchors = _getAnchors();
-              };
-            }
-          });
-          _pushAnchor(result, canvas.width * 0/8, 150, canvas.width / 8, 150, (e, hoverState) => {
-            subtab = 'installed';
-
-            localMods = _getLocalMods();
-            localMod = null;
-            modReadmeImg = null;
-            if (modReadmeImgPromise) {
-              modReadmeImgPromise.cancel();
-              modReadmeImgPromise = null;
-            }
-            modBarValue = 0;
-            modPage = 0;
-            modPages = 0;
-            serverBarValue = 0;
-            serverPage = 0;
-            serverPages = localMods.length > numModsPerPage ? Math.ceil(localMods.length / numModsPerPage) : 0;
-
-            _renderMenu();
-
-            serverAnchors = _getServerAnchors();
-            modAnchors = _getModAnchors();
-            plane.anchors = _getAnchors();
-          });
-          _pushAnchor(result, canvas.width * 1/8, 150, canvas.width / 8, 150, (e, hoverState) => {
-            subtab = 'store';
-
-            localMods = _getLocalMods();
-            localMod = null;
-            modReadmeImg = null;
-            if (modReadmeImgPromise) {
-              modReadmeImgPromise.cancel();
-              modReadmeImgPromise = null;
-            }
-            modBarValue = 0;
-            modPage = 0;
-            modPages = 0;
-            serverBarValue = 0;
-            serverPage = 0;
-            serverPages = localMods.length > numModsPerPage ? Math.ceil(localMods.length / numModsPerPage) : 0;
-
-            _renderMenu();
-
-            serverAnchors = _getServerAnchors();
-            modAnchors = _getModAnchors();
-            plane.anchors = _getAnchors();
-          });
-          _pushAnchor(result, canvas.width * 2/8, 150, canvas.width / 8, 150, (e, hoverState) => {
-            subtab = 'local';
-
-            localMods = _getLocalMods();
-            localMod = null;
-            modReadmeImg = null;
-            if (modReadmeImgPromise) {
-              modReadmeImgPromise.cancel();
-              modReadmeImgPromise = null;
-            }
-            modBarValue = 0;
-            modPage = 0;
-            modPages = 0;
-            serverBarValue = 0;
-            serverPage = 0;
-            serverPages = localMods.length > numModsPerPage ? Math.ceil(localMods.length / numModsPerPage) : 0;
-
-            _renderMenu();
-
-            serverAnchors = _getServerAnchors();
-            modAnchors = _getModAnchors();
-            plane.anchors = _getAnchors();
-          });
-          const l = Math.min(localMods.length - serverPage * numModsPerPage, numModsPerPage);
-          for (let i = 0; i < l; i++) {
-            _pushAnchor(result, 0, 150*2 + ((canvas.height - 150*2) * i/numModsPerPage), canvas.width - 640 - 40 - 60, (canvas.height - 150*2) / numModsPerPage, (e, hoverState) => {
-              localMod = localMods[serverPage * numModsPerPage + i];
-              modReadmeImg = null;
-              if (modReadmeImgPromise) {
-                modReadmeImgPromise.cancel();
-                modReadmeImgPromise = null;
-              }
-              modReadmeImgPromise = _requestModReadme(localMod.name, localMod.version);
-              modReadmeImgPromise.then(img => {
-                modReadmeImg = img;
-                modReadmeImgPromise = null;
-
-                modBarValue = 0;
-                modPage = 0;
-                modPages = img.height > (canvas.height - 150*2) ? Math.ceil(img.height / (canvas.height - 150*2)) : 0;
-
-                _renderMenu();
-                plane.anchors = _getAnchors();
-              });
-              modBarValue = 0;
-              modPage = 0;
-              modPages = 0;
-              modAnchors = _getModAnchors();
-
-              _renderMenu();
-              assetsMesh.render();
-
-              plane.anchors = _getAnchors();
-            });
-          }
-          return result;
-        };
-        let serverAnchors = _getServerAnchors();
-
-        const _getModAnchors = () => {
-          const result = serverAnchors.slice();
-
-          _pushAnchor(result, canvas.width - 60, 150*2 + 100 + (canvas.height - 150*2 - 100) * 0.05, 30, (canvas.height - 150*2 - 100) * 0.9, (e, hoverState) => {
-            if (modPages > 0) {
-              const {side} = e;
-
-              onmove = () => {
-                const hoverState = uiTracker.getHoverState(side);
-                modBarValue = Math.min(Math.max(hoverState.y - (150*2 + (canvas.height - 150*2) * 0.05), 0), (canvas.height - 150*2) * 0.9) / ((canvas.height - 150*2) * 0.9);
-                modPage = _snapToIndex(modPages, modBarValue);
-
-                _renderMenu();
-              };
-            }
-          });
-
-          _pushAnchor(result, canvas.width - 640 - 40, 150*2, 640 + 40, 100, (e, hoverState) => {
-            const {name, displayName, version} = localMod;
-
-            if (localMod.installed) {
-              const tagMesh = world.getTag({
-                type: 'entity',
-                name: displayName,
-              });
-              const {item} = tagMesh;
-              const {id} = item;
-              world.removeTag(id);
-
-              localMod = null;
-              modReadmeImg = null;
-              if (modReadmeImgPromise) {
-                modReadmeImgPromise.cancel();
-                modReadmeImgPromise = null;
-              }
-              modBarValue = 0;
-              modPage = 0;
-              modPages = 0;
-
-              _updateInstalled();
-              _renderMenu();
-            } else {
-              const itemSpec = {
-                type: 'entity',
-                id: _makeId(),
-                name: displayName,
-                displayName,
-                version,
-                module: displayName,
-                tagName: _makeTagName(name),
-                attributes: {},
-                metadata: {},
-              };
-              world.addTag(itemSpec);
-
-              localMod = null;
-              modReadmeImg = null;
-              if (modReadmeImgPromise) {
-                modReadmeImgPromise.cancel();
-                modReadmeImgPromise = null;
-              }
-              modBarValue = 0;
-              modPage = 0;
-              modPages = 0;
-
-              _updateInstalled();
-              _renderMenu();
-            }
-          });
-
-          return result;
-        };
-        let modAnchors = _getModAnchors(); */
 
         let focusState = {};
         const itemMenuState = {
@@ -1920,16 +1321,14 @@ class Inventory {
                               return null;
                             }
                           })();
-                          // console.log('focus attribute', item, grabbable, attributeName, newValue);
+
                           if (type === 'number') {
                             grabbable.setAttribute(attributeName, newValue);
-                            // grabbable.assetId = _getAssetId();
 
                             itemMenuState.focus = null;
                           } else if (type === 'select') {
                             if (newValue !== undefined) {
                               grabbable.setAttribute(attributeName, newValue);
-                              // grabbable.assetId = _getAssetId();
 
                               itemMenuState.focus = null;
                             } else {
@@ -1938,7 +1337,6 @@ class Inventory {
                           } else if (type === 'color') {
                             if (newValue !== undefined) {
                               grabbable.setAttribute(attributeName, newValue);
-                              // grabbable.assetId = _getAssetId();
 
                               itemMenuState.focus = null;
                             } else {
@@ -1946,7 +1344,6 @@ class Inventory {
                             }
                           } else if (type === 'checkbox') {
                             grabbable.setAttribute(attributeName, newValue);
-                            // grabbable.assetId = _getAssetId();
 
                             itemMenuState.focus = null;
                           } else {
@@ -2075,36 +1472,12 @@ class Inventory {
           const _render = () => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            ctx.fillStyle = '#FFF';
-            // ctx.fillRect(0, 0, canvas.width, canvas.height);
-
             ctx.fillStyle = '#EEE';
             ctx.fillRect(0, 0, canvas.width, 150);
 
             ctx.fillStyle = '#111';
             ctx.font = `${fontSize*1.6}px Open sans`;
             ctx.fillText('Server', 60, fontSize*2 + 35);
-
-            /* for (let y = 0; y < 4; y++) {
-              for (let x = 0; x < 5; x++) {
-                ctx.drawImage(boxImg, x * canvas.width/6, 150 + y * canvas.width/6, canvas.width/6, canvas.width/6);
-              }
-            }
-
-            ctx.font = `${fontSize}px Open sans`;
-
-            let numMenuAssets = 0;
-            const assetInstances = wallet.getAssetInstances();
-            for (let i = 0; i < assetInstances.length; i++) {
-              const assetInstance = assetInstances[i];
-
-              if (!assetInstance.owner) {
-                numMenuAssets++;
-
-                ctx.clearRect(0, 150 + (i+1) * canvas.width/6 - 20 - fontSize, canvas.width, fontSize*2);
-                ctx.fillText(`${assetInstance.name}.${assetInstance.ext}`, canvas.width/6*0.1, 150 + (i+1) * canvas.width/6 - 20);
-              }
-            } */
 
             if (focusState.type === 'grab' && SIDES.some(side => focusState.targets[side] && focusState.targets[side].ext === 'wld')) {
               const boxPath = _roundedRectanglePath({
@@ -2124,8 +1497,7 @@ class Inventory {
             } else {
               const unownedAssetInstances = wallet.getAssetInstances().filter(assetInstance => !assetInstance.owner);
               ctx.font = `50px Open sans`;
-              /* ctx.strokeStyle = '#EEE';
-              ctx.lineWidth = 10; */
+
               const startI = planeLeftState.page * 7;
               for (let i = startI; i < unownedAssetInstances.length; i++) {
                 const assetInstance = unownedAssetInstances[i];
@@ -2137,10 +1509,6 @@ class Inventory {
                 } else {
                   ctx.fillStyle = '#111';
                 }
-                /* ctx.beginPath();
-                ctx.moveTo(0, 150 + (i+1) * (canvas.height / 8));
-                ctx.lineTo(canvas.width - 200, 150 + (i+1) * (canvas.height / 8));
-                ctx.stroke(); */
 
                 const boxPath = _roundedRectanglePath({
                   left: 50,
@@ -2152,9 +1520,7 @@ class Inventory {
                 ctx.lineWidth = 10;
                 ctx.strokeStyle = '#EEE';
                 ctx.stroke(boxPath);
-                // ctx.drawImage(boxImg, 50, 150 + i * (canvas.height-150)/7 - 20, (canvas.height-150)/7 + 40, (canvas.height-150)/7 + 40);
 
-                // ctx.clearRect(0, 150 + (i+1) * canvas.width/6 - 20 - fontSize, canvas.width, fontSize*2);
                 ctx.fillText(`${assetInstance.name}.${assetInstance.ext}`, 300, 150 + (di+1) * (canvas.height-150)/7 - 75);
               }
 
@@ -2188,8 +1554,6 @@ class Inventory {
             ctx.font = `${fontSize}px Open sans`;
             ctx.fillText('Save world', canvas.width - 450 + (300 - 30)/2 - ctx.measureText('Save world').width/2, 150/2 + fontSize/2*0.9);
 
-            // ctx.fillText('Pack world', 5 * canvas.width/6 + canvas.width/6*0.1, 150 + (0+1) * canvas.width/6 - 20);
-
             texture.needsUpdate = true;
           };
           planeMeshLeft.render = _render;
@@ -2203,7 +1567,6 @@ class Inventory {
         planeLeft.quaternion.copy(planeMeshLeft.quaternion);
         planeLeft.scale.copy(planeMeshLeft.scale);
         planeLeft.updateMatrixWorld();
-        // planeLeft.visible = false;
         planeLeft.width = WIDTH;
         planeLeft.height = HEIGHT;
         planeLeft.worldWidth = WORLD_WIDTH;
@@ -2420,9 +1783,6 @@ class Inventory {
           const _render = () => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // ctx.fillStyle = '#FFF';
-            // ctx.fillRect(0, 0, canvas.width, canvas.height);
-
             ctx.fillStyle = '#EEE';
             ctx.fillRect(0, 0, canvas.width, 150);
 
@@ -2449,9 +1809,6 @@ class Inventory {
               ctx.font = `50px Open sans`;
 
               const assetInstances = assets;
-              ctx.font = `50px Open sans`;
-              /* ctx.strokeStyle = '#EEE';
-              ctx.lineWidth = 10; */
               const startI = planeRightState.page * 7;
               for (let i = startI; i < assetInstances.length; i++) {
                 const assetInstance = assetInstances[i];
@@ -2464,11 +1821,6 @@ class Inventory {
                   ctx.fillStyle = '#111';
                 }
 
-                /* ctx.beginPath();
-                ctx.moveTo(0, 150 + (i+1) * (canvas.height / 8));
-                ctx.lineTo(canvas.width - 200, 150 + (i+1) * (canvas.height / 8));
-                ctx.stroke(); */
-
                 const boxPath = _roundedRectanglePath({
                   left: 50,
                   top: 150 + di * (canvas.height-150)/7 + 20,
@@ -2479,9 +1831,7 @@ class Inventory {
                 ctx.lineWidth = 10;
                 ctx.strokeStyle = '#EEE';
                 ctx.stroke(boxPath);
-                // ctx.drawImage(boxImg, 50, 150 + i * (canvas.height-150)/7 - 20, (canvas.height-150)/7 + 40, (canvas.height-150)/7 + 40);
 
-                // ctx.clearRect(0, 150 + (i+1) * canvas.width/6 - 20 - fontSize, canvas.width, fontSize*2);
                 ctx.fillText(`${assetInstance.name}.${assetInstance.ext}`, 300, 150 + (di+1) * (canvas.height-150)/7 - 75);
               }
 
@@ -2498,9 +1848,6 @@ class Inventory {
               }
               ctx.drawImage(arrowUpImg, canvas.width - 150, 150, barSize, barSize);
               ctx.drawImage(arrowDownImg, canvas.width - 150, canvas.height - barSize, barSize, barSize);
-
-              /* ctx.fillText('Save', 5.25 * canvas.width/6, 150 + 425);
-              ctx.fillText('Remove', 5.25 * canvas.width/6, 150 + 850); */
             }
 
             texture.needsUpdate = true;
@@ -2516,7 +1863,6 @@ class Inventory {
         planeRight.quaternion.copy(planeMeshRight.quaternion);
         planeRight.scale.copy(planeMeshRight.scale);
         planeRight.updateMatrixWorld();
-        // planeRight.visible = false;
         planeRight.width = WIDTH;
         planeRight.height = HEIGHT;
         planeRight.worldWidth = WORLD_WIDTH;
@@ -2646,16 +1992,6 @@ class Inventory {
           scene.add(boxMeshes[side]);
         }
 
-        /* (() => {
-          const assetInstances = wallet.getAssetInstances();
-          for (let i = 0; i < assetInstances.length; i++) {
-            const assetInstance = assetInstances[i];
-            if (assetInstance.open) {
-              _walletMenuOpen(assetInstance);
-            }
-          }
-        })(); */
-
         const assetsMesh = (() => {
           const geometry = (() => {
             const geometry = new THREE.BufferGeometry();
@@ -2677,40 +2013,8 @@ class Inventory {
           const mesh = new THREE.Mesh(geometry, material);
           mesh.frustumCulled = false;
           const _renderAssets = _debounce(next => {
-            const s = Math.sqrt(Math.pow(WORLD_WIDTH, 2) / 2);
-            const promises = [
-              /* _requestImageData('/archae/plugins/_core_engines_inventory/serve/up.png')
-                .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
-                  localVector.set(
-                    WORLD_WIDTH / 2 + s - pixelSize * 16,
-                    WORLD_HEIGHT / 2 - pixelSize * 16 * 2,
-                    s
-                  ),
-                  zeroQuaternion,
-                  oneVector
-                ))),
-              _requestImageData('/archae/plugins/_core_engines_inventory/serve/x.png')
-                .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
-                  localVector.set(
-                    WORLD_WIDTH / 2 + s - pixelSize * 16,
-                    WORLD_HEIGHT / 2 - pixelSize * 16 * 2 - pixelSize * 16 * 2,
-                    s
-                  ),
-                  zeroQuaternion,
-                  oneVector
-                ))),
-              _requestImageData('/archae/plugins/_core_engines_inventory/serve/earth-box.png')
-                .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
-                  localVector.set(
-                    -WORLD_WIDTH / 2,
-                    WORLD_HEIGHT / 2 - 150*WORLD_HEIGHT/HEIGHT - pixelSize * 16,
-                    pixelSize * 16
-                  ),
-                  zeroQuaternion,
-                  oneVector
-                ))), */
-            ].concat((() => {
-              const _renderAssetMesh = matrix => (assetSpec, i) => {
+            // const s = Math.sqrt(Math.pow(WORLD_WIDTH, 2) / 2);
+            const _renderAssetMesh = matrix => (assetSpec, i) => {
                 const _requestAssetImageData = () => {
                   const type = _normalizeType(assetSpec.ext);
                   if (type === 'itm') {
@@ -2748,90 +2052,24 @@ class Inventory {
                   )));
               };
 
-              return (
-                (focusState.type === 'grab' && SIDES.some(side => focusState.targets[side] && focusState.targets[side].ext === 'wld')) ?
+            const promises =
+              ((focusState.type === 'grab' && SIDES.some(side => focusState.targets[side] && focusState.targets[side].ext === 'wld')) ?
+                  []
+                :
+                  wallet.getAssetInstances()
+                    .filter(assetInstance => !assetInstance.owner)
+                    .slice(planeLeftState.page * 7, (planeLeftState.page+1) * 7)
+                    .map(_renderAssetMesh(planeLeft.matrix))
+              )
+                .concat(
+                  focusState.type === 'grab' ?
                     []
                   :
-                    wallet.getAssetInstances()
-                      .filter(assetInstance => !assetInstance.owner)
-                      .slice(planeLeftState.page * 7, (planeLeftState.page+1) * 7)
-                      .map(_renderAssetMesh(planeLeft.matrix))
-                )
-                  .concat(
-                    focusState.type === 'grab' ?
-                      []
-                    :
-                      assets
-                        .slice(planeRightState.page * 7, (planeRightState.page+1) * 7)
-                        .map(_renderAssetMesh(planeRight.matrix))
-                  );
-            })());
+                    assets
+                      .slice(planeRightState.page * 7, (planeRightState.page+1) * 7)
+                      .map(_renderAssetMesh(planeRight.matrix))
+                );
 
-            /* const promises = (() => {
-              if (tab === 'mods' && subtab === 'installed' && localMod) {
-                if (localMod.metadata && localMod.metadata.items && Array.isArray(localMod.metadata.items) && localMod.metadata.items.length > 0) {
-                  return [
-                    resource.getModFileImage(localMod.displayName, 0)
-                      .then(image => {
-                        localImage = base64.encode(image);
-
-                        return _requestImageData('data:application/octet-stream;base64,' + localImage)
-                          .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
-                            localVector.set(
-                              WORLD_WIDTH / 2 - pixelSize * 16 - pixelSize * 16*0.75,
-                              -WORLD_HEIGHT / 2 + pixelSize * 16,
-                              pixelSize * 16/2
-                            ),
-                            zeroQuaternion,
-                            oneVector
-                          )));
-                      }),
-                  ];
-                } else {
-                  return [];
-                }
-              } else if (tab === 'files' && localAsset) {
-                if (!SIDES.some(side => Boolean(hand.getGrabbedGrabbable(side)))) {
-                  return [
-                    _requestAssetImageData(localAsset)
-                      .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
-                        localVector.set(
-                          WORLD_WIDTH / 2 - pixelSize * 16 - pixelSize * 16*0.75,
-                          -WORLD_HEIGHT / 2 + pixelSize * 16,
-                          pixelSize * 16/2
-                        ),
-                        zeroQuaternion,
-                        oneVector
-                      ))),
-                  ];
-                } else {
-                  return [
-                    _requestImageData('/archae/plugins/_core_engines_inventory/serve/up.png')
-                      .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
-                        localVector.set(
-                          WORLD_WIDTH / 2 - pixelSize * 16 - pixelSize * 16*1.5,
-                          -WORLD_HEIGHT / 2 + pixelSize * 16,
-                          pixelSize * 16/2
-                        ),
-                        zeroQuaternion,
-                        oneVector
-                      ))),
-                    _requestImageData('/archae/plugins/_core_engines_inventory/serve/x.png')
-                      .then(imageData => spriteUtils.requestSpriteGeometry(imageData, pixelSize, localMatrix.compose(
-                        localVector.set(
-                          WORLD_WIDTH / 2 - pixelSize * 16,
-                          -WORLD_HEIGHT / 2 + pixelSize * 16,
-                          pixelSize * 16/2
-                        ),
-                        zeroQuaternion,
-                        oneVector
-                      ))),
-                  ];
-                }
-              } else {
-                return [];
-              }
-            })(); */
             Promise.all(promises)
               .then(geometrySpecs => {
                 const positions = new Float32Array(NUM_POSITIONS);
@@ -2911,8 +2149,6 @@ class Inventory {
           animation = anima.makeAnimation(0, 1, 1000);
         };
         const _closeMenu = () => {
-          // menuMesh.visible = false;
-
           menuState.open = false;
           plane.open = false;
           planeLeft.open = false;
@@ -2978,77 +2214,6 @@ class Inventory {
           const distance = assetPosition.distanceTo(gamepad.worldPosition);
           return distance < pixelSize*16/2;
         };
-        /* const _gripdown = e => {
-          const {side} = e;
-
-          const _handlePlaneMeshes = () => {
-            const {gamepads} = webvr.getStatus();
-            const gamepad = gamepads[side];
-
-            for (const id in planeMeshes) {
-              const planeMesh = planeMeshes[id];
-
-              if (planeMesh && planeMesh.position.distanceTo(gamepad.worldPosition) < ITEM_MENU_WORLD_SIZE) {
-                const {grabbable} = planeMesh;
-
-                grabbable.setOpen(false);
-                grabbable.show();
-                grabbable.grab(side);
-
-                return true;
-              }
-            }
-            return false;
-          };
-          const _handleMod = () => {
-            if (localMod && localMod.metadata && localMod.metadata.items && Array.isArray(localMod.metadata.items) && localMod.metadata.items.length > 0 && _isItemHovered(side)) {
-              const attributes = (() => {
-                const itemSpec = localMod.metadata.items[0];
-                const {attributes} = itemSpec;
-
-                const result = {};
-                for (const attributeName in attributes) {
-                  const attributeSpec = attributes[attributeName];
-                  const {value} = attributeSpec;
-                  result[attributeName] = {value};
-                }
-                return result;
-              })();
-              const itemSpec = {
-                assetId: _makeId(),
-                id: _makeId(),
-                name: 'new-item',
-                ext: 'itm',
-                json: {
-                  data: {
-                    path: localMod.displayName + '/' + localMod.metadata.items[0].type,
-                    attributes,
-                    icon: localImage,
-                  },
-                },
-              };
-              wallet.pullItem(itemSpec, side);
-
-              return true;
-            } else {
-              return false;
-            }
-          };
-          const _handleFile = () => {
-            if (localAsset && _isItemHovered(side)) {
-              wallet.pullItem(localAsset, side);
-
-              e.stopImmediatePropagation();
-
-              return true;
-            } else {
-              return false;
-            }
-          };
-
-          _handlePlaneMeshes() || _handleMod() || _handleFile();
-        };
-        input.on('gripdown', _gripdown); */
 
         const _grab = e => {
           const targets = focusState.type === 'grab' ? focusState.targets : {
@@ -3091,15 +2256,10 @@ class Inventory {
 
           world.removeListener('add', _worldAdd);
           wallet.removeListener('assets', _walletAssets);
-          /* wallet.removeListener('menuopen', _walletMenuOpen);
-          wallet.removeListener('menuclose', _walletMenuClose); */
 
-          // input.removeListener('menudown', _menudown);
           input.removeListener('menudown', _menudown2);
           input.removeListener('triggerdown', _triggerdown);
-          // input.removeListener('triggerup', _triggerup);
           input.removeListener('triggerup', _trigger);
-          // input.removeListener('gripdown', _gripdown);
           hand.removeListener('grab', _grab);
           hand.removeListener('release', _release);
 
@@ -3141,27 +2301,6 @@ class Inventory {
               })(),
               controllerMeshes: rend.getAuxObject('controllerMeshes'),
             });
-
-            /* const {gamepads} = webvr.getStatus();
-            const {boxMeshes} = uiTracker;
-            for (let i = 0; i < SIDES.length; i++) {
-              const side = SIDES[i];
-              const gamepad = gamepads[side];
-              const boxMesh = boxMeshes[side];
-
-              for (const id in planeMeshes) {
-                const planeMesh = planeMeshes[id];
-
-                if (planeMesh && planeMesh.position.distanceTo(gamepad.worldPosition) < ITEM_MENU_WORLD_SIZE) {
-                  boxMesh.position.copy(planeMesh.position);
-                  boxMesh.quaternion.copy(zeroQuaternion);
-                  boxMesh.scale.set(ITEM_MENU_WORLD_SIZE, ITEM_MENU_WORLD_SIZE, ITEM_MENU_WORLD_SIZE);
-                  boxMesh.updateMatrixWorld();
-                  boxMesh.visible = true;
-                  break;
-                }
-              }
-            } */
           };
           const _updateAnimation = () => {
             if (animation) {
@@ -3223,20 +2362,6 @@ const _clone = o => {
   return result;
 };
 const _makeId = () => Math.random().toString(36).substring(7);
-/* const _makeTagName = s => {
-  s = s
-    .toLowerCase()
-    .replace(/[^a-z0-9-]/g, '-')
-    .replace(/--+/g, '-')
-    .replace(/(?:^-|-$)/g, '');
-  if (/^[0-9]/.test(s)) {
-    s = 'e-' + s;
-  }
-  if (htmlTagNames.includes(s)) {
-    s = 'e-' + s;
-  }
-  return s;
-}; */
 const _roundToDecimals = (value, decimals) => Number(Math.round(value+'e'+decimals)+'e-'+decimals);
 const _debounce = fn => {
   let running = false;
