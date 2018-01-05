@@ -252,6 +252,7 @@ class Inventory {
         '/core/engines/resource',
         '/core/engines/hand',
         '/core/engines/multiplayer',
+        '/core/engines/transform',
         '/core/engines/notification',
         '/core/engines/anima',
         '/core/utils/js-utils',
@@ -290,6 +291,7 @@ class Inventory {
         resource,
         hand,
         multiplayer,
+        transform,
         notification,
         anima,
         jsUtils,
@@ -1414,13 +1416,40 @@ class Inventory {
               }
             } else if (_normalizeType(ext) === 'med' && focusState.type === 'leftPane') {
               _pushAnchor(result, ITEM_MENU_BORDER_SIZE, 150 + fontSize*2 + ITEM_MENU_BORDER_SIZE, ITEM_MENU_INNER_SIZE, 60, (e, hoverState) => {
-                const newFocusState = _clone(focusState);
-                newFocusState.transform = !newFocusState.transform;
-                _setFocus(newFocusState);
+                const {target, transform: transformGizmo} = focusState;
 
-                // XXX
-                if (newFocusState.transform) {
+                if (!transformGizmo) {
+                  const grabbable = wallet.getAssetInstances().find(assetInstance => assetInstance.assetId === target.assetId);
+
+                  const {position, rotation, scale} = grabbable;
+                  const transformGizmo = transform.makeTransformGizmo({ // XXX
+                    position,
+                    rotation,
+                    scale,
+                    onpreview: () => {
+                      console.log('preview'); // XXX
+                    },
+                    onupdate: () => {
+                      console.log('update'); // XXX
+                    },
+                  });
+                  scene.add(transformGizmo);
+
+                  _setFocus({
+                    type: 'leftPane',
+                    target,
+                    transform: transformGizmo,
+                  });
                 } else {
+                  const {transform: transformGizmo} = focusState;
+                  scene.remove(transformGizmo);
+                  transform.destroyTransformGizmo(transformGizmo);
+
+                  _setFocus({
+                    type: 'leftPane',
+                    target,
+                    transform: null,
+                  });
                 }
               });
 
@@ -1698,7 +1727,7 @@ class Inventory {
                       _setFocus({
                         type: 'leftPane',
                         target,
-                        transform: false,
+                        transform: null,
                       });
                     }
                   }
@@ -2249,6 +2278,18 @@ class Inventory {
           planeLeft.open = false;
           planeRight.open = false;
 
+          if (focusState.type === 'leftPane' && focusState.transform) {
+            const {target, transform: transformGizmo} = focusState;
+            scene.remove(transformGizmo);
+            transform.destroyTransformGizmo(transformGizmo);
+
+            _setFocus({
+              type: 'leftPane',
+              target,
+              transform: null,
+            });
+          }
+
           sfx.digi_powerdown.trigger();
 
           animation = anima.makeAnimation(1, 0, 1000);
@@ -2275,13 +2316,16 @@ class Inventory {
             }
           } else {
             const grabbable = hand.getGrabbedGrabbable(side);
-            const {ext} = grabbable;
 
-            if (_normalizeType(ext) === 'med') {
-              grabbable.release();
-              grabbable.setOpen(true);
-              grabbable.hide();
-              grabbable.disablePhysics();
+            if (grabbable) {
+              const {ext} = grabbable;
+
+              if (_normalizeType(ext) === 'med') {
+                grabbable.release();
+                grabbable.setOpen(true);
+                grabbable.hide();
+                grabbable.disablePhysics();
+              }
             }
           }
         };
