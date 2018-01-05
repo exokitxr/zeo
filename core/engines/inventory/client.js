@@ -326,6 +326,70 @@ class Inventory {
         const threeModel = threeModelLib({THREE});
 
         const colorWheelImg = menuUtils.getColorWheelImg();
+        const _getBoundingBox = (() => {
+          const v1 = new THREE.Vector3();
+
+          return o => {
+            const scope = new THREE.Box3();
+            o.traverse(node => {
+              if (node.isMesh) {
+                const geometry = node.geometry;
+
+                if ( geometry !== undefined ) {
+
+                  if ( geometry.isGeometry ) {
+
+                    const vertices = geometry.vertices;
+
+                    for ( let i = 0, l = vertices.length; i < l; i ++ ) {
+
+                      v1.copy( vertices[ i ] );
+                      v1.applyMatrix4( node.matrixWorld );
+
+                      scope.expandByPoint( v1 );
+
+                    }
+
+                  } else if ( geometry.isBufferGeometry ) {
+
+                    const attribute = geometry.attributes.position;
+
+                    if ( attribute !== undefined ) {
+
+                      for ( let i = 0, l = attribute.count; i < l; i ++ ) {
+
+                        v1.fromBufferAttribute( attribute, i ).applyMatrix4( node.matrixWorld );
+
+                        scope.expandByPoint( v1 );
+
+                      }
+
+                    }
+
+                  }
+                }
+              }
+            });
+            return scope;
+          };
+        })();
+        const _computeBoundingSphere = o => {
+          o.traverse(node => {
+            if (node.frustumCulled) {
+              node.frustumCulled = false;
+            }
+          });
+
+          const boundingSphere = _getBoundingBox(o).getBoundingSphere();
+          if (o.geometry) {
+            o.geometry.boundingSphere = boundingSphere;
+          } else {
+            o.geometry = {
+              boundingSphere,
+            };
+          }
+          o.frustumCulled = true;
+        };
 
         if (offline) {
           for (let i = 0; i < offlinePlugins.length; i++) {
@@ -774,6 +838,11 @@ class Inventory {
               planeMesh.scale.copy(scale);
               planeMesh.updateMatrixWorld();
 
+              planeMesh.destroy = function() {
+                this.geometry.dispose();
+                this.material.dispose();
+              };
+
               scene.add(planeMesh);
 
               planeMeshes[assetId] = planeMesh;
@@ -785,11 +854,19 @@ class Inventory {
                 type: ext,
                 credentials: file.local ? 'include' : null,
               })
-                .then(modelMesh => {
+                .then(modelMeshInner => {
+                  _computeBoundingSphere(modelMeshInner);
+
+                  const modelMesh = new THREE.Object3D();
+                  modelMesh.add(modelMeshInner);
                   modelMesh.position.copy(position);
                   modelMesh.quaternion.copy(rotation);
                   modelMesh.scale.copy(scale);
                   modelMesh.updateMatrixWorld();
+
+                  modelMesh.destroy = () => {
+                    // modelMeshInner.destroy(); // XXX
+                  };
 
                   scene.add(modelMesh);
 
@@ -811,8 +888,7 @@ class Inventory {
               uiTracker.removePlane(plane);
 
               scene.remove(planeMesh);
-              planeMesh.geometry.dispose();
-              planeMesh.material.dispose();
+              planeMesh.destroy();
               planeMeshes[assetId] = null;
 
               _gcPlaneMeshes();
@@ -2140,6 +2216,8 @@ class Inventory {
 
             if (_normalizeType(ext) === 'med') {
               grabbable.setOpen(true);
+              grabbable.hide();
+              grabbable.disablePhysics();
             }
           }
         };
