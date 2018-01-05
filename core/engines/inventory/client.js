@@ -2220,6 +2220,7 @@ class Inventory {
             const {ext} = grabbable;
 
             if (_normalizeType(ext) === 'med') {
+              grabbable.release();
               grabbable.setOpen(true);
               grabbable.hide();
               grabbable.disablePhysics();
