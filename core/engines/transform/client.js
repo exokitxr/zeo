@@ -55,8 +55,14 @@ class Transform {
           const zeroVector = new THREE.Vector3();
           const oneVector = new THREE.Vector3(1, 1, 1);
           const upVector = new THREE.Vector3(0, 1, 0);
+          const forwardVector = new THREE.Vector3(0, 0, -1);
           const scaleNormalVector = new THREE.Vector3(-1, 0, 1).normalize();
           const zeroQuaternion = new THREE.Quaternion();
+          const localVector = new THREE.Vector3();
+          const localVector2 = new THREE.Vector3();
+          const localQuaternion = new THREE.Quaternion();
+          const localBox = new THREE.Box3();
+          const localRay = new THREE.Ray();
 
           const nubbinMaterial = new THREE.MeshBasicMaterial({
             color: 0xCCCCCC,
@@ -164,17 +170,15 @@ class Transform {
 
             const boxAnchors = [];
             const _addBoxTarget = (position, rotation, scale, size, anchor, onupdate = nop) => {
-              const geometry = geometryUtils.unindexBufferGeometry(new THREE.BoxBufferGeometry(size.x, size.y, size.z));
-              const material = transparentMaterial;
-
-              const boxAnchor = new THREE.Mesh(geometry, material);
+              const boxAnchor = new THREE.Object3D();
               boxAnchor.position.copy(position);
               boxAnchor.quaternion.copy(rotation);
-              boxAnchor.scale.copy(scale);
+              boxAnchor.scale.copy(size); // XXX
+              // boxAnchor.size = size;
               boxAnchor.anchor = anchor;
 
               transformGizmo.add(boxAnchor);
-              rend.addMesh(boxAnchor);
+              // rend.addMesh(boxAnchor);
 
               boxAnchor.onupdate = onupdate;
 
@@ -265,6 +269,8 @@ class Transform {
               }
             );
 
+            transformGizmo.boxAnchors = boxAnchors;
+
             const _updateBoxTargets = () => {
               for (let i = 0; i < boxAnchors.length; i++) {
                 const boxAnchor = boxAnchors[i];
@@ -272,7 +278,7 @@ class Transform {
               }
             };
             transformGizmo.updateBoxTargets = _updateBoxTargets;
-            const _showBoxTargets = () => {
+            /* const _showBoxTargets = () => {
               for (let i = 0; i < boxAnchors.length; i++) {
                 const boxAnchor = boxAnchors[i];
                 boxAnchor.visible = true;
@@ -292,7 +298,7 @@ class Transform {
                 rend.removeMesh(boxAnchor);
               }
             };
-            transformGizmo.removeBoxTargets = _removeBoxTargets;
+            transformGizmo.removeBoxTargets = _removeBoxTargets; */
 
             transformGizmo.update(position, rotation, scale);
 
@@ -301,7 +307,7 @@ class Transform {
             return transformGizmo;
           };
           const _destroyTransformGizmo = transformGizmo => {
-            transformGizmo.removeBoxTargets();
+            // transformGizmo.removeBoxTargets();
             transformGizmos.splice(transformGizmos.indexOf(transformGizmo), 1);
           };
 
@@ -309,41 +315,56 @@ class Transform {
             const {side} = e;
 
             const _doClickTransformGizmo = () => {
-              const hoverState = rend.getHoverState(side);
-              const {intersectionPoint} = hoverState;
+              const dragState = dragStates[side];
 
-              if (intersectionPoint) {
-                const {anchor} = hoverState;
-                const onmousedown = (anchor && anchor.onmousedown) || '';
+              if (transformGizmos.length > 0) {
+                const {gamepads} = webvr.getStatus();
+                const gamepad = gamepads[side];
+                const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
+                const ray = localRay.set(controllerPosition, localVector.copy(forwardVector).applyQuaternion(controllerRotation));
 
-                let match;
-                if (match = onmousedown.match(/^transform:([^:]+):(x|y|z|xyz|xy|yz|xz|rotate|scale)$/)) {
-                  const transformId = match[1];
-                  const mode = match[2];
+                for (let i = 0; i < transformGizmos.length; i++) {
+                  const transformGizmo = transformGizmos[i];
+                  const {boxAnchors} = transformGizmo;
 
-                  const dragState = dragStates[side];
-                  const {gamepads} = webvr.getStatus();
-                  const gamepad = gamepads[side];
-                  const {worldPosition: controllerPosition, worldRotation: controllerRotation} = gamepad;
-                  const transformGizmo = transformGizmos.find(transformGizmo => transformGizmo.transformId === transformId);
-                  dragState.src = {
-                    transformId: transformId,
-                    mode: mode,
-                    startControllerPosition: controllerPosition.clone(),
-                    startControllerRotation: controllerRotation.clone(),
-                    startIntersectionPoint: intersectionPoint.clone(),
-                    startPosition: transformGizmo.position.clone(),
-                  };
+                  for (let j = 0; j < boxAnchors.length; j++) {
+                    const boxAnchor = boxAnchors[j];
+                    boxAnchor.getWorldPosition(localVector);
+                    boxAnchor.getWorldScale(localVector2);
+                    const box = localBox.setFromCenterAndSize(
+                      localVector,
+                      localVector2
+                    );
+                    if (ray.intersectBox(box, localVector)) {
+                      const intersectionPoint = localVector;
+                      const {anchor} = boxAnchor;
+                      const onmousedown = (anchor && anchor.onmousedown) || '';
 
-                  transformGizmo.hideBoxTargets();
+                      let match;
+                      if (match = onmousedown.match(/^transform:([^:]+):(x|y|z|xyz|xy|yz|xz|rotate|scale)$/)) {
+                        const transformId = match[1];
+                        const mode = match[2];
 
-                  return true;
-                } else {
-                  return false;
+                        // const transformGizmo = transformGizmos.find(transformGizmo => transformGizmo.transformId === transformId);
+                        dragState.src = {
+                          transformId: transformId,
+                          mode: mode,
+                          startControllerPosition: controllerPosition.clone(),
+                          startControllerRotation: controllerRotation.clone(),
+                          startIntersectionPoint: intersectionPoint.clone(),
+                          startPosition: transformGizmo.position.clone(),
+                        };
+
+                        // transformGizmo.hideBoxTargets();
+
+                        return true;
+                      }
+                    }
+                  }
                 }
-              } else {
-                return false;
               }
+              dragState.src = null;
+              return false;
             };
 
             if (_doClickTransformGizmo()) {
@@ -364,7 +385,7 @@ class Transform {
               transformGizmo.update(position, rotation, scale);
               transformGizmo.onupdate(position, rotation, scale);
 
-              transformGizmo.showBoxTargets();
+              // transformGizmo.showBoxTargets();
 
               dragState.src = null;
             }
