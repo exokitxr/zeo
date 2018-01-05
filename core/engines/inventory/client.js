@@ -1441,6 +1441,17 @@ class Inventory {
                         planeMesh.updateMatrixWorld();
                       }
                     },
+                    onhover: (side, boxAnchor) => {
+                      const transformBoxMesh = transformBoxMeshes[side];
+
+                      if (boxAnchor) {
+                        boxAnchor.matrixWorld.decompose(transformBoxMesh.position, transformBoxMesh.quaternion, transformBoxMesh.scale);
+                        transformBoxMesh.updateMatrixWorld();
+                        transformBoxMesh.visible = true;
+                      } else {
+                        transformBoxMesh.visible = false;
+                      }
+                    },
                   });
                   scene.add(transformGizmo);
 
@@ -2109,10 +2120,15 @@ class Inventory {
         uiTracker.addPlane(planeRight);
 
         const {dotMeshes, boxMeshes} = uiTracker;
-        for (let i = 0; i < SIDES.length; i++) {
-          const side = SIDES[i];
+        const transformBoxMeshes = {
+          left: biolumi.makeBoxMesh(),
+          right: biolumi.makeBoxMesh(),
+        };
+        for (let s = 0; s < SIDES.length; s++) {
+          const side = SIDES[s];
           scene.add(dotMeshes[side]);
           scene.add(boxMeshes[side]);
+          scene.add(transformBoxMeshes[side]);
         }
 
         (() => {
@@ -2409,10 +2425,11 @@ class Inventory {
         cleanups.push(() => {
           scene.remove(menuMesh);
 
-          for (let i = 0; i < SIDES.length; i++) {
-            const side = SIDES[i];
-            scene.remove(uiTracker.dotMeshes[side]);
-            scene.remove(uiTracker.boxMeshes[side]);
+          for (let s = 0; s < SIDES.length; s++) {
+            const side = SIDES[s];
+            scene.remove(dotMeshes[side]);
+            scene.remove(boxMeshes[side]);
+            scene.remove(transformBoxMeshes[side]);
           }
 
           world.removeListener('add', _worldAdd);
