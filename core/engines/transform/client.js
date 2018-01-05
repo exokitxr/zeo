@@ -28,7 +28,6 @@ class Transform {
       '/core/engines/three',
       '/core/engines/input',
       '/core/engines/webvr',
-      '/core/engines/biolumi',
       '/core/engines/rend',
       '/core/utils/geometry-utils',
     ])
@@ -36,7 +35,6 @@ class Transform {
         three,
         input,
         webvr,
-        biolumi,
         rend,
         geometryUtils,
       ]) => {
@@ -49,8 +47,6 @@ class Transform {
             THREETransformGizmoRotate,
             THREETransformGizmoScale,
           } = THREETransformControls;
-
-          const transparentMaterial = biolumi.getTransparentMaterial();
 
           const zeroVector = new THREE.Vector3();
           const oneVector = new THREE.Vector3(1, 1, 1);
