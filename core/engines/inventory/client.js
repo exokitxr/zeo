@@ -22,10 +22,8 @@ const SIDES = ['left', 'right'];
 
 const width = 0.1;
 const height = 0.1;
-const pixelWidth = 128;
-const pixelHeight = 128;
-const numFilesPerPage = 10;
-const numModsPerPage = 10;
+// const numFilesPerPage = 10;
+// const numModsPerPage = 10;
 const fontSize = 34;
 
 const _normalizeType = ext => {
@@ -997,7 +995,7 @@ class Inventory {
           THREE.UnsignedByteType
         );
 
-        let tab = 'status';
+        /* let tab = 'status';
         let subtab = 'itm';
         const _getLocalAssets = () => assets
           .filter(assetSpec => {
@@ -1023,7 +1021,7 @@ class Inventory {
           }
         };
 
-        /* let tabIndex = 0;
+        let tabIndex = 0;
         let tabType = 'item';
         let inventoryPage = 0;
         let localAssets = _getLocalAssets();
