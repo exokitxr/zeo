@@ -423,7 +423,7 @@ class BagVr {
         const assetInstances = items.getAssetInstances();
         for (let i = 0; i < assetInstances.length; i++) {
           const assetInstance = assetInstances[i];
-          if (!assetInstance.isGrabbed() && !equipmentState.assets.includes(assetInstance)) {
+          if (!assetInstance.isGrabbed() && !assetInstance.open && !equipmentState.assets.includes(assetInstance)) {
             const diffVector = localVector2.copy(assetInstance.position)
               .applyMatrix4(destinationMatrixInverse)
               .sub(zeroVector);
