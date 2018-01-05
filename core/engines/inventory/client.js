@@ -141,6 +141,39 @@ class Inventory {
     });
     const _requestImageBitmap = src => _requestImage(src)
       .then(img => createImageBitmap(img, 0, 0, img.width, img.height));
+    const _getImageCover = (img, canvas) => {
+      const imageAspectRatio = img.width / img.height;
+      const canvasAspectRatio = canvas.width / canvas.height;
+      let renderableHeight, renderableWidth, xStart, yStart;
+
+      // If image's aspect ratio is less than canvas's we fit on height
+      // and place the image centrally along width
+      if(imageAspectRatio < canvasAspectRatio) {
+        renderableHeight = canvas.height;
+        renderableWidth = img.width * (renderableHeight / img.height);
+        xStart = (canvas.width - renderableWidth) / 2;
+        yStart = 0;
+      }
+
+      // If image's aspect ratio is greater than canvas's we fit on width
+      // and place the image centrally along height
+      else if(imageAspectRatio > canvasAspectRatio) {
+        renderableWidth = canvas.width
+        renderableHeight = img.height * (renderableWidth / img.width);
+        xStart = 0;
+        yStart = (canvas.height - renderableHeight) / 2;
+      }
+
+      // Happy path - keep aspect ratio
+      else {
+        renderableHeight = canvas.height;
+        renderableWidth = canvas.width;
+        xStart = 0;
+        yStart = 0;
+      }
+
+      return [xStart, yStart, renderableWidth, renderableHeight];
+    };
     const imageDataCanvas = document.createElement('canvas');
     const imageDataCtx = imageDataCanvas.getContext('2d');
     const _requestImageData = src => _requestImageBitmap(src)
@@ -703,41 +736,18 @@ class Inventory {
         };
         wallet.on('assets', _walletAssets);
 
-        /* let planeMeshes = {};
-        let numPlaneMeshCloses = 0;
-        const _gcPlaneMeshes = () => {
-          if (++numPlaneMeshCloses >= 10) {
-            const newPlaneMeshes = {};
-            for (const id in planeMeshes) {
-              const planeMesh = planeMeshes[id]
+        const _openAssetInstance = grabbable => {
+          const {ext} = grabbable;
 
-              if (planeMesh) {
-                planeMeshes[id] = planeMesh;
-              }
-            }
-            planeMeshes = newPlaneMeshes;
-            numPlaneMeshCloses = 0;
-          }
-        };
-        const _walletMenuOpen = grabbable => {
-          const {assetId: id, position, rotation, scale, json} = grabbable;
-          const attributes = (json && json.data && json.data.attributes && typeof json.data.attributes === 'object' && !Array.isArray(json.data.attributes)) ?
-            json.data.attributes
-            : {};
+          // if (_normalizeType(ext) === 'med') {
+          if (isImageType(ext)) {
+            const file = grabbable.getFile();
 
-          let match;
-          if (grabbable && grabbable.ext === 'itm' && grabbable.json && grabbable.json.data && grabbable.json.data.path && typeof grabbable.json.data.path === 'string' && (match = grabbable.json.data.path.match(/^(.+?)\/(.+?)$/))) {
-            const modName = match[1];
-            const fileType = match[2];
-
-            const modSpec = remoteMods.find(modSpec => modSpec.displayName === modName);
-            if (modSpec && modSpec.metadata && modSpec.metadata.items && Array.isArray(modSpec.metadata.items) && modSpec.metadata.items.length > 0) {
-              const itemSpec = modSpec.metadata.items[0];
-              const {attributes: attributeSpecs} = itemSpec;
-
+            if (file !== null) {
               const canvas = document.createElement('canvas');
-              canvas.width = ITEM_MENU_SIZE;
-              canvas.height = ITEM_MENU_SIZE;
+              const size = 1024;
+              canvas.width = size;
+              canvas.height = size;
               const ctx = canvas.getContext('2d');
 
               const texture = new THREE.Texture(
@@ -752,101 +762,36 @@ class Inventory {
                 16
               );
 
-              const itemMenuState = {
-                focus: null,
-                barValue: 0,
-                page: 0,
-              };
+              _requestImageBitmap(file.getUrl(), {
+                credentials: 'include',
+              })
+                .then(img => {
+                  const [x, y, w, h] = _getImageCover(img, canvas);
+                  ctx.drawImage(img, x, y, w, h);
+                  texture.needsUpdate = true;
+                })
+                .catch(err => {
+                  console.warn(err);
+                });
 
-              const _renderItemMenu = () => {
-                ctx.fillStyle = '#FFF';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                renderAttributes(ctx, attributes, attributeSpecs, fontSize, ITEM_MENU_BORDER_SIZE, ITEM_MENU_BORDER_SIZE, itemMenuState);
-
-                texture.needsUpdate = true;
-              };
-              _renderItemMenu();
-
-              const planeMesh = _makePlaneMesh(ITEM_MENU_WORLD_SIZE, ITEM_MENU_WORLD_SIZE, texture);
+              const planeMesh = _makePlaneMesh(1, 1, texture);
+              const {position, rotation, scale} = grabbable;
               planeMesh.position.copy(position);
               planeMesh.quaternion.copy(rotation);
               planeMesh.scale.copy(scale);
-              planeMesh.grabbable = grabbable;
+              planeMesh.updateMatrixWorld();
+
               scene.add(planeMesh);
 
-              const plane = new THREE.Object3D();
-              plane.visible = false;
-              plane.width = ITEM_MENU_SIZE;
-              plane.height = ITEM_MENU_SIZE;
-              plane.worldWidth = ITEM_MENU_WORLD_SIZE;
-              plane.worldHeight = ITEM_MENU_WORLD_SIZE;
-              plane.open = true;
-              plane.anchors = [];
-              planeMesh.add(plane);
-              planeMesh.plane = plane;
-
-              const _getAssetId = () => String(murmur(JSON.stringify([
-                grabbable.name,
-                grabbable.ext,
-                grabbable.path,
-                grabbable.attributes,
-              ])));
-              const _updateAttributesAnchors = () => {
-                plane.anchors = getAttributesAnchors(attributes, attributeSpecs, fontSize, ITEM_MENU_BORDER_SIZE, ITEM_MENU_BORDER_SIZE, itemMenuState, {
-                  focusAttribute: ({name: attributeName, type, newValue}) => {
-                    if (type === 'number') {
-                      grabbable.setAttribute(attributeName, newValue);
-                      grabbable.assetId = _getAssetId();
-
-                      itemMenuState.focus = null;
-                    } else if (type === 'select') {
-                      if (newValue !== undefined) {
-                        grabbable.setAttribute(attributeName, newValue);
-                        grabbable.assetId = _getAssetId();
-
-                        itemMenuState.focus = null;
-                      } else {
-                        itemMenuState.focus = attributeName;
-                      }
-                    } else if (type === 'color') {
-                      if (newValue !== undefined) {
-                        grabbable.setAttribute(attributeName, newValue);
-                        grabbable.assetId = _getAssetId();
-
-                        itemMenuState.focus = null;
-                      } else {
-                        itemMenuState.focus = attributeName;
-                      }
-                    } else if (type === 'checkbox') {
-                      grabbable.setAttribute(attributeName, newValue);
-                      grabbable.assetId = _getAssetId();
-
-                      itemMenuState.focus = null;
-                    } else {
-                      itemMenuState.focus = null;
-                    }
-
-                    _renderItemMenu();
-                    _updateAttributesAnchors();
-                  },
-                  render: _renderItemMenu,
-                  updateAnchors: _updateAttributesAnchors,
-                });
-              };
-              _updateAttributesAnchors();
-
-              planeMesh.updateMatrixWorld()
-              plane.updateMatrixWorld();
-              planeMeshes[id] = planeMesh;
-
-              uiTracker.addPlane(plane);
+              const {assetId} = grabbable;
+              planeMeshes[assetId] = planeMesh;
             }
           }
         };
-        wallet.on('menuopen', _walletMenuOpen);
-        const _walletMenuClose = grabbable => {
-          for (const id in planeMeshes) {
-            const planeMesh = planeMeshes[id];
+        wallet.on('menuopen', _openAssetInstance);
+        const _closeAssetInstance = grabbable => {
+          for (const assetId in planeMeshes) {
+            const planeMesh = planeMeshes[assetId];
             if (planeMesh.grabbable === grabbable) {
               const {plane} = planeMesh;
 
@@ -855,7 +800,7 @@ class Inventory {
               scene.remove(planeMesh);
               planeMesh.geometry.dispose();
               planeMesh.material.dispose();
-              planeMeshes[id] = null;
+              planeMeshes[assetId] = null;
 
               _gcPlaneMeshes();
 
@@ -863,23 +808,7 @@ class Inventory {
             }
           }
         };
-        wallet.on('menuclose', _walletMenuClose);
-
-        const _menudown = e => {
-          const grabbable = hand.getGrabbedGrabbable(e.side);
-
-          if (grabbable) {
-            grabbable.release();
-            grabbable.setOpen(true);
-            grabbable.hide();
-            grabbable.disablePhysics(); *
-
-            e.stopImmediatePropagation();
-          }
-        };
-        input.on('menudown', _menudown, {
-          priority: 1,
-        }); */
+        wallet.on('menuclose', _closeAssetInstance);
 
         const localVector = new THREE.Vector3();
         const localVector2 = new THREE.Vector3();
@@ -1602,6 +1531,10 @@ class Inventory {
 
                 if (webvr.getStatus().gamepads[side].buttons.grip.pressed) {
                   const grabbable = wallet.getAssetInstances().find(assetInstance => assetInstance.assetId === target.assetId);
+                  if (grabbable.open) {
+                    grabbable.setOpen(false);
+                    grabbable.show();
+                  }
                   grabbable.grab(side);
                 } else {
                   if (target) {
@@ -1992,6 +1925,16 @@ class Inventory {
           scene.add(boxMeshes[side]);
         }
 
+        (() => {
+          const assetInstances = wallet.getAssetInstances();
+          for (let i = 0; i < assetInstances.length; i++) {
+            const assetInstance = assetInstances[i];
+            if (assetInstance.open) {
+              _openAssetInstance(assetInstance);
+            }
+          }
+        })();
+
         const assetsMesh = (() => {
           const geometry = (() => {
             const geometry = new THREE.BufferGeometry();
@@ -2266,6 +2209,9 @@ class Inventory {
 
           world.removeListener('add', _worldAdd);
           wallet.removeListener('assets', _walletAssets);
+
+          wallet.removeListener('menuopen', _openAssetInstance);
+          wallet.removeListener('menuclose', _closeAssetInstance);
 
           input.removeListener('menudown', _menudown2);
           input.removeListener('triggerdown', _triggerdown);
