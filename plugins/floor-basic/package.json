@@ -6,6 +6,16 @@
   "serves": {
     "graphy.png": "img/graphy.png"
   },
+  "metadata": {
+    "owner": "avaer",
+    "items": [
+      {
+        "type": "floor",
+        "icon": "img/icon.png",
+        "attributes": {}
+      }
+    ]
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
