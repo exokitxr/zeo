@@ -72,10 +72,12 @@ class Loader {
               if (pluginApi) {
                 accept(pluginApi);
               } else {
-                const _pluginAdded = (plugin, pluginApi) => {
-                  clearTimeout(localTimeout);
+                const _pluginAdded = (addedPlugin, addedPluginApi) => {
+                  if (addedPlugin === plugin) {
+                    clearTimeout(localTimeout);
 
-                  accept(pluginApi);
+                    accept(addedPluginApi);
+                  }
                 };
                 this.on('pluginAdded', _pluginAdded);
 
