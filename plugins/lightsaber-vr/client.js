@@ -561,21 +561,33 @@ class Lightsaber {
 
           elements.requestPlugin('drone-vr')
             .then(droneVr => {
-              const _update = () => {
-                for (let i = 0; i < lightsaberMeshes.length; i++) {
-                  droneVr.intersectLightsaber(lightsaberMeshes[i]);
-                }
-              };
-              render.on('update', _update);
+              if (droneVr) {
+                const _update = () => {
+                  for (let i = 0; i < lightsaberMeshes.length; i++) {
+                    droneVr.intersectLightsaber(lightsaberMeshes[i]);
+                  }
+                };
+                render.on('update', _update);
+
+                cleanups.push(() => {
+                  render.removeListener('update', _update);
+                });
+              }
             })
             .catch(err => {
               console.warn(err);
             });
 
+          const cleanups = [
+            () => {
+              whiteMaterial.dispose();
+              items.unregisterItem(this, lightsaberItem);
+            },
+          ];
           this._cleanup = () => {
-            whiteMaterial.dispose();
-
-            items.unregisterItem(this, lightsaberItem);
+            for (let i = 0; i < cleanups.length; i++) {
+              cleanups[i]();
+            }
           };
         }
       });
