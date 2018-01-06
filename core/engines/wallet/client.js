@@ -40,6 +40,7 @@ class Wallet {
 
     return archae.requestPlugins([
       '/core/engines/bootstrap',
+      '/core/engines/loader',
       '/core/engines/three',
       '/core/engines/input',
       '/core/engines/fs',
@@ -62,6 +63,7 @@ class Wallet {
       '/core/utils/vrid-utils',
     ]).then(([
       bootstrap,
+      loader,
       three,
       input,
       fs,
@@ -254,6 +256,7 @@ class Wallet {
                 _bindAssetInstance(assetInstance);
                 _bindAssetInstancePhysics(assetInstance);
                 _bindAssetInstanceMenu(assetInstance);
+                _bindAssetInstanceItem(assetInstance);
               };
 
               const connection = (() => {
@@ -740,7 +743,7 @@ class Wallet {
                     }
 
                     const {json: {data: {path}}} = this;
-                    const itemEntry = itemApis[path];
+                    const itemEntry = itemPluginApis[path];
                     if (itemEntry) {
                       for (let i = 0; i < itemEntry.length; i++) {
                         const itemApi = itemEntry[i];
@@ -912,11 +915,12 @@ class Wallet {
               })();
               scene.add(assetsMesh);
 
-              const itemApis = {};
+              const itemPluginApis = {};
+              const itemAssetInstances = {};
               const _bindAssetInstance = assetInstance => {
                 if (assetInstance.ext === 'itm') {
                   const path = (assetInstance.json && assetInstance.json.data && assetInstance.json.data.path) || null;
-                  const itemEntry = itemApis[path];
+                  const itemEntry = itemPluginApis[path];
 
                   if (itemEntry) {
                     for (let i = 0; i < itemEntry.length; i++) {
@@ -941,7 +945,7 @@ class Wallet {
               const _unbindAssetInstance = assetInstance => {
                 if (assetInstance.ext === 'itm') {
                   const {json: {data: {path}}} = assetInstance;
-                  const itemEntry = itemApis[path];
+                  const itemEntry = itemPluginApis[path];
 
                   if (itemEntry) {
                     for (let i = 0; i < itemEntry.length; i++) {
@@ -950,6 +954,20 @@ class Wallet {
                       if (typeof itemApi.itemRemovedCallback === 'function') {
                         itemApi.itemRemovedCallback(assetInstance);
                       }
+                    }
+                  }
+
+                  const match = path ? path.match(/^(.+?)\//) : null;
+                  if (match) {
+                    const moduleName = match[1];
+
+                    if (--itemAssetInstances[moduleName] === 0) {
+                      delete itemAssetInstances[moduleName];
+
+                      loader.releasePlugin(moduleName)
+                        .catch(err => {
+                          console.warn(err);
+                        });
                     }
                   }
                 }
@@ -1056,6 +1074,27 @@ class Wallet {
                 assetInstance.on('setOpen', open => {
                   walletApi.emit(open ? 'menuopen' : 'menuclose', assetInstance);
                 });
+              };
+              const _bindAssetInstanceItem = assetInstance => {
+                if (assetInstance.ext === 'itm') {
+                  const {json: {data: {path}}} = assetInstance;
+                  const match = path ? path.match(/^(.+?)\//) : null;
+
+                  if (match) {
+                    const moduleName = match[1];
+
+                    if (!itemAssetInstances[moduleName]) {
+                      itemAssetInstances[moduleName] = 1;
+
+                      loader.requestPlugin(moduleName)
+                        .catch(err => {
+                          console.warn(err);
+                        });
+                    } else {
+                      itemAssetInstances[moduleName]++;
+                    }
+                  }
+                }
               };
 
               const _pullItem = (assetSpec, side) => {
@@ -1277,6 +1316,7 @@ class Wallet {
                   _bindAssetInstance(assetInstance);
                   _bindAssetInstancePhysics(assetInstance);
                   _bindAssetInstanceMenu(assetInstance);
+                  _bindAssetInstanceItem(assetInstance);
 
                   !local && connection && !bootstrap.isSpectating() && connection.send(JSON.stringify({
                     method: 'addAsset',
@@ -1431,10 +1471,10 @@ class Wallet {
                 registerItem(pluginInstance, itemApi) {
                   const {path} = itemApi;
 
-                  let entry = itemApis[path];
+                  let entry = itemPluginApis[path];
                   if (!entry) {
                     entry = [];
-                    itemApis[path] = entry;
+                    itemPluginApis[path] = entry;
                   }
                   entry.push(itemApi);
 
@@ -1444,10 +1484,10 @@ class Wallet {
                 unregisterItem(pluginInstance, itemApi) {
                   const {path} = itemApi;
 
-                  const entry = itemApis[path];
+                  const entry = itemPluginApis[path];
                   entry.splice(entry.indexOf(itemApi), 1);
                   if (entry.length === 0) {
-                    delete itemApis[path];
+                    delete itemPluginApis[path];
                   }
 
                   _unbindItemApi(itemApi);
