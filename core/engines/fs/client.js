@@ -227,7 +227,7 @@ class Fs {
         };
         document.addEventListener('drop', drop);
 
-        window.addEventListener('message', e => {
+        const _message = e => {
           const {data} = e;
           if (data._upload) {
             const {name, type, stringData} = data;
@@ -240,11 +240,14 @@ class Fs {
                 console.warn(err);
               });
           }
-        });
+        };
+        window.addEventListener('message', _message);
 
         this._cleanup = () => {
           document.removeEventListener('dragover', dragover);
           document.removeEventListener('drop', drop);
+
+          window.removeEventListener('message', _message);
         };
 
         /* class FsFile {
