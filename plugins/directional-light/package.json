@@ -1,9 +1,29 @@
 {
   "name": "directional-light",
   "description": "Provides a basic directional light source.",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "client": "client.js",
+  "metadata": {
+    "owner": "avaer",
+    "items": [
+      {
+        "type": "directional-light",
+        "icon": "img/icon.png",
+        "attributes": {}
+      }
+    ]
+  },
+  "author": "Avaer Kazmer <a@modules.io>",
+  "keywords": [
+    "zeo-mod"
+  ],
   "dependencies": {
     "geometryutils": "0.0.8"
-  }
+  },
+  "main": "client.js",
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "license": "ISC"
 }
