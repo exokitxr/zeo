@@ -1,7 +1,7 @@
 {
   "name": "directional-light-vr",
   "description": "Provides a basic directional light source.",
-  "version": "0.0.2",
+  "version": "0.0.1",
   "client": "client.js",
   "metadata": {
     "owner": "avaer",

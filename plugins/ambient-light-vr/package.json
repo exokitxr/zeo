@@ -1,7 +1,7 @@
 {
   "name": "ambient-light-vr",
   "description": "Provides an ambient light source.",
-  "version": "0.0.2",
+  "version": "0.0.1",
   "client": "client.js",
   "metadata": {
     "owner": "avaer",
