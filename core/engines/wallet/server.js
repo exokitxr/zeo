@@ -7,8 +7,6 @@ const mkdirp = require('mkdirp');
 const bodyParser = require('body-parser');
 const bodyParserJson = bodyParser.json();
 
-const DEFAULT_ITEMS = [];
-
 class Wallet {
   constructor(archae) {
     this._archae = archae;
@@ -26,20 +24,18 @@ class Wallet {
     const worldPath = path.join(dirname, dataDirectory, 'world');
     const worldItemsJsonPath = path.join(worldPath, 'items.json');
 
-    const _requestFile = (p, defaultValue) => new Promise((accept, reject) => {
+    const _requestFile = p => new Promise((accept, reject) => {
       fs.readFile(p, 'utf8', (err, s) => {
         if (!err) {
-          const j = JSON.parse(s);
-          accept(j);
+          accept(JSON.parse(s));
         } else if (err.code === 'ENOENT') {
-          const j = defaultValue;
-          accept(j);
+          accept(null);
         } else {
           reject(err);
         }
       });
     });
-    const _requestItemsJson = () => _requestFile(worldItemsJsonPath, DEFAULT_ITEMS);
+    const _requestItemsJson = () => _requestFile(worldItemsJsonPath);
 
     return Promise.all([
       archae.requestPlugins([
@@ -56,6 +52,8 @@ class Wallet {
         assetInstances,
       ]) => {
         if (live) {
+          assetInstances = assetInstances || [];
+
           const _saveFile = (p, j) => new Promise((accept, reject) => {
             mkdirp(path.dirname(p), err => {
               if (!err) {
