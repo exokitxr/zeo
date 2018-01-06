@@ -1,0 +1,140 @@
+{
+  "tags": {
+    "dxlmqi": {
+      "type": "entity",
+      "id": "dxlmqi",
+      "name": "ambient-light-vr",
+      "displayName": "ambient-light-vr",
+      "module": "ambient-light-vr",
+      "version": "0.0.1",
+      "tagName": "ambient-light-vr",
+      "attributes": {
+        "color": {
+          "value": "#ffffff"
+        },
+        "intensity": {
+          "value": 0.2
+        }
+      },
+      "metadata": {}
+    },
+    "3rdq9m": {
+      "type": "entity",
+      "id": "3rdq9m",
+      "name": "directional-light-vr",
+      "displayName": "directional-light-vr",
+      "module": "directional-light-vr",
+      "version": "0.0.1",
+      "tagName": "directional-light-vr",
+      "attributes": {
+        "position": {
+          "value": [
+            4,
+            3,
+            3,
+            0,
+            0,
+            0,
+            1,
+            1,
+            1,
+            1
+          ]
+        },
+        "lookat": {
+          "value": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            1,
+            1,
+            1
+          ]
+        },
+        "color": {
+          "value": "#ffffff"
+        },
+        "intensity": {
+          "value": 2
+        },
+        "shadow": {
+          "value": false
+        }
+      },
+      "metadata": {
+        "isStatic": false,
+        "exists": false
+      }
+    },
+    "ji5a4i0": {
+      "type": "entity",
+      "id": "ji5a4i0",
+      "name": "floor-basic",
+      "displayName": "floor-basic",
+      "version": "0.0.1",
+      "module": "floor-basic",
+      "tagName": "floor-basic",
+      "attributes": {},
+      "metadata": {}
+    },
+    "ji5a4i1": {
+      "type": "entity",
+      "id": "ji5a4i",
+      "name": "skin-vr",
+      "displayName": "skin-vr",
+      "version": "0.0.1",
+      "module": "skin-vr",
+      "tagName": "skin-vr",
+      "attributes": {},
+      "metadata": {}
+    },
+    "ji5a4i2": {
+      "type": "entity",
+      "id": "ji5a4i2",
+      "name": "lightsaber-vr",
+      "displayName": "lightsaber-vr",
+      "version": "0.0.1",
+      "module": "lightsaber-vr",
+      "tagName": "lightsaber-vr",
+      "attributes": {},
+      "metadata": {}
+    },
+    "ji5a4i3": {
+      "type": "entity",
+      "id": "ji5a4i3",
+      "name": "drone-vr",
+      "displayName": "drone-vr",
+      "version": "0.0.1",
+      "module": "drone-vr",
+      "tagName": "drone-vr",
+      "attributes": {},
+      "metadata": {}
+    },
+    "ji5a4i4": {
+      "type": "entity",
+      "id": "ji5a4i4",
+      "name": "bag-vr",
+      "displayName": "bag-vr",
+      "version": "0.0.1",
+      "module": "bag-vr",
+      "tagName": "bag-vr",
+      "attributes": {},
+      "metadata": {}
+    },
+    "ji5a4i5": {
+      "type": "entity",
+      "id": "ji5a4i5",
+      "name": "glass-vr",
+      "displayName": "glass-vr",
+      "version": "0.0.1",
+      "module": "glass-vr",
+      "tagName": "glass-vr",
+      "attributes": {},
+      "metadata": {}
+    }
+  }
+}
