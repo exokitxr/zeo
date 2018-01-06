@@ -128,7 +128,18 @@ class Wallet {
           page: 0,
         };
 
-        const _requestAssets = () => vridApi.get('assets')
+        const _requestAssets = () => (() => {
+          if (!offline) {
+            return vridApi.get('assets');
+          } else {
+            const localAssetsString = localStorage.getItem('assets');
+            if (localAssetsString) {
+              return Promise.resolve(JSON.parse(localAssetsString));
+            } else {
+              return Promise.resolve(defaultItemsJson);
+            }
+          }
+        })()
           .then(assets => assets || []);
         const _requestEquipments = () => vridApi.get('equipment')
           .then(equipments => _arrayify(equipments, 4));
@@ -196,9 +207,8 @@ class Wallet {
                 height: 16,
                 data: new Uint8Array(arrayBuffer),
               }));
-              const _addStrgAsset = (id, name, ext, json, file) => vridApi.get('assets')
+              const _addStrgAsset = (id, name, ext, json, file) => _requestAssets()
                 .then(assets => {
-                  assets = assets || [];
                   let assetSpec = assets.find(assetSpec => assetSpec.id === id);
                   if (!assetSpec) {
                     assetSpec = {
@@ -216,16 +226,15 @@ class Wallet {
                     assets.push(assetSpec);
                   }
 
-                  return vridApi.set('assets', assets);
+                  return _setAssets(assets);
                 });
-              const _removeStrgAsset = asset => vridApi.get('assets')
+              const _removeStrgAsset = asset => _requestAssets()
                 .then(assets => {
-                  assets = assets || [];
                   const assetSpecIndex = assets.findIndex(assetSpec => assetSpec.asset === asset);
                   if (assetSpecIndex !== -1) {
                     assets.splice(assetSpecIndex, 1);
                   }
-                  return vridApi.set('assets', assets);
+                  return _setAssets(assets);
                 });
 
               const _addAsset = (assetId, id, name, ext, json, file, n, owner, physics, matrix, visible, open) => {
@@ -360,9 +369,8 @@ class Wallet {
                   });
                   return connection;
                 } else {
-                  Promise.resolve()
-                    .then(() => {
-                      const assets = defaultItemsJson;
+                  _requestAssets()
+                    .then(assets => {
                       for (let i = 0; i < assets.length; i++) {
                         const assetSpec = assets[i];
                         const {
