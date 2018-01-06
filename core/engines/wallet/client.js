@@ -1,10 +1,11 @@
-import {
+const {
   WIDTH,
   HEIGHT,
   WORLD_WIDTH,
   WORLD_HEIGHT,
   WORLD_DEPTH,
-} from './lib/constants/wallet';
+} = require('./lib/constants/wallet');
+const defaultItemsJson = require('./lib/defaults/items.json');
 
 const DEFAULT_MATRIX = [
   0, 0, 0,
@@ -357,6 +358,33 @@ class Wallet {
                   });
                   return connection;
                 } else {
+                  Promise.resolve()
+                    .then(() => {
+                      const assets = defaultItemsJson;
+                      for (let i = 0; i < assets.length; i++) {
+                        const assetSpec = assets[i];
+                        const {
+                          assetId,
+                          id,
+                          name,
+                          ext,
+                          json,
+                          file,
+                          n,
+                          owner,
+                          physics,
+                          matrix,
+                          visible,
+                          open,
+                        } = assetSpec;
+
+                        _addAsset(assetId, id, name, ext, json, file, n, owner, physics, matrix, visible, open);
+                      }
+                    })
+                    .catch(err => {
+                      console.warn(err);
+                    });
+
                   return null;
                 }
               })();

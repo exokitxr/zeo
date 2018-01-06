@@ -155,16 +155,17 @@ class Fs {
           req.onprogress = n => {
             note.set(_makeNotificationText(n));
           };
-          req.then(() => {
-            notification.removeNotification(note);
+          return req
+            .then(() => {
+              notification.removeNotification(note);
 
-            return serverFile;
-          })
-          .catch(err => {
-            notification.removeNotification(note);
+              return serverFile;
+            })
+            .catch(err => {
+              notification.removeNotification(note);
 
-            return Promise.rejecr(err);
-          });
+              return Promise.reject(err);
+            });
         };
         const _getDropMatrix = (numFiles, fileIndex) => {
           const {hmd} = webvr.getStatus();
@@ -192,36 +193,54 @@ class Fs {
           s += ']';
           return s;
         };
+        const _handleFile = (file, i = 0, numFiles = 1) => {
+          if (/\.itm/.test(file.name)) {
+            return _uploadJsonFile(file)
+              .then(json => {
+                fsApi.emit('upload', {
+                  fileName: file.name,
+                  json,
+                  dropMatrix: _getDropMatrix(numFiles, i),
+                });
+              });
+          } else {
+            return _uploadDataFile(file)
+              .then(file => {
+                fsApi.emit('upload', {
+                  fileName: file.name,
+                  file,
+                  dropMatrix: _getDropMatrix(numFiles, i),
+                });
+              });
+          }
+        };
         const drop = e => {
           e.preventDefault();
 
           const {dataTransfer: {items}} = e;
           if (items.length > 0) {
             _getFiles(items)
-              .then(files => Promise.all(files.map((file, i) => {
-                if (/\.itm/.test(file.name)) {
-                  return _uploadJsonFile(file)
-                    .then(json => {
-                      fsApi.emit('upload', {
-                        fileName: file.name,
-                        json,
-                        dropMatrix: _getDropMatrix(files.length, i),
-                      });
-                    });
-                } else {
-                  return _uploadDataFile(file)
-                    .then(file => {
-                      fsApi.emit('upload', {
-                        fileName: file.name,
-                        file,
-                        dropMatrix: _getDropMatrix(files.length, i),
-                      });
-                    });
-                }
-              })));
+              .then(files => Promise.all(files.map((file, i) =>
+                _handleFile(file, i, files.length)
+              )));
           }
         };
         document.addEventListener('drop', drop);
+
+        window.addEventListener('message', e => {
+          const {data} = e;
+          if (data._upload) {
+            const {name, type, stringData} = data;
+            const blob = new Blob([stringData], {
+              type,
+            });
+            blob.name = name;
+            _handleFile(blob)
+              .catch(err => {
+                console.warn(err);
+              });
+          }
+        });
 
         this._cleanup = () => {
           document.removeEventListener('dragover', dragover);
