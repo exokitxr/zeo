@@ -1,16 +1,31 @@
 {
   "tags": {
+    "dxlmqi": {
+      "type": "entity",
+      "id": "dxlmqi",
+      "name": "ambient-light-vr",
+      "displayName": "ambient-light-vr",
+      "module": "ambient-light-vr",
+      "version": "0.0.1",
+      "tagName": "ambient-light-vr",
+      "attributes": {
+        "color": {
+          "value": "#ffffff"
+        },
+        "intensity": {
+          "value": 0.2
+        }
+      },
+      "metadata": {}
+    },
     "3rdq9m": {
-      "_events": {},
       "type": "entity",
       "id": "3rdq9m",
-      "name": "directional-light",
-      "displayName": "directional-light",
-      "module": "directional-light",
-      "description": "Provides a basic directional light source.",
+      "name": "directional-light-vr",
+      "displayName": "directional-light-vr",
+      "module": "directional-light-vr",
       "version": "0.0.1",
-      "readme": null,
-      "tagName": "directional-light",
+      "tagName": "directional-light-vr",
       "attributes": {
         "position": {
           "value": [
@@ -54,25 +69,6 @@
         "isStatic": false,
         "exists": false
       }
-    },
-    "dxlmqi": {
-      "_events": {},
-      "type": "entity",
-      "id": "dxlmqi",
-      "name": "ambient-light",
-      "displayName": "ambient-light",
-      "module": "ambient-light",
-      "version": "0.0.1",
-      "tagName": "ambient-light",
-      "attributes": {
-        "color": {
-          "value": "#ffffff"
-        },
-        "intensity": {
-          "value": 0.2
-        }
-      },
-      "metadata": {}
     },
     "7w06": {
       "type": "entity",
