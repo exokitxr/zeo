@@ -99,7 +99,6 @@ class Transform {
           const rotateScale = 0.5;
           const scaleScale = 0.3;
           const scaleVector = new THREE.Vector3(scaleScale, scaleScale, scaleScale);
-          const scaleFactor = scaleVector.length();
           const _makeTransformGizmo = ({position = zeroVector, rotation = zeroQuaternion, scale = oneVector, onpreview = nop, onupdate = nop, onhover = nop}) => {
             const transformId = _makeId();
 
@@ -138,7 +137,7 @@ class Transform {
               object.syncScale = () => {
                 properties.scale.copy(
                   state.initialScale.clone()
-                    .multiply(scaleGizmo.position.clone().divideScalar(scaleFactor))
+                    .multiply(scaleGizmo.position.clone().divideScalar(scaleScale))
                 );
               };
               object.onpreview = onpreview;
