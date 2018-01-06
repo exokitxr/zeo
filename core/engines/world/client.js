@@ -737,7 +737,7 @@ class World {
             });
             return connection;
           } else {
-            initPromise
+            /* initPromise
               .then(() => {
                 let id = 0;
                 const itemSpecs = offlinePlugins.map(({name, version}) =>
@@ -754,7 +754,7 @@ class World {
                   })
                 );
                 _loadTags(itemSpecs);
-              });
+              }); */
 
             return null;
           }

@@ -109,7 +109,7 @@ class Inventory {
           enabled: serverEnabled,
         },
         offline,
-        offlinePlugins,
+        // offlinePlugins,
       },
     } = archae;
 
@@ -212,12 +212,13 @@ class Inventory {
             return Promise.resolve([]);
           });
       } else {
-        return Promise.all(
+        return Promise.resolve([]);
+        /* return Promise.all(
           offlinePlugins.map(({name, version}) =>
             fetch(`https://my-site.zeovr.io/mods/${name}`)
               .then(_resJson)
           )
-        );
+        ); */
       }
     };
     const _refreshRemoteMods = () => _requestRemoteMods()
@@ -398,7 +399,7 @@ class Inventory {
           o.frustumCulled = true;
         };
 
-        if (offline) {
+        /* if (offline) {
           for (let i = 0; i < offlinePlugins.length; i++) {
             const offlinePlugin = offlinePlugins[i];
             const {name: modName, version} = offlinePlugin;
@@ -452,7 +453,7 @@ class Inventory {
               }
             }
           }
-        }
+        } */
 
         const rowHeight = 100;
         const localColor = new THREE.Color();

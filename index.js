@@ -99,7 +99,7 @@ const siteUrl = flags.siteUrl || (protocolString + '://' + hostname + ':' + port
 const vridUrl = flags.vridUrl || (protocolString + '://' + hostname + ':' + port);
 const crdsUrl = flags.crdsUrl || (protocolString + '://' + hostname + ':' + port);
 const fullUrl = protocolString + '://127.0.0.1:' + port;
-const indexJsPrefix = `window.startTime = ${Date.now()};\n` + (flags.offline ? `\
+const indexJsPrefix = `window.startTime = ${Date.now()};\n`; /* + (flags.offline ? `\
 (() => {
   const query = {};
   window.location.search.replace(
@@ -122,7 +122,7 @@ const indexJsPrefix = `window.startTime = ${Date.now()};\n` + (flags.offline ? `
       .filter(p => p !== null)
   : [];
 })();
-` : '');
+` : ''); */
 const serverName = flags.name || 'Server';
 const maxUsers = (flags.maxUsers && parseInt(flags.maxUsers, 10)) || 4;
 const config = {
@@ -167,7 +167,7 @@ const config = {
     maxUsers,
     noTty: flags.noTty,
     offline: flags.offline,
-    offlinePlugins: [],
+    // offlinePlugins: [],
     transient: {},
   },
 };
