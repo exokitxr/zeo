@@ -113,7 +113,6 @@ class Wallet {
         );
         const localVector = new THREE.Vector3();
         const localQuaternion = new THREE.Quaternion();
-        const localMatrix = new THREE.Matrix4();
 
         const walletState = {
           loading: true,
