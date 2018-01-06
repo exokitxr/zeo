@@ -1,5 +1,5 @@
 {
-  "name": "directional-light",
+  "name": "directional-light-vr",
   "description": "Provides a basic directional light source.",
   "version": "0.0.2",
   "client": "client.js",
