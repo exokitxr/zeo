@@ -1,6 +1,6 @@
 {
   "name": "floor-basic",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Provides a basic floor.",
   "main": "client.js",
   "serves": {
