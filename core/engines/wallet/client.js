@@ -1260,17 +1260,57 @@ class Wallet {
               };
               fs.on('upload', _upload);
 
-              const _message = e => {
-                const {data} = e;
-                if (data._world) {
-                  const {method} = data;
+              if (offline) {
+                const _message = e => {
+                  const {data} = e;
+                  if (data._world) {
+                    const {method} = data;
 
-                  if (method === 'resetWorld') {
-                    walletApi.replaceAssets(defaultItemsJson);
+                    if (method === 'saveWorld') {
+                      const {id} = data;
+                      const items = assetsMesh.getAssetInstances().map(({
+                        assetId,
+                        id,
+                        name,
+                        ext,
+                        json = null,
+                        file = null,
+                        n,
+                        owner,
+                        physics,
+                        position: matrix,
+                        visible,
+                        open,
+                      }) => ({
+                        assetId,
+                        id,
+                        name,
+                        ext,
+                        json,
+                        file,
+                        n,
+                        owner,
+                        physics,
+                        matrix,
+                        visible,
+                        open,
+                      }));
+
+                      window.parent.postMessage({
+                        _response: true,
+                        method,
+                        id,
+                        args: {
+                          items,
+                        },
+                      }, '*');
+                    } else if (method === 'resetWorld') {
+                      walletApi.replaceAssets(defaultItemsJson);
+                    }
                   }
-                }
-              };
-              window.addEventListener('message', _message);
+                };
+                window.addEventListener('message', _message);
+              }
 
               const _update = () => {
                 assetsMaterial.uniforms.theta.value = (Date.now() * ROTATE_SPEED * (Math.PI * 2) % (Math.PI * 2));
@@ -1280,7 +1320,10 @@ class Wallet {
               cleanups.push(() => {
                 fs.removeListener('upload', _upload);
                 rend.removeListener('update', _update);
-                window.removeEventListener('message', _message);
+
+                if (offline) {
+                  window.removeEventListener('message', _message);
+                }
               });
 
               class WalletApi extends EventEmitter {
