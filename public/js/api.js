@@ -23,8 +23,8 @@ window.addEventListener('message', e => {
         }, '*');
       }
     } else if (method === 'setItems') {
-      const {args: {items}} = data;
-      localStorage.setItem('assets', []);
+      const {args: {assets}} = data;
+      localStorage.setItem('assets', JSON.stringify(assets));
 
       window.parent.postMessage({
         _api: true,
