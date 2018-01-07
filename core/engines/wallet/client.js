@@ -1266,7 +1266,10 @@ class Wallet {
                   if (data._world) {
                     const {method} = data;
 
-                    if (method === 'saveWorld') {
+                    if (method === 'loadWorld') {
+                      const {args: {items}} = data;
+                      walletApi.replaceAssets(items);
+                    } else if (method === 'saveWorld') {
                       const {id} = data;
                       const items = assetsMesh.getAssetInstances().map(({
                         assetId,
