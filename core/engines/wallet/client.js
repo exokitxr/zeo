@@ -1260,6 +1260,18 @@ class Wallet {
               };
               fs.on('upload', _upload);
 
+              const _message = e => {
+                const {data} = e;
+                if (data._world) {
+                  const {method} = data;
+
+                  if (method === 'resetWorld') {
+                    walletApi.replaceAssets(defaultItemsJson);
+                  }
+                }
+              };
+              window.addEventListener('message', _message);
+
               const _update = () => {
                 assetsMaterial.uniforms.theta.value = (Date.now() * ROTATE_SPEED * (Math.PI * 2) % (Math.PI * 2));
               };
@@ -1267,8 +1279,8 @@ class Wallet {
 
               cleanups.push(() => {
                 fs.removeListener('upload', _upload);
-
                 rend.removeListener('update', _update);
+                window.removeEventListener('message', _message);
               });
 
               class WalletApi extends EventEmitter {
