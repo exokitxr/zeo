@@ -10,19 +10,16 @@ window.addEventListener('message', e => {
         const items = JSON.parse(localAssetsString);
 
         window.parent.postMessage({
-          _response: true,
+          _api: true,
           id,
-          args: {
-            items,
-          },
+          result: items,
         }, '*');
       } else {
         window.parent.postMessage({
-          _response: true,
+          _api: true,
           id,
-          args: {
-            items,
-          },
+          type: 'response',
+          result: [],
         }, '*');
       }
     } else if (method === 'setItems') {
@@ -30,9 +27,16 @@ window.addEventListener('message', e => {
       localStorage.setItem('assets', []);
 
       window.parent.postMessage({
-        _response: true,
+        _api: true,
+        type: 'response',
         id,
+        result: null,
       }, '*');
     }
   }
 });
+
+parent.postMessage({
+  _api: true,
+  type: 'init',
+}, '*');
