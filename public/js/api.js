@@ -12,6 +12,7 @@ window.addEventListener('message', e => {
         window.parent.postMessage({
           _api: true,
           id,
+          type: 'response',
           result: items,
         }, '*');
       } else {
