@@ -234,12 +234,20 @@ class Zeo {
                       vrImg,
                     ]) => {
                       const canvas = document.createElement('canvas');
-                      canvas.width = micImg.width + vrImg.width;
-                      canvas.height = Math.max(micImg.height, vrImg.height);
+                      canvas.width = 2048;
+                      canvas.height = 100;
                       const ctx = canvas.getContext('2d');
 
-                      ctx.drawImage(micImg, 0, 0);
-                      ctx.drawImage(vrImg, micImg.width, 0);
+                      ctx.font = '30px Open sans';
+                      ctx.fillStyle = '#FFF';
+                      ctx.textBaseline = 'middle';
+                      ctx.scale(0.5, 1);
+
+                      // ctx.drawImage(vrImg, 0, 0, canvas.height, canvas.height);
+                      ctx.drawImage(vrImg, (canvas.width - 160)*2, 0, canvas.height, canvas.height);
+                      ctx.fillText('Enter VR', (canvas.width - 160)*2 + canvas.height + 10, canvas.height/2);
+                      ctx.drawImage(micImg, (canvas.width - 160*2)*2, 0, canvas.height, canvas.height);
+                      ctx.fillText('Enable mic', (canvas.width - 160*2)*2 + canvas.height + 10, canvas.height/2);
 
                       blockerTexture.image = canvas;
                       blockerTexture.needsUpdate = true;
@@ -274,13 +282,9 @@ class Zeo {
                     }
                   `;
 
-                  const texWidth = renderer.domElement.width * 0.1;
-                  const texHeight = renderer.domElement.width * 0.1;
-                  const dstX = 0.85 * renderer.domElement.width;
-                  const dstY = 0.1 * renderer.domElement.width;
-                  const matrix = new THREE.Matrix4().makeOrthographic(0, renderer.domElement.width, renderer.domElement.height, 0, -1, 1);
-                  matrix.multiply(localMatrix.makeTranslation(dstX, dstY, 1));
-                  matrix.multiply(localMatrix.makeScale(texWidth * 2, texHeight, 1));
+                  const matrix = new THREE.Matrix4().makeOrthographic(0, 1, 1, 0, -1, 1);
+                  matrix.multiply(localMatrix.makeTranslation(0.5, 50/renderer.domElement.height/2, 1));
+                  matrix.multiply(localMatrix.makeScale(1, 50/renderer.domElement.height, 1));
                   const material = new THREE.ShaderMaterial({
                     uniforms: {
                       u_matrix: {
@@ -448,14 +452,16 @@ class Zeo {
 
                         canvas.addEventListener('click', e => {
                           if (!webvr.isPresenting()) {
-                            const iconSize = parseInt(canvas.style.width, 10) * 0.1;
-                            const fx = parseInt(canvas.style.width, 10) - e.clientX;
-                            const fy = parseInt(canvas.style.height, 10) - e.clientY;
-                            if (fx >= iconSize*0.5 && fx <= iconSize*1.5 && fy >= iconSize*0.5 && fy <= iconSize*1.5) {
+                            const barHeight = 50/canvas.height;
+                            const buttonWidth = 160/2048;
+                            const fx = e.clientX/parseInt(canvas.style.width, 10);
+                            const fy = (parseInt(canvas.style.height, 10) - e.clientY)/parseInt(canvas.style.height, 10);
+
+                            if (fy <= barHeight && fx >= 1.0 - buttonWidth && fx <= 1.0) {
                               if (webvr.supportsWebVR()) {
                                 _enterHeadsetVR();
                               }
-                            } else if (fx >= iconSize*1.5 && fx <= iconSize*2.5 && fy >= iconSize*0.5 && fy <= iconSize*1.5) {
+                            } else if (fy <= barHeight && (fx >= 1.0 - buttonWidth*2) && (fx <= 1.0 - buttonWidth)) {
                               if (voicechat.isEnabled()) {
                                 voicechat.disable();
                               } else {
