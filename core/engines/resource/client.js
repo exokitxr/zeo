@@ -101,6 +101,7 @@ class Assets {
           const err = new Error('fonts failed to load');
           reject(err);
         },
+        timeout: 5000,
       });
     });
     const _requestSfx = () => Promise.all(SFX.map(sfx => sfxr.requestSfx(sfxPath + '/' + sfx + '.ogg')))
