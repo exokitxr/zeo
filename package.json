@@ -38,7 +38,7 @@
     "node": "8.x"
   },
   "dependencies": {
-    "archae": "0.0.162",
+    "archae": "0.0.163",
     "fs-extra": "^5.0.0",
     "mkdirp": "^0.5.1",
     "nat-upnp": "^1.1.0"
