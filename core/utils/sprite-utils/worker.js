@@ -1,3 +1,4 @@
+self.module = {};
 importScripts('/archae/plugins/_core_engines_resource/serve/three.js');
 const {exports: THREE} = self.module;
 self.module = {};
