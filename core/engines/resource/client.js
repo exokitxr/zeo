@@ -69,26 +69,6 @@ class Assets {
       credentials: 'include',
     })
       .then(res => res.json());
-    const _requestImage = url => new Promise((accept, reject) => {
-      const img = new Image();
-
-      img.onload = () => {
-        _cleanup();
-
-        accept(img);
-      };
-      img.onerror = err => {
-        reject(err);
-      };
-
-      img.crossOrigin = true;
-      img.src = url;
-
-      const _cleanup = () => {
-        img.oncanplay = null;
-        img.onerror = null;
-      };
-    });
     const _requestFonts = () => new Promise((accept, reject) => {
       WebFont.load({
         google: {
