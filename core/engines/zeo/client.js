@@ -475,7 +475,7 @@ class Zeo {
                           }
                         });
 
-                        const urlRequestPresent = _getQueryVariable(window.location.search, 'e');
+                        const urlRequestPresent = _getQueryVariable(window.location.search || '', 'e');
                         if (webvr.supportsWebVR() && urlRequestPresent === 'hmd') {
                           _enterHeadsetVR();
                         } else if (urlRequestPresent === 'keyboard') {
@@ -483,7 +483,7 @@ class Zeo {
                         }
                       }
 
-                      /* const captureTime = parseInt(_getQueryVariable(window.location.search, 'c'), 10);
+                      /* const captureTime = parseInt(_getQueryVariable(window.location.search || '', 'c'), 10);
                       if (!isNaN(captureTime)) {
                         let running = false;
                         let queue = [];

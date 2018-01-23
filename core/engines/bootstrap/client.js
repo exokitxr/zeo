@@ -63,15 +63,15 @@ class Bootstrap {
 
               let address = null;
               const captureMode = (() => {
-                if (_getQueryVariable(window.location.search, 'ci')) {
+                if (_getQueryVariable(window.location.search || '', 'ci')) {
                   return 'image';
-                } else if (_getQueryVariable(window.location.search, 'cv')) {
+                } else if (_getQueryVariable(window.location.search || '', 'cv')) {
                   return 'video';
                 } else {
                   return null;
                 }
               })();
-              const isSpectating = Boolean(_getQueryVariable(window.location.search, 's')) || captureMode !== null;
+              const isSpectating = Boolean(_getQueryVariable(window.location.search || '', 's')) || captureMode !== null;
 
               class BootstrapApi extends EventEmitter {
                 getInitialUrl() {
