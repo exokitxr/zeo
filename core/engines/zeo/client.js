@@ -314,8 +314,9 @@ class Zeo {
                   return mesh;
                 })();
                 scene.add(blockerMesh);
-                const backgroundMesh = (() => {
-                  if (window.navigator.getVRMode() === 'ar') {
+
+                if (window.navigator.getVRMode && window.navigator.getVRMode() === 'ar') {
+                  const backgroundMesh = (() => {
                     const geometry = oneGeometry;
                     const matrix = new THREE.Matrix4().makeOrthographic(0, 1, 1, 0, -1, 1);
                     matrix.multiply(localMatrix.makeTranslation(0.5, 0.5, 1));
@@ -348,11 +349,7 @@ class Zeo {
                     const mesh = new THREE.Mesh(geometry, material);
                     mesh.frustumCulled = false;
                     return mesh;
-                  } else {
-                    return null;
-                  }
-                })();
-                if (backgroundMesh) {
+                  })();
                   scene.children.splice(0, 0, backgroundMesh);
                 }
 
