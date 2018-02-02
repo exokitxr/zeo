@@ -261,29 +261,37 @@ class Zeo {
                 _renderBlocker();
 
                 const localMatrix = new THREE.Matrix4();
+                const oneGeometry = new THREE.PlaneBufferGeometry(1, 1);
+                const basicVertexShader = `\
+                  uniform mat4 u_matrix;
+
+                  varying vec2 v_texcoord;
+
+                  void main() {
+                    gl_Position = u_matrix * vec4(position, 1.0);
+                    v_texcoord = uv;
+                  }
+                `;
+                const basicFragmentShader = `\
+                  varying vec2 v_texcoord;
+
+                  uniform sampler2D u_texture;
+
+                  void main() {
+                    gl_FragColor = vec4(texture2D(u_texture, v_texcoord).rgb, 1.0);
+                  }
+                `;
+                const externalFragmentShader = `\
+                  varying vec2 v_texcoord;
+
+                  uniform samplerExternalOES u_texture;
+
+                  void main() {
+                    gl_FragColor = vec4(texture2D(u_texture, v_texcoord).rgb, 1.0);
+                  }
+                `;
                 const blockerMesh = (() => {
-                  const geometry = new THREE.PlaneBufferGeometry(1, 1);
-
-                  const vertexShader = `\
-                    uniform mat4 u_matrix;
-
-                    varying vec2 v_texcoord;
-
-                    void main() {
-                      gl_Position = u_matrix * vec4(position, 1.0);
-                      v_texcoord = uv;
-                    }
-                  `;
-                  const fragmentShader = `\
-                    varying vec2 v_texcoord;
-
-                    uniform sampler2D u_texture;
-
-                    void main() {
-                      gl_FragColor = vec4(texture2D(u_texture, v_texcoord).rgb, 1.0);
-                    }
-                  `;
-
+                  const geometry = oneGeometry;
                   const matrix = new THREE.Matrix4().makeOrthographic(0, 1, 1, 0, -1, 1);
                   matrix.multiply(localMatrix.makeTranslation(0.5, 50/renderer.domElement.height/2, 1));
                   matrix.multiply(localMatrix.makeScale(1, 50/renderer.domElement.height, 1));
@@ -298,14 +306,55 @@ class Zeo {
                         value: blockerTexture,
                       },
                     },
-                    vertexShader,
-                    fragmentShader,
+                    vertexShader: basicVertexShader,
+                    fragmentShader: basicFragmentShader,
                   });
                   const mesh = new THREE.Mesh(geometry, material);
                   mesh.frustumCulled = false;
                   return mesh;
                 })();
                 scene.add(blockerMesh);
+                const backgroundMesh = (() => {
+                  if (window.navigator.getVRMode() === 'ar') {
+                    const geometry = oneGeometry;
+                    const matrix = new THREE.Matrix4().makeOrthographic(0, 1, 1, 0, -1, 1);
+                    matrix.multiply(localMatrix.makeTranslation(0.5, 0.5, 1));
+                    matrix.multiply(localMatrix.makeRotationFromQuaternion(
+                      new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), -Math.PI/2)
+                    ));
+                    matrix.multiply(localMatrix.makeScale(1, -1, 1));
+                    const backgroundTexture = new THREE.Texture();
+                    backgroundTexture.externalIndex = window.navigator.getVRTexture();
+                    const material = new THREE.ShaderMaterial({
+                      uniforms: {
+                        u_matrix: {
+                          type: 'm4',
+                          value: matrix,
+                        },
+                        u_texture: {
+                          type: 't',
+                          value: backgroundTexture,
+                        },
+                      },
+                      vertexShader: basicVertexShader,
+                      fragmentShader: externalFragmentShader,
+                      side: THREE.DoubleSide,
+                      depthWrite: false,
+                      // depthTest: false,
+                      extensions: {
+                        imageExternal: true,
+                      },
+                    });
+                    const mesh = new THREE.Mesh(geometry, material);
+                    mesh.frustumCulled = false;
+                    return mesh;
+                  } else {
+                    return null;
+                  }
+                })();
+                if (backgroundMesh) {
+                  scene.children.splice(0, 0, backgroundMesh);
+                }
 
                 blocker.destroy();
 
