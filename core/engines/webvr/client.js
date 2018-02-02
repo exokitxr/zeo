@@ -394,7 +394,7 @@ class WebVR {
                     new VRFrameData();
                   this._frameData = frameData;
 
-                  if (display && mr) {
+                  if (display && mr && display instanceof VRDisplay) {
                     renderer.vr.enabled = true;
                     renderer.vr.setDevice(display);
 
