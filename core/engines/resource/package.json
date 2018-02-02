@@ -33,7 +33,7 @@
     "jimp": "^0.2.28",
     "murmurhash": "0.0.2",
     "sfxr": "0.0.2",
-    "three-zeo": "0.0.15",
+    "three-zeo": "0.0.16",
     "webfontloader": "^1.6.28"
   }
 }
