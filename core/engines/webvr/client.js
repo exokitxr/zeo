@@ -319,7 +319,7 @@ class WebVR {
             super();
 
             this.display = null;
-            this.stereoscopic = false;
+            this.mr = false;
             this.isOpen = false;
             this.isOpening = false;
 
@@ -362,7 +362,7 @@ class WebVR {
 
           requestRenderLoop({
             display = null,
-            stereoscopic = false,
+            mr = false,
             update = () => {},
             updateStart = () => {},
             updateEnd = () => {},
@@ -382,7 +382,7 @@ class WebVR {
               if (!this.isOpen) {
                 const _initialize = () => {
                   this.display = display;
-                  this.stereoscopic = stereoscopic;
+                  this.mr = mr;
                   this.isOpen = true;
                   cleanups.push(() => {
                     this.isOpen = false;
@@ -394,7 +394,7 @@ class WebVR {
                     new VRFrameData();
                   this._frameData = frameData;
 
-                  if (display && stereoscopic) {
+                  if (display && mr) {
                     renderer.vr.enabled = true;
                     renderer.vr.setDevice(display);
 
@@ -410,7 +410,7 @@ class WebVR {
 
                     cleanups.push(() => {
                       this.display = null;
-                      this.stereoscopic = false;
+                      this.mr = false;
 
                       renderer.vr.enabled = false;
                       renderer.vr.setDevice(null);
@@ -512,7 +512,7 @@ class WebVR {
           };
 
           requestEnterVR({
-            stereoscopic = false,
+            mr = false,
             spectate = false,
             capture = false,
             update = () => {},
@@ -563,7 +563,7 @@ class WebVR {
               .then(_startOpening)
               .then(() => {
                 const display = (() => {
-                  if (stereoscopic && _canPresent(bestDisplay)) {
+                  if (mr && _canPresent(bestDisplay)) {
                     return bestDisplay;
                   } else if (spectate) {
                     return new SpectateVRDisplay();
@@ -626,7 +626,7 @@ class WebVR {
                     const _requestRenderLoop = () => {
                       const renderLoopPromise = this.requestRenderLoop({
                         display,
-                        stereoscopic,
+                        mr,
                         update,
                         updateStart,
                         updateEnd,

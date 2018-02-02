@@ -348,7 +348,7 @@ class Zeo {
 
                   return renderLoop;
                 };
-                const _enterVR = ({stereoscopic, spectate, capture, onExit}) => {
+                const _enterVR = ({mr, spectate, capture, onExit}) => {
                   _stopRenderLoop();
 
                   blockerMesh.visible = false;
@@ -362,7 +362,7 @@ class Zeo {
                   };
 
                   renderLoop = webvr.requestEnterVR({
-                    stereoscopic,
+                    mr,
                     spectate,
                     capture,
                     update: _update,
@@ -403,7 +403,7 @@ class Zeo {
 
                       const _enterHeadsetVR = () => {
                         _enterVR({
-                          stereoscopic: true,
+                          mr: true,
                           onExit: () => {
                             bootstrap.setVrMode(null);
                           },
@@ -433,7 +433,7 @@ class Zeo {
                       };
                       const _enterKeyboardVR = () => {
                         _enterVR({
-                          stereoscopic: false,
+                          mr: false,
                           onExit: () => {
                             bootstrap.setVrMode(null);
                           },
