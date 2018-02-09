@@ -29,8 +29,7 @@ const pickaxe = ({recipes, data}) => {
 
   const dotMeshMaterial = new THREE.MeshBasicMaterial({
     color: 0x2196F3,
-    // shininess: 0,
-    // shading: THREE.FlatShading,
+    flatShading: true,
   });
 
   return () => elements.requestElement(GENERATOR_PLUGIN)

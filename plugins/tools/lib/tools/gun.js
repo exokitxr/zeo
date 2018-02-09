@@ -81,7 +81,7 @@ const gun = ({recipes, data}) => {
     .then(gunSfx => {
       const bulletMaterial = new THREE.MeshPhongMaterial({
         color: 0xFF0000,
-        shading: THREE.FlatShading,
+        flatShading: true,
       });
 
       const bullets = [];

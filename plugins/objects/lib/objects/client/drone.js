@@ -48,15 +48,15 @@ const drone = objectApi => () => {
 
   const coreMaterial = new THREE.MeshPhongMaterial({
     color: 0xCCCCCC,
-    shading: THREE.FlatShading,
+    flatShading: true,
   });
   const eyeMaterial = new THREE.MeshPhongMaterial({
     color: 0xEEEEEE,
-    shading: THREE.FlatShading,
+    flatShading: true,
   });
   const pupilMaterial = new THREE.MeshPhongMaterial({
     color: 0x111111,
-    shading: THREE.FlatShading,
+    flatShading: true,
   });
 
   const _makeDroneMesh = (position, rotation, scale) => {

@@ -70,7 +70,7 @@ const paper = objectApi => {
           color: 0xFFFFFF,
           shininess: 0,
           map: texture,
-          shading: THREE.FlatShading,
+          flatShading: true,
         });
         return material;
       })();
