@@ -662,8 +662,10 @@ class Biolumi {
           }
 
           const _makeUi = ({width, height, color = [1, 1, 1, 1]}) => new Ui(width, height, color);
-          const _makePage = (spec, {type = null, state = null, color = [1, 1, 1, 1], width, height, worldWidth, worldHeight, layer = null}) =>
-            new Page(spec, type, state, color, width, height, worldWidth, worldHeight, layer);
+          const _makePage = (spec, opts) => {
+            const {type = null, state = null, color = [1, 1, 1, 1], width, height, worldWidth, worldHeight, layer = null} = opts;
+            return new Page(spec, type, state, color, width, height, worldWidth, worldHeight, layer);
+          };
 
           const _getFonts = () => fonts;
           const _getMonospaceFonts = () => monospaceFonts;
