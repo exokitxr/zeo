@@ -4,7 +4,7 @@
 
 [![Build status](https://ci.appveyor.com/api/projects/status/x16vv3nrqm248rp0?svg=true)](https://ci.appveyor.com/project/modulesio/zeo)
 
-:warning: _Alpha. Getting ready for [Steam](http://steampowered.com/) release. If you can't wait, [join us on Slack](https://zeovr.slack.com) or [add your email here](http://eepurl.com/cDEnID)._ :warning:
+:warning: _Alpha. If you can't wait, [join us on Slack](https://communityinviter.com/apps/exokit/exokit) or [add your email here](http://eepurl.com/cDEnID)._ :warning:
 
 ## Overview
 
