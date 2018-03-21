@@ -53,6 +53,9 @@ const POSITION_SPEED_FAST = POSITION_SPEED * 2;
 const POSITION_SPEED_ROAM = 5 / 1000;
 const POSITION_SPEED_ROAM_FAST = POSITION_SPEED_ROAM * 5;
 const ROTATION_SPEED = 0.02 / (Math.PI * 2);
+const SPAWN_X = 0;
+const SPAWN_Y = 70;
+const SPAWN_Z = 0;
 const NUM_FRAMES = 24 * 8;
 
 const BUTTONS = {
@@ -1277,16 +1280,14 @@ class WebVR {
             // nothing
           }
 
-          updatePose() {
+          updatePhysics(now, dt) {
             let matrixNeedsUpdate = false;
 
-            const now = Date.now();
-            const timeDiff = now - this.lastPoseUpdateTime;
             const roamMode = bootstrap.getRoamMode();
 
             const oldPosition = localVector.copy(this.position);
-            const offsetVector = localVector2.copy(this.velocity).multiplyScalar(timeDiff);
-            const speed = (roamMode === 'physical' ? (this.keys.shift ? POSITION_SPEED_FAST : POSITION_SPEED) : (this.keys.shift ? POSITION_SPEED_ROAM_FAST : POSITION_SPEED_ROAM)) * timeDiff;
+            const offsetVector = localVector2.copy(this.velocity).multiplyScalar(dt);
+            const speed = (roamMode === 'physical' ? (this.keys.shift ? POSITION_SPEED_FAST : POSITION_SPEED) : (this.keys.shift ? POSITION_SPEED_ROAM_FAST : POSITION_SPEED_ROAM)) * dt;
             if (this.keys.up) {
               offsetVector.z -= speed;
             }
@@ -1328,11 +1329,20 @@ class WebVR {
                   this.lastCollideTime = now;
                 }
               } else {
-                this.velocity.y += (-9.8 / 1000 / 1000 * 2) * timeDiff;
+                this.velocity.y += (-9.8 / 1000 / 1000 * 2) * dt;
               }
               if (this.keys.space && (now - this.lastCollideTime) < 200) {
                 this.velocity.y = 7 / 1000;
-                this.lastCollideTime = 0;
+              }
+              if ((now - this.lastCollideTime) > 7500) {
+                this.lastCollideTime = now + 400000;
+                this.position.x = SPAWN_X;
+                this.position.y = SPAWN_Y;
+                this.position.z = SPAWN_Z;
+                this.velocity.x = 0;
+                this.velocity.y = 0;
+                this.velocity.z = 0;
+                matrixNeedsUpdate = true;
               }
             } else {
               this.velocity.y = 0;
@@ -1344,8 +1354,21 @@ class WebVR {
               this.gamepads[0].poseNeedsUpdate = true;
               this.gamepads[1].poseNeedsUpdate = true;
             }
+          }
 
-            this.lastPoseUpdateTime = now;
+          updatePose() {
+            const now = Date.now();
+
+            let i = 0;
+            while (this.lastPoseUpdateTime < now) {
+              this.lastPoseUpdateTime += 20;
+              this.updatePhysics(now, 20);
+              if (i++ > 10) {
+                this.lastPoseUpdateTime = now;
+                console.log('slow frame');
+                break;
+              }
+            }
           }
 
           getGamepads() {
