@@ -2,6 +2,7 @@ const SkyShader = require('./lib/three-extra/SkyShader');
 
 const LIGHTMAP_PLUGIN = 'lightmap';
 const DAY_NIGHT_SPEED = 100;
+const ALLOW_NIGHT = false;
 
 class DayNightSkybox {
   mount() {
@@ -83,7 +84,7 @@ class DayNightSkybox {
             const y = sunDistance * Math.sin(phi) * Math.sin(theta);
             const z = sunDistance * Math.sin(phi) * Math.cos(theta);
 
-            mesh.sky.uniforms.sunPosition.value.set(x, y, z);
+            mesh.sky.uniforms.sunPosition.value.set(x, ALLOW_NIGHT ? y : Math.abs(y), z);
 
             sunIntensity = computeSunIntensity(
               localVector.copy(mesh.sky.uniforms.sunPosition.value)
