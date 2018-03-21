@@ -53,8 +53,10 @@ const POSITION_SPEED_FAST = POSITION_SPEED * 2;
 const POSITION_SPEED_ROAM = 5 / 1000;
 const POSITION_SPEED_ROAM_FAST = POSITION_SPEED_ROAM * 5;
 const ROTATION_SPEED = 0.02 / (Math.PI * 2);
+const TERMINAL_VELOCITY = -0.015 * 5;
+const TERMINAL_POSITION = -80;
 const SPAWN_X = 0;
-const SPAWN_Y = 70;
+const SPAWN_Y = 100;
 const SPAWN_Z = 0;
 const NUM_FRAMES = 24 * 8;
 
@@ -1330,6 +1332,9 @@ class WebVR {
                 }
               } else {
                 this.velocity.y += (-9.8 / 1000 / 1000 * 2) * dt;
+                if (this.velocity.y < TERMINAL_VELOCITY) {
+                  this.velocity.y = TERMINAL_VELOCITY;
+                }
               }
               if (this.keys.space && (now - this.lastCollideTime) < 200) {
                 this.velocity.y = 7 / 1000;
