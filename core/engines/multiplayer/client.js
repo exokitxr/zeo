@@ -108,17 +108,19 @@ class Multiplayer {
           }
 
           addPlayer(n, username) {
-            const status = _makePlayerStatus();
-            this.playerStatuses.set(n, status);
+            if (username != null) {
+              const status = _makePlayerStatus();
+              this.playerStatuses.set(n, status);
 
-            this.playerUsernames.set(n, username);
+              this.playerUsernames.set(n, username);
 
-            const remotePlayerMesh = _makeRemotePlayerMesh(username);
-            remotePlayerMesh.update(status);
-            scene.add(remotePlayerMesh);
-            this.remotePlayerMeshes.set(n, remotePlayerMesh);
+              const remotePlayerMesh = _makeRemotePlayerMesh(username);
+              remotePlayerMesh.update(status);
+              scene.add(remotePlayerMesh);
+              this.remotePlayerMeshes.set(n, remotePlayerMesh);
 
-            rend.setStatus('users', multiplayerApi.getUsers());
+              rend.setStatus('users', multiplayerApi.getUsers());
+            }
           }
 
           removePlayer(n) {
