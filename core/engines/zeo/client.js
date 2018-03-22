@@ -498,6 +498,17 @@ class Zeo {
                           _enterHeadsetVR();
                         });
 
+                        canvas.addEventListener('keydown', e => {
+                          if (e.keyCode === 49) { // number 1 (next to tilde)
+                              if (webvr.supportsWebVR()) {
+                                console.log('entering VR');
+                                _enterHeadsetVR();
+                              } else {
+                                console.log('VR not supported!');
+                              }
+                          }
+                        });
+
                         canvas.addEventListener('click', e => {
                           if (!webvr.isPresenting()) {
                             const barHeight = 50/canvas.height;
