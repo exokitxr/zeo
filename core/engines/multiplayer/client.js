@@ -342,25 +342,27 @@ class Multiplayer {
               const n = protocolUtils.parseUpdateN(buffer);
 
               const playerStatus = multiplayerApi.getPlayerStatus(n);
-              protocolUtils.parseUpdate(
-                playerStatus.hmd.position,
-                playerStatus.hmd.rotation,
-                playerStatus.hmd.scale,
-                playerStatus.gamepads.left.position,
-                playerStatus.gamepads.left.rotation,
-                playerStatus.gamepads.left.scale,
-                playerStatus.gamepads.right.position,
-                playerStatus.gamepads.right.rotation,
-                playerStatus.gamepads.right.scale,
-                playerStatus.metadata.menu,
-                playerStatus.metadata.menu.position,
-                playerStatus.metadata.menu.rotation,
-                playerStatus.metadata.menu.scale,
-                buffer,
-                0
-              );
+              if (playerStatus != null) {
+                protocolUtils.parseUpdate(
+                  playerStatus.hmd.position,
+                  playerStatus.hmd.rotation,
+                  playerStatus.hmd.scale,
+                  playerStatus.gamepads.left.position,
+                  playerStatus.gamepads.left.rotation,
+                  playerStatus.gamepads.left.scale,
+                  playerStatus.gamepads.right.position,
+                  playerStatus.gamepads.right.rotation,
+                  playerStatus.gamepads.right.scale,
+                  playerStatus.metadata.menu,
+                  playerStatus.metadata.menu.position,
+                  playerStatus.metadata.menu.rotation,
+                  playerStatus.metadata.menu.scale,
+                  buffer,
+                  0
+                );
 
-              multiplayerApi.emit('playerStatusUpdate', n);
+                multiplayerApi.emit('playerStatusUpdate', n);
+              }
             };
             const _handleSetSkinEntry = ({n}, skinImgBuffer) => {
               multiplayerApi.setPlayerSkin(n, skinImgBuffer);
