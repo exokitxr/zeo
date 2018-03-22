@@ -500,37 +500,40 @@ class Zeo {
 
                         canvas.addEventListener('keydown', e => {
                           if (e.keyCode === 49) { // number 1 (next to tilde)
-                              if (webvr.supportsWebVR()) {
-                                console.log('entering VR');
-                                _enterHeadsetVR();
-                              } else {
-                                console.log('VR not supported!');
-                              }
                           }
                         });
 
                         canvas.addEventListener('click', e => {
+                          console.log('click 1');
                           if (!webvr.isPresenting()) {
-                            const barHeight = 50/canvas.height;
-                            const buttonWidth = 160/2048;
-                            const fx = e.clientX/parseInt(canvas.style.width, 10);
-                            const fy = (parseInt(canvas.style.height, 10) - e.clientY)/parseInt(canvas.style.height, 10);
-
-                            if (fy <= barHeight && fx >= 1.0 - buttonWidth && fx <= 1.0) {
-                              if (webvr.supportsWebVR()) {
-                                _enterHeadsetVR();
-                              }
-                            } else if (fy <= barHeight && (fx >= 1.0 - buttonWidth*2) && (fx <= 1.0 - buttonWidth)) {
-                              if (voicechat.isEnabled()) {
-                                voicechat.disable();
-                              } else {
-                                voicechat.enable();
-                              }
-
-                              _renderBlocker();
+                            console.log('click 2');
+                            if (webvr.supportsWebVR()) {
+                              console.log('entering VR');
+                              _enterHeadsetVR();
                             } else {
+                              console.log('VR not supported!');
                               _enterKeyboardVR();
                             }
+                            // const barHeight = 50/canvas.height;
+                            // const buttonWidth = 160/2048;
+                            // const fx = e.clientX/parseInt(canvas.style.width, 10);
+                            // const fy = (parseInt(canvas.style.height, 10) - e.clientY)/parseInt(canvas.style.height, 10);
+
+                            // if (fy <= barHeight && fx >= 1.0 - buttonWidth && fx <= 1.0) {
+                            //   if (webvr.supportsWebVR()) {
+                            //     _enterHeadsetVR();
+                            //   }
+                            // } else if (fy <= barHeight && (fx >= 1.0 - buttonWidth*2) && (fx <= 1.0 - buttonWidth)) {
+                            //   if (voicechat.isEnabled()) {
+                            //     voicechat.disable();
+                            //   } else {
+                            //     voicechat.enable();
+                            //   }
+
+                            //   _renderBlocker();
+                            // } else {
+                            //   _enterKeyboardVR();
+                            // }
                           }
                         });
 
