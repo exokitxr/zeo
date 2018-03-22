@@ -76,36 +76,40 @@ class Hand {
                   const [n, userId, side] = args;
 
                   const grabbable = grabbables[n];
-                  grabbable.userId = userId;
-                  grabbable.side = side;
+                  if (grabbable) {
+                    grabbable.userId = userId;
+                    grabbable.side = side;
 
-                  const e = {
-                    userId,
-                    side,
-                    grabbable,
-                  };
-                  grabbable.emit('grab', e);
-                  handApi.emit('grab', e);
+                    const e = {
+                      userId,
+                      side,
+                      grabbable,
+                    };
+                    grabbable.emit('grab', e);
+                    handApi.emit('grab', e);
+                  }
                 } else if (type === 'release') {
                   const {args} = m;
                   const [n] = args;
 
                   const grabbable = grabbables[n];
-                  const {userId, side} = grabbable;
-                  grabbable.userId = null;
-                  grabbable.side = null;
+                  if (grabbable) {
+                    const {userId, side} = grabbable;
+                    grabbable.userId = null;
+                    grabbable.side = null;
 
-                  const e = {
-                    userId,
-                    side,
-                    grabbable,
-                    live: true,
-                    stopImmediatePropagation() {
-                      e.live = false;
-                    },
-                  };
-                  grabbable.emit('release', e);
-                  handApi.emit('release', e);
+                    const e = {
+                      userId,
+                      side,
+                      grabbable,
+                      live: true,
+                      stopImmediatePropagation() {
+                        e.live = false;
+                      },
+                    };
+                    grabbable.emit('release', e);
+                    handApi.emit('release', e);
+                  }
                 } else if (type === 'data') {
                   const {args} = m;
                   const [n, key, value] = args;
@@ -113,28 +117,30 @@ class Hand {
                   const grabbable = grabbables[n];
                   if (grabbable) {
                     grabbable.setData(key, value);
-                  }
 
-                  const e = {
-                    key,
-                    value,
-                    grabbable,
-                  };
-                  grabbable.emit('data', e);
-                  handApi.emit('data', e);
+                    const e = {
+                      key,
+                      value,
+                      grabbable,
+                    };
+                    grabbable.emit('data', e);
+                    handApi.emit('data', e);
+                  }
                 } else {
                   console.warn('unknown hand message type:', type);
                 }
               } else {
                 const n = protocolUtils.parseUpdateN(data);
                 const grabbable = grabbables[n];
-                protocolUtils.parseUpdate(
-                  grabbable.position, grabbable.rotation, grabbable.scale,
-                  grabbable.localPosition, grabbable.localRotation, grabbable.localScale,
-                  data
-                );
+                if (grabbable) {
+                  protocolUtils.parseUpdate(
+                    grabbable.position, grabbable.rotation, grabbable.scale,
+                    grabbable.localPosition, grabbable.localRotation, grabbable.localScale,
+                    data
+                  );
 
-                grabbable.emitUpdate();
+                  grabbable.emitUpdate();
+                }
               }
             });
             return connection;
@@ -354,11 +360,12 @@ class Hand {
           let bestGrabbable = null;
           for (const n in grabbables) {
             const grabbable = grabbables[n];
-
-            const distance = grabbable.distanceTo(controllerPosition);
-            if (distance < GRAB_DISTANCE && distance < bestDistance) {
-              bestDistance = distance;
-              bestGrabbable = grabbable;
+            if (grabbable) {
+              const distance = grabbable.distanceTo(controllerPosition);
+              if (distance < GRAB_DISTANCE && distance < bestDistance) {
+                bestDistance = distance;
+                bestGrabbable = grabbable;
+              }
             }
           }
           return bestGrabbable;
@@ -435,23 +442,27 @@ class Hand {
           }
 
           addGrabbable(grabbable) {
-            const {n} = grabbable;
+            if (grabbable) {
+              const {n} = grabbable;
 
-            if (!grabbables[n]) {
-              grabbable.add();
+              if (!grabbables[n]) {
+                grabbable.add();
 
-              grabbables[n] = grabbable;
+                grabbables[n] = grabbable;
+              }
             }
           }
 
           destroyGrabbable(grabbable) {
-            const {n} = grabbable;
+            if (grabbable) {
+              const {n} = grabbable;
 
-            if (grabbables[n]) {
-              grabbable.destroy();
-              grabbable.remove();
+              if (grabbables[n]) {
+                grabbable.destroy();
+                grabbable.remove();
 
-              delete grabbables[n];
+                delete grabbables[n];
+              }
             }
           }
         }
