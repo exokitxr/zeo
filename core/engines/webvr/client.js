@@ -112,23 +112,26 @@ class WebVR {
         return Promise.resolve([]);
       }
     };
+    const _getBestVRDisplay = () => _getVRDisplays()
+     .then(vrDisplays => vrDisplays.sort((a, b) => {
+        const diff = +_isPolyfillDisplay(a) - _isPolyfillDisplay(b);
+        if (diff !== 0) {
+          return diff;
+        } else {
+          return +_canPresent(b) - +_canPresent(a);
+        }
+      })[0]);
 
-    return Promise.all([
-      archae.requestPlugins([
-        '/core/engines/bootstrap',
-        '/core/engines/input',
-        '/core/engines/three',
-        '/core/utils/js-utils',
-      ]),
-      _getVRDisplays(),
+    return archae.requestPlugins([
+      '/core/engines/bootstrap',
+      '/core/engines/input',
+      '/core/engines/three',
+      '/core/utils/js-utils',
     ]).then(([
-      [
-        bootstrap,
-        input,
-        three,
-        jsUtils,
-      ],
-      displays,
+      bootstrap,
+      input,
+      three,
+      jsUtils,
     ]) => {
       if (live) {
         const {THREE, scene, camera, renderer} = three;
@@ -166,15 +169,6 @@ class WebVR {
         const localQuaternion = new THREE.Quaternion();
         const localEuler = new THREE.Euler();
         const localMatrix = new THREE.Matrix4();
-
-        const bestDisplay = displays.sort((a, b) => {
-          const diff = +_isPolyfillDisplay(a) - _isPolyfillDisplay(b);
-          if (diff !== 0) {
-            return diff;
-          } else {
-            return +_canPresent(b) - +_canPresent(a);
-          }
-        })[0];
 
         const _getPropertiesFromPose = pose => {
           const position = (pose && pose.position !== null) ? new THREE.Vector3().fromArray(pose.position) : zeroVector;
@@ -352,12 +346,9 @@ class WebVR {
             return Boolean(this.display);
           }
 
-          displayIsPresenting() {
-            return bestDisplay.isPresenting;
-          }
-
-          supportsWebVR() {
-            return _canPresent(bestDisplay);
+          requestSupportsWebVR() {
+            return _getBestVRDisplay()
+              .then(bestDisplay => _canPresent(bestDisplay));
           }
 
           requestRenderLoop({
@@ -562,18 +553,30 @@ class WebVR {
             const result = _checkNotOpening()
               .then(_startOpening)
               .then(() => {
-                const display = (() => {
-                  if (mr && _canPresent(bestDisplay)) {
-                    return bestDisplay;
-                  } else if (spectate) {
-                    return new SpectateVRDisplay();
+                const _requestNonMRDisplay = () => {
+                  if (spectate) {
+                    return Promise.resolve(new SpectateVRDisplay());
                   } else if (capture) {
-                    return new CaptureVRDisplay();
+                    return Promise.resolve(new CaptureVRDisplay());
                   } else {
-                    return new FakeVRDisplay();
+                    return Promise.resolve(new FakeVRDisplay());
                   }
-                })();
+                }
 
+                if (mr) {
+                  return _getBestVRDisplay()
+                    .then(bestDisplay => {
+                      if (_canPresent(bestDisplay)) {
+                        return bestDisplay;
+                      } else {
+                        return _requestNonMRDisplay();
+                      }
+                    });
+                } else {
+                  return _requestNonMRDisplay();
+                }
+              })
+              .then(display => {
                 const _requestPresent = () => {
                   if (!display.isPresenting) {
                     return display.requestPresent([

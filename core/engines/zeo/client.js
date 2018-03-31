@@ -215,6 +215,7 @@ class Zeo {
                 const _requestImageBitmap = src => _requestImage(src)
                   .then(img => createImageBitmap(img, 0, 0, img.width, img.height));
 
+                let blockerEnabled = false;
                 const blockerTexture = new THREE.Texture(
                   null,
                   THREE.UVMapping,
@@ -226,38 +227,51 @@ class Zeo {
                   THREE.UnsignedByteType,
                   1
                 );
-                const _renderBlocker = () => {
-                  Promise.all([
-                    _requestImageBitmap(voicechat.isEnabled() ? '/archae/plugins/_core_engines_zeo/serve/img/mic-on.png' : '/archae/plugins/_core_engines_zeo/serve/img/mic-off.png'),
-                    _requestImageBitmap(webvr.supportsWebVR() ? '/archae/plugins/_core_engines_zeo/serve/img/google-cardboard.png' : '/archae/plugins/_core_engines_zeo/serve/img/google-cardboard-x.png'),
-                  ])
-                    .then(([
-                      micImg,
-                      vrImg,
-                    ]) => {
-                      const canvas = document.createElement('canvas');
-                      canvas.width = 2048;
-                      canvas.height = 100;
-                      const ctx = canvas.getContext('2d');
+                const _renderBlocker = () => webvr.requestSupportsWebVR()
+                  .then(supportsWebVR =>
+                    Promise.all([
+                      _requestImageBitmap(
+                        voicechat.isEnabled() ?
+                          '/archae/plugins/_core_engines_zeo/serve/img/mic-on.png'
+                        :
+                          '/archae/plugins/_core_engines_zeo/serve/img/mic-off.png'
+                      ),
+                      _requestImageBitmap(
+                        supportsWebVR ?
+                          '/archae/plugins/_core_engines_zeo/serve/img/google-cardboard.png'
+                        :
+                          '/archae/plugins/_core_engines_zeo/serve/img/google-cardboard-x.png'
+                      ),
+                    ])
+                      .then(([
+                        micImg,
+                        vrImg,
+                      ]) => {
+                        blockerEnabled = supportsWebVR;
 
-                      ctx.font = '30px Open sans';
-                      ctx.fillStyle = '#FFF';
-                      ctx.textBaseline = 'middle';
-                      ctx.scale(0.5, 1);
+                        const canvas = document.createElement('canvas');
+                        canvas.width = 2048;
+                        canvas.height = 100;
+                        const ctx = canvas.getContext('2d');
 
-                      // ctx.drawImage(vrImg, 0, 0, canvas.height, canvas.height);
-                      ctx.drawImage(vrImg, (canvas.width - 160)*2, 0, canvas.height, canvas.height);
-                      ctx.fillText('Enter VR', (canvas.width - 160)*2 + canvas.height + 10, canvas.height/2);
-                      ctx.drawImage(micImg, (canvas.width - 160*2)*2, 0, canvas.height, canvas.height);
-                      ctx.fillText('Enable mic', (canvas.width - 160*2)*2 + canvas.height + 10, canvas.height/2);
+                        ctx.font = '30px Open sans';
+                        ctx.fillStyle = '#FFF';
+                        ctx.textBaseline = 'middle';
+                        ctx.scale(0.5, 1);
 
-                      blockerTexture.image = canvas;
-                      blockerTexture.needsUpdate = true;
-                    })
-                    .catch(err => {
-                      console.warn(err);
-                    });
-                };
+                        // ctx.drawImage(vrImg, 0, 0, canvas.height, canvas.height);
+                        ctx.drawImage(vrImg, (canvas.width - 160)*2, 0, canvas.height, canvas.height);
+                        ctx.fillText('Enter VR', (canvas.width - 160)*2 + canvas.height + 10, canvas.height/2);
+                        ctx.drawImage(micImg, (canvas.width - 160*2)*2, 0, canvas.height, canvas.height);
+                        ctx.fillText('Enable mic', (canvas.width - 160*2)*2 + canvas.height + 10, canvas.height/2);
+
+                        blockerTexture.image = canvas;
+                        blockerTexture.needsUpdate = true;
+                      })
+                  )
+                  .catch(err => {
+                    console.warn(err);
+                  });
                 _renderBlocker();
 
                 const localMatrix = new THREE.Matrix4();
@@ -506,7 +520,7 @@ class Zeo {
                             const fy = (parseInt(canvas.style.height, 10) - e.clientY)/parseInt(canvas.style.height, 10);
 
                             if (fy <= barHeight && fx >= 1.0 - buttonWidth && fx <= 1.0) {
-                              if (webvr.supportsWebVR()) {
+                              if (blockerEnabled) {
                                 _enterHeadsetVR();
                               }
                             } else if (fy <= barHeight && (fx >= 1.0 - buttonWidth*2) && (fx <= 1.0 - buttonWidth)) {
@@ -524,7 +538,7 @@ class Zeo {
                         });
 
                         const urlRequestPresent = _getQueryVariable(window.location.search || '', 'e');
-                        if (webvr.supportsWebVR() && urlRequestPresent === 'hmd') {
+                        if (blockerEnabled && urlRequestPresent === 'hmd') {
                           _enterHeadsetVR();
                         } else if (urlRequestPresent === 'keyboard') {
                           _enterKeyboardVR();
